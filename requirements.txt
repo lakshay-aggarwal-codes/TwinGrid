@@ -1,0 +1,35 @@
+# API & server
+fastapi>=0.100.0
+uvicorn>=0.20.0
+
+# Data & ML
+pandas>=1.5.0
+numpy>=1.21.0
+scikit-learn>=1.2.0
+tensorflow>=2.10.0
+
+# RL & viz
+stable-baselines3>=2.0.0
+gymnasium>=0.28.0
+plotly>=5.0.0
+streamlit>=1.20.0
+
+# Database
+sqlalchemy[asyncio]>=2.0.0
+asyncpg>=0.28.0
+alembic>=1.12.0
+
+# Auth
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Ingestion
+paho-mqtt>=2.0.0
+
+# Utils
+python-dotenv>=1.0.0
+websockets>=11.0
+tqdm>=4.65.0
+
+# Note: asyncio is part of the Python standard library (no pip install needed)
+matplotlib>=3.5.0

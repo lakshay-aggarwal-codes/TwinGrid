@@ -1,0 +1,227 @@
+{
+  "source_slug": "NAB-master",
+  "original_path": "realData/NAB-master",
+  "scanned_at_utc": "2026-09-09T10:18:44.592317+00:00",
+  "metadata": {
+    "display_name": "Numenta Anomaly Benchmark (NAB)",
+    "source_url": "https://github.com/numenta/NAB",
+    "license": "AGPL-3.0 (NAB repository license)",
+    "citation": "Lavin & Ahmad, Numenta Anomaly Benchmark, 2015",
+    "used_for": "Ground-truth labeled anomalies for OFFLINE VALIDATION of the anomaly detector only (Phase 6) -- not used as training data, since it comes from a different physical system."
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 34,
+    "total_size_bytes": 3986060,
+    "extensions": [
+      ".csv",
+      ".json"
+    ],
+    "files": [
+      {
+        "path": "NAB-master/labels/combined_labels.json",
+        "size_bytes": 7015,
+        "mtime_utc": "2026-09-06T06:59:06.351770+00:00",
+        "sha256": "98724014c162fcfd4be605683517f194051a54e98756c53667bd33ddbc644d9b"
+      },
+      {
+        "path": "NAB-master/labels/combined_windows.json",
+        "size_bytes": 15359,
+        "mtime_utc": "2026-09-06T06:59:06.356766+00:00",
+        "sha256": "1e1fbc4601321aad8d0f8b3784c8134299379f68f6c1f7777565f8ffd57ab6b1"
+      },
+      {
+        "path": "NAB-master/labels/combined_windows_tiny.json",
+        "size_bytes": 828,
+        "mtime_utc": "2026-09-06T06:59:06.361769+00:00",
+        "sha256": "bc7fecdd0d46f56ca046c66dae37145dde1c5603ed0ccc6a2a996a4d3793725d"
+      },
+      {
+        "path": "NAB-master/labels/raw/AL_labels_v0.8.json",
+        "size_bytes": 2388,
+        "mtime_utc": "2026-09-06T06:59:06.369767+00:00",
+        "sha256": "9b071c99567c25fa9bbe05f3d9fab2d9dfd2b4c3fba2b6f0fecb05690c3f1777"
+      },
+      {
+        "path": "NAB-master/labels/raw/AL_labels_v1.0.json",
+        "size_bytes": 3584,
+        "mtime_utc": "2026-09-06T06:59:06.374767+00:00",
+        "sha256": "ae87154c7779ead49bd5fc2f5ab1d4541ce6a209a5c31b5d8af77992d8876a4b"
+      },
+      {
+        "path": "NAB-master/labels/raw/CB_labels_v0.8.json",
+        "size_bytes": 2192,
+        "mtime_utc": "2026-09-06T06:59:06.380767+00:00",
+        "sha256": "e945ab0635dd78092004d368143e08c08132e703525175faf794b35455d0dc7c"
+      },
+      {
+        "path": "NAB-master/labels/raw/CB_labels_v1.0.json",
+        "size_bytes": 3581,
+        "mtime_utc": "2026-09-06T06:59:06.386766+00:00",
+        "sha256": "156b9f6af0ebb931b5369a04faac9cb949f593cddce55cbf4138c18f11543b56"
+      },
+      {
+        "path": "NAB-master/labels/raw/known_labels_v1.0.json",
+        "size_bytes": 2196,
+        "mtime_utc": "2026-09-06T06:59:06.405773+00:00",
+        "sha256": "26bff6a2032f4c53e3f819ad5fe3279100ad40824b6507b7be8e7abc98c128cc"
+      },
+      {
+        "path": "NAB-master/labels/raw/SA_labels_v0.8.json",
+        "size_bytes": 2271,
+        "mtime_utc": "2026-09-06T06:59:06.392765+00:00",
+        "sha256": "a7b23c2c237f3b6429881581da476655013eff03ba5c3703c91d8374a0bdefb6"
+      },
+      {
+        "path": "NAB-master/labels/raw/SA_labels_v1.0.json",
+        "size_bytes": 3544,
+        "mtime_utc": "2026-09-06T06:59:06.398769+00:00",
+        "sha256": "4ab817bc7832bc6924eaff9e3138255e5fa0837c45d5e84d8116cf6fecaff2b7"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_cpu_utilization_24ae8d.csv",
+        "size_bytes": 105367,
+        "mtime_utc": "2026-09-06T06:59:05.995888+00:00",
+        "sha256": "ab446fbd8b9f37507eb2fdb06315826d8daeef02e241133ce06e0ee571ba53d9"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_cpu_utilization_53ea38.csv",
+        "size_bytes": 116041,
+        "mtime_utc": "2026-09-06T06:59:06.002888+00:00",
+        "sha256": "8942e498de7b40f1b4a6d802755592c09b8fb73ce8f658763a09cb9ea1ea94ac"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_cpu_utilization_5f5533.csv",
+        "size_bytes": 119229,
+        "mtime_utc": "2026-09-06T06:59:06.009899+00:00",
+        "sha256": "01613e6f632d067f11a5dfd40a188b0789752b388d9bc77a398bd06333878a76"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_cpu_utilization_77c1ca.csv",
+        "size_bytes": 106007,
+        "mtime_utc": "2026-09-06T06:59:06.016905+00:00",
+        "sha256": "90ceabd570b449241ee24ff8a116a793979b7671ce4490707311bfea0e0aae1f"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_cpu_utilization_825cc2.csv",
+        "size_bytes": 113675,
+        "mtime_utc": "2026-09-06T06:59:06.023115+00:00",
+        "sha256": "d768419037c9db269343822957314f57ee21a7d9a4d41df2add0d1ba45ba84de"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_cpu_utilization_ac20cd.csv",
+        "size_bytes": 116980,
+        "mtime_utc": "2026-09-06T06:59:06.030514+00:00",
+        "sha256": "749a15c2e1a4543c21fee9cbf3338cd8a7ed5f5f8a1308b9b099b06c2c66e66b"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_cpu_utilization_c6585a.csv",
+        "size_bytes": 104962,
+        "mtime_utc": "2026-09-06T06:59:06.037522+00:00",
+        "sha256": "d936cea74682ed43ac96b778352d7de294c0b0c168f4a7e6817162346cdb28c1"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_cpu_utilization_fe7f93.csv",
+        "size_bytes": 115788,
+        "mtime_utc": "2026-09-06T06:59:06.044521+00:00",
+        "sha256": "f3433f8171f4dcea86c0c7af9996d0f166f812fa0f4567f1d5cd85d2d2cd69b4"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_disk_write_bytes_1ef3de.csv",
+        "size_bytes": 116626,
+        "mtime_utc": "2026-09-06T06:59:06.051526+00:00",
+        "sha256": "ce3d6c6a652ed7c31a6dd3727a36e128fcac6fb2381c63267ad0fbc02eccd9df"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_disk_write_bytes_c0d644.csv",
+        "size_bytes": 101626,
+        "mtime_utc": "2026-09-06T06:59:06.058526+00:00",
+        "sha256": "a0e734a66098bb81833835f0839dadafbc8ae829c51494670ee8849e46eb5b63"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_network_in_257a54.csv",
+        "size_bytes": 117236,
+        "mtime_utc": "2026-09-06T06:59:06.065522+00:00",
+        "sha256": "39104b08f2e0a673b5137eb7681897fcadf0955fedf565740a6a94edc63a81a4"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/ec2_network_in_5abac7.csv",
+        "size_bytes": 120827,
+        "mtime_utc": "2026-09-06T06:59:06.073424+00:00",
+        "sha256": "c27ef93f582af63bf42e80d804764cbe64ae987620f3cfab5477d6ebb3c6157e"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/elb_request_count_8c0756.csv",
+        "size_bytes": 101052,
+        "mtime_utc": "2026-09-06T06:59:06.079902+00:00",
+        "sha256": "74c26574a01ca9fb89dddb5021e2e13c3a93eb25dc640438a9acb1ceb00f1021"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/grok_asg_anomaly.csv",
+        "size_bytes": 131065,
+        "mtime_utc": "2026-09-06T06:59:06.087391+00:00",
+        "sha256": "86a0abe9d58e376858d2fd4f4a438f1997e24c64a09e5af03accd4e1b372ac47"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/iio_us-east-1_i-a2eb1cd9_NetworkIn.csv",
+        "size_bytes": 37339,
+        "mtime_utc": "2026-09-06T06:59:06.093648+00:00",
+        "sha256": "f115fbe6542159eed5612445bfa620708a28ab6b41349d1432bb15c3a3b8414d"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/rds_cpu_utilization_cc0c53.csv",
+        "size_bytes": 117806,
+        "mtime_utc": "2026-09-06T06:59:06.100823+00:00",
+        "sha256": "d5df979ef85928769a016cd0f935919d8c2a113926e21e1eb3a5001d688760e2"
+      },
+      {
+        "path": "NAB-master/data/realAWSCloudwatch/rds_cpu_utilization_e47b3b.csv",
+        "size_bytes": 113599,
+        "mtime_utc": "2026-09-06T06:59:06.107446+00:00",
+        "sha256": "6b712b922ab3b3404c5a629d64a570c390c99471ee8b9b0ff7665f553fda92c1"
+      },
+      {
+        "path": "NAB-master/data/realKnownCause/ambient_temperature_system_failure.csv",
+        "size_bytes": 233321,
+        "mtime_utc": "2026-09-06T06:59:06.161677+00:00",
+        "sha256": "230b68ccca20f59d562afd5d24ad52939c9b784386bed0054018358bf9120581"
+      },
+      {
+        "path": "NAB-master/data/realKnownCause/cpu_utilization_asg_misconfiguration.csv",
+        "size_bytes": 539274,
+        "mtime_utc": "2026-09-06T06:59:06.171310+00:00",
+        "sha256": "58ba65dc0737cfbac11b51514476d50c438d44011232144bb8d93f392df58f9f"
+      },
+      {
+        "path": "NAB-master/data/realKnownCause/ec2_request_latency_system_failure.csv",
+        "size_bytes": 123428,
+        "mtime_utc": "2026-09-06T06:59:06.178311+00:00",
+        "sha256": "98378580aa80157e057c61d59d81daddccc6c65a2c0c800e3f01f603b8215c3f"
+      },
+      {
+        "path": "NAB-master/data/realKnownCause/machine_temperature_system_failure.csv",
+        "size_bytes": 732223,
+        "mtime_utc": "2026-09-06T06:59:06.188637+00:00",
+        "sha256": "92bf5b87fc7f9bba8ca0b7ec63ccaac8cb4a1371a258e8c29a10ae9c018d82a4"
+      },
+      {
+        "path": "NAB-master/data/realKnownCause/nyc_taxi.csv",
+        "size_bytes": 265771,
+        "mtime_utc": "2026-09-06T06:59:06.196643+00:00",
+        "sha256": "d8fa6f7f0734bf5c8be12c52a94e20a82664c397d9dec4449156bd453d32856d"
+      },
+      {
+        "path": "NAB-master/data/realKnownCause/rogue_agent_key_hold.csv",
+        "size_bytes": 55527,
+        "mtime_utc": "2026-09-06T06:59:06.202645+00:00",
+        "sha256": "47b110baa8e3636574c1033dda1cce780873647fab58223d159d4fee6f180e86"
+      },
+      {
+        "path": "NAB-master/data/realKnownCause/rogue_agent_key_updown.csv",
+        "size_bytes": 138333,
+        "mtime_utc": "2026-09-06T06:59:06.209381+00:00",
+        "sha256": "9797cfef477c13306f7a33874ab4d6cf700f8f2c7e5825a2a5bc02004370909a"
+      }
+    ]
+  }
+}

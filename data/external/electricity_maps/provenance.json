@@ -1,0 +1,40 @@
+{
+  "source_slug": "electricity_maps",
+  "original_path": "realData/electricity_maps",
+  "scanned_at_utc": "2026-09-09T10:18:44.587835+00:00",
+  "metadata": {
+    "display_name": "Electricity Maps",
+    "source_url": "https://api-portal.electricitymaps.com/",
+    "license": "Electricity Maps free-tier API terms",
+    "citation": "Electricity Maps \u2014 real-time and historical grid carbon intensity",
+    "used_for": "Feeds the gamma (carbon) term in the PPO reward function (Phase 7)"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 3,
+    "total_size_bytes": 2113,
+    "extensions": [
+      ".py"
+    ],
+    "files": [
+      {
+        "path": "electricity_maps/download_carbon.py",
+        "size_bytes": 905,
+        "mtime_utc": "2026-09-06T06:50:50.682768+00:00",
+        "sha256": "7b862362c3acfbd3dcbbbf581e82bb0357acd71d8a8534e88b01edfda8cba7ef"
+      },
+      {
+        "path": "electricity_maps/HISTORICAL_ENDPOINT.py",
+        "size_bytes": 555,
+        "mtime_utc": "2026-09-06T06:53:46.770787+00:00",
+        "sha256": "86ebefdde3e64e5a69feed67a3cc5f1b030a4910748d3c716210c46fcdc609c6"
+      },
+      {
+        "path": "electricity_maps/india.py",
+        "size_bytes": 653,
+        "mtime_utc": "2026-09-06T06:51:09.692037+00:00",
+        "sha256": "eab70a02b0d615ab7e40f2c788adb7a3eccd8995a31101d49615635385d35d99"
+      }
+    ]
+  }
+}

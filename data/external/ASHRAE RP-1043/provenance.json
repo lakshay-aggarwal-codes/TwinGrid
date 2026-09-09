@@ -1,0 +1,389 @@
+{
+  "source_slug": "ASHRAE RP-1043",
+  "original_path": "realData/ASHRAE RP-1043",
+  "scanned_at_utc": "2026-09-09T10:18:44.151106+00:00",
+  "metadata": {
+    "display_name": "ASHRAE RP-1043 Chiller Fault Detection Dataset",
+    "source_url": "ASHRAE RP-1043 (public research-data mirror)",
+    "license": "Research dataset, public mirror",
+    "citation": "Comstock & Braun, ASHRAE RP-1043, Chiller Fault Detection Data",
+    "used_for": "Calibrates per-mode cooling COP and validates anomaly-detector fault signatures (Phase 4, 6)"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 61,
+    "total_size_bytes": 183860535,
+    "extensions": [
+      ".xls",
+      ".xlsx"
+    ],
+    "files": [
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/11000.xlsx",
+        "size_bytes": 954679,
+        "mtime_utc": "2026-09-06T07:22:43.984427+00:00",
+        "sha256": "46a3e9ffad99def5ed0a8df8adb3281085454828dd8a581416ad59aa6e9a8291"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/read me first.xls",
+        "size_bytes": 22016,
+        "mtime_utc": "2026-09-06T07:22:43.993427+00:00",
+        "sha256": "c4230d277ea11e82e491b75729a8e7e0c030264bd6480c77ee194fcb41766428"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/near normal1.xls",
+        "size_bytes": 3098624,
+        "mtime_utc": "2026-09-06T07:22:44.018865+00:00",
+        "sha256": "542ca22f3785e37e52181f7d137584b4e60eb0b1f61954e657ab975fd44ae9f9"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/near normal2.xls",
+        "size_bytes": 3103744,
+        "mtime_utc": "2026-09-06T07:22:44.038868+00:00",
+        "sha256": "5e71358d522944c3af0f9f0bfb00284d2af4c8839c1d30f0d8ed0449f196bb2d"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/near normal3.xls",
+        "size_bytes": 3108864,
+        "mtime_utc": "2026-09-06T07:22:44.058201+00:00",
+        "sha256": "c5d9c9135159f5d6e7931e5f094a0f3e62a9c0983e92448a063e1314d2ba7448"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal b.xls",
+        "size_bytes": 3189248,
+        "mtime_utc": "2026-09-06T07:22:44.077468+00:00",
+        "sha256": "462bb5afdbae656b22c7e0962df5486caecd0994e2ab1fd4216e507b1e38ea6c"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal cf.xls",
+        "size_bytes": 3107328,
+        "mtime_utc": "2026-09-06T07:22:44.096392+00:00",
+        "sha256": "e37ee70f1e4ac9d754f01e3e6d4f74c4566cffde61323d4552e0e12f7ada4c3f"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal cf2.xls",
+        "size_bytes": 3109376,
+        "mtime_utc": "2026-09-06T07:22:44.115901+00:00",
+        "sha256": "df22afac5f2239e5d64d41626a80f019a47cb704c5b8b721a9f5d05622fc35a9"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal cf3.xls",
+        "size_bytes": 3109888,
+        "mtime_utc": "2026-09-06T07:22:44.134906+00:00",
+        "sha256": "03ccfbfdf77ff6ac06bed677ccb0b03a5f7e44159e34e56e0dceb549e4b8477d"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal cf4.xls",
+        "size_bytes": 3112960,
+        "mtime_utc": "2026-09-06T07:22:44.153905+00:00",
+        "sha256": "ece1f5c4f5b78051fb19297bf82bff7eec30e836c21bf775440ff658b5d67cea"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal cf5.xls",
+        "size_bytes": 3108864,
+        "mtime_utc": "2026-09-06T07:22:44.172905+00:00",
+        "sha256": "a5fb49f4365f94e7d99c9863af57f039e4af4bf9fdcd98e5dd5c5ded8fd5fc80"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal cf6.xls",
+        "size_bytes": 3111424,
+        "mtime_utc": "2026-09-06T07:22:44.191901+00:00",
+        "sha256": "f5d016366be4128324a93a1f6193dffd783f81d88b733f32fa6bad025c9cdb29"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal dpv.xls",
+        "size_bytes": 3140096,
+        "mtime_utc": "2026-09-06T07:22:44.211418+00:00",
+        "sha256": "2194404df0cf394c8896d09ccc0b49597cb7ef427d43cf429697ad15dff9f474"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal eo.xls",
+        "size_bytes": 3108352,
+        "mtime_utc": "2026-09-06T07:22:44.230453+00:00",
+        "sha256": "ee36d57a1dbda33feb57260d09a643bc2adceb0140b537b72fec848e7c8affd0"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal nc.xls",
+        "size_bytes": 3113984,
+        "mtime_utc": "2026-09-06T07:22:44.248592+00:00",
+        "sha256": "8318ecb9faf25013a7bdbae3905701cc61b2e2d7263da3f177d30c68e803e489"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal r.xls",
+        "size_bytes": 3102208,
+        "mtime_utc": "2026-09-06T07:22:44.267347+00:00",
+        "sha256": "cd91c0abd6fe4cc05275a7fbf449292ef4db55a2ca141de0dc49f3b7814b05cc"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal r1.xls",
+        "size_bytes": 3109376,
+        "mtime_utc": "2026-09-06T07:22:44.287348+00:00",
+        "sha256": "b5d2ba9bb15666972c2b0dd13f56cf3ce65f7da079737e21919feaa2b8a6266c"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal.xls",
+        "size_bytes": 3104768,
+        "mtime_utc": "2026-09-06T07:22:44.305414+00:00",
+        "sha256": "9292c69a2edf07a24bacdd1652a1c0ad566bf798833efa9034c6d0d417570c33"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal1.xls",
+        "size_bytes": 3100672,
+        "mtime_utc": "2026-09-06T07:22:44.325243+00:00",
+        "sha256": "1cfffb2eb2824b9717f687c6bee9c318ec70446bed113872620a6d007769e89a"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Benchmark Tests/normal2.xls",
+        "size_bytes": 3099136,
+        "mtime_utc": "2026-09-06T07:22:44.344286+00:00",
+        "sha256": "8a85a704dffd71fd53e372802221831fe64726c2a09904dde459727d57977347"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Condenser fouling/cf12.xls",
+        "size_bytes": 3107328,
+        "mtime_utc": "2026-09-06T07:22:44.366286+00:00",
+        "sha256": "95ce323350fd143d979a968b033f22f00f260394ffe3ca77e42669f191353132"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Condenser fouling/cf20.xls",
+        "size_bytes": 3126272,
+        "mtime_utc": "2026-09-06T07:22:44.385286+00:00",
+        "sha256": "d859846106d7b0f018bdb54e6da324f3fe79d46fc1d802c456ca31898f422483"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Condenser fouling/cf30.xls",
+        "size_bytes": 3112448,
+        "mtime_utc": "2026-09-06T07:22:44.404289+00:00",
+        "sha256": "ce6b57109b68b579a6d835219824251d2693439bba5bcb7a41ebc296f7aa1617"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Condenser fouling/cf45.xls",
+        "size_bytes": 3123200,
+        "mtime_utc": "2026-09-06T07:22:44.423798+00:00",
+        "sha256": "6c390799ee45e84cc98a102f9014dea77d144325b8abee536738616c71c9c0e3"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Condenser fouling/cf6.xls",
+        "size_bytes": 3108352,
+        "mtime_utc": "2026-09-06T07:22:44.442798+00:00",
+        "sha256": "70333125e9dc0906a7051f1f82b81327a7ad4f75d56163bb498bf8219b0af62e"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Defective Pilot Valve/defective pilot valve.xls",
+        "size_bytes": 3145728,
+        "mtime_utc": "2026-09-06T07:22:44.465309+00:00",
+        "sha256": "266d7ffdba0857fa9d6019514a7bd86ff66a22c74b039a1c2a33d82acdb3d016"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Excess oil/aborted eo86.xls",
+        "size_bytes": 2877952,
+        "mtime_utc": "2026-09-06T07:22:44.485312+00:00",
+        "sha256": "7162d9e41659664e15244fa9f5978eb108cb278b4731c8175ff01b6858f4a9f0"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Excess oil/eo14.xls",
+        "size_bytes": 3098624,
+        "mtime_utc": "2026-09-06T07:22:44.504316+00:00",
+        "sha256": "96f0c41ac7a16c3b2c4c02b66085172bf0ae7fdbd17b1e30828fe266cf4de336"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Excess oil/eo32.xls",
+        "size_bytes": 3104768,
+        "mtime_utc": "2026-09-06T07:22:44.522824+00:00",
+        "sha256": "2c94f72dac58fa13e10fad8f09bdc027fa9e4bbc1449dd49f242c0c80e1e5b70"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Excess oil/eo50.xls",
+        "size_bytes": 3101184,
+        "mtime_utc": "2026-09-06T07:22:44.542825+00:00",
+        "sha256": "166163b67821f0bfa8816b110952493ff036c7f04f8abc94566327a15417ef23"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Excess oil/eo68--unsteady test1.xls",
+        "size_bytes": 3096064,
+        "mtime_utc": "2026-09-06T07:22:44.562825+00:00",
+        "sha256": "672e2189bd930cd22559c8638084ec627c0c261be4e4286148643e9bb8914dc9"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Excess oil/eo73 alt--unsteady test1.xls",
+        "size_bytes": 3109376,
+        "mtime_utc": "2026-09-06T07:22:44.581823+00:00",
+        "sha256": "1f23f68b6112ef451772f1fe655b3225ec44013f0f363010a6c47b78a40db408"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Multiple faults/fwe20fwc20.xls",
+        "size_bytes": 3116544,
+        "mtime_utc": "2026-09-06T07:22:44.603833+00:00",
+        "sha256": "90d99eb85f770c97000a4e293bd1c57ddb84d09964c899a41b045ae35b788327"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Non-condensables in refrigerant/aborted nc.xls",
+        "size_bytes": 2521600,
+        "mtime_utc": "2026-09-06T07:22:44.622347+00:00",
+        "sha256": "41f78a3681228b031043dd44c8037ba7cbed108196ca6ba34513d28b33680ae0"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Non-condensables in refrigerant/modified nc.xls",
+        "size_bytes": 3124736,
+        "mtime_utc": "2026-09-06T07:22:44.641567+00:00",
+        "sha256": "36e3d083a9e80d797490c6b76815fb4702b239c20651391c69725e7273c52c3f"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Non-condensables in refrigerant/nc trace.xls",
+        "size_bytes": 3095552,
+        "mtime_utc": "2026-09-06T07:22:44.661752+00:00",
+        "sha256": "4fa00996c0308d07a1b1d25fb0e3022bd9164035990306b86cadb8ecd32bcfeb"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Non-condensables in refrigerant/nc trace2.xls",
+        "size_bytes": 3100672,
+        "mtime_utc": "2026-09-06T07:22:44.680752+00:00",
+        "sha256": "725284d6c586606cd2a66331d6c9102718c58bd8f9f07bf220e089233ac83d1a"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Non-condensables in refrigerant/nc1.xls",
+        "size_bytes": 3110912,
+        "mtime_utc": "2026-09-06T07:22:44.699005+00:00",
+        "sha256": "23b4f2820ff09a9f3b5cc4a790168e969b1305372508c0c4419cd8bf20d2100f"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Non-condensables in refrigerant/nc2.xls",
+        "size_bytes": 3115008,
+        "mtime_utc": "2026-09-06T07:22:44.718707+00:00",
+        "sha256": "a798f2e6e13420435c86b8c64311a79f17bd1e461e5af9ae2c254f4a2157ff57"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Non-condensables in refrigerant/nc3.xls",
+        "size_bytes": 3120640,
+        "mtime_utc": "2026-09-06T07:22:44.736973+00:00",
+        "sha256": "af1e03993f9f4ad984f05d02824130a9a25eeb452bf50e442e6fee402266c131"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Non-condensables in refrigerant/nc5.xls",
+        "size_bytes": 3120640,
+        "mtime_utc": "2026-09-06T07:22:44.755854+00:00",
+        "sha256": "807c1ec93ae53c731decbcb31e097985b6ff1513aa9a4b1b758ac18654192a8d"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced condenser water flow/fwc10.xls",
+        "size_bytes": 3114496,
+        "mtime_utc": "2026-09-06T07:22:44.777834+00:00",
+        "sha256": "e270f7be9acbd81c6100b57df48595c5f4321283614147cbfa466ff304c7f08b"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced condenser water flow/fwc20 alt.xls",
+        "size_bytes": 3124736,
+        "mtime_utc": "2026-09-06T07:22:44.797247+00:00",
+        "sha256": "b1f916a6cb6c4bf1d235b8ecf615fbc7aedabf1f6ecdac37f156fe048b0d2939"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced condenser water flow/fwc20.xls",
+        "size_bytes": 3115520,
+        "mtime_utc": "2026-09-06T07:22:44.816008+00:00",
+        "sha256": "4463981fe8030cf783d362bece9dcc1b03c041d4a6dcf21af2a5b1ace5de69dd"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced condenser water flow/fwc30.xls",
+        "size_bytes": 3110400,
+        "mtime_utc": "2026-09-06T07:22:44.835230+00:00",
+        "sha256": "e7d8674c31f07441638a7a874427d400ccc54d9aeb5c703882b30a5974c19335"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced condenser water flow/fwc40.xls",
+        "size_bytes": 3105792,
+        "mtime_utc": "2026-09-06T07:22:44.854599+00:00",
+        "sha256": "2faa6f1558be856db9722a0c118b1a241b49c419a436faad0883cabb48c32ea3"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced evaporator water flow/fwe10.xls",
+        "size_bytes": 3111936,
+        "mtime_utc": "2026-09-06T07:22:44.876127+00:00",
+        "sha256": "f8757935781ff02a48e5d5480c21d84f4cea86362d5597396a7ff8ba497fe833"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced evaporator water flow/fwe20 alt--unsteady test5.xls",
+        "size_bytes": 3118592,
+        "mtime_utc": "2026-09-06T07:22:44.894273+00:00",
+        "sha256": "6d6039801803d89c8a6f763c964e0f3881b8907b4d73bce90c3d2dfc9263173c"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced evaporator water flow/fwe20.xls",
+        "size_bytes": 3115008,
+        "mtime_utc": "2026-09-06T07:22:44.913046+00:00",
+        "sha256": "dc8d6c99217f561a67070183b6f1f34e5ce4662751516e25c142e67675e122e9"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced evaporator water flow/fwe30.xls",
+        "size_bytes": 3123712,
+        "mtime_utc": "2026-09-06T07:22:44.943164+00:00",
+        "sha256": "a693a7a9b749aeef88c78f956f6d526c77c6a90f8bdb5a4be6548793a1c5952b"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced evaporator water flow/fwe40 alt--unsteady test8.xls",
+        "size_bytes": 3122688,
+        "mtime_utc": "2026-09-06T07:22:44.963171+00:00",
+        "sha256": "42ad67178bd44c72cf63dc46709940fe4db4e6c144b06cdafa9b7804519f2f1b"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Reduced evaporator water flow/fwe40.xls",
+        "size_bytes": 3126784,
+        "mtime_utc": "2026-09-06T07:22:44.983165+00:00",
+        "sha256": "1a95ae9844020ebf59358b0e3b6cfc06f65077c327c5f9cb1de62aa096a6b452"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Refrigerant leak/rl10.xls",
+        "size_bytes": 3100672,
+        "mtime_utc": "2026-09-06T07:22:45.004660+00:00",
+        "sha256": "e683866e8c3d53ba9fe9d18d017a01161b9bc95a2ff1c54bea7b54f7ba30f258"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Refrigerant leak/rl20.xls",
+        "size_bytes": 3090944,
+        "mtime_utc": "2026-09-06T07:22:45.024170+00:00",
+        "sha256": "b86e7698c498b744b808026ec5c4e07482f1fc5be7a12614f7ea24ff1eb0c4de"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Refrigerant leak/rl30.xls",
+        "size_bytes": 3102720,
+        "mtime_utc": "2026-09-06T07:22:45.043078+00:00",
+        "sha256": "62dac7422392e2d7da8751c0d8521cf0f17c6bd7cc629def8d442c9a330e1de5"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Refrigerant leak/rl40 alt--many unsteady tests.xls",
+        "size_bytes": 3126272,
+        "mtime_utc": "2026-09-06T07:22:45.063931+00:00",
+        "sha256": "871a22b6affe88a5d40f945eac36650fb9c3af15dced477d58efc4086b7394ba"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Refrigerant leak/rl40.xls",
+        "size_bytes": 3106304,
+        "mtime_utc": "2026-09-06T07:22:45.084009+00:00",
+        "sha256": "01027ddea8ff9f97a7290bd95a4586b280964dbc950dc849315bec2778d11d43"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Refrigerant overcharge/ro10.xls",
+        "size_bytes": 3102720,
+        "mtime_utc": "2026-09-06T07:22:45.106018+00:00",
+        "sha256": "4fae8709be918508324bae55c9d103a0b0adb51cae91e24a232545391ba31ebc"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Refrigerant overcharge/ro20.xls",
+        "size_bytes": 3109376,
+        "mtime_utc": "2026-09-06T07:22:45.124525+00:00",
+        "sha256": "3c631d1b125c21f6e0dfb3ae5554e74c911e66596e2508aea0d87f72dd714643"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Refrigerant overcharge/ro30.xls",
+        "size_bytes": 3145728,
+        "mtime_utc": "2026-09-06T07:22:45.144525+00:00",
+        "sha256": "d0124739df18b2d094044fdb7188d207c02aea071e58dedfbd59b0e7d10a3251"
+      },
+      {
+        "path": "ASHRAE RP-1043/Chiller Data/Refrigerant overcharge/ro40.xls",
+        "size_bytes": 3132928,
+        "mtime_utc": "2026-09-06T07:22:45.163525+00:00",
+        "sha256": "977c2e420a30305bbc7687de75a5845e4a6c95a8fa751b8cd441faf4f3ed2d09"
+      }
+    ]
+  }
+}

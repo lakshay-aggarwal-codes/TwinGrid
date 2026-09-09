@@ -1,0 +1,179 @@
+{
+  "source_slug": "open_meteo",
+  "original_path": "realData/open_meteo",
+  "scanned_at_utc": "2026-09-09T10:18:44.633802+00:00",
+  "metadata": {
+    "display_name": "Open-Meteo Historical Weather Archive",
+    "source_url": "https://open-meteo.com/en/docs/historical-weather-api",
+    "license": "Open-Meteo \u2014 free for non-commercial use (CC BY 4.0 attribution)",
+    "citation": "Open-Meteo.com Weather API",
+    "used_for": "Real outside_temp_C / humidity_pct driver, replacing synthetic curves (Phase 4)"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 26,
+    "total_size_bytes": 20591440,
+    "extensions": [
+      ".csv",
+      ".py"
+    ],
+    "files": [
+      {
+        "path": "open_meteo/ahmedabad_weather_2025_hourly.csv",
+        "size_bytes": 833903,
+        "mtime_utc": "2026-09-06T07:14:09.788890+00:00",
+        "sha256": "2c920308af0eb7eed19a77a6d60a33ba562d08cdb829e39ff135f58e9953c4b4"
+      },
+      {
+        "path": "open_meteo/bengaluru_weather_2025_hourly.csv",
+        "size_bytes": 841887,
+        "mtime_utc": "2026-09-06T07:13:53.429093+00:00",
+        "sha256": "76a0604287fc861bdb87508c66243986afa686b46a02cf1b6a6b9f056e1e40cf"
+      },
+      {
+        "path": "open_meteo/bhopal_weather_2025_hourly.csv",
+        "size_bytes": 807787,
+        "mtime_utc": "2026-09-06T07:14:29.423043+00:00",
+        "sha256": "7d3ac65ab78a465009ec9e9b2b4ee70184d38cdc95ae33c6d791f1eea138d11d"
+      },
+      {
+        "path": "open_meteo/bhubaneswar_weather_2025_hourly.csv",
+        "size_bytes": 856069,
+        "mtime_utc": "2026-09-06T07:14:35.375634+00:00",
+        "sha256": "410d2a6736a84c214c05138f0705b9f41e03fb162d1aa155843fc4e496320d6d"
+      },
+      {
+        "path": "open_meteo/chandigarh_weather_2025_hourly.csv",
+        "size_bytes": 840497,
+        "mtime_utc": "2026-09-06T07:14:38.168483+00:00",
+        "sha256": "d9a8dcb2b97ce8a902fc1f80828b2d235293b44cccdda32b2cc29abd224c1f53"
+      },
+      {
+        "path": "open_meteo/chennai_weather_2025_hourly.csv",
+        "size_bytes": 826100,
+        "mtime_utc": "2026-09-06T07:13:56.191321+00:00",
+        "sha256": "11196f04f50fd42ca57681b1fdf4a1088d8b10e55cec711bd4775f92f8ca7f0b"
+      },
+      {
+        "path": "open_meteo/coimbatore_weather_2025_hourly.csv",
+        "size_bytes": 851853,
+        "mtime_utc": "2026-09-06T07:14:44.974173+00:00",
+        "sha256": "c09fcc7da6cf1bd7c9b8609d78bee738e0e9201e2449db8e424e201f10ac5332"
+      },
+      {
+        "path": "open_meteo/dehradun_weather_2025_hourly.csv",
+        "size_bytes": 817393,
+        "mtime_utc": "2026-09-06T07:14:56.241652+00:00",
+        "sha256": "059e3b041068ace2d7abb08b234e090d9806a6dc647b41cd12a2046b516208dd"
+      },
+      {
+        "path": "open_meteo/delhi_weather_2025_hourly.csv",
+        "size_bytes": 788840,
+        "mtime_utc": "2026-09-06T07:13:47.456308+00:00",
+        "sha256": "6381af8b223134e9c6ff725e47e06ec401a71907435b7c398bd102cd527e9b76"
+      },
+      {
+        "path": "open_meteo/download_weather.py",
+        "size_bytes": 6545,
+        "mtime_utc": "2026-09-06T07:13:42.603551+00:00",
+        "sha256": "b92f7e3c9bc070c39a8975e7d4c3f9e8a3fdc65d131c863ca4837c31c85bc92f"
+      },
+      {
+        "path": "open_meteo/guwahati_weather_2025_hourly.csv",
+        "size_bytes": 825770,
+        "mtime_utc": "2026-09-06T07:14:53.342410+00:00",
+        "sha256": "48e7a208551d3fcbafe3ff8e92c796b8b13f8fb220f96c4a4180a1f3d94157c9"
+      },
+      {
+        "path": "open_meteo/hyderabad_weather_2025_hourly.csv",
+        "size_bytes": 830042,
+        "mtime_utc": "2026-09-06T07:13:59.106391+00:00",
+        "sha256": "25cf0a920d7f2b2759a10f4a5d062db61ff45ac5b06f1ae017064cfd633fda08"
+      },
+      {
+        "path": "open_meteo/indore_weather_2025_hourly.csv",
+        "size_bytes": 808735,
+        "mtime_utc": "2026-09-06T07:14:26.600018+00:00",
+        "sha256": "d5eb1f12eeca9533cdc482d8eaf7c09e33bbc3fb8971745548a1293870f1d496"
+      },
+      {
+        "path": "open_meteo/jaipur_weather_2025_hourly.csv",
+        "size_bytes": 804997,
+        "mtime_utc": "2026-09-06T07:14:12.788331+00:00",
+        "sha256": "6aaf52ef7b0e1366c3e2b794302e2cc5caf15096a0b6df6ae4afd251b81c8961"
+      },
+      {
+        "path": "open_meteo/kanpur_weather_2025_hourly.csv",
+        "size_bytes": 807297,
+        "mtime_utc": "2026-09-06T07:14:21.070166+00:00",
+        "sha256": "c8a9ad53e85c221bf6b9918a0f178c00260428a1d9ce1db4b21c7d6eaa55e4c6"
+      },
+      {
+        "path": "open_meteo/kochi_weather_2025_hourly.csv",
+        "size_bytes": 796584,
+        "mtime_utc": "2026-09-06T07:14:50.514222+00:00",
+        "sha256": "2282dfe872bdbeb7df80f108aeb0396162c40b5885d75081a1cf021893371e7b"
+      },
+      {
+        "path": "open_meteo/kolkata_weather_2025_hourly.csv",
+        "size_bytes": 819661,
+        "mtime_utc": "2026-09-06T07:14:01.836209+00:00",
+        "sha256": "8234cb4498118e24f4f24f029223ae621232756b2575172b41f952531a5451e1"
+      },
+      {
+        "path": "open_meteo/lucknow_weather_2025_hourly.csv",
+        "size_bytes": 816625,
+        "mtime_utc": "2026-09-06T07:14:18.298080+00:00",
+        "sha256": "2c774e99051e91734313486847c6a183888aa550d3ad1f0cb4bdce0383a8e5b6"
+      },
+      {
+        "path": "open_meteo/ludhiana_weather_2025_hourly.csv",
+        "size_bytes": 814874,
+        "mtime_utc": "2026-09-06T07:14:41.777394+00:00",
+        "sha256": "9989d69cf96adc4aab0a0f95bcb2a546bcab77e7c6df3af038c6a03646168e07"
+      },
+      {
+        "path": "open_meteo/mumbai_weather_2025_hourly.csv",
+        "size_bytes": 804100,
+        "mtime_utc": "2026-09-06T07:13:50.377683+00:00",
+        "sha256": "9db96383a521bdb18593c43be9719772934fb01f6e8496e33ef38b8ec85b2b1c"
+      },
+      {
+        "path": "open_meteo/nagpur_weather_2025_hourly.csv",
+        "size_bytes": 808530,
+        "mtime_utc": "2026-09-06T07:14:23.830040+00:00",
+        "sha256": "69b655cc651aaae9e6348b984b2646fffaba1ae91322970c8eea76f1f68c6c41"
+      },
+      {
+        "path": "open_meteo/patna_weather_2025_hourly.csv",
+        "size_bytes": 800779,
+        "mtime_utc": "2026-09-06T07:14:32.496660+00:00",
+        "sha256": "dee4767ecbb8465434a003b37163c1917aaadc49df1c76b48b56a3e9cc9b23a5"
+      },
+      {
+        "path": "open_meteo/pune_weather_2025_hourly.csv",
+        "size_bytes": 792770,
+        "mtime_utc": "2026-09-06T07:14:06.904877+00:00",
+        "sha256": "82f47883e5a2f978815d799401ed4e780bf0af1aab5881149a2d4e435068ec6f"
+      },
+      {
+        "path": "open_meteo/surat_weather_2025_hourly.csv",
+        "size_bytes": 802224,
+        "mtime_utc": "2026-09-06T07:14:15.551297+00:00",
+        "sha256": "1ef8463365ad5bc0c360b3c316f68fe653f31c1d365a8e90d2b22ea3f632b0c1"
+      },
+      {
+        "path": "open_meteo/thiruvananthapuram_weather_2025_hourly.csv",
+        "size_bytes": 913051,
+        "mtime_utc": "2026-09-06T07:14:59.130694+00:00",
+        "sha256": "4426e57d59b316db522135cc9896f411cfdba41984ad6db71a29318c0fe4a1cb"
+      },
+      {
+        "path": "open_meteo/visakhapatnam_weather_2025_hourly.csv",
+        "size_bytes": 874527,
+        "mtime_utc": "2026-09-06T07:14:47.645652+00:00",
+        "sha256": "e7354ab30ee0998afbb5974d2c28f9095f015b057b285813f66c1d2f3837605b"
+      }
+    ]
+  }
+}

@@ -1,0 +1,337 @@
+{
+  "source_slug": "clusterdata-master",
+  "original_path": "realData/clusterdata-master",
+  "scanned_at_utc": "2026-09-09T10:18:44.443507+00:00",
+  "metadata": {
+    "display_name": "Alibaba Cluster Trace",
+    "source_url": "https://github.com/alibaba/clusterdata",
+    "license": "Repository license \u2014 see clusterdata-master/LICENSE",
+    "citation": "Alibaba Cluster Trace Program, cluster-trace-gpu-v2020",
+    "used_for": "Real server_utilisation driver, replacing the synthetic diurnal curve (Phase 4)"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 51,
+    "total_size_bytes": 39334188,
+    "extensions": [
+      "",
+      ".csv",
+      ".header",
+      ".ipynb",
+      ".log",
+      ".md",
+      ".png",
+      ".py",
+      ".sh",
+      ".txt"
+    ],
+    "files": [
+      {
+        "path": "clusterdata-master/.DS_Store",
+        "size_bytes": 6148,
+        "mtime_utc": "2026-09-06T06:59:54.535986+00:00",
+        "sha256": "ada03f16d59153dbe27058899d71fc99f38fb5d8e51bee5835e5e77ee5f4cad8"
+      },
+      {
+        "path": "clusterdata-master/README.md",
+        "size_bytes": 13312,
+        "mtime_utc": "2026-09-06T06:59:54.559913+00:00",
+        "sha256": "7fa18b5d52dd1640801b932702843da4aa39e62d9e27024a05526d9a59793b65"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/LICENSE",
+        "size_bytes": 18653,
+        "mtime_utc": "2026-09-06T06:59:54.573687+00:00",
+        "sha256": "9bbc1ea9fe5c96df01b311a2ac864d5b18fc87b9948bfd14770e4b44db755ee9"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/README.md",
+        "size_bytes": 20574,
+        "mtime_utc": "2026-09-06T06:59:54.579200+00:00",
+        "sha256": "cc13cc69d12ab46c882a1dcc74614cab6956f85ebb0d47d9409ff340bf2e7c08"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/analysis/analysis.ipynb",
+        "size_bytes": 1231976,
+        "mtime_utc": "2026-09-06T06:59:54.604054+00:00",
+        "sha256": "32b1a244a164da6cd3310348061d6701cccf6d99f4ac120a0c58d8792789d2e0"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/analysis/philly_runtime.csv",
+        "size_bytes": 535725,
+        "mtime_utc": "2026-09-06T06:59:54.616066+00:00",
+        "sha256": "e99015baaea66833ebeac68d27c994aa13d83847f73b4a7c7dc71fe94b395247"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/analysis/utils.py",
+        "size_bytes": 12309,
+        "mtime_utc": "2026-09-06T06:59:54.622672+00:00",
+        "sha256": "002b54d039472dac20bf0c52a3473e9deffb09c963d6c5b4735cfeda31d205d0"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/data/download_data.sh",
+        "size_bytes": 674,
+        "mtime_utc": "2026-09-06T06:59:54.647210+00:00",
+        "sha256": "4f855943773c2ef06709b3902872ead3d0feff67c73618707bd95647c4f2563c"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/data/pai_group_tag_table.header",
+        "size_bytes": 42,
+        "mtime_utc": "2026-09-06T06:59:54.656848+00:00",
+        "sha256": "320470fa8f77182bc6052c95ff359b75542c748e9516b3d8148a6e2bafc1798d"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/data/pai_instance_table.header",
+        "size_bytes": 84,
+        "mtime_utc": "2026-09-06T06:59:54.665896+00:00",
+        "sha256": "51f2585178eaaf30ad8cc88c50ec9243b0f7d9603603ab7602efccb7aa34f6b0"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/data/pai_job_table.header",
+        "size_bytes": 49,
+        "mtime_utc": "2026-09-06T06:59:54.671896+00:00",
+        "sha256": "3ac33aefab9a4d81338794fa145fe280594a379444961a9c639f00181c508567"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/data/pai_machine_metric.header",
+        "size_bytes": 172,
+        "mtime_utc": "2026-09-06T06:59:54.677406+00:00",
+        "sha256": "300342613103c6192490f8990958903d837053c13adbc6c094d677074fbbb7ad"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/data/pai_machine_spec.header",
+        "size_bytes": 41,
+        "mtime_utc": "2026-09-06T06:59:54.682642+00:00",
+        "sha256": "4c9ea25914ff3f0b73be9ff223fb91002e787138165abd3f584ba37281448e1c"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/data/pai_sensor_table.header",
+        "size_bytes": 161,
+        "mtime_utc": "2026-09-06T06:59:54.687988+00:00",
+        "sha256": "d3e26eb31fb3b833821373b487266312151a3bfb2f18fc62017a438546cc1362"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/data/pai_task_table.header",
+        "size_bytes": 91,
+        "mtime_utc": "2026-09-06T06:59:54.694033+00:00",
+        "sha256": "978bbaabfc8695874c605c01c144b2977f611ceca73aeb72189988cdfbfb0a9c"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/data/README.md",
+        "size_bytes": 1212,
+        "mtime_utc": "2026-09-06T06:59:54.637664+00:00",
+        "sha256": "d9558f32064aa7c73c189811132c68035d3f45e777b85575221d16ad799cc22e"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/figures/analysis-01.png",
+        "size_bytes": 567414,
+        "mtime_utc": "2026-09-06T06:59:54.718817+00:00",
+        "sha256": "afb527ff51c112fd1ab3ac518c9a44bff6229212dd79e51dd7a95b6bb6f83c11"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/figures/analysis-02.png",
+        "size_bytes": 665504,
+        "mtime_utc": "2026-09-06T06:59:54.731677+00:00",
+        "sha256": "9500f498905f544f6c53a448557d0a78cec89e2a2728453798a6c2d734758197"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/figures/analysis-03.png",
+        "size_bytes": 2390636,
+        "mtime_utc": "2026-09-06T06:59:54.763025+00:00",
+        "sha256": "71d55dd768f1260695165151bbe210343907b870a672422d6ecd0a5dda87d64e"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/figures/analysis-04.png",
+        "size_bytes": 691031,
+        "mtime_utc": "2026-09-06T06:59:54.777545+00:00",
+        "sha256": "521898a8821afafcd993fee74708c3599ced093df13bf9a18ee5d0c4fd0d395e"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/figures/analysis-05.png",
+        "size_bytes": 1762152,
+        "mtime_utc": "2026-09-06T06:59:54.802867+00:00",
+        "sha256": "5e74e04d02834d5feb9b1efbd989692a0e28f7b5d2bf200520348b6d50e98952"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/figures/analysis-06.png",
+        "size_bytes": 1353031,
+        "mtime_utc": "2026-09-06T06:59:54.823918+00:00",
+        "sha256": "645d5ff9c5d80831a8e92e9ef77176f33046da607fa8cefc77818bc93688b3bf"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/figures/analysis-07.png",
+        "size_bytes": 550865,
+        "mtime_utc": "2026-09-06T06:59:54.836918+00:00",
+        "sha256": "c57257fb7d222d2e1fd600d0d1eb79e1a76c1845dcc8f58e19ad91ca4dc17bf6"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/figures/analysis.png",
+        "size_bytes": 8647224,
+        "mtime_utc": "2026-09-06T06:59:54.925762+00:00",
+        "sha256": "e2eb6ce694c6325efba55ca3ac1e26268a03924465583c9caa1c009c96374004"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/figures/pai-overview.png",
+        "size_bytes": 475461,
+        "mtime_utc": "2026-09-06T06:59:54.937497+00:00",
+        "sha256": "f8b24473f27a04bb3a7877fe4b9f8ee644896f0736979379a75360c2dedbd772"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/README.md",
+        "size_bytes": 2939,
+        "mtime_utc": "2026-09-06T06:59:54.948497+00:00",
+        "sha256": "e9f20b08c223c5718bec5349ddc4d2c7437e36404b2c516662f918be767077dd"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/.gitignore",
+        "size_bytes": 18,
+        "mtime_utc": "2026-09-06T06:59:55.055529+00:00",
+        "sha256": "28b9b8412b26a49ff61149dd3302313ddf2b61616c09301a2cc84f5c6bb88bcc"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/cluster.py",
+        "size_bytes": 11347,
+        "mtime_utc": "2026-09-06T06:59:55.074135+00:00",
+        "sha256": "955ff6a65a6f8e0318fc6cd92430a5f0df69100472fda1e4e367c08050adb279"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/job_history.py",
+        "size_bytes": 4774,
+        "mtime_utc": "2026-09-06T06:59:55.080271+00:00",
+        "sha256": "aef229b371ffa2c7d3c728500226a6611fd733696f3ef6de913e448bcf7795d9"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/node.py",
+        "size_bytes": 7997,
+        "mtime_utc": "2026-09-06T06:59:55.086059+00:00",
+        "sha256": "ef5bd27e21778adef5057c00286cc62eb5a949f441e26769069e8da95f0f07cc"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/README.md",
+        "size_bytes": 3710,
+        "mtime_utc": "2026-09-06T06:59:55.064346+00:00",
+        "sha256": "d07177ea69466de8b90bfa1d3ea830a6c3ee632bb710c9b8ada7eb83c8490539"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/requirements.txt",
+        "size_bytes": 19,
+        "mtime_utc": "2026-09-06T06:59:55.091064+00:00",
+        "sha256": "aab24fb841ad8ec6d6ee3877128033111aa65a2d4e5c1a088590c890d541c30b"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/run_simulator.py",
+        "size_bytes": 5781,
+        "mtime_utc": "2026-09-06T06:59:55.096065+00:00",
+        "sha256": "2503de96dd6323ce30f848afb4406d5dbee211ba312dcfd55507643b04d55d03"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/run_simulator_fifo.py",
+        "size_bytes": 5738,
+        "mtime_utc": "2026-09-06T06:59:55.102061+00:00",
+        "sha256": "75d901c9b357481e8770a19b2d2b715acad003ff515e6e2cf54f74fc49e0b44c"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/scheduler.py",
+        "size_bytes": 11684,
+        "mtime_utc": "2026-09-06T06:59:55.108061+00:00",
+        "sha256": "f8f4fd8c77c556c0bf9f0988a65c12f45bed8116e78acf831a87864260da44d0"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/simulator.py",
+        "size_bytes": 10458,
+        "mtime_utc": "2026-09-06T06:59:55.114328+00:00",
+        "sha256": "3da1a3ebcdbd021e01f4096ea18794e4908fdd7c7457798a51de42e12cac93f0"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/utils.py",
+        "size_bytes": 8734,
+        "mtime_utc": "2026-09-06T06:59:55.120326+00:00",
+        "sha256": "d71722bf9e386c07dc7a6d395879bcfeac0c389d8f2d6afdd2756dacd56105b2"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/__init__.py",
+        "size_bytes": 0,
+        "mtime_utc": "2026-09-06T06:59:55.069346+00:00",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/logs/0228-pai_job_duration_estimate_100K.csv-99163-6500g_1n_h0_0p_3sn_0gt-1000ar-20000j-1x-42r.log",
+        "size_bytes": 640,
+        "mtime_utc": "2026-09-06T06:59:55.128426+00:00",
+        "sha256": "8de903d88e0ba027104416dd37b4188f683678e7cf6510789be125d005c7a77f"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/traces/pai/pai_job_duration_estimate_100K.csv",
+        "size_bytes": 12667891,
+        "mtime_utc": "2026-09-06T06:59:55.226540+00:00",
+        "sha256": "04b563bdf706dbb8d0dd167dec19e0a56a1b4c404d64df31e28bcb204ee1ac30"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/simulator/traces/pai/pai_job_no_estimate_100K.csv",
+        "size_bytes": 4685737,
+        "mtime_utc": "2026-09-06T06:59:55.260247+00:00",
+        "sha256": "dc4de3214e15b7c758b6485aaa1766c0c347a2482693e069ce7124009d1db56d"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/data/coefficient_variation.csv",
+        "size_bytes": 1754084,
+        "mtime_utc": "2026-09-06T06:59:54.974253+00:00",
+        "sha256": "81a96c3e5cec9d5caff5df10cfd971ef79556319b0ce436e2eed6d08ae417fc4"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/data/job_1_norm.csv",
+        "size_bytes": 54814,
+        "mtime_utc": "2026-09-06T06:59:54.980772+00:00",
+        "sha256": "6f555e44ababa68c25659f911eb28fa7658f7ff0b3c08161a57b3bce0bf0d2dd"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/data/job_2_norm.csv",
+        "size_bytes": 43452,
+        "mtime_utc": "2026-09-06T06:59:54.987773+00:00",
+        "sha256": "c1945786e809ec0c204aa3f0e30d7dd3111234ef873707cb8304bdd290d433b2"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/data/job_3_norm.csv",
+        "size_bytes": 45109,
+        "mtime_utc": "2026-09-06T06:59:54.994771+00:00",
+        "sha256": "47057a62829a1fbea6c90e43aeba53d4a9c2804c38ce31fd618d2426ef2b530b"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/data/job_4_norm.csv",
+        "size_bytes": 425467,
+        "mtime_utc": "2026-09-06T06:59:55.004769+00:00",
+        "sha256": "eccd5b23e4480e585082ba4affecbcc240150a9dcfc69b237d4dcb28ad146bc6"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/figures/cov.png",
+        "size_bytes": 136181,
+        "mtime_utc": "2026-09-06T06:59:55.017009+00:00",
+        "sha256": "95e21e6982c93502f67fdfbf31dea6802ac01c979c8b2b723a72829ffb9cc0a1"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/figures/job1.png",
+        "size_bytes": 113685,
+        "mtime_utc": "2026-09-06T06:59:55.024117+00:00",
+        "sha256": "38be4153573fe549a3827501bfbc7b33cc71e8580d348ffe26fb9f632899d9f2"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/figures/job2.png",
+        "size_bytes": 113042,
+        "mtime_utc": "2026-09-06T06:59:55.030441+00:00",
+        "sha256": "44f0af848d43c1aed15a3a63727a4893d2dfb8da4d66dcc1e69bef428f607631"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/figures/job3.png",
+        "size_bytes": 166757,
+        "mtime_utc": "2026-09-06T06:59:55.037357+00:00",
+        "sha256": "63aaed2bce5a5ebea65a562f048173517be40de4683bca6c73b31e35918e9cb6"
+      },
+      {
+        "path": "clusterdata-master/cluster-trace-gpu-v2020/mini-batch-time/figures/job4.png",
+        "size_bytes": 109589,
+        "mtime_utc": "2026-09-06T06:59:55.044528+00:00",
+        "sha256": "207a755f9f3c7074bcc963135c6e2b985c764243a0a5e444767506141d327127"
+      }
+    ]
+  }
+}

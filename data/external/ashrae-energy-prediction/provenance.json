@@ -1,0 +1,61 @@
+{
+  "source_slug": "ashrae-energy-prediction",
+  "original_path": "realData/ashrae-energy-prediction",
+  "scanned_at_utc": "2026-09-09T10:18:44.401004+00:00",
+  "metadata": {
+    "display_name": "ASHRAE Great Energy Predictor III (Kaggle)",
+    "source_url": "https://www.kaggle.com/c/ashrae-energy-prediction",
+    "license": "Kaggle competition data \u2014 competition rules apply",
+    "citation": "ASHRAE Great Energy Predictor III, Kaggle, 2019",
+    "used_for": "Building-scale power-vs-weather validation only, not a direct column source"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 6,
+    "total_size_bytes": 2610923746,
+    "extensions": [
+      ".csv"
+    ],
+    "files": [
+      {
+        "path": "ashrae-energy-prediction/building_metadata.csv",
+        "size_bytes": 45527,
+        "mtime_utc": "2026-09-06T06:57:55.725527+00:00",
+        "sha256": "357bf585047359e9dfbaef2935453429f8ec19e5e80c08a8eb066789f28c4070"
+      },
+      {
+        "path": "ashrae-energy-prediction/sample_submission.csv",
+        "size_bytes": 447562511,
+        "mtime_utc": "2026-09-06T06:57:57.756042+00:00",
+        "sha256": null,
+        "note": "file exceeds 52428800 byte hashing limit; size + mtime recorded instead of a full checksum"
+      },
+      {
+        "path": "ashrae-energy-prediction/test.csv",
+        "size_bytes": 1462461085,
+        "mtime_utc": "2026-09-06T06:58:03.545350+00:00",
+        "sha256": null,
+        "note": "file exceeds 52428800 byte hashing limit; size + mtime recorded instead of a full checksum"
+      },
+      {
+        "path": "ashrae-energy-prediction/train.csv",
+        "size_bytes": 678616640,
+        "mtime_utc": "2026-09-06T06:58:07.014727+00:00",
+        "sha256": null,
+        "note": "file exceeds 52428800 byte hashing limit; size + mtime recorded instead of a full checksum"
+      },
+      {
+        "path": "ashrae-energy-prediction/weather_test.csv",
+        "size_bytes": 14787908,
+        "mtime_utc": "2026-09-06T06:58:07.101376+00:00",
+        "sha256": "ba8021675ca99796e4bf9087793b955c84822a0cef24a15d7ecc7dc63dcd1423"
+      },
+      {
+        "path": "ashrae-energy-prediction/weather_train.csv",
+        "size_bytes": 7450075,
+        "mtime_utc": "2026-09-06T06:58:07.146905+00:00",
+        "sha256": "81022191f16dacc21494c15dac7975611cb39922fc7332e419a857cbb00cc125"
+      }
+    ]
+  }
+}

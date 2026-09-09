@@ -1,0 +1,7 @@
+{
+  "alpha": 0.5,
+  "beta": 0.3,
+  "gamma": 0.2,
+  "seed": null,
+  "patent_objective": "J = alpha*W + beta*E + gamma*C"
+}

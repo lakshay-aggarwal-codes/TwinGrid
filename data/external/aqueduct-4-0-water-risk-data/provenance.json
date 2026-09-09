@@ -1,0 +1,48 @@
+{
+  "source_slug": "aqueduct-4-0-water-risk-data",
+  "original_path": "realData/aqueduct-4-0-water-risk-data",
+  "scanned_at_utc": "2026-09-09T10:18:44.098026+00:00",
+  "metadata": {
+    "display_name": "WRI Aqueduct Water Risk Atlas (v4.0)",
+    "source_url": "https://www.wri.org/applications/aqueduct/water-risk-atlas/",
+    "license": "Open data, WRI Aqueduct terms of use",
+    "citation": "World Resources Institute, Aqueduct 4.0 Water Risk Atlas, 2023",
+    "used_for": "Water stress index driving drought-aware cooling-mode arbitration (patent Claim 8, Phase 4)"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 4,
+    "total_size_bytes": 260454884,
+    "extensions": [
+      ".csv",
+      ".xlsx"
+    ],
+    "files": [
+      {
+        "path": "aqueduct-4-0-water-risk-data/Aqueduct40_waterrisk_download_Y2023M07D05/Aqueduct40_README.xlsx",
+        "size_bytes": 61712,
+        "mtime_utc": "2026-09-06T07:45:03.454899+00:00",
+        "sha256": "b786fc0c0eb34839830b36ec3840aaa2856c00a71c1c7f7177d16ea2892aa13b"
+      },
+      {
+        "path": "aqueduct-4-0-water-risk-data/Aqueduct40_waterrisk_download_Y2023M07D05/CVS/Aqueduct40_baseline_annual_y2023m07d05.csv",
+        "size_bytes": 202140225,
+        "mtime_utc": "2026-09-06T07:45:04.130194+00:00",
+        "sha256": null,
+        "note": "file exceeds 52428800 byte hashing limit; size + mtime recorded instead of a full checksum"
+      },
+      {
+        "path": "aqueduct-4-0-water-risk-data/Aqueduct40_waterrisk_download_Y2023M07D05/CVS/Aqueduct40_baseline_monthly_y2023m07d05.csv",
+        "size_bytes": 29243354,
+        "mtime_utc": "2026-09-06T07:45:04.271885+00:00",
+        "sha256": "2f6d695220f5e4ec0c5a326f1e93718af3434b693aea386b8260de72fa97abaf"
+      },
+      {
+        "path": "aqueduct-4-0-water-risk-data/Aqueduct40_waterrisk_download_Y2023M07D05/CVS/Aqueduct40_future_annual_y2023m07d05.csv",
+        "size_bytes": 29009593,
+        "mtime_utc": "2026-09-06T07:45:04.413943+00:00",
+        "sha256": "22145cec96b2088e3d54f6a12d3b2bcc885a43e69f5b7170bbf42ee9bb0653ce"
+      }
+    ]
+  }
+}

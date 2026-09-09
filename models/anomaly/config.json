@@ -1,0 +1,12 @@
+{
+  "threshold": 0.006279157940298319,
+  "seq_len": 12,
+  "feature_columns": [
+    "water_flow_lpm",
+    "water_pressure_bar",
+    "server_outlet_temp_C",
+    "it_power_kw",
+    "humidity_pct"
+  ],
+  "percentile": 95.0
+}

@@ -1,0 +1,148 @@
+# Production Configuration for Digital Twin Joint Optimizer
+# Patent: Joint minimisation of J = α·W + β·E + γ·C
+
+# Patent Objective Weights
+patent_objective:
+  alpha: 0.5      # Weight for W (WUE) in J = α·W + β·E + γ·C
+  beta: 0.3       # Weight for E (PUE-1) in J
+  gamma: 0.2      # Weight for C (cooling power) in J
+
+# Training Configuration
+training:
+  total_timesteps: 50000
+  n_envs: 4
+  learning_rate: 0.0003
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  verbose: 1
+  
+  # Retry configuration for numerical instability
+  max_retries: 3
+  retry_delay: 5  # seconds
+  retry_on_exceptions:
+    - "ValueError"
+    - "RuntimeError"
+    - "NumericalError"
+
+# Environment Configuration
+environment:
+  max_steps: 288  # 24 hours at 5-minute intervals
+  episode_length: 288
+  
+  # Physics constants
+  air_density: 1.2
+  specific_heat: 1005.0
+  interval_minutes: 5
+  max_it_power_kw: 500.0
+  idle_fraction: 0.4
+  airflow_m3_s: 8.0
+  
+  # Temperature constraints (ASHRAE)
+  inlet_temp_min: 18.0
+  inlet_temp_max: 27.0
+  outlet_temp_max: 45.0
+  
+  # Cooling mode parameters
+  cooling_modes:
+    free_air:
+      cop: 8.0
+      evaporation_rate: 0.0
+      effective_below_temp: 12.0
+    closed_loop:
+      cop: 4.5
+      evaporation_rate: 0.001
+    evaporative:
+      cop: 3.5
+      evaporation_rate: 0.03
+    hybrid:
+      cop: 4.0
+      evaporation_rate: 0.015
+
+# Observation Normalization Ranges
+observation_ranges:
+  hour: [0, 24]
+  utilisation: [0, 1]
+  outside_temp: [0, 40]
+  inlet_temp: [15, 30]
+  outlet_temp: [18, 50]
+  it_power: [0, 600]
+  wue: [0, 5]
+  pue: [1, 2.5]
+
+# Action Space Configuration
+action_space:
+  chilled_water_temp_range: [5.0, 15.0]  # Celsius
+  cooling_modes: [0, 1, 2, 3]  # Indices for modes
+  normalized: true  # Use [0,1] normalized actions
+
+# Safety and Validation
+validation:
+  # Input validation ranges
+  utilisation_range: [0.0, 1.0]
+  temperature_range: [-50.0, 100.0]
+  power_range: [0.0, 1000.0]
+  water_stress_range: [0.0, 1.0]
+  
+  # Safety thresholds
+  max_outlet_temp: 45.0
+  max_pue: 2.5
+  max_wue: 5.0
+  
+  # Data validation
+  min_data_points: 10
+  max_missing_ratio: 0.1
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "logs/optimizer.log"
+  max_file_size: 10485760  # 10MB
+  backup_count: 5
+  
+  # Progress logging
+  log_training_progress: true
+  log_episode_summary: true
+  log_safety_violations: true
+
+# Model Persistence
+persistence:
+  model_dir: "models/optimizer"
+  config_file: "config.json"
+  model_file: "ppo_model"
+  save_frequency: 1000  # Save every N timesteps
+  
+# Performance Optimization
+performance:
+  enable_jit: true
+  vectorized_env: true
+  parallel_training: true
+  memory_limit_mb: 1024
+
+# Scenario Testing
+scenarios:
+  normal:
+    water_stress: 0.0
+    description: "Normal water availability"
+  
+  drought:
+    water_stress: 0.8
+    description: "High water stress scenario"
+  
+  extreme_heat:
+    outside_temp_offset: 10.0
+    description: "Extreme temperature conditions"
+  
+  high_load:
+    utilisation_multiplier: 1.2
+    description: "High IT load scenario"
+
+# CLI Configuration
+cli:
+  default_command: "train"
+  output_format: "table"
+  progress_bar: true
+  save_results: true
+  results_dir: "results"

@@ -1,0 +1,28 @@
+{
+  "source_slug": "2026-09-06-electricity-maps-coverage-data.csv",
+  "original_path": "realData/2026-09-06-electricity-maps-coverage-data.csv",
+  "scanned_at_utc": "2026-09-09T10:18:44.080517+00:00",
+  "metadata": {
+    "display_name": "Electricity Maps",
+    "source_url": "https://api-portal.electricitymaps.com/",
+    "license": "Electricity Maps free-tier API terms",
+    "citation": "Electricity Maps \u2014 real-time and historical grid carbon intensity",
+    "used_for": "Feeds the gamma (carbon) term in the PPO reward function (Phase 7)"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 1,
+    "total_size_bytes": 532775,
+    "extensions": [
+      ".csv"
+    ],
+    "files": [
+      {
+        "path": "2026-09-06-electricity-maps-coverage-data.csv",
+        "size_bytes": 532775,
+        "mtime_utc": "2026-09-06T06:47:16.363523+00:00",
+        "sha256": "ba6e591b47beab3358a3f4fe102cba56ce9f81f640a92defdcf77545ef6a28cc"
+      }
+    ]
+  }
+}

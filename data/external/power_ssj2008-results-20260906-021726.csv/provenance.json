@@ -1,0 +1,28 @@
+{
+  "source_slug": "power_ssj2008-results-20260906-021726.csv",
+  "original_path": "realData/power_ssj2008-results-20260906-021726.csv",
+  "scanned_at_utc": "2026-09-09T10:18:44.690244+00:00",
+  "metadata": {
+    "display_name": "SPECpower_ssj2008 Results Database",
+    "source_url": "https://www.spec.org/power_ssj2008/results/",
+    "license": "SPEC published benchmark results, free for research/education use",
+    "citation": "Standard Performance Evaluation Corporation, SPECpower_ssj2008 results",
+    "used_for": "Calibrates the real (non-linear) IT-power-vs-utilisation curve (Phase 4)"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 1,
+    "total_size_bytes": 2006676,
+    "extensions": [
+      ".csv"
+    ],
+    "files": [
+      {
+        "path": "power_ssj2008-results-20260906-021726.csv",
+        "size_bytes": 2006676,
+        "mtime_utc": "2026-09-06T06:17:33.190837+00:00",
+        "sha256": "ef90f36523bd0e55551320f64ca596386e6eb375cf53e8963888649fb61afbc7"
+      }
+    ]
+  }
+}

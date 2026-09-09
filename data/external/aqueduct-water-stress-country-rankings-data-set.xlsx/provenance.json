@@ -1,0 +1,28 @@
+{
+  "source_slug": "aqueduct-water-stress-country-rankings-data-set.xlsx",
+  "original_path": "realData/aqueduct-water-stress-country-rankings-data-set.xlsx",
+  "scanned_at_utc": "2026-09-09T10:18:44.149056+00:00",
+  "metadata": {
+    "display_name": "WRI Aqueduct Water Risk Atlas (v4.0)",
+    "source_url": "https://www.wri.org/applications/aqueduct/water-risk-atlas/",
+    "license": "Open data, WRI Aqueduct terms of use",
+    "citation": "World Resources Institute, Aqueduct 4.0 Water Risk Atlas, 2023",
+    "used_for": "Water stress index driving drought-aware cooling-mode arbitration (patent Claim 8, Phase 4)"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 1,
+    "total_size_bytes": 138683,
+    "extensions": [
+      ".xlsx"
+    ],
+    "files": [
+      {
+        "path": "aqueduct-water-stress-country-rankings-data-set.xlsx",
+        "size_bytes": 138683,
+        "mtime_utc": "2026-09-06T07:34:46.957999+00:00",
+        "sha256": "5dce4aec94032343fd6b505c2c2bc21eb016d9d2783cc608198fe81a19ff3157"
+      }
+    ]
+  }
+}

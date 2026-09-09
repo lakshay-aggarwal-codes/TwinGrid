@@ -1,0 +1,92 @@
+{
+  "source_slug": "cluster-data-master",
+  "original_path": "realData/cluster-data-master",
+  "scanned_at_utc": "2026-09-09T10:18:44.430403+00:00",
+  "metadata": {
+    "display_name": "Alibaba Cluster Trace",
+    "source_url": "https://github.com/alibaba/clusterdata",
+    "license": "Repository license \u2014 see clusterdata-master/LICENSE",
+    "citation": "Alibaba Cluster Trace Program, cluster-trace-gpu-v2020",
+    "used_for": "Real server_utilisation driver, replacing the synthetic diurnal curve (Phase 4)"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 11,
+    "total_size_bytes": 295450,
+    "extensions": [
+      ".bib",
+      ".ipynb",
+      ".md",
+      ".pdf",
+      ".proto"
+    ],
+    "files": [
+      {
+        "path": "cluster-data-master/bibliography.bib",
+        "size_bytes": 121647,
+        "mtime_utc": "2026-09-06T06:57:34.568608+00:00",
+        "sha256": "7afd8f20dd03b3b5dd71bdcb769f6ddcb359114b8377e4d0120206be2ccb8e45"
+      },
+      {
+        "path": "cluster-data-master/ClusterData2011_2.md",
+        "size_bytes": 4146,
+        "mtime_utc": "2026-09-06T06:57:34.534655+00:00",
+        "sha256": "e189e6d6716603855707238eab489f54163620310f46683ff521a5c1922050a1"
+      },
+      {
+        "path": "cluster-data-master/ClusterData2019.md",
+        "size_bytes": 2323,
+        "mtime_utc": "2026-09-06T06:57:34.540055+00:00",
+        "sha256": "6209413ba5dc94e45b9dda811871b7eab406980aab5279466fa9eb48578ff6e3"
+      },
+      {
+        "path": "cluster-data-master/clusterdata_analysis_colab.ipynb",
+        "size_bytes": 16562,
+        "mtime_utc": "2026-09-06T06:57:34.575609+00:00",
+        "sha256": "47fe2b6191ed85afc6d3d6143b194fb4419b987a99852942d411cbcfd5d5eaef"
+      },
+      {
+        "path": "cluster-data-master/clusterdata_trace_format_v3.proto",
+        "size_bytes": 13720,
+        "mtime_utc": "2026-09-06T06:57:34.580610+00:00",
+        "sha256": "8082651c5430acaef31846287a3e1262e734f9fa6a5067fa431864aef840abde"
+      },
+      {
+        "path": "cluster-data-master/ETAExplorationTraces.md",
+        "size_bytes": 3747,
+        "mtime_utc": "2026-09-06T06:57:34.547130+00:00",
+        "sha256": "436cbef5bd2ee1c42d74373acddc90fd4c6d6527ef0d4956b2ba0dd913847ea8"
+      },
+      {
+        "path": "cluster-data-master/PowerData2019.md",
+        "size_bytes": 1843,
+        "mtime_utc": "2026-09-06T06:57:34.551602+00:00",
+        "sha256": "a00c9d4cd97171b3bbee8641028a3b719a1ff4daad95d69b2a659df54fd2cd49"
+      },
+      {
+        "path": "cluster-data-master/power_trace_analysis_colab.ipynb",
+        "size_bytes": 22366,
+        "mtime_utc": "2026-09-06T06:57:34.586609+00:00",
+        "sha256": "437d63229469d8525ffbf6e57603cd1667502a2a3f6beadc7f3d05e34c1dccc2"
+      },
+      {
+        "path": "cluster-data-master/power_trace_documentation.pdf",
+        "size_bytes": 103720,
+        "mtime_utc": "2026-09-06T06:57:34.591609+00:00",
+        "sha256": "06011d9dd34b7649944f092b2b15fdd83976a6be3d7e358c128ef49666f90743"
+      },
+      {
+        "path": "cluster-data-master/README.md",
+        "size_bytes": 2929,
+        "mtime_utc": "2026-09-06T06:57:34.556602+00:00",
+        "sha256": "1ef3b7398afe40b859d8a868f2574c524f163932d08c33463e1d440aaf2461be"
+      },
+      {
+        "path": "cluster-data-master/TraceVersion1.md",
+        "size_bytes": 2447,
+        "mtime_utc": "2026-09-06T06:57:34.561607+00:00",
+        "sha256": "1859dfcb0305ff92421ee0408266e888913538aeee6eefccc1e239169e14291d"
+      }
+    ]
+  }
+}

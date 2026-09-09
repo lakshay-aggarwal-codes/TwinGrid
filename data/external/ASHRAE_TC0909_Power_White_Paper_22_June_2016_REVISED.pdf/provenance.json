@@ -1,0 +1,28 @@
+{
+  "source_slug": "ASHRAE_TC0909_Power_White_Paper_22_June_2016_REVISED.pdf",
+  "original_path": "realData/ASHRAE_TC0909_Power_White_Paper_22_June_2016_REVISED.pdf",
+  "scanned_at_utc": "2026-09-09T10:18:44.425394+00:00",
+  "metadata": {
+    "display_name": "ASHRAE TC 9.9 Power Trends White Paper",
+    "source_url": "https://www.ashrae.org/",
+    "license": "ASHRAE published white paper",
+    "citation": "ASHRAE TC 9.9, Power Trends White Paper, revised 22 June 2016",
+    "used_for": "Reference values for IT-power trend validation"
+  },
+  "metadata_is_placeholder": false,
+  "scan": {
+    "file_count": 1,
+    "total_size_bytes": 2212074,
+    "extensions": [
+      ".pdf"
+    ],
+    "files": [
+      {
+        "path": "ASHRAE_TC0909_Power_White_Paper_22_June_2016_REVISED.pdf",
+        "size_bytes": 2212074,
+        "mtime_utc": "2026-09-06T06:20:38.103409+00:00",
+        "sha256": "0518d9e73bfc4f55547ef6b1d291c2f9b55895c5844f0d463a96b2dcac813b3a"
+      }
+    ]
+  }
+}
