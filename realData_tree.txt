@@ -1,0 +1,261 @@
+﻿
+FullName                                                                                                                                       
+--------                                                                                                                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-country-rankings                                                   
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-water-risk-data                                                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043                                                                  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ashrae-energy-prediction                                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master                                                             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master                                                              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData                                                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\electricity_maps                                                                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master                                                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo                                                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\2026-09-06-electricity-maps-coverage-data.csv                                   
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-water-stress-country-rankings-data-set.xlsx                            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE_TC0909_Power_White_Paper_22_June_2016_REVISED.pdf                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\power_ssj2008-results-20260906-021726.csv                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-country-rankings\Aqueduct40_rankings_download_Y2023M07D05          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-country-rankings\Aqueduct40_rankings_download_Y2023M07D05\Aquedu...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-water-risk-data\Aqueduct40_waterrisk_download_Y2023M07D05          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-water-risk-data\Aqueduct40_waterrisk_download_Y2023M07D05\CVS      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-water-risk-data\Aqueduct40_waterrisk_download_Y2023M07D05\GDB      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-water-risk-data\Aqueduct40_waterrisk_download_Y2023M07D05\Aquedu...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-water-risk-data\Aqueduct40_waterrisk_download_Y2023M07D05\CVS\Aq...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-water-risk-data\Aqueduct40_waterrisk_download_Y2023M07D05\CVS\Aq...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\aqueduct-4-0-water-risk-data\Aqueduct40_waterrisk_download_Y2023M07D05\CVS\Aq...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data                                                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests                                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Condenser fouling                                   
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Defective Pilot Valve                               
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Excess oil                                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Multiple faults                                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Non-condensables in refrigerant                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced condenser water flow                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced evaporator water flow                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant leak                                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant overcharge                              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\11000.xlsx                                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\read me first.xls                                   
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\near normal1.xls                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\near normal2.xls                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\near normal3.xls                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal b.xls                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal cf.xls                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal cf2.xls                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal cf3.xls                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal cf4.xls                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal cf5.xls                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal cf6.xls                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal dpv.xls                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal eo.xls                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal nc.xls                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal r.xls                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal r1.xls                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal.xls                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal1.xls                         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Benchmark Tests\normal2.xls                         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Condenser fouling\cf12.xls                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Condenser fouling\cf20.xls                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Condenser fouling\cf30.xls                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Condenser fouling\cf45.xls                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Condenser fouling\cf6.xls                           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Defective Pilot Valve\defective pilot valve.xls     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Excess oil\aborted eo86.xls                         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Excess oil\eo14.xls                                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Excess oil\eo32.xls                                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Excess oil\eo50.xls                                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Excess oil\eo68--unsteady test1.xls                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Excess oil\eo73 alt--unsteady test1.xls             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Multiple faults\fwe20fwc20.xls                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Non-condensables in refrigerant\aborted nc.xls      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Non-condensables in refrigerant\modified nc.xls     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Non-condensables in refrigerant\nc trace.xls        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Non-condensables in refrigerant\nc trace2.xls       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Non-condensables in refrigerant\nc1.xls             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Non-condensables in refrigerant\nc2.xls             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Non-condensables in refrigerant\nc3.xls             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Non-condensables in refrigerant\nc5.xls             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced condenser water flow\fwc10.xls              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced condenser water flow\fwc20 alt.xls          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced condenser water flow\fwc20.xls              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced condenser water flow\fwc30.xls              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced condenser water flow\fwc40.xls              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced evaporator water flow\fwe10.xls             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced evaporator water flow\fwe20 alt--unsteady...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced evaporator water flow\fwe20.xls             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced evaporator water flow\fwe30.xls             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced evaporator water flow\fwe40 alt--unsteady...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Reduced evaporator water flow\fwe40.xls             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant leak\rl10.xls                           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant leak\rl20.xls                           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant leak\rl30.xls                           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant leak\rl40 alt--many unsteady tests.xls  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant leak\rl40.xls                           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant overcharge\ro10.xls                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant overcharge\ro20.xls                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant overcharge\ro30.xls                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ASHRAE RP-1043\Chiller Data\Refrigerant overcharge\ro40.xls                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ashrae-energy-prediction\building_metadata.csv                                  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ashrae-energy-prediction\sample_submission.csv                                  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ashrae-energy-prediction\test.csv                                               
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ashrae-energy-prediction\train.csv                                              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ashrae-energy-prediction\weather_test.csv                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\ashrae-energy-prediction\weather_train.csv                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\bibliography.bib                                            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\ClusterData2011_2.md                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\ClusterData2019.md                                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\clusterdata_analysis_colab.ipynb                            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\clusterdata_trace_format_v3.proto                           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\ETAExplorationTraces.md                                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\PowerData2019.md                                            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\power_trace_analysis_colab.ipynb                            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\power_trace_documentation.pdf                               
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\README.md                                                   
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\cluster-data-master\TraceVersion1.md                                            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\.DS_Store                                                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\README.md                                                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\analysis                             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data                                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures                              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator                            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\LICENSE                              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\README.md                            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\analysis\analysis.ipynb              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\analysis\philly_runtime.csv          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\analysis\utils.py                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data\download_data.sh                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data\pai_group_tag_table.header      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data\pai_instance_table.header       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data\pai_job_table.header            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data\pai_machine_metric.header       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data\pai_machine_spec.header         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data\pai_sensor_table.header         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data\pai_task_table.header           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\data\README.md                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures\analysis-01.png              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures\analysis-02.png              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures\analysis-03.png              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures\analysis-04.png              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures\analysis-05.png              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures\analysis-06.png              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures\analysis-07.png              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures\analysis.png                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\figures\pai-overview.png             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\data                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\figures              
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\README.md            
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\data\coefficient_v...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\data\job_1_norm.csv  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\data\job_2_norm.csv  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\data\job_3_norm.csv  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\data\job_4_norm.csv  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\figures\cov.png      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\figures\job1.png     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\figures\job2.png     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\figures\job3.png     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\mini-batch-time\figures\job4.png     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\logs                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\traces                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\.gitignore                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\cluster.py                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\job_history.py             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\node.py                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\README.md                  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\requirements.txt           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\run_simulator.py           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\run_simulator_fifo.py      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\scheduler.py               
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\simulator.py               
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\utils.py                   
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\__init__.py                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\logs\0228-pai_job_durati...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\traces\pai                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\traces\pai\pai_job_durat...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\clusterdata-master\cluster-trace-gpu-v2020\simulator\traces\pai\pai_job_no_es...
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\Damage Propagation Modeling.pdf                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\readme.txt                                                           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\RUL_FD001.txt                                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\RUL_FD002.txt                                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\RUL_FD003.txt                                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\RUL_FD004.txt                                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\test_FD001.txt                                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\test_FD002.txt                                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\test_FD003.txt                                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\test_FD004.txt                                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\train_FD001.txt                                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\train_FD002.txt                                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\train_FD003.txt                                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\CMAPSSData\train_FD004.txt                                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\electricity_maps\download_carbon.py                                             
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\electricity_maps\HISTORICAL_ENDPOINT.py                                         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\electricity_maps\india.py                                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data                                                                 
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels                                                               
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch                                               
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realKnownCause                                                  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_cpu_utilization_24ae8d.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_cpu_utilization_53ea38.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_cpu_utilization_5f5533.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_cpu_utilization_77c1ca.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_cpu_utilization_825cc2.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_cpu_utilization_ac20cd.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_cpu_utilization_c6585a.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_cpu_utilization_fe7f93.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_disk_write_bytes_1ef3de.csv               
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_disk_write_bytes_c0d644.csv               
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_network_in_257a54.csv                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\ec2_network_in_5abac7.csv                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\elb_request_count_8c0756.csv                  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\grok_asg_anomaly.csv                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\iio_us-east-1_i-a2eb1cd9_NetworkIn.csv        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\rds_cpu_utilization_cc0c53.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realAWSCloudwatch\rds_cpu_utilization_e47b3b.csv                
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realKnownCause\ambient_temperature_system_failure.csv           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realKnownCause\cpu_utilization_asg_misconfiguration.csv         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realKnownCause\ec2_request_latency_system_failure.csv           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realKnownCause\machine_temperature_system_failure.csv           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realKnownCause\nyc_taxi.csv                                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realKnownCause\rogue_agent_key_hold.csv                         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\data\realKnownCause\rogue_agent_key_updown.csv                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\raw                                                           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\combined_labels.json                                          
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\combined_windows.json                                         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\combined_windows_tiny.json                                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\raw\AL_labels_v0.8.json                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\raw\AL_labels_v1.0.json                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\raw\CB_labels_v0.8.json                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\raw\CB_labels_v1.0.json                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\raw\known_labels_v1.0.json                                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\raw\SA_labels_v0.8.json                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\NAB-master\labels\raw\SA_labels_v1.0.json                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\ahmedabad_weather_2025_hourly.csv                                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\bengaluru_weather_2025_hourly.csv                                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\bhopal_weather_2025_hourly.csv                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\bhubaneswar_weather_2025_hourly.csv                                  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\chandigarh_weather_2025_hourly.csv                                   
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\chennai_weather_2025_hourly.csv                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\coimbatore_weather_2025_hourly.csv                                   
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\dehradun_weather_2025_hourly.csv                                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\delhi_weather_2025_hourly.csv                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\download_weather.py                                                  
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\guwahati_weather_2025_hourly.csv                                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\hyderabad_weather_2025_hourly.csv                                    
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\indore_weather_2025_hourly.csv                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\jaipur_weather_2025_hourly.csv                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\kanpur_weather_2025_hourly.csv                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\kochi_weather_2025_hourly.csv                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\kolkata_weather_2025_hourly.csv                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\lucknow_weather_2025_hourly.csv                                      
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\ludhiana_weather_2025_hourly.csv                                     
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\mumbai_weather_2025_hourly.csv                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\nagpur_weather_2025_hourly.csv                                       
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\patna_weather_2025_hourly.csv                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\pune_weather_2025_hourly.csv                                         
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\surat_weather_2025_hourly.csv                                        
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\thiruvananthapuram_weather_2025_hourly.csv                           
+C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\realData\open_meteo\visakhapatnam_weather_2025_hourly.csv                                
+
+
