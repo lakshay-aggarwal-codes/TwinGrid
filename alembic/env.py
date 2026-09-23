@@ -28,9 +28,7 @@ database_url = os.getenv(
 sync_url = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
 config.set_main_option("sqlalchemy.url", sync_url)
 
-section = config.get_section(config.config_ini_section) or {}
-section["sqlalchemy.url"] = database_url
-config.set_section(config.config_ini_section, section)
+config.set_section_option(config.config_ini_section, "sqlalchemy.url", database_url)
 
 from models.db_models import Base
 target_metadata = Base.metadata
