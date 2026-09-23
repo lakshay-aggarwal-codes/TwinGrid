@@ -40,6 +40,7 @@ ENV PATH="/venv/bin:$PATH" \
 # image), the local venv, tests, docs, and the two abandoned frontends.
 COPY --chown=appuser:appuser . .
 
+RUN mkdir -p /app/logs && chown appuser:appuser /app/logs
 USER appuser
 EXPOSE 8000
 
