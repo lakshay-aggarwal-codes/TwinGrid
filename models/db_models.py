@@ -1,13 +1,7 @@
-"""
-SQLAlchemy ORM models for Digital Twin persistence.
-
-Tables: User, SensorReading, SimulationRun, OptimizationResult, Alert.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, Boolean, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -26,7 +20,7 @@ USER_ROLE_OPERATOR = "operator"
 
 class User(Base):
     """
-    User account for JWT auth. Roles: viewer (read-only), operator (can adjust controls).
+    User account for JWT auth. Roles: viewer (read-only, operator (can adjust controls).
     """
 
     __tablename__ = "users"
@@ -76,13 +70,13 @@ class SensorReading(Base):
     anomaly: Mapped[int] = mapped_column(Integer, default=0)
 
     # Optional: link to simulation or optimization run
-    simulation_run_id: Mapped[int | None] = mapped_column(ForeignKey("simulation_runs.id"), nullable=True, index=True)
-    optimization_result_id: Mapped[int | None] = mapped_column(
+    simulation_run_id: Mapped[Optional[int]] = mapped_column(ForeignKey("simulation_runs.id"), nullable=True, index=True)
+    optimization_result_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("optimization_results.id"), nullable=True, index=True
     )
 
-    simulation_run: Mapped["SimulationRun | None"] = relationship("SimulationRun", back_populates="readings")
-    optimization_result: Mapped["OptimizationResult | None"] = relationship(
+    simulation_run: Mapped[Optional["SimulationRun"]] = relationship("SimulationRun", back_populates="readings")
+    optimization_result: Mapped[Optional["OptimizationResult"]] = relationship(
         "OptimizationResult", back_populates="readings"
     )
 
@@ -165,7 +159,7 @@ class SimulationRun(Base):
     stress: Mapped[float] = mapped_column(Float, nullable=False)
 
     # Optional: store full result as JSON for quick retrieval
-    result_snapshot: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    result_snapshot: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(JSON, nullable=True)
 
     readings: Mapped[list["SensorReading"]] = relationship(
         "SensorReading", back_populates="simulation_run", cascade="all, delete-orphan"
@@ -219,7 +213,8 @@ class Alert(Base):
     alert: Mapped[bool] = mapped_column(Boolean, nullable=False)
     type: Mapped[str] = mapped_column(String(64), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
-    severity: Mapped[str | None] = mapped_column(String(16), nullable=True)  # INFO | WARNING | CRITICAL
+    severity: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)  # INFO | WARNING | CRITICAL
 
     # Optional link to sensor reading that triggered the alert
-    sensor_reading_id: Mapped[int | None] = mapped_column(ForeignKey("sensor_readings.id"), nullable=True)
+    sensor_reading_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sensor_readings.id"), nullable=True)
+
