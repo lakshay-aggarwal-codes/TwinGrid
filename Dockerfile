@@ -32,6 +32,7 @@ WORKDIR /app
 
 COPY --from=builder /root/.local /home/appuser/.local
 ENV PATH=/home/appuser/.local/bin:$PATH \
+    HOME=/home/appuser \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
