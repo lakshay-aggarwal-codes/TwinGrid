@@ -13,7 +13,9 @@ and cooling load while maintaining thermal safety constraints.
 """
 
 from __future__ import annotations
+from datetime import datetime, timedelta
 from .carbon_provider import load_diurnal_carbon_intensity
+from .digital_twin import DigitalTwin, CoolingMode, OUTLET_TEMP_MAX
 import json
 import logging
 from pathlib import Path
@@ -32,7 +34,7 @@ _sb3 = None
 
 
 def _get_sb3():
-    global _sb3python -c "from stable_baselines3.common.vec_env import DummyVecEnv; print('SB3 OK')"
+    global _sb3
     if _sb3 is None:
         try:
             from stable_baselines3 import PPO
@@ -50,28 +52,34 @@ def _get_sb3():
 # 0=free_air, 1=closed_loop, 2=evaporative, 3=hybrid
 # -----------------------------------------------------------------------------
 COOLING_MODES = ["free_air", "closed_loop", "evaporative", "hybrid"]
-COP = {"free_air": 8.0, "closed_loop": 4.5, "evaporative": 3.5, "hybrid": 4.0}
-EVAP_RATE = {"free_air": 0.0, "closed_loop": 0.001, "evaporative": 0.03, "hybrid": 0.015}
 
-# Physics constants
-AIR_DENSITY = 1.2
-SPECIFIC_HEAT = 1005.0
+# NOTE: no per-mode COP/evaporation-rate dicts and no thermal/water constants
+# here anymore. All physics (COP, water, thermal lag) now runs through the
+# single authoritative src/digital_twin.py DigitalTwin -- see
+# DataCentreEnv._step_physics(). This file only configures that twin and
+# converts between its DataCentreState and this environment's obs/action.
 INTERVAL_MIN = 5
 MAX_IT_POWER_KW = 500.0
 IDLE_FRAC = 0.4
 AIRFLOW_M3_S = 8.0
-INLET_MIN, INLET_MAX = 18.0, 27.0
-OUTLET_MAX = 45.0
+OUTLET_MAX = OUTLET_TEMP_MAX  # re-exported from digital_twin, not a second copy
 EPISODE_STEPS = 288  # 24 hours at 5-min intervals
 DROUGHT_THRESHOLD = 0.7
 DROUGHT_OVERRIDE_MODE = "closed_loop" 
 
-# Observation normalisation ranges
+# Observation normalisation ranges.
+# inlet_temp widened from the old (15, 30) -- that range was tuned for the
+# previous _get_inlet_temp(), which always blended-and-clipped into
+# [INLET_MIN, INLET_MAX]=[18,27]. DigitalTwin deliberately applies no such
+# clamp (is_safe() must be able to see genuinely unsafe states), and the
+# action space's chilled-water setpoint (5-15C) plus the +2C approach means
+# achieved inlet can legitimately sit well below 15C, especially right
+# after reset/a setpoint change before thermal lag catches up.
 OBS_RANGES = {
     "hour": (0, 24),
     "utilisation": (0, 1),
     "outside_temp": (0, 40),
-    "inlet_temp": (15, 30),
+    "inlet_temp": (5, 35),
     "outlet_temp": (18, 50),
     "it_power": (0, 600),
     "wue": (0, 5),
@@ -81,7 +89,11 @@ OBS_RANGES = {
 
 
 def _normalise(val: float, lo: float, hi: float) -> float:
-    return (val - lo) / (hi - lo) if hi > lo else 0.0
+    """Normalise into [0,1], clipped -- keeps the declared observation_space
+    bounds (Box(0,1)) genuinely honoured even for a rare out-of-range
+    physical value, rather than silently leaking values outside it."""
+    frac = (val - lo) / (hi - lo) if hi > lo else 0.0
+    return float(np.clip(frac, 0.0, 1.0))
 
 
 def _denormalise(val: float, lo: float, hi: float) -> float:
@@ -164,61 +176,50 @@ class DataCentreEnv(gym.Env):
         self._step_count = 0
         self._state: dict[str, float] = {}
         self._rng = np.random.default_rng(seed)
+        self._twin: DigitalTwin | None = None  # created fresh each reset()
 
     def _compute_utilisation(self, hour: float) -> float:
-        """Daily load pattern."""
+        """Daily load pattern (workload profile, not physics -- feeds the
+        twin's `utilisation` action input, doesn't duplicate anything in
+        DigitalTwin)."""
         u = 0.4 + 0.5 * np.sin((hour - 6) * np.pi / 12)
         return float(np.clip(u, 0, 1))
 
     def _compute_outside_temp(self, hour: float) -> float:
-        """Ambient temperature cycle."""
+        """Ambient temperature cycle (environment profile, not physics --
+        feeds the twin's `outside_temp_C` action input)."""
         return 22 + 5 * np.sin(2 * np.pi * (hour - 14) / 24) + self._rng.normal(0, 1)
-
-    def _compute_it_power(self, utilisation: float) -> float:
-        idle = IDLE_FRAC * MAX_IT_POWER_KW
-        return idle + (1 - IDLE_FRAC) * utilisation * MAX_IT_POWER_KW
-
-    def _compute_outlet_temp(self, inlet: float, it_power: float) -> float:
-        if it_power <= 0:
-            return inlet
-        heat_w = it_power * 1000
-        delta_t = heat_w / (AIR_DENSITY * AIRFLOW_M3_S * SPECIFIC_HEAT)
-        return inlet + delta_t
-
-    def _compute_cooling_power(self, it_power: float, mode: str, outside: float) -> float:
-        cop = COP[mode]
-        if mode == "free_air" and outside >= 12:
-            cop = COP["hybrid"]
-        return it_power / cop if cop > 0 else 0.0
-
-    def _compute_water_consumed(
-        self, cooling_power: float, mode: str, outside: float
-    ) -> float:
-        if mode == "free_air" or EVAP_RATE[mode] <= 0:
-            return 0.0
-        evap = EVAP_RATE[mode]
-        temp_factor = 1.0 + 0.02 * max(0, outside - 15)
-        consumed = cooling_power * 0.5 * evap * 10 * temp_factor
-        return max(0, consumed)
-
-    def _get_inlet_temp(self, chilled_water: float, outside: float) -> float:
-        """Inlet temp from chilled water setpoint and ambient."""
-        target = chilled_water + 3.0
-        blended = 0.6 * target + 0.4 * (outside - 3)
-        return float(np.clip(blended, INLET_MIN, INLET_MAX))
 
     def _step_physics(
         self,
-        hour: float,
         chilled_water: float,
         mode: str,
     ) -> dict[str, float]:
-        """Compute one 5-min step. Uses PINN for outlet/water/PUE when provided (patent core)."""
+        """
+        Compute one 5-min step by delegating ALL physics to the canonical
+        DigitalTwin (src/digital_twin.py) -- this method no longer computes
+        IT power, inlet/outlet temperature, COP/cooling power, or water
+        consumption itself. Uses the PINN for outlet/water/PUE when
+        provided (patent core, optional non-authoritative override) --
+        the twin still runs either way, since it also owns actuator state
+        (chilled-water rate limiting) and carbon accounting.
+        """
+        hour = self._twin._time.hour + self._twin._time.minute / 60.0
         util = self._compute_utilisation(hour)
         outside = self._compute_outside_temp(hour)
-        it_power = self._compute_it_power(util)
-        inlet = self._get_inlet_temp(chilled_water, outside)
-        cooling = self._compute_cooling_power(it_power, mode, outside)
+
+        action = {
+            "utilisation": util,
+            "outside_temp_C": outside,
+            "cooling_mode": mode,
+            "chilled_water_temp_C": chilled_water,
+            "water_stress": self._water_stress,
+        }
+        state = self._twin.step(action)
+
+        it_power = state.it_power_kw
+        cooling = state.cooling_power_kw
+        inlet = state.server_inlet_temp_C
 
         if self._pinn is not None:
             from src.pinn import encode_cooling_mode
@@ -232,16 +233,17 @@ class DataCentreEnv(gym.Env):
             outlet = float(pred[0, 0])
             water_consumed = float(pred[0, 1])
             pue = float(pred[0, 2])
+            it_energy_kwh = it_power * (INTERVAL_MIN / 60)
+            wue = water_consumed / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
         else:
-            outlet = self._compute_outlet_temp(inlet, it_power)
-            water_consumed = self._compute_water_consumed(cooling, mode, outside)
-            total = it_power + cooling
-            pue = total / it_power if it_power > 0.1 else 1.0
-
-        it_energy_kwh = it_power * (INTERVAL_MIN / 60)
-        wue = water_consumed / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
-        carbon_intensity = float(self._carbon_intensity_by_hour[int(hour) % 24])
-        carbon_gco2 = cooling * carbon_intensity * (INTERVAL_MIN / 60)
+            outlet = state.server_outlet_temp_C
+            # DataCentreState.water_consumed_L is CUMULATIVE; this dict's
+            # "water_consumed" is per-step, matching the original contract
+            # here -- derive it from the twin's per-step flow, not its
+            # running total.
+            water_consumed = state.water_flow_lpm * INTERVAL_MIN
+            pue = state.pue
+            wue = state.wue
 
         return {
             "hour": hour,
@@ -254,10 +256,10 @@ class DataCentreEnv(gym.Env):
             "water_consumed": water_consumed,
             "pue": pue,
             "wue": wue,
-            "carbon_intensity_gco2_per_kwh": carbon_intensity,
-            "carbon_gco2": carbon_gco2,
+            "carbon_intensity_gco2_per_kwh": state.carbon_intensity_gco2_per_kwh,
+            "carbon_gco2": state.carbon_gco2,
             "water_stress": self._water_stress,
-            "drought_override_active": self._water_stress > DROUGHT_THRESHOLD,
+            "drought_override_active": state.drought_override_active,
         }
 
     def _get_obs(self) -> np.ndarray:
@@ -295,8 +297,31 @@ class DataCentreEnv(gym.Env):
         if seed is not None:
             self._rng = np.random.default_rng(seed)
         self._step_count = 0
-        hour = self._rng.uniform(0, 24)
-        self._state = self._step_physics(hour, chilled_water=10.0, mode="closed_loop")
+        hour = float(self._rng.uniform(0, 24))
+
+        # Fresh DigitalTwin per episode, starting at the sampled hour-of-day
+        # (only .hour/.minute are read from this synthetic date -- the twin
+        # otherwise just needs a real datetime to carry).
+        self._twin = DigitalTwin(
+            max_it_power_kw=MAX_IT_POWER_KW,
+            idle_power_fraction=IDLE_FRAC,
+            air_flow_m3_s=AIRFLOW_M3_S,
+            initial_cooling_mode=CoolingMode.CLOSED_LOOP,
+            initial_chilled_water_temp_C=10.0,
+            start_time=datetime(2000, 1, 1) + timedelta(hours=hour),
+        )
+        # Reuse this env's already-loaded carbon curve (same one passed to
+        # JointOptimizer/DataCentreEnv at construction) rather than letting
+        # the twin independently reload data/cleaned/carbon_intensity.csv --
+        # keeps a single carbon source per training run instead of two
+        # potentially-different copies of the same file.
+        self._twin._carbon_intensity_by_hour = self._carbon_intensity_by_hour
+
+        # NOTE: this first state is ~5 minutes after the sampled `hour`
+        # (one twin.step() inside _step_physics), not exactly at it --
+        # documented, minor, and avoids a second "peek without stepping"
+        # code path just to shave off one interval.
+        self._state = self._step_physics(chilled_water=10.0, mode="closed_loop")
         obs = self._get_obs()
         return obs.astype(np.float32), {}
 
@@ -305,8 +330,7 @@ class DataCentreEnv(gym.Env):
         action: np.ndarray,
     ) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
         chilled, mode = self._action_to_control(action)
-        hour = (self._state["hour"] + INTERVAL_MIN / 60) % 24
-        self._state = self._step_physics(hour, chilled, mode)
+        self._state = self._step_physics(chilled, mode)
 
         # =====================================================================
         # PATENT CORE: Reward = -J = -(α·W + β·E + γ·C)

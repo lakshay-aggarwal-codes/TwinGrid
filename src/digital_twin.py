@@ -6,28 +6,32 @@ water consumption, and rule-based control. Supports an optional Physics-Informed
 Neural Network (PINN) for surrogate prediction — patent core combined with the
 joint optimizer (J = α·W + β·E + γ·C).
 
-PERFORMANCE NOTE: This module now uses the optimized implementation for
-real-time dashboard performance. The original implementation is available
-as DigitalTwinOriginal if needed for compatibility testing.
+DYNAMIC PHYSICS: thermal state has memory (first-order lag toward a
+steady-state target using a thermal time constant), and the chilled-water
+actuator is rate-limited. There is a deterministic requested->applied
+control pipeline that runs BEFORE physics, so the mode/temperature actually
+used for computation is always the same one reported back in the state.
 """
 
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable
+
+import numpy as np
+import pandas as pd
+
 from .carbon_provider import load_diurnal_carbon_intensity
+from .logging_config import log_function_entry, log_function_exit, log_error, log_simulation_step
 
 # Matches DataCentreEnv.DROUGHT_THRESHOLD (src/optimizer.py) exactly --
 # both files enforce the same patent Claim 3 rule.
 DROUGHT_THRESHOLD = 0.7
-import numpy as np
-import pandas as pd
-
-from .logging_config import log_function_entry, log_function_exit, log_error, log_simulation_step
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +46,21 @@ INLET_TEMP_MAX: float = 27.0
 OUTLET_TEMP_MAX: float = 45.0
 PUE_MAX_SAFE: float = 2.0
 
+# Dynamic-physics tuning constants
+FREE_AIR_INEFFECTIVE_OUTSIDE_TEMP_C: float = 12.0
+DEFAULT_THERMAL_TIME_CONSTANT_MIN: float = 10.0
+DEFAULT_MAX_CHILLED_WATER_RATE_C_PER_STEP: float = 2.0
+DEFAULT_CHILLED_WATER_TEMP_C: float = 12.0
+CHILLED_WATER_APPROACH_C: float = 2.0  # inlet ≈ chilled water supply + approach
+FREE_AIR_OFFSET_C: float = 2.0  # inlet ≈ outside temp - offset, in free-air mode
+COP_LOAD_DERATE: float = 0.15  # COP loses up to 15% at full load
+COP_OUTSIDE_TEMP_DERATE_PER_C: float = 0.01  # per °C above 20°C
+COP_MIN: float = 0.5
+WATER_FLOW_SCALE_LPM_PER_KW: float = 30.0
+WATER_TEMP_FACTOR_PER_C: float = 0.02
+WATER_HUMIDITY_FACTOR_PER_PCT: float = 0.01
+EVAPORATIVE_HUMIDITY_REFERENCE_PCT: float = 40.0
+
 
 class CoolingMode(str, Enum):
     """Supported cooling modes with distinct COP and water characteristics."""
@@ -52,8 +71,8 @@ class CoolingMode(str, Enum):
     HYBRID = "hybrid"
 
 
-# COP and evaporation rate per mode
-_COP: dict[CoolingMode, float] = {
+# Nominal (pre-derate) COP and evaporation rate per mode
+_BASE_COP: dict[CoolingMode, float] = {
     CoolingMode.FREE_AIR: 8.0,
     CoolingMode.CLOSED_LOOP: 4.5,
     CoolingMode.EVAPORATIVE: 3.5,
@@ -72,8 +91,10 @@ class DataCentreState:
     """
     Complete snapshot of data centre sensor state.
 
-    All fields align with sensor_data.csv schema for compatibility
-    with data pipelines and ML models.
+    All fields align with sensor_data.csv schema for compatibility with
+    data pipelines and ML models. `cooling_mode` here is always the mode
+    PHYSICS ACTUALLY USED this step (the "applied" mode), not necessarily
+    the mode requested.
     """
 
     timestamp: datetime
@@ -122,13 +143,16 @@ class DataCentreState:
             "drought_override_active": self.drought_override_active,
         }
 
+
 class DigitalTwin:
     """
     Physics-based digital twin for data centre thermal and hydraulic simulation.
 
-    Simulates thermodynamic energy balance (Q = ṁ·cp·ΔT), cooling COP by mode,
-    and water consumption with evaporation rates. Supports rule-based cooling
-    mode selection and scenario runs.
+    Simulates thermodynamic energy balance (Q = ṁ·cp·ΔT) with first-order
+    thermal lag, dynamic COP by mode/load/outside-temp/humidity, a
+    rate-limited chilled-water actuator, and water consumption with
+    evaporation rates. Supports rule-based cooling mode selection and
+    scenario runs.
     """
 
     def __init__(
@@ -139,6 +163,9 @@ class DigitalTwin:
         air_flow_m3_s: float = 8.0,
         initial_cooling_mode: CoolingMode = CoolingMode.CLOSED_LOOP,
         start_time: datetime | None = None,
+        thermal_time_constant_min: float = DEFAULT_THERMAL_TIME_CONSTANT_MIN,
+        max_chilled_water_rate_C_per_step: float = DEFAULT_MAX_CHILLED_WATER_RATE_C_PER_STEP,
+        initial_chilled_water_temp_C: float = DEFAULT_CHILLED_WATER_TEMP_C,
     ) -> None:
         """
         Initialise the digital twin.
@@ -147,8 +174,11 @@ class DigitalTwin:
             max_it_power_kw: Maximum IT power at 100% utilisation (kW).
             idle_power_fraction: Fraction of max power at 0% utilisation (default 0.4).
             air_flow_m3_s: Air flow rate through servers (m³/s), default 8.0.
-            initial_cooling_mode: Starting cooling mode.
+            initial_cooling_mode: Starting (requested) cooling mode.
             start_time: Simulation start timestamp. Defaults to now.
+            thermal_time_constant_min: First-order thermal lag time constant (minutes).
+            max_chilled_water_rate_C_per_step: Max chilled-water setpoint change per step (°C).
+            initial_chilled_water_temp_C: Starting chilled-water supply temperature (°C).
         """
         log_function_entry(
             "DigitalTwin.__init__",
@@ -156,9 +186,9 @@ class DigitalTwin:
             idle_power_fraction=idle_power_fraction,
             air_flow_m3_s=air_flow_m3_s,
             initial_cooling_mode=initial_cooling_mode,
-            start_time=start_time
+            start_time=start_time,
         )
-        
+
         try:
             self._max_it_power_kw = max_it_power_kw
             self._idle_power_fraction = idle_power_fraction
@@ -172,51 +202,55 @@ class DigitalTwin:
             self._water_pressure_bar: float = 3.0
             self._water_stress: float = 0.0
             self._carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
+
+            # Dynamic-physics state
+            self._thermal_time_constant_min = thermal_time_constant_min
+            self._max_chilled_water_rate_C_per_step = max_chilled_water_rate_C_per_step
+            self._requested_chilled_water_temp_C = initial_chilled_water_temp_C
+            self._applied_chilled_water_temp_C = initial_chilled_water_temp_C
+            self._inlet_temp_C: float | None = None
+            self._outlet_temp_C: float | None = None
+
             self._state: DataCentreState = self._build_initial_state()
             self._pinn: Any = None
-            
+
             log_function_exit("DigitalTwin.__init__", result="DigitalTwin initialized successfully")
         except Exception as e:
             log_error("DigitalTwin.__init__", e)
             raise
 
-    def _build_initial_state(self) -> DataCentreState:
-        """Build initial state from current parameters."""
-        it_power = self.compute_it_power(self._utilisation)
-        inlet = max(INLET_TEMP_MIN, self._outside_temp_C - 3.0)
-        outlet = self.compute_outlet_temp(inlet, it_power, self._air_flow_m3_s)
-        cooling = self.compute_cooling_power(it_power, self._cooling_mode, self._outside_temp_C)
-        flow, consumed = self.compute_water_consumption(
-            cooling, self._cooling_mode, self._outside_temp_C
-        )
-        total = it_power + cooling
-        pue = total / it_power if it_power > 0.1 else 1.0
-        it_energy_kwh = it_power * (INTERVAL_MINUTES / 60)
-        wue = consumed / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
-        carbon_intensity, carbon_gco2 = self._compute_carbon(cooling)
+    # -------------------------------------------------------------------------
+    # Requested -> applied control pipeline (runs BEFORE physics)
+    # -------------------------------------------------------------------------
 
-        return DataCentreState(
-            timestamp=self._time,
-            server_utilisation=self._utilisation,
-            outside_temp_C=self._outside_temp_C,
-            server_inlet_temp_C=inlet,
-            server_outlet_temp_C=outlet,
-            it_power_kw=it_power,
-            cooling_power_kw=cooling,
-            total_power_kw=total,
-            pue=pue,
-            water_flow_lpm=flow,
-            water_consumed_L=self._water_consumed_cumulative_L + consumed,
-            wue=wue,
-            humidity_pct=self._humidity_pct,
-            water_pressure_bar=self._water_pressure_bar,
-            cooling_mode=self._cooling_mode,
-            anomaly=0,
-            water_stress=self._water_stress,
-            carbon_intensity_gco2_per_kwh=carbon_intensity,
-            carbon_gco2=carbon_gco2,
-            drought_override_active=self._water_stress > DROUGHT_THRESHOLD,
-        )
+    def _determine_applied_cooling_mode(
+        self, requested_mode: CoolingMode, outside_temp_C: float
+    ) -> CoolingMode:
+        """
+        Resolve the mode physics will actually use this step.
+
+        Free-air is only physically effective when outside air is cold
+        enough; otherwise the system falls back to hybrid. This is the
+        ONLY place mode substitution happens, and the result is what gets
+        reported in DataCentreState.cooling_mode (fixes the previous defect
+        where FREE_AIR could be reported while HYBRID's COP was silently
+        used for the actual calculation).
+        """
+        if requested_mode == CoolingMode.FREE_AIR and outside_temp_C >= FREE_AIR_INEFFECTIVE_OUTSIDE_TEMP_C:
+            logger.debug(
+                "Free-air ineffective when outside >= %.1f°C (%.1f), applying hybrid",
+                FREE_AIR_INEFFECTIVE_OUTSIDE_TEMP_C,
+                outside_temp_C,
+            )
+            return CoolingMode.HYBRID
+        return requested_mode
+
+    def _determine_applied_chilled_water_temp_C(self, requested_C: float) -> float:
+        """Rate-limit the chilled-water setpoint toward the requested value."""
+        delta = requested_C - self._applied_chilled_water_temp_C
+        max_step = self._max_chilled_water_rate_C_per_step
+        bounded_delta = max(-max_step, min(max_step, delta))
+        return self._applied_chilled_water_temp_C + bounded_delta
 
     # -------------------------------------------------------------------------
     # Thermodynamic methods
@@ -238,16 +272,16 @@ class DigitalTwin:
             ValueError: If utilisation not in [0, 1].
         """
         log_function_entry("DigitalTwin.compute_it_power", utilisation=utilisation)
-        
+
         try:
             if not 0 <= utilisation <= 1:
                 error_msg = f"Utilisation must be in [0, 1], got {utilisation}"
                 log_error("DigitalTwin.compute_it_power", ValueError(error_msg))
                 raise ValueError(error_msg)
-            
+
             idle = self._idle_power_fraction * self._max_it_power_kw
             result = idle + (1 - self._idle_power_fraction) * utilisation * self._max_it_power_kw
-            
+
             log_function_exit("DigitalTwin.compute_it_power", result=result)
             return result
         except Exception as e:
@@ -281,6 +315,30 @@ class DigitalTwin:
         delta_t = heat_w / denom if denom > 0 else 0.0
         return inlet_temp_C + delta_t
 
+    def _effective_cop(self, mode: CoolingMode, it_power_kw: float, outside_temp_C: float) -> float:
+        """
+        Derate the nominal per-mode COP by load fraction, outside temperature,
+        and (for evaporative) humidity. Never substitutes modes — mode
+        substitution happens once, earlier, in `_determine_applied_cooling_mode`.
+        """
+        base_cop = _BASE_COP[mode]
+
+        load_fraction = 0.0
+        if self._max_it_power_kw > 0:
+            load_fraction = max(0.0, min(1.0, it_power_kw / self._max_it_power_kw))
+        load_penalty = 1.0 - COP_LOAD_DERATE * load_fraction
+
+        outside_penalty = 1.0 - COP_OUTSIDE_TEMP_DERATE_PER_C * max(0.0, outside_temp_C - 20.0)
+
+        humidity_penalty = 1.0
+        if mode == CoolingMode.EVAPORATIVE:
+            humidity_penalty = 1.0 - 0.5 * WATER_HUMIDITY_FACTOR_PER_PCT * max(
+                0.0, self._humidity_pct - EVAPORATIVE_HUMIDITY_REFERENCE_PCT
+            )
+
+        cop = base_cop * load_penalty * outside_penalty * humidity_penalty
+        return max(cop, COP_MIN)
+
     def compute_cooling_power(
         self,
         it_power_kw: float,
@@ -288,26 +346,24 @@ class DigitalTwin:
         outside_temp_C: float,
     ) -> float:
         """
-        Compute cooling system power from IT heat load and COP.
+        Compute cooling system power from IT heat load and dynamic COP.
 
-        COP varies by mode. Free-air only effective when outside < 12°C;
-        otherwise falls back to hybrid COP for calculation.
+        COP is derated by load fraction, outside temperature, and (for
+        evaporative mode) current humidity — it is never a fixed per-mode
+        constant. This method never substitutes modes internally; mode
+        substitution is resolved once, earlier in the pipeline, by
+        `_determine_applied_cooling_mode`, and `mode` here is always the
+        already-resolved applied mode.
 
         Args:
             it_power_kw: IT power (heat load) in kW.
-            mode: Cooling mode.
+            mode: Cooling mode (already resolved/applied).
             outside_temp_C: Outside air temperature (°C).
 
         Returns:
             Cooling power in kW.
         """
-        cop = _COP[mode]
-        if mode == CoolingMode.FREE_AIR and outside_temp_C >= 12.0:
-            logger.debug(
-                "Free-air ineffective when outside >= 12°C (%.1f), using hybrid COP",
-                outside_temp_C,
-            )
-            cop = _COP[CoolingMode.HYBRID]
+        cop = self._effective_cop(mode, it_power_kw, outside_temp_C)
         return it_power_kw / cop if cop > 0 else 0.0
 
     # -------------------------------------------------------------------------
@@ -323,8 +379,11 @@ class DigitalTwin:
         """
         Compute water flow and consumption for the cooling mode.
 
-        Free-air uses no water. Other modes scale with cooling load and
-        outside temperature (higher temp → more evaporation).
+        `flow_lpm` is computed FIRST as a function of cooling load, mode,
+        outside temperature and (for evaporative mode) current humidity;
+        `consumed_L` is then derived as `flow_lpm * INTERVAL_MINUTES` — this
+        is a one-way, non-circular derivation (flow never derived FROM
+        consumed). Free-air uses no water.
 
         Args:
             cooling_power_kw: Cooling system power in kW.
@@ -332,7 +391,7 @@ class DigitalTwin:
             outside_temp_C: Outside air temperature (°C).
 
         Returns:
-            Tuple of (flow_lpm, consumed_L_per_5min).
+            Tuple of (flow_lpm, consumed_L_per_interval).
         """
         if mode == CoolingMode.FREE_AIR:
             return 0.0, 0.0
@@ -341,23 +400,32 @@ class DigitalTwin:
         if evap_rate <= 0:
             return 0.0, 0.0
 
-        # Consumed scales with cooling load; higher outside temp increases demand
-        temp_factor = 1.0 + 0.02 * max(0, outside_temp_C - 15)
-        consumed_L = cooling_power_kw * 0.5 * evap_rate * 10 * temp_factor
-        consumed_L = max(0, consumed_L)
+        # Higher outside temp increases evaporative demand.
+        temp_factor = 1.0 + WATER_TEMP_FACTOR_PER_C * max(0.0, outside_temp_C - 15.0)
 
-        # flow_lpm such that flow * 5_min * evap_rate = consumed
-        flow_lpm = consumed_L / (INTERVAL_MINUTES * evap_rate) if evap_rate > 0 else 0.0
+        # Higher ambient humidity makes evaporative cooling less effective,
+        # so more flow is needed for the same cooling effect.
+        humidity_factor = 1.0
+        if mode == CoolingMode.EVAPORATIVE:
+            humidity_factor = 1.0 + WATER_HUMIDITY_FACTOR_PER_PCT * max(
+                0.0, self._humidity_pct - EVAPORATIVE_HUMIDITY_REFERENCE_PCT
+            )
+
+        flow_lpm = cooling_power_kw * evap_rate * WATER_FLOW_SCALE_LPM_PER_KW * temp_factor * humidity_factor
+        flow_lpm = max(0.0, flow_lpm)
+        consumed_L = flow_lpm * INTERVAL_MINUTES
 
         return flow_lpm, consumed_L
 
     # -------------------------------------------------------------------------
     # Control methods
     # -------------------------------------------------------------------------
+
     def _compute_carbon(self, cooling_power_kw: float) -> tuple[float, float]:
         """Returns (carbon_intensity_gco2_per_kwh, carbon_gco2) for the
         current hour, using the same real diurnal curve as DataCentreEnv
-        (src/optimizer.py) -- see src/carbon_provider.py.
+        (src/optimizer.py) -- see src/carbon_provider.py. Unchanged from
+        the pre-dynamic-physics implementation.
         """
         intensity = float(self._carbon_intensity_by_hour[self._time.hour])
         carbon_gco2 = cooling_power_kw * intensity * (INTERVAL_MINUTES / 60)
@@ -372,7 +440,8 @@ class DigitalTwin:
         Rule-based cooling mode selection.
 
         - Free-air when outside < 12°C (no water, high COP).
-        - Closed-loop when water stress high (lowest evaporation).
+        - Closed-loop when water stress > DROUGHT_THRESHOLD (patent Claim 3
+          drought override — must match DataCentreEnv's threshold exactly).
         - Evaporative when outside hot and water stress low.
         - Hybrid as default balance.
 
@@ -398,12 +467,110 @@ class DigitalTwin:
 
         return mode
 
+    # -------------------------------------------------------------------------
+    # Shared transition logic (used by both _build_initial_state and step)
+    # -------------------------------------------------------------------------
+
+    def _compute_transition(self, *, persist_cumulative_water: bool = True) -> DataCentreState:
+        """
+        Compute the next DataCentreState from current internal parameters.
+
+        This is the SOLE place physics/thermal-lag/actuator math happens —
+        `_build_initial_state()` (t=0) and `step()` (t>0) both call this,
+        so there is exactly one formula for the transition, not two.
+
+        `persist_cumulative_water=False` is used only by
+        `_build_initial_state()`, matching the original implementation's
+        contract that the cumulative water counter reads exactly 0.0
+        immediately after construction (before any `step()` call) even
+        though the initial state's own `water_consumed_L` field reflects
+        that first instant's consumption.
+        """
+        # 1. Requested -> applied pipeline (before physics).
+        applied_mode = self._determine_applied_cooling_mode(self._cooling_mode, self._outside_temp_C)
+        applied_chilled_water_C = self._determine_applied_chilled_water_temp_C(
+            self._requested_chilled_water_temp_C
+        )
+        self._applied_chilled_water_temp_C = applied_chilled_water_C
+
+        # 2. IT power (from current utilisation).
+        it_power = self.compute_it_power(self._utilisation)
+
+        # 3. Steady-state thermal targets for this step's applied conditions.
+        if applied_mode == CoolingMode.FREE_AIR:
+            target_inlet_C = self._outside_temp_C - FREE_AIR_OFFSET_C
+        else:
+            target_inlet_C = applied_chilled_water_C + CHILLED_WATER_APPROACH_C
+        target_outlet_C = self.compute_outlet_temp(target_inlet_C, it_power, self._air_flow_m3_s)
+
+        # 4. First-order lag toward the targets (thermal inertia). At the
+        #    very first call (prev is None) the twin starts already at the
+        #    steady state, matching a system that has been idle/settled.
+        response_factor = 1.0 - math.exp(-INTERVAL_MINUTES / self._thermal_time_constant_min)
+        prev_inlet_C = self._inlet_temp_C if self._inlet_temp_C is not None else target_inlet_C
+        prev_outlet_C = self._outlet_temp_C if self._outlet_temp_C is not None else target_outlet_C
+
+        new_inlet_C = prev_inlet_C + response_factor * (target_inlet_C - prev_inlet_C)
+        new_outlet_C = prev_outlet_C + response_factor * (target_outlet_C - prev_outlet_C)
+
+        # No cosmetic clamping of the ACHIEVED temperatures here — is_safe()
+        # must be able to genuinely observe an unsafe state if one occurs.
+        self._inlet_temp_C = new_inlet_C
+        self._outlet_temp_C = new_outlet_C
+
+        # 5. Cooling power via dynamic COP, using the applied mode only.
+        cooling = self.compute_cooling_power(it_power, applied_mode, self._outside_temp_C)
+
+        # 6. Water: flow computed first, consumed derived from flow (never
+        #    the reverse).
+        flow_lpm, consumed_L = self.compute_water_consumption(cooling, applied_mode, self._outside_temp_C)
+        if persist_cumulative_water:
+            self._water_consumed_cumulative_L += consumed_L
+            cumulative_water_L = self._water_consumed_cumulative_L
+        else:
+            cumulative_water_L = self._water_consumed_cumulative_L + consumed_L
+
+        total = it_power + cooling
+        pue = total / it_power if it_power > 0.1 else 1.0
+        it_energy_kwh = it_power * (INTERVAL_MINUTES / 60)
+        wue = consumed_L / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
+        carbon_intensity, carbon_gco2 = self._compute_carbon(cooling)
+
+        return DataCentreState(
+            timestamp=self._time,
+            server_utilisation=self._utilisation,
+            outside_temp_C=self._outside_temp_C,
+            server_inlet_temp_C=new_inlet_C,
+            server_outlet_temp_C=new_outlet_C,
+            it_power_kw=it_power,
+            cooling_power_kw=cooling,
+            total_power_kw=total,
+            pue=pue,
+            water_flow_lpm=flow_lpm,
+            water_consumed_L=cumulative_water_L,
+            wue=wue,
+            humidity_pct=self._humidity_pct,
+            water_pressure_bar=self._water_pressure_bar,
+            cooling_mode=applied_mode,
+            anomaly=0,
+            water_stress=self._water_stress,
+            carbon_intensity_gco2_per_kwh=carbon_intensity,
+            carbon_gco2=carbon_gco2,
+            drought_override_active=self._water_stress > DROUGHT_THRESHOLD,
+        )
+
+    def _build_initial_state(self) -> DataCentreState:
+        """Build initial state (t=0) via the shared transition function."""
+        return self._compute_transition(persist_cumulative_water=False)
+
     def step(self, action_dict: dict[str, Any]) -> DataCentreState:
         """
         Advance simulation by 5 minutes.
 
         Expected keys: utilisation, outside_temp_C, cooling_mode (optional),
-        humidity_pct (optional), water_pressure_bar (optional).
+        humidity_pct (optional), water_pressure_bar (optional), water_stress
+        (optional), chilled_water_temp_C (optional, new — requested
+        chilled-water supply setpoint; rate-limited before it takes effect).
 
         Args:
             action_dict: Control actions for this step.
@@ -412,7 +579,7 @@ class DigitalTwin:
             New DataCentreState after the step.
         """
         log_function_entry("DigitalTwin.step", action_dict=action_dict)
-        
+
         try:
             if "utilisation" in action_dict:
                 u = float(action_dict["utilisation"])
@@ -438,66 +605,29 @@ class DigitalTwin:
             if "water_stress" in action_dict:
                 self._water_stress = float(action_dict["water_stress"])
 
+            if "chilled_water_temp_C" in action_dict:
+                self._requested_chilled_water_temp_C = float(action_dict["chilled_water_temp_C"])
+
             self._time += timedelta(minutes=INTERVAL_MINUTES)
 
-            # Compute state
-            it_power = self.compute_it_power(self._utilisation)
-            cooling = self.compute_cooling_power(it_power, self._cooling_mode, self._outside_temp_C)
-            flow, consumed = self.compute_water_consumption(
-                cooling, self._cooling_mode, self._outside_temp_C
-            )
-            self._water_consumed_cumulative_L += consumed
+            self._state = self._compute_transition()
 
-            inlet = max(INLET_TEMP_MIN, min(INLET_TEMP_MAX, self._outside_temp_C - 3.0))
-            outlet = self.compute_outlet_temp(inlet, it_power, self._air_flow_m3_s)
-            outlet = min(outlet, OUTLET_TEMP_MAX + 5)  # Allow slight overshoot for realism
-
-            total = it_power + cooling
-            pue = total / it_power if it_power > 0.1 else 1.0
-            it_energy_kwh = it_power * (INTERVAL_MINUTES / 60)
-            wue = consumed / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
-            carbon_intensity, carbon_gco2 = self._compute_carbon(cooling)
-
-            self._state = DataCentreState(
-                timestamp=self._time,
-                server_utilisation=self._utilisation,
-                outside_temp_C=self._outside_temp_C,
-                server_inlet_temp_C=inlet,
-                server_outlet_temp_C=outlet,
-                it_power_kw=it_power,
-                cooling_power_kw=cooling,
-                total_power_kw=total,
-                pue=pue,
-                water_flow_lpm=flow,
-                water_consumed_L=self._water_consumed_cumulative_L,
-                wue=wue,
-                humidity_pct=self._humidity_pct,
-                water_pressure_bar=self._water_pressure_bar,
-                cooling_mode=self._cooling_mode,
-                anomaly=0,
-                water_stress=self._water_stress,
-                carbon_intensity_gco2_per_kwh=carbon_intensity,
-                carbon_gco2=carbon_gco2,
-                drought_override_active=self._water_stress > DROUGHT_THRESHOLD,
-            )
-            
-            # Log simulation step results
             log_simulation_step(
-                step_number=int((self._time - (self._time - timedelta(minutes=INTERVAL_MINUTES))).total_seconds() / 60),
+                step_number=int(INTERVAL_MINUTES),
                 utilisation=self._utilisation,
                 outside_temp_C=self._outside_temp_C,
-                inlet_temp_C=inlet,
-                outlet_temp_C=outlet,
-                it_power_kw=it_power,
-                cooling_power_kw=cooling,
-                total_power_kw=total,
-                pue=pue,
-                water_flow_lpm=flow,
-                water_consumed_L=consumed,
-                wue=wue,
-                cooling_mode=self._cooling_mode.value
+                inlet_temp_C=self._state.server_inlet_temp_C,
+                outlet_temp_C=self._state.server_outlet_temp_C,
+                it_power_kw=self._state.it_power_kw,
+                cooling_power_kw=self._state.cooling_power_kw,
+                total_power_kw=self._state.total_power_kw,
+                pue=self._state.pue,
+                water_flow_lpm=self._state.water_flow_lpm,
+                water_consumed_L=self._state.water_consumed_L,
+                wue=self._state.wue,
+                cooling_mode=self._state.cooling_mode.value,
             )
-            
+
             log_function_exit("DigitalTwin.step", result=f"State updated at {self._time}")
             return self._state
         except Exception as e:
