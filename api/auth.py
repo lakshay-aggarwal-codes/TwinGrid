@@ -19,15 +19,25 @@ from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+from api.rate_limit import limiter
 
 from database import get_db
 from models.db_models import User, USER_ROLE_OPERATOR, USER_ROLE_VIEWER
-
 # -----------------------------------------------------------------------------
 # Config
 # -----------------------------------------------------------------------------
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-in-production-use-openssl-rand-hex-32")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable is not set. This app will not start "
+        "without it -- generate one with: python -c \"import secrets; print(secrets.token_hex(32))\" "
+        "and set it in your .env / deployment environment. There is no default: a "
+        "hardcoded fallback here would mean every deployment that forgets to set "
+        "this variable shares the same, publicly-visible signing key."
+    )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
 
@@ -153,24 +163,18 @@ def require_operator(user: Annotated[User, Depends(get_current_user)]) -> User:
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-
 @router.post("/register", response_model=UserResponse)
+@limiter.limit("5/hour")
 async def register(
+    request: Request,
     body: RegisterRequest,
     session: AsyncSession = Depends(get_db),
 ) -> User:
-    """Create a new user with hashed password. Default role: viewer."""
+    """Create a new user with hashed password. Default role: viewer. Rate limited: 5/hour per IP."""
     existing = await get_user_by_username(session, body.username)
     if existing is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered",
-        )
-    user = User(
-        username=body.username,
-        hashed_password=hash_password(body.password),
-        role=body.role,
-    )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
+    user = User(username=body.username, hashed_password=hash_password(body.password), role=body.role)
     session.add(user)
     await session.flush()
     await session.refresh(user)
@@ -178,11 +182,13 @@ async def register(
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("10/minute")
 async def login(
+    request: Request,
     body: LoginRequest,
     session: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    """Authenticate and return a JWT access token."""
+    """Authenticate and return a JWT access token. Rate limited: 10/minute per IP."""
     user = await get_user_by_username(session, body.username)
     if user is None or not verify_password(body.password, user.hashed_password):
         raise HTTPException(

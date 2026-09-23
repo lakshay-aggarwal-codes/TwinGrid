@@ -1,10 +1,15 @@
 /**
  * API client for Digital Twin FastAPI backend (https://function-bun-production-6ce5.up.railway.app).
  * All functions return parsed JSON and handle errors gracefully.
+ *
+ * All /api/* endpoints and /ws/live require a JWT -- see authClient.ts for
+ * how that token is obtained (demo viewer account, no login screen).
  */
 
+import { getToken } from './authClient';
+
 const BASE_URL = 'https://function-bun-production-6ce5.up.railway.app';
-const WS_URL = 'wss://function-bun-production-6ce5.up.railway.app/ws/live';
+const WS_BASE_URL = 'wss://function-bun-production-6ce5.up.railway.app/ws/live';
 
 const DEFAULT_RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_DELAY_MS = 30000;
@@ -26,6 +31,22 @@ export interface StateResponse {
   water_pressure_bar: number;
   cooling_mode: string;
   anomaly: number;
+  water_stress?: number;
+  carbon_intensity_gco2_per_kwh?: number;
+  carbon_gco2?: number;
+  drought_override_active?: boolean;
+}
+
+export interface EquipmentHealthResponse {
+  available: boolean;
+  message?: string;
+  trained_at_utc?: string;
+  subset?: string;
+  baseline?: { mae: number; rmse: number; r2: number };
+  lstm?: { mae: number; rmse: number; r2: number };
+  mae_improvement_pct?: number;
+  beats_baseline?: boolean;
+  dataset_caveat?: string;
 }
 
 export interface OptimizeSummary {
@@ -35,6 +56,14 @@ export interface OptimizeSummary {
   total_water_consumed_L: number;
   total_reward: number;
   safety_violations: number;
+}
+
+export interface AnomalyScoreResponse {
+  score: number;
+  threshold: number;
+  alert: boolean;
+  type: string;
+  message: string;
 }
 
 function buildUrl(path: string, params: Record<string, string | number | undefined> = {}): string {
@@ -66,6 +95,17 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
+async function authedFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const token = await getToken();
+  return fetch(url, {
+    ...init,
+    headers: {
+      ...(init.headers ?? {}),
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export interface FetchStateParams {
   utilisation?: number;
   outside_temp?: number;
@@ -81,7 +121,7 @@ export async function fetchState(params: FetchStateParams = {}): Promise<StateRe
     water_stress: params.water_stress,
     mode: params.mode,
   });
-  const response = await fetch(url);
+  const response = await authedFetch(url);
   return handleResponse<StateResponse>(response);
 }
 
@@ -99,7 +139,7 @@ export async function fetchSimulation(
     utilisation: params.utilisation,
     stress: params.stress,
   });
-  const response = await fetch(url);
+  const response = await authedFetch(url);
   return handleResponse<StateResponse[]>(response);
 }
 
@@ -111,12 +151,12 @@ export interface FetchOptimizedParams {
   hours?: number;
 }
 
-/** POST /api/optimize — optimized simulation results. */
+/** POST /api/optimize — optimized simulation results. Requires 'operator' role. */
 export async function fetchOptimized(weights: FetchOptimizedParams = {}): Promise<{
   results: StateResponse[];
   summary: OptimizeSummary;
 }> {
-  const response = await fetch(`${BASE_URL}/api/optimize`, {
+  const response = await authedFetch(`${BASE_URL}/api/optimize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -130,17 +170,41 @@ export async function fetchOptimized(weights: FetchOptimizedParams = {}): Promis
   return handleResponse(response);
 }
 
-/** WebSocket /ws/live — live state updates, auto-reconnect. */
+/**
+ * GET /api/anomaly_score — score the last 12 readings.
+ * recentReadings must be exactly 12 tuples of
+ * [water_flow_lpm, water_pressure_bar, server_outlet_temp_C, it_power_kw, humidity_pct],
+ * oldest first, matching the shape the trained LSTM autoencoder expects.
+ */
+export async function fetchAnomalyScore(
+  recentReadings: [number, number, number, number, number][]
+): Promise<AnomalyScoreResponse> {
+  const url = buildUrl('/api/anomaly_score', { recent_data: JSON.stringify(recentReadings) });
+  const response = await authedFetch(url);
+  return handleResponse<AnomalyScoreResponse>(response);
+}
+
+/** WebSocket /ws/live — live state updates, auto-reconnect, auto re-auth. */
 export function connectWebSocket(onMessage: (state: StateResponse) => void): { disconnect: () => void } {
   let ws: WebSocket | null = null;
   let reconnectDelay = DEFAULT_RECONNECT_DELAY_MS;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let closed = false;
 
-  function connect() {
+  async function connect() {
     if (closed) return;
+    let token: string;
     try {
-      ws = new WebSocket(WS_URL);
+      token = await getToken();
+    } catch (e) {
+      console.warn('[apiClient] WebSocket auth failed, will retry:', e);
+      scheduleReconnect();
+      return;
+    }
+    if (closed) return;
+
+    try {
+      ws = new WebSocket(`${WS_BASE_URL}?token=${encodeURIComponent(token)}`);
     } catch {
       scheduleReconnect();
       return;
@@ -195,8 +259,14 @@ export function connectWebSocket(onMessage: (state: StateResponse) => void): { d
 
 /** GET /api/health */
 export async function fetchHealth(): Promise<{ status: string; timestamp: string }> {
-  const response = await fetch(`${BASE_URL}/api/health`);
+  const response = await authedFetch(`${BASE_URL}/api/health`);
   return handleResponse(response);
 }
 
-export { BASE_URL, WS_URL };
+export { BASE_URL };
+
+/** GET /api/equipment/health */
+export async function fetchEquipmentHealth(): Promise<EquipmentHealthResponse> {
+  const response = await authedFetch(`${BASE_URL}/api/equipment/health`);
+  return handleResponse(response);
+}

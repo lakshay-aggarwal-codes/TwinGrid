@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Monitor, BarChart3, GitBranch } from 'lucide-react';
+import { Monitor, BarChart3, GitBranch, Leaf } from 'lucide-react';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { LiveMonitor } from '@/components/LiveMonitor';
 import { SimulationTab } from '@/components/SimulationTab';
 import { WhatIfTab } from '@/components/WhatIfTab';
+import { SustainabilityTab } from '@/components/SustainabilityTab';
 import { useSimulation } from '@/hooks/useSimulation';
 
 const Index = () => {
-  const { config, setConfig, kpi, anomalyScore, events, hourlyData, simRunning, runSimulation, getScenarioResult } = useSimulation();
+  const {
+    config, setConfig, kpi, anomalyScore, events, hourlyData, simRunning,
+    runSimulation, getScenarioResult, liveState, equipmentHealth,
+  } = useSimulation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
@@ -36,6 +40,9 @@ const Index = () => {
               <TabsTrigger value="whatif" className="gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <GitBranch className="h-3.5 w-3.5" />What-If Scenarios
               </TabsTrigger>
+              <TabsTrigger value="sustainability" className="gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <Leaf className="h-3.5 w-3.5" />Sustainability
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="live">
@@ -46,6 +53,9 @@ const Index = () => {
             </TabsContent>
             <TabsContent value="whatif">
               <WhatIfTab baseConfig={config} getResult={getScenarioResult} />
+            </TabsContent>
+            <TabsContent value="sustainability">
+              <SustainabilityTab liveState={liveState} equipmentHealth={equipmentHealth} />
             </TabsContent>
           </Tabs>
         </main>

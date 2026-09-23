@@ -1,0 +1,28 @@
+# Never ship the ~3GB external-dataset folder inside the image -- the
+# containerized API reads trained MODELS (mounted via docker-compose.yml),
+# not raw source data.
+realData/
+data/cleaned/
+data/features/
+data/predictions/
+
+# Local dev artifacts
+.git/
+.gitignore
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.local
+
+# Abandoned frontend prototypes (see Phase 1 audit) -- not part of the
+# backend image at all
+vo/
+bolt-main/
+twin-stream-insight-main/
+
+# Docs/tests not needed at runtime
+tests/
+*.md
+logs/

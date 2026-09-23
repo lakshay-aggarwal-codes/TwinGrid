@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: digital_twin
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Overrides .env's DATABASE_URL (which defaults to localhost) --
+      # inside the compose network, the DB is reachable at the service
+      # name "db", not localhost.
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/digital_twin
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Mount models/ read-write so a model trained locally (outside
+      # Docker, via notebooks/train_all.py) is visible to the
+      # containerized API without a rebuild.
+      - ./models:/app/models
+
+volumes:
+  db_data:

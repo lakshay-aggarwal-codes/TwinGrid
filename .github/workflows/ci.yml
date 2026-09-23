@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Test-only secret -- never the real deployment secret. Required because
+  # api/auth.py refuses to import without JWT_SECRET_KEY set (Phase 12).
+  JWT_SECRET_KEY: ci-test-secret-not-for-production
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python (matches runtime.txt)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r tests/test_requirements.txt
+          pip install ruff
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Run tests
+        run: pytest tests/ -v --cov=src --cov=api --cov-report=term-missing
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image (build-only, no push)
+        run: docker build -t digital-twin-backend:ci .
+        # No registry push here: no container registry credentials exist
+        # yet, and a push step with nowhere real to push would be dead
+        # configuration. Add a push step (with a repository secret for
+        # registry auth) once Phase 17 (deployment) actually needs it.

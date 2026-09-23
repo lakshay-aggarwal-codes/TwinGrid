@@ -13,7 +13,7 @@ and cooling load while maintaining thermal safety constraints.
 """
 
 from __future__ import annotations
-
+from .carbon_provider import load_diurnal_carbon_intensity
 import json
 import logging
 from pathlib import Path
@@ -32,7 +32,7 @@ _sb3 = None
 
 
 def _get_sb3():
-    global _sb3
+    global _sb3python -c "from stable_baselines3.common.vec_env import DummyVecEnv; print('SB3 OK')"
     if _sb3 is None:
         try:
             from stable_baselines3 import PPO
@@ -63,6 +63,8 @@ AIRFLOW_M3_S = 8.0
 INLET_MIN, INLET_MAX = 18.0, 27.0
 OUTLET_MAX = 45.0
 EPISODE_STEPS = 288  # 24 hours at 5-min intervals
+DROUGHT_THRESHOLD = 0.7
+DROUGHT_OVERRIDE_MODE = "closed_loop" 
 
 # Observation normalisation ranges
 OBS_RANGES = {
@@ -74,6 +76,7 @@ OBS_RANGES = {
     "it_power": (0, 600),
     "wue": (0, 5),
     "pue": (1, 2.5),
+    "water_stress": (0, 1),
 }
 
 
@@ -115,6 +118,7 @@ class DataCentreEnv(gym.Env):
         max_steps: int = EPISODE_STEPS,
         seed: int | None = None,
         pinn: Any = None,
+        carbon_intensity_by_hour: np.ndarray | None = None,
     ) -> None:
         """
         Initialise environment with patent objective weights.
@@ -133,6 +137,15 @@ class DataCentreEnv(gym.Env):
         self._max_steps = max_steps
         self._pinn = pinn
 
+        if carbon_intensity_by_hour is None:
+            carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
+        self._carbon_intensity_by_hour = carbon_intensity_by_hour
+        # Normalisation ceiling for the carbon reward term: max possible
+        # cooling power (150 kW, matching the existing cooling_norm range)
+        # at the dirtiest hour in the real curve, over one 5-min interval --
+        # a real, data-derived bound rather than a guessed constant.
+        self._carbon_norm_max = 150.0 * float(self._carbon_intensity_by_hour.max()) * (INTERVAL_MIN / 60)
+
         # PATENT: Action = [chilled_water_temp 5–15°C, cooling_mode 0–3]
         # Normalised to [0,1] for continuous control
         self.action_space = gym.spaces.Box(
@@ -143,8 +156,8 @@ class DataCentreEnv(gym.Env):
 
         # PATENT: 8 normalised state variables for observation
         self.observation_space = gym.spaces.Box(
-            low=np.zeros(8, dtype=np.float32),
-            high=np.ones(8, dtype=np.float32),
+            low=np.zeros(9, dtype=np.float32),
+            high=np.ones(9, dtype=np.float32),
             dtype=np.float32,
         )
 
@@ -227,6 +240,8 @@ class DataCentreEnv(gym.Env):
 
         it_energy_kwh = it_power * (INTERVAL_MIN / 60)
         wue = water_consumed / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
+        carbon_intensity = float(self._carbon_intensity_by_hour[int(hour) % 24])
+        carbon_gco2 = cooling * carbon_intensity * (INTERVAL_MIN / 60)
 
         return {
             "hour": hour,
@@ -239,10 +254,14 @@ class DataCentreEnv(gym.Env):
             "water_consumed": water_consumed,
             "pue": pue,
             "wue": wue,
+            "carbon_intensity_gco2_per_kwh": carbon_intensity,
+            "carbon_gco2": carbon_gco2,
+            "water_stress": self._water_stress,
+            "drought_override_active": self._water_stress > DROUGHT_THRESHOLD,
         }
 
     def _get_obs(self) -> np.ndarray:
-        """8 normalised state variables."""
+        """9 normalised state variables."""
         s = self._state
         r = OBS_RANGES
         return np.array([
@@ -254,13 +273,18 @@ class DataCentreEnv(gym.Env):
             _normalise(s["it_power"], r["it_power"][0], r["it_power"][1]),
             _normalise(s["wue"], r["wue"][0], r["wue"][1]),
             _normalise(s["pue"], r["pue"][0], r["pue"][1]),
+            _normalise(self._water_stress, r["water_stress"][0], r["water_stress"][1]),
         ], dtype=np.float32)
 
     def _action_to_control(self, action: np.ndarray) -> tuple[float, str]:
-        """Convert normalised action to chilled_water (°C) and cooling mode."""
         chilled = _denormalise(float(np.asarray(action).flat[0]), 5.0, 15.0)
         mode_idx = int(np.clip(round(np.asarray(action).flat[1] * 3), 0, 3))
-        return chilled, COOLING_MODES[mode_idx]
+        mode = COOLING_MODES[mode_idx]
+
+        if self._water_stress > DROUGHT_THRESHOLD:
+            mode = DROUGHT_OVERRIDE_MODE
+
+        return chilled, mode
 
     def reset(
         self,
@@ -292,9 +316,9 @@ class DataCentreEnv(gym.Env):
         wue_norm = _normalise(self._state["wue"], 0, 5)
         pue_excess = max(0, self._state["pue"] - 1)
         pue_norm = _normalise(pue_excess, 0, 1.5)
-        cooling_norm = _normalise(self._state["cooling_power"], 0, 150)
+        carbon_norm = _normalise(self._state["carbon_gco2"], 0, self._carbon_norm_max)
 
-        J = self._alpha * wue_norm + self._beta * pue_norm + self._gamma * cooling_norm
+        J = self._alpha * wue_norm + self._beta * pue_norm + self._gamma * carbon_norm
         reward = -J
 
         # PATENT: Safety penalty — thermal constraint violation
@@ -335,21 +359,16 @@ class JointOptimizer:
         gamma: float = 0.2,
         seed: int | None = None,
         pinn: Any = None,
-    ) -> None:
-        """
-        Initialise with patent objective weights.
-
-        PATENT PARAMETERS:
-          alpha: WUE weight in J = α·W + β·E + γ·C (default 0.5)
-          beta:  (PUE-1) weight (default 0.3)
-          gamma: Cooling power weight (default 0.2)
-          pinn:  Optional Physics-Informed NN (combines with joint optimizer).
-        """
+        carbon_intensity_by_hour: np.ndarray | None = None,
+    ) -> None:  
         self._alpha = alpha
         self._beta = beta
         self._gamma = gamma
         self._seed = seed
         self._pinn = pinn
+        if carbon_intensity_by_hour is None:
+            carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
+        self._carbon_intensity_by_hour = carbon_intensity_by_hour
         self._model = None
 
     def _make_env(self, water_stress: float = 0.0) -> DataCentreEnv:
@@ -360,6 +379,7 @@ class JointOptimizer:
             water_stress=water_stress,
             seed=self._seed,
             pinn=self._pinn,
+            carbon_intensity_by_hour=self._carbon_intensity_by_hour,
         )
 
     def train(
@@ -478,10 +498,12 @@ class JointOptimizer:
                 "mean_cooling_power_kw": float(df["cooling_power"].mean()),
                 "mean_outlet_temp_C": float(df["outlet_temp"].mean()),
                 "total_water_consumed_L": float(df["water_consumed"].sum()),
+                "mean_carbon_intensity_gco2_per_kwh": float(df["carbon_intensity_gco2_per_kwh"].mean()),
+                "total_carbon_gco2": float(df["carbon_gco2"].sum()),
+                "drought_override_active_pct": float(df["drought_override_active"].mean() * 100),
                 "total_reward": float(df["reward"].sum()),
                 "safety_violations": int((df["outlet_temp"] > OUTLET_MAX).sum()),
             }
-
         normal = run_and_aggregate(normal_stress)
         drought = run_and_aggregate(drought_stress)
 
@@ -496,7 +518,7 @@ class JointOptimizer:
         }
 
     def save(self, path: str | Path) -> None:
-        """Save PPO model and patent config (α, β, γ)."""
+        """Save PPO model and patent config (alpha, beta, gamma, carbon curve)."""
         if self._model is None:
             raise RuntimeError("Model not trained. Call train() first.")
         path = Path(path)
@@ -507,7 +529,8 @@ class JointOptimizer:
             "beta": self._beta,
             "gamma": self._gamma,
             "seed": self._seed,
-            "patent_objective": "J = alpha*W + beta*E + gamma*C",
+            "carbon_intensity_by_hour": self._carbon_intensity_by_hour.tolist(),
+            "patent_objective": "J = alpha*W + beta*E + gamma*C (C = real grid carbon emissions)",
         }
         (path / "config.json").write_text(json.dumps(config, indent=2))
         logger.info("Saved to %s", path)
@@ -521,11 +544,13 @@ class JointOptimizer:
         sb3 = _get_sb3()
         PPO = sb3["PPO"]
         config = json.loads((path / "config.json").read_text())
+        carbon_curve = config.get("carbon_intensity_by_hour")
         optimizer = cls(
             alpha=config.get("alpha", 0.5),
             beta=config.get("beta", 0.3),
             gamma=config.get("gamma", 0.2),
             seed=config.get("seed"),
+            carbon_intensity_by_hour=np.array(carbon_curve) if carbon_curve is not None else None,
         )
         optimizer._model = PPO.load(str(path / "ppo_model"))
         logger.info("Loaded from %s", path)

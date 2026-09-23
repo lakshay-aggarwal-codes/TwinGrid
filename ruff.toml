@@ -1,0 +1,16 @@
+target-version = "py39"  # matches runtime.txt exactly
+line-length = 120
+
+[lint]
+select = ["E", "F", "I"]  # pyflakes + pycodestyle errors + import sorting
+ignore = [
+    "E501",  # line length handled by formatter/reviewer judgement, not a hard CI failure yet
+]
+
+exclude = [
+    "realData",
+    "twin-stream-insight-main",
+    "vo",
+    "bolt-main",
+    ".venv",
+]

@@ -1,245 +1,68 @@
-# Digital Twin API Deployment Guide
+# Deployment
 
-## Overview
+## Two independent deployment paths — read this first
 
-The Digital Twin API is now production-ready with comprehensive deployment configuration. The application uses FastAPI with uvicorn as the ASGI server.
+This project has **two separate build/deploy paths that do not affect each other**:
 
-## 🚀 Quick Start
+1. **Railway (production, live today)** — builds via **Nixpacks** (`nixpacks.toml`, `Procfile`), *not* the Dockerfile. This is what actually serves `https://function-bun-production-6ce5.up.railway.app`.
+2. **Docker / `docker-compose`** (Phase 14) — used for local development (`docker-compose up`) and CI's build-verification step (Phase 15). Not currently used by Railway.
 
-### Required Start Command
-```bash
-uvicorn api.main:app --host 0.0.0.0 --port $PORT
-```
+Editing the Dockerfile does **not** change the live Railway deployment, and editing `nixpacks.toml`/`Procfile` does **not** change local Docker behavior. If you ever want Railway to build from the Dockerfile instead, that's a real migration (Railway supports it via a `railway.json` with `"builder": "DOCKERFILE"`) — it needs its own validation pass (the Dockerfile currently hardcodes port 8000; Railway injects a dynamic `$PORT` that Nixpacks already respects correctly), not a silent switch.
 
-### Environment Setup
-1. Copy `.env.example` to `.env` and configure your settings
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run the application with the start command
+## Environments
 
-## 📁 Deployment Files Created
+| Environment | Backend | Frontend | Database | Notes |
+|---|---|---|---|---|
+| **Local dev** | `docker-compose up` (Phase 14) or `uvicorn api.main:app --reload` | `npm run dev` in `twin-stream-insight-main/` | Local Postgres (compose) or SQLite-free local Postgres install | Use `.env` copied from `.env.example` |
+| **Production** | Railway (Nixpacks) | Vercel/Lovable | Railway-managed Postgres | Live URLs in the patent PDF |
+| **Staging (recommended, not yet set up)** | Railway — create a second Railway *environment* in the same project, fed from a `staging` branch | Vercel preview deployments (automatic per-branch, free) | Separate Railway Postgres instance | See "Adding staging" below |
 
-### Core Configuration
-- **`Procfile`** - Heroku/cloud platform deployment configuration
-- **`runtime.txt`** - Python 3.9.16 runtime specification
-- **`.env.example`** - Environment variables template
-- **`config.yaml`** - Application configuration
+## Required environment variables (consolidated from every phase)
 
-### Startup Scripts
-- **`start.sh`** - Linux/macOS startup script
-- **`start.bat`** - Windows startup script
-- **`test_startup.py`** - Deployment verification script
+| Variable | Introduced in | Required? | Notes |
+|---|---|---|---|
+| `JWT_SECRET_KEY` | Phase 12 | **Yes — app refuses to start without it** | Generate: `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `JWT_EXPIRE_MINUTES` | Phase 12 | No (default 60) | |
+| `DATABASE_URL` | Original | Yes | Railway auto-injects this for its managed Postgres add-on |
+| `CORS_ALLOWED_ORIGINS` | Phase 12 | No (defaults to the known Lovable frontend URL) | Comma-separated if multiple |
+| `NSRDB_API_KEY`, `NSRDB_EMAIL` | Phase 2 | Only if running `src.ingestion.solar_nsrdb` | Free signup, not needed for the API itself to run |
+| `ELECTRICITYMAPS_API_KEY`, `ELECTRICITYMAPS_ZONE` | Phase 2 | Only if re-running carbon ingestion | Not needed for the API itself to run — `data/cleaned/carbon_intensity.csv` is already generated and used by `src/carbon_provider.py` |
+| `FACILITY_LATITUDE`, `FACILITY_LONGITUDE`, `FACILITY_TIMEZONE` | Phase 2 | Only for NSRDB ingestion | |
+| `VITE_DEMO_USERNAME`, `VITE_DEMO_PASSWORD` | Phase 3 | Yes, frontend only | Set in Vercel/Lovable's environment variable settings, not just locally — must match an account created by `scripts/create_demo_user.py` |
 
-## 🔧 Configuration
+## Deploying the backend (Railway, current production path)
 
-### Environment Variables
-```bash
-# Server Configuration
-PORT=8000
-ENVIRONMENT=production
-HOST=0.0.0.0
+1. Push to the branch Railway is watching (currently the default branch) — Railway auto-builds via Nixpacks.
+2. Set the required env vars above in Railway's dashboard (Variables tab), not in code.
+3. Railway's managed Postgres add-on provides `DATABASE_URL` automatically if attached.
+4. After first deploy (or after any user/auth changes), run once: `python scripts/create_demo_user.py --base-url <railway-url> --password <real-password>` to (re)create the frontend's demo viewer account.
 
-# Database
-DATABASE_URL=postgresql+asyncpg://user:password@your-railway-db.railway.app:5432/digital_twin
+## Deploying the frontend (Vercel/Lovable)
 
-# Authentication
-SECRET_KEY=your-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+1. Set `VITE_DEMO_USERNAME`/`VITE_DEMO_PASSWORD` in the platform's environment variable settings (build-time, per Vite convention).
+2. Redeploy — Vercel/Lovable auto-builds on push, same as Railway.
 
-# Digital Twin
-MAX_IT_POWER_KW=500
-IDLE_POWER_FRACTION=0.4
-AIR_FLOW_M3_S=8.0
+## Health checks
 
-# External Services
-MQTT_BROKER_HOST=your-railway-mqtt.railway.app
-MQTT_BROKER_PORT=1883
-```
+- `GET /healthz` (Phase 14) — unauthenticated, checks DB reachability, returns 503 on failure. Use this for any external uptime monitor (e.g., UptimeRobot's free tier) pointed at the Railway URL.
+- `GET /api/health` — authenticated, for clients confirming reachability with a valid session.
 
-### Application Configuration
-The `config.yaml` file contains comprehensive settings for:
-- Patent objective weights (α, β, γ)
-- Training parameters
-- Environment physics constants
-- Safety validation ranges
-- Performance optimization settings
+## Logs
 
-## 🏗️ Deployment Options
+- Railway's built-in log viewer shows stdout, which is now structured JSON per request (Phase 16), including `request_id` — searchable/filterable by that ID if you need to trace one specific request a user reports an issue about.
+- Local: `docker-compose logs -f backend`.
 
-### 1. Heroku Deployment
-```bash
-# Create Heroku app
-heroku create your-app-name
+## Monitoring — current real limits, stated plainly
 
-# Set environment variables
-heroku config:set PORT=8000
-heroku config:set ENVIRONMENT=production
+`GET /metrics` (Phase 16) exists and returns valid Prometheus text format, but **nothing is currently scraping it** — Railway doesn't run a Prometheus server, and none is deployed here. Today, `/metrics` is only useful via a manual `curl` check or if you set up a free external service (e.g., Grafana Cloud's free tier can scrape a public HTTP endpoint on an interval) to pull from it. Don't claim "monitoring" is fully wired end-to-end — the metrics *exist and are correct*, but nothing is *watching* them yet. That's a reasonable next step, not something this phase pretends is already done.
 
-# Deploy
-git push heroku main
-```
+## Rollback strategy
 
-### 2. Docker Deployment
-```dockerfile
-FROM python:3.9.16
+Railway keeps previous deploys and supports one-click rollback from its dashboard (Deployments tab → select a previous successful deploy → "Redeploy"). No custom rollback tooling needed at this scale — Railway's built-in mechanism is sufficient and simpler than building a parallel one.
 
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+## Adding a staging environment (recommended, not yet done)
 
-COPY . .
-EXPOSE $PORT
-
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
-```
-
-### 3. Direct Server Deployment
-```bash
-# Using startup script
-chmod +x start.sh
-./start.sh
-
-# Or directly
-uvicorn api.main:app --host 0.0.0.0 --port 8000
-```
-
-## 🔍 API Endpoints
-
-### Authentication Required
-All endpoints require JWT authentication (except health check):
-
-- **GET /api/health** - Health check
-- **GET /api/state** - Get current digital twin state
-- **GET /api/simulate/{hours}** - Run simulation
-- **POST /api/optimize** - RL optimization
-- **GET /api/anomaly_score** - Anomaly detection
-- **WebSocket /ws/live** - Live state updates
-
-### Example Usage
-```bash
-# Health check
-curl https://function-bun-production-6ce5.up.railway.app/api/health
-
-# Get state (requires auth token)
-curl -H "Authorization: Bearer $TOKEN" \
-     https://function-bun-production-6ce5.up.railway.app/api/state?utilisation=0.8&outside_temp=25.0
-```
-
-## ✅ Pre-Deployment Testing
-
-Run the deployment verification script:
-```bash
-python test_startup.py
-```
-
-This tests:
-- ✅ API module imports
-- ✅ FastAPI app creation
-- ✅ Application readiness
-
-## 📊 Performance Features
-
-### Production Optimizations
-- **Async/await** for high concurrency
-- **Connection pooling** for database
-- **CORS middleware** for web integration
-- **Structured logging** with configurable levels
-- **Health checks** for monitoring
-
-### Scaling Options
-```bash
-# Multiple workers
-uvicorn api.main:app --host 0.0.0.0 --port $PORT --workers 4
-
-# With SSL
-uvicorn api.main:app --host 0.0.0.0 --port $PORT --ssl-keyfile key.pem --ssl-certfile cert.pem
-```
-
-## 🔒 Security Features
-
-- **JWT authentication** with configurable expiration
-- **CORS protection** with configurable origins
-- **Input validation** with Pydantic models
-- **SQL injection protection** via SQLAlchemy
-- **Environment variable** configuration for secrets
-
-## 📝 Monitoring & Logging
-
-### Log Configuration
-```python
-# Logs are written to:
-- Console (stdout/stderr)
-- File: logs/api.log (configurable)
-- Structured JSON format for log aggregation
-```
-
-### Health Monitoring
-```bash
-# Health check endpoint
-curl https://function-bun-production-6ce5.up.railway.app/api/health
-
-# Response
-{
-  "status": "healthy",
-  "timestamp": "2024-01-01T12:00:00.000Z"
-}
-```
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Failed**
-   - Check `DATABASE_URL` environment variable
-   - Ensure PostgreSQL is running and accessible
-   - Verify credentials and network connectivity
-
-2. **Module Import Errors**
-   - Run `pip install -r requirements.txt`
-   - Check Python path configuration
-   - Verify all dependencies are installed
-
-3. **Port Already in Use**
-   - Change PORT environment variable
-   - Kill existing process: `lsof -ti:8000 | xargs kill`
-
-4. **Authentication Failures**
-   - Verify `SECRET_KEY` is set
-   - Check token expiration settings
-   - Ensure proper Authorization header format
-
-### Debug Mode
-```bash
-# Enable debug logging
-uvicorn api.main:app --host 0.0.0.0 --port $PORT --log-level debug
-```
-
-## 📈 Production Checklist
-
-- [ ] Environment variables configured
-- [ ] Database connection tested
-- [ ] SSL certificates installed (if using HTTPS)
-- [ ] Health checks passing
-- [ ] Log rotation configured
-- [ ] Monitoring and alerting set up
-- [ ] Backup procedures documented
-- [ ] Security audit completed
-- [ ] Load testing performed
-- [ ] Documentation updated
-
-## 🌐 Repository
-
-The deployment-ready code is available at:
-https://github.com/08817711624aiml-coder/DigitalTwin
-
-## 📞 Support
-
-For deployment issues:
-1. Check the logs: `tail -f logs/api.log`
-2. Run the test script: `python test_startup.py`
-3. Review this documentation
-4. Check GitHub issues for known problems
-
----
-
-**Note**: The application is designed to be cloud-agnostic and can be deployed on any platform that supports Python 3.9+ and the specified start command.
+1. In Railway's project settings, create a second **environment** (Railway's term, separate from a "service") named `staging`, pointed at a `staging` git branch.
+2. Attach a separate Postgres instance to it (Railway environments don't share databases by default).
+3. Set a **different** `JWT_SECRET_KEY` and a **different** demo viewer account for staging — never reuse production secrets in staging.
+4. Vercel/Lovable already gives you this for free on the frontend side via preview deployments per branch/PR — no extra setup needed there.

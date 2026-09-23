@@ -19,7 +19,11 @@ from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable
+from .carbon_provider import load_diurnal_carbon_intensity
 
+# Matches DataCentreEnv.DROUGHT_THRESHOLD (src/optimizer.py) exactly --
+# both files enforce the same patent Claim 3 rule.
+DROUGHT_THRESHOLD = 0.7
 import numpy as np
 import pandas as pd
 
@@ -88,6 +92,10 @@ class DataCentreState:
     water_pressure_bar: float
     cooling_mode: CoolingMode
     anomaly: int = 0
+    water_stress: float = 0.0
+    carbon_intensity_gco2_per_kwh: float = 0.0
+    carbon_gco2: float = 0.0
+    drought_override_active: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dict for DataFrame construction."""
@@ -108,8 +116,11 @@ class DataCentreState:
             "water_pressure_bar": self.water_pressure_bar,
             "cooling_mode": self.cooling_mode.value,
             "anomaly": self.anomaly,
+            "water_stress": self.water_stress,
+            "carbon_intensity_gco2_per_kwh": self.carbon_intensity_gco2_per_kwh,
+            "carbon_gco2": self.carbon_gco2,
+            "drought_override_active": self.drought_override_active,
         }
-
 
 class DigitalTwin:
     """
@@ -159,6 +170,8 @@ class DigitalTwin:
             self._water_consumed_cumulative_L: float = 0.0
             self._humidity_pct: float = 50.0
             self._water_pressure_bar: float = 3.0
+            self._water_stress: float = 0.0
+            self._carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
             self._state: DataCentreState = self._build_initial_state()
             self._pinn: Any = None
             
@@ -180,6 +193,7 @@ class DigitalTwin:
         pue = total / it_power if it_power > 0.1 else 1.0
         it_energy_kwh = it_power * (INTERVAL_MINUTES / 60)
         wue = consumed / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
+        carbon_intensity, carbon_gco2 = self._compute_carbon(cooling)
 
         return DataCentreState(
             timestamp=self._time,
@@ -198,6 +212,10 @@ class DigitalTwin:
             water_pressure_bar=self._water_pressure_bar,
             cooling_mode=self._cooling_mode,
             anomaly=0,
+            water_stress=self._water_stress,
+            carbon_intensity_gco2_per_kwh=carbon_intensity,
+            carbon_gco2=carbon_gco2,
+            drought_override_active=self._water_stress > DROUGHT_THRESHOLD,
         )
 
     # -------------------------------------------------------------------------
@@ -336,6 +354,14 @@ class DigitalTwin:
     # -------------------------------------------------------------------------
     # Control methods
     # -------------------------------------------------------------------------
+    def _compute_carbon(self, cooling_power_kw: float) -> tuple[float, float]:
+        """Returns (carbon_intensity_gco2_per_kwh, carbon_gco2) for the
+        current hour, using the same real diurnal curve as DataCentreEnv
+        (src/optimizer.py) -- see src/carbon_provider.py.
+        """
+        intensity = float(self._carbon_intensity_by_hour[self._time.hour])
+        carbon_gco2 = cooling_power_kw * intensity * (INTERVAL_MINUTES / 60)
+        return intensity, carbon_gco2
 
     def select_cooling_mode(
         self,
@@ -360,9 +386,9 @@ class DigitalTwin:
         if outside_temp_C < 12.0:
             mode = CoolingMode.FREE_AIR
             logger.debug("Selected free_air (outside %.1f < 12°C)", outside_temp_C)
-        elif water_stress > 0.7:
+        elif water_stress > DROUGHT_THRESHOLD:
             mode = CoolingMode.CLOSED_LOOP
-            logger.debug("Selected closed_loop (water_stress %.2f > 0.7)", water_stress)
+            logger.debug("Selected closed_loop (water_stress %.2f > %.2f)", water_stress, DROUGHT_THRESHOLD)
         elif outside_temp_C > 28.0 and water_stress < 0.3:
             mode = CoolingMode.EVAPORATIVE
             logger.debug("Selected evaporative (hot, low water stress)")
@@ -409,6 +435,9 @@ class DigitalTwin:
             if "water_pressure_bar" in action_dict:
                 self._water_pressure_bar = float(action_dict["water_pressure_bar"])
 
+            if "water_stress" in action_dict:
+                self._water_stress = float(action_dict["water_stress"])
+
             self._time += timedelta(minutes=INTERVAL_MINUTES)
 
             # Compute state
@@ -427,6 +456,7 @@ class DigitalTwin:
             pue = total / it_power if it_power > 0.1 else 1.0
             it_energy_kwh = it_power * (INTERVAL_MINUTES / 60)
             wue = consumed / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
+            carbon_intensity, carbon_gco2 = self._compute_carbon(cooling)
 
             self._state = DataCentreState(
                 timestamp=self._time,
@@ -445,6 +475,10 @@ class DigitalTwin:
                 water_pressure_bar=self._water_pressure_bar,
                 cooling_mode=self._cooling_mode,
                 anomaly=0,
+                water_stress=self._water_stress,
+                carbon_intensity_gco2_per_kwh=carbon_intensity,
+                carbon_gco2=carbon_gco2,
+                drought_override_active=self._water_stress > DROUGHT_THRESHOLD,
             )
             
             # Log simulation step results

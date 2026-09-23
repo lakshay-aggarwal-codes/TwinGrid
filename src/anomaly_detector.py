@@ -129,6 +129,16 @@ class AnomalyDetector:
         self._threshold: float | None = None
         self._is_trained = False
 
+    @property
+    def threshold(self) -> float | None:
+        """The 95th-percentile reconstruction-error threshold learned during
+        training. None if the detector hasn't been trained/loaded yet.
+        Exposed so callers (e.g. the API layer) can report anomaly scores
+        as a fraction of this real, model-derived value, rather than an
+        arbitrary display scale.
+        """
+        return self._threshold
+
     def _build_model(self) -> Any:
         """Build LSTM autoencoder."""
         keras = _get_keras()
