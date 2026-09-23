@@ -6,7 +6,7 @@
  * how that token is obtained (demo viewer account, no login screen).
  */
 
-import { getToken } from './authClient';
+import { getToken } from '../authClient';
 
 const BASE_URL = 'https://function-bun-production-6ce5.up.railway.app';
 const WS_BASE_URL = 'wss://function-bun-production-6ce5.up.railway.app/ws/live';
