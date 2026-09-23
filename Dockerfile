@@ -10,10 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         libpq-dev \
     && rm -rf /var/lib/apt/lists/*
-
+    
 WORKDIR /build
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN python -m venv /venv
+ENV PATH="/venv/bin:$PATH"
+RUN pip install --no-cache-dir -r requirements.txt
 
 
 # ---- Runtime stage: slim image, no build toolchain ----
@@ -29,10 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # privilege-escalation surface with no offsetting benefit here.
 RUN useradd --create-home --uid 1000 appuser
 WORKDIR /app
-
-COPY --from=builder /root/.local /home/appuser/.local
-ENV PATH=/home/appuser/.local/bin:$PATH \
-    HOME=/home/appuser \
+COPY --from=builder /venv /venv
+ENV PATH="/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
