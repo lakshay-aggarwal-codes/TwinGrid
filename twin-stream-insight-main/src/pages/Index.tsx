@@ -12,7 +12,7 @@ import { useSimulation } from '@/hooks/useSimulation';
 const Index = () => {
   const {
     config, setConfig, kpi, anomalyScore, events, hourlyData, simRunning,
-    runSimulation, getScenarioResult, liveState, equipmentHealth,
+    runSimulation, liveState, equipmentHealth,
   } = useSimulation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -52,7 +52,7 @@ const Index = () => {
               <SimulationTab data={hourlyData} />
             </TabsContent>
             <TabsContent value="whatif">
-              <WhatIfTab baseConfig={config} getResult={getScenarioResult} />
+              <WhatIfTab baseConfig={config} />
             </TabsContent>
             <TabsContent value="sustainability">
               <SustainabilityTab liveState={liveState} equipmentHealth={equipmentHealth} />

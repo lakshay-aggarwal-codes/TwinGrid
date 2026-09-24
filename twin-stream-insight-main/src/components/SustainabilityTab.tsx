@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function SustainabilityTab({ liveState, equipmentHealth }: Props) {
-return (
+  return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card>
         <CardHeader>
@@ -24,8 +24,12 @@ return (
                 Cooling emitted ~{liveState.carbon_gco2?.toFixed(0)} gCO2 this step
               </p>
               <p className="text-xs text-muted-foreground mt-2">
-                Real diurnal average from Electricity Maps data, not a live grid feed.
-              </p>x``
+                {liveState.carbon_data_is_real === true
+                  ? 'Real diurnal average from Electricity Maps data, not a live grid feed.'
+                  : liveState.carbon_data_is_real === false
+                  ? `Flat fallback ${liveState.carbon_intensity_gco2_per_kwh.toFixed(0)} gCO2/kWh — not real grid data (no Electricity Maps data loaded on the backend).`
+                  : 'Data source not reported by the backend.'}
+              </p>
             </>
           ) : (
             <p className="text-sm text-muted-foreground">Waiting for live data...</p>

@@ -1,5 +1,5 @@
 /**
- * API client for Digital Twin FastAPI backend (https://function-bun-production-6ce5.up.railway.app).
+ * API client for the Digital Twin FastAPI backend (URL: VITE_API_BASE_URL, see src/config.ts).
  * All functions return parsed JSON and handle errors gracefully.
  *
  * All /api/* endpoints and /ws/live require a JWT -- see authClient.ts for
@@ -7,9 +7,7 @@
  */
 
 import { getToken } from '../authClient';
-
-const BASE_URL = 'https://function-bun-production-6ce5.up.railway.app';
-const WS_BASE_URL = 'wss://function-bun-production-6ce5.up.railway.app/ws/live';
+import { API_BASE_URL as BASE_URL, WS_LIVE_URL as WS_BASE_URL, assertApiConfigured } from '../config';
 
 const DEFAULT_RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_DELAY_MS = 30000;
@@ -35,6 +33,8 @@ export interface StateResponse {
   carbon_intensity_gco2_per_kwh?: number;
   carbon_gco2?: number;
   drought_override_active?: boolean;
+  /** false = flat 475 gCO2/kWh fallback (no data/cleaned/carbon_intensity.csv), not real grid data */
+  carbon_data_is_real?: boolean;
 }
 
 export interface EquipmentHealthResponse {
@@ -67,6 +67,7 @@ export interface AnomalyScoreResponse {
 }
 
 function buildUrl(path: string, params: Record<string, string | number | undefined> = {}): string {
+  assertApiConfigured();
   const url = new URL(path, BASE_URL);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -96,6 +97,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 async function authedFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  assertApiConfigured();
   const token = await getToken();
   return fetch(url, {
     ...init,
@@ -141,6 +143,36 @@ export async function fetchSimulation(
   });
   const response = await authedFetch(url);
   return handleResponse<StateResponse[]>(response);
+}
+
+export interface WhatIfParams {
+  utilisation: number;
+  outside_temp: number;
+  water_stress: number;
+  mode: string;
+  chilled_water_temp: number;
+}
+
+/** GET /api/whatif response: an isolated 24h digital-twin run at constant inputs. */
+export interface WhatIfResponse {
+  hours: number;
+  basis: string;
+  mean_pue: number;
+  wue: number;
+  total_water_L: number;
+  total_energy_kwh: number;
+  total_co2_kg: number;
+  max_outlet_temp_C: number;
+  final_cooling_mode: string;
+  drought_override_active: boolean;
+  carbon_data_is_real: boolean;
+}
+
+/** GET /api/whatif — real backend scenario result (never computed locally). */
+export async function fetchWhatIf(params: WhatIfParams, signal?: AbortSignal): Promise<WhatIfResponse> {
+  const url = buildUrl('/api/whatif', { ...params });
+  const response = await authedFetch(url, { signal });
+  return handleResponse<WhatIfResponse>(response);
 }
 
 export interface FetchOptimizedParams {

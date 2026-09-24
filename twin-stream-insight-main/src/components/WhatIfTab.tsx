@@ -1,15 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ArrowDown, Leaf } from 'lucide-react';
-import type { SimConfig, CoolingMode, ScenarioResult } from '@/hooks/useSimulation';
+import type { SimConfig, CoolingMode } from '@/hooks/useSimulation';
+import { useWhatIf } from '@/hooks/useWhatIf';
 
 interface Props {
   baseConfig: SimConfig;
-  getResult: (cfg: SimConfig) => ScenarioResult;
 }
 
 function ScenarioPanel({ label, config, onChange }: {
@@ -47,31 +46,41 @@ function ScenarioPanel({ label, config, onChange }: {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center justify-between">
-          <Label className="text-xs text-muted-foreground">AI Optimizer</Label>
-          <Switch checked={config.aiOptimizer} onCheckedChange={v => set({ aiOptimizer: v })} />
-        </div>
       </div>
     </div>
   );
 }
 
-export function WhatIfTab({ baseConfig, getResult }: Props) {
+interface MetricRow {
+  label: string;
+  a: number | null;
+  b: number | null;
+  format: (v: number) => string;
+}
+
+export function WhatIfTab({ baseConfig }: Props) {
   const [cfgA, setCfgA] = useState<SimConfig>({ ...baseConfig });
-  const [cfgB, setCfgB] = useState<SimConfig>({ ...baseConfig, coolingMode: 'Closed-Loop', aiOptimizer: false });
+  const [cfgB, setCfgB] = useState<SimConfig>({ ...baseConfig, coolingMode: 'Closed-Loop' });
 
-  const resA = useMemo(() => getResult(cfgA), [cfgA, getResult]);
-  const resB = useMemo(() => getResult(cfgB), [cfgB, getResult]);
+  const resA = useWhatIf(cfgA);
+  const resB = useWhatIf(cfgB);
+  const a = resA.data;
+  const b = resB.data;
+  const loading = resA.loading || resB.loading;
+  const error = resA.error ?? resB.error;
 
-  const better = resA.co2Kg < resB.co2Kg ? 'A' : resB.co2Kg < resA.co2Kg ? 'B' : 'equal';
-
-  const rows = [
-    { label: 'PUE', a: resA.pue.toFixed(2), b: resB.pue.toFixed(2), lower: true },
-    { label: 'WUE (L/kWh)', a: resA.wue.toFixed(3), b: resB.wue.toFixed(3), lower: true },
-    { label: 'Water (L/day)', a: resA.waterL.toLocaleString(), b: resB.waterL.toLocaleString(), lower: true },
-    { label: 'Energy (kWh)', a: resA.energyKwh.toLocaleString(), b: resB.energyKwh.toLocaleString(), lower: true },
-    { label: 'CO₂ (kg)', a: resA.co2Kg.toLocaleString(), b: resB.co2Kg.toLocaleString(), lower: true },
+  const rows: MetricRow[] = [
+    { label: 'PUE', a: a?.mean_pue ?? null, b: b?.mean_pue ?? null, format: (v) => v.toFixed(2) },
+    { label: 'WUE (L/kWh)', a: a?.wue ?? null, b: b?.wue ?? null, format: (v) => v.toFixed(3) },
+    { label: 'Water (L/day)', a: a?.total_water_L ?? null, b: b?.total_water_L ?? null, format: (v) => Math.round(v).toLocaleString() },
+    { label: 'Energy (kWh/day)', a: a?.total_energy_kwh ?? null, b: b?.total_energy_kwh ?? null, format: (v) => Math.round(v).toLocaleString() },
+    { label: 'CO₂ (kg/day)', a: a?.total_co2_kg ?? null, b: b?.total_co2_kg ?? null, format: (v) => Math.round(v).toLocaleString() },
+    { label: 'Peak outlet temp (°C)', a: a?.max_outlet_temp_C ?? null, b: b?.max_outlet_temp_C ?? null, format: (v) => v.toFixed(1) },
   ];
+
+  const bothLoaded = a !== null && b !== null;
+  const better = !bothLoaded ? 'equal' : a.total_co2_kg < b.total_co2_kg ? 'A' : b.total_co2_kg < a.total_co2_kg ? 'B' : 'equal';
+  const flatCarbon = (a !== null && !a.carbon_data_is_real) || (b !== null && !b.carbon_data_is_real);
 
   return (
     <div className="space-y-4">
@@ -80,8 +89,20 @@ export function WhatIfTab({ baseConfig, getResult }: Props) {
         <ScenarioPanel label="Scenario B" config={cfgB} onChange={setCfgB} />
       </div>
 
+      <p className="text-xs text-muted-foreground">
+        Results come from the backend digital twin: an isolated 24 h run at constant inputs
+        {a ? ` (${a.basis})` : ''}. The AI optimizer policy is not applied here.
+        {loading && ' Updating…'}
+      </p>
+      {error && (
+        <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          What-if request failed: {error}
+          {(a || b) && ' — showing the last successful result.'}
+        </div>
+      )}
+
       {/* Comparison table */}
-      <div className="card-grid-glow rounded-lg overflow-hidden">
+      <div className={`card-grid-glow rounded-lg overflow-hidden ${loading ? 'opacity-70' : ''}`}>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
@@ -91,16 +112,19 @@ export function WhatIfTab({ baseConfig, getResult }: Props) {
             </tr>
           </thead>
           <tbody>
-            {rows.map(r => {
-              const aVal = parseFloat(r.a.replace(/,/g, ''));
-              const bVal = parseFloat(r.b.replace(/,/g, ''));
-              const aBetter = r.lower ? aVal < bVal : aVal > bVal;
-              const bBetter = r.lower ? bVal < aVal : bVal > aVal;
+            {rows.map((r) => {
+              const both = r.a !== null && r.b !== null;
+              const aBetter = both && (r.a as number) < (r.b as number);
+              const bBetter = both && (r.b as number) < (r.a as number);
               return (
                 <tr key={r.label} className="border-b border-border/50">
                   <td className="px-4 py-2.5 text-muted-foreground">{r.label}</td>
-                  <td className={`px-4 py-2.5 text-right font-mono ${aBetter ? 'text-success' : ''}`}>{r.a} {aBetter && <ArrowDown className="inline h-3 w-3" />}</td>
-                  <td className={`px-4 py-2.5 text-right font-mono ${bBetter ? 'text-success' : ''}`}>{r.b} {bBetter && <ArrowDown className="inline h-3 w-3" />}</td>
+                  <td className={`px-4 py-2.5 text-right font-mono ${aBetter ? 'text-success' : ''}`}>
+                    {r.a === null ? '—' : r.format(r.a)} {aBetter && <ArrowDown className="inline h-3 w-3" />}
+                  </td>
+                  <td className={`px-4 py-2.5 text-right font-mono ${bBetter ? 'text-success' : ''}`}>
+                    {r.b === null ? '—' : r.format(r.b)} {bBetter && <ArrowDown className="inline h-3 w-3" />}
+                  </td>
                 </tr>
               );
             })}
@@ -108,19 +132,27 @@ export function WhatIfTab({ baseConfig, getResult }: Props) {
         </table>
       </div>
 
+      {flatCarbon && (
+        <p className="text-xs text-muted-foreground">
+          CO₂ uses the flat fallback of 475 gCO₂/kWh (no real grid-intensity data loaded on the backend).
+        </p>
+      )}
+
       {/* Recommendation */}
       <div className={`rounded-lg p-4 flex items-center gap-3 ${better !== 'equal' ? 'bg-success/10 border border-success/30' : 'card-grid-glow'}`}>
         <Leaf className={`h-5 w-5 ${better !== 'equal' ? 'text-success' : 'text-muted-foreground'}`} />
         <div className="flex-1">
-          {better !== 'equal' ? (
+          {!bothLoaded ? (
+            <p className="text-sm text-muted-foreground">{error ? 'No result available yet.' : 'Running scenarios…'}</p>
+          ) : better !== 'equal' ? (
             <p className="text-sm text-foreground">
-              <span className="font-semibold">Scenario {better}</span> is more sustainable — lower CO₂ emissions and better resource efficiency.
+              <span className="font-semibold">Scenario {better}</span> emits less CO₂ over the simulated 24 h.
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground">Both scenarios are equivalent in sustainability metrics.</p>
+            <p className="text-sm text-muted-foreground">Both scenarios emit the same CO₂.</p>
           )}
         </div>
-        {better !== 'equal' && <Badge className="bg-success text-success-foreground">Recommended</Badge>}
+        {better !== 'equal' && <Badge className="bg-success text-success-foreground">Lower CO₂</Badge>}
       </div>
     </div>
   );

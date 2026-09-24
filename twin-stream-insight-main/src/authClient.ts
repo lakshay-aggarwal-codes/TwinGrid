@@ -1,5 +1,4 @@
- 
-const BASE_URL = 'https://twingrid.onrender.com/';
+import { API_BASE_URL, assertApiConfigured } from './config.ts';
 
 const DEMO_USERNAME = import.meta.env.VITE_DEMO_USERNAME as string | undefined;
 const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
@@ -21,7 +20,8 @@ async function login(): Promise<string> {
         'and fill these in with the account created by scripts/create_demo_user.py.'
     );
   }
-  const response = await fetch(`${BASE_URL}/auth/login`, {
+  assertApiConfigured();
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: DEMO_USERNAME, password: DEMO_PASSWORD }),
@@ -35,7 +35,9 @@ async function login(): Promise<string> {
 
 function decodeExpiryMs(token: string): number {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    // JWTs are base64url ("-" and "_"); atob() only understands plain base64.
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(b64));
     if (typeof payload.exp === 'number') return payload.exp * 1000;
   } catch {
     // fall through
@@ -51,10 +53,15 @@ export async function getToken(): Promise<string> {
   if (inFlight) return inFlight;
 
   inFlight = (async () => {
-    const token = await login();
-    cached = { token, expiresAtMs: decodeExpiryMs(token) };
-    inFlight = null;
-    return token;
+    try {
+      const token = await login();
+      cached = { token, expiresAtMs: decodeExpiryMs(token) };
+      return token;
+    } finally {
+      // Always clear, success OR failure: otherwise one failed login leaves a
+      // rejected promise in `inFlight` and every later call returns it forever.
+      inFlight = null;
+    }
   })();
 
   return inFlight;
