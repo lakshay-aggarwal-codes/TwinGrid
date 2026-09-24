@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, Boolean, JSON
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -70,9 +70,9 @@ class SensorReading(Base):
     anomaly: Mapped[int] = mapped_column(Integer, default=0)
 
     # Optional: link to simulation or optimization run
-    simulation_run_id: Mapped[Optional[int]] = mapped_column(ForeignKey("simulation_runs.id"), nullable=True, index=True)
+    simulation_run_id: Mapped[Optional[int]] = mapped_column(ForeignKey("simulation_runs.id", ondelete="SET NULL"), nullable=True, index=True)
     optimization_result_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("optimization_results.id"), nullable=True, index=True
+        ForeignKey("optimization_results.id", ondelete="SET NULL"), nullable=True, index=True
     )
 
     simulation_run: Mapped[Optional["SimulationRun"]] = relationship("SimulationRun", back_populates="readings")
@@ -216,5 +216,5 @@ class Alert(Base):
     severity: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)  # INFO | WARNING | CRITICAL
 
     # Optional link to sensor reading that triggered the alert
-    sensor_reading_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sensor_readings.id"), nullable=True)
+    sensor_reading_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sensor_readings.id", ondelete="SET NULL"), nullable=True)
 

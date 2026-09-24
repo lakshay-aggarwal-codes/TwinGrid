@@ -94,6 +94,15 @@ class NotTrainedError(AnomalyDetectorError):
     pass
 
 
+class ShapeError(AnomalyDetectorError, ValueError):
+    """Raised when input sequences don't have shape (n, seq_len, 5).
+
+    Also a ValueError, so callers that already catch ValueError keep working.
+    """
+
+    pass
+
+
 class AnomalyDetector:
     """
     LSTM Autoencoder for anomaly detection on data centre sensor sequences.
@@ -345,7 +354,7 @@ class AnomalyDetector:
             raise NotTrainedError("Threshold not set. Train or load first.")
 
         if sequences.ndim != 3 or sequences.shape[1] != self._seq_len or sequences.shape[2] != N_FEATURES:
-            raise ValueError(
+            raise ShapeError(
                 f"sequences must be (n, {self._seq_len}, {N_FEATURES}), got {sequences.shape}"
             )
 

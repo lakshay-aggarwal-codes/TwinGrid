@@ -23,7 +23,19 @@ async def anomaly_score(
 ) -> AnomalyScoreResponse:
     """Compute anomaly score from the last 12 timesteps of 5 sensor features."""
     result = anomaly_service.score_recent_data(recent_data)
-    await data_repository.save_alert(session, result["score"], result["alert"], result["type"], result["message"])
+    # Only genuine alerts are persisted. Previously EVERY scoring call (including
+    # "normal", "detector not available" and "error" results) wrote an Alert row,
+    # so /api/alerts was flooded with non-alerts -- and the frontend scores every
+    # 3 seconds.
+    if result["alert"]:
+        await data_repository.save_alert(
+            session,
+            result["score"],
+            True,
+            result["type"],
+            result["message"],
+            severity=anomaly_service.alert_severity(result["score"], result["threshold"]),
+        )
     return AnomalyScoreResponse(**result)
 
 

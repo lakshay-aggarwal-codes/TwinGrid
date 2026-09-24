@@ -8,12 +8,14 @@ import asyncio
 import os
 from logging.config import fileConfig
 
+from alembic import context
 from dotenv import load_dotenv
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from alembic import context
+from db_url import DEFAULT_DATABASE_URL, normalize_database_url
+from models.db_models import Base
 
 load_dotenv()
 
@@ -21,16 +23,16 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-database_url = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5432/digital_twin",
-)
-sync_url = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
-config.set_main_option("sqlalchemy.url", sync_url)
+# Same normalisation as database.py: postgres:// and postgresql:// become
+# postgresql+asyncpg:// so `alembic upgrade head` works against the URL a
+# managed-Postgres provider hands out.
+database_url = normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
+sync_url = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)  # offline mode only (no driver needed)
 
-config.set_section_option(config.config_ini_section, "sqlalchemy.url", database_url)
+# configparser treats "%" as interpolation syntax, so a percent-encoded
+# password (e.g. "p%40ss") must be escaped as "%%" before set_main_option().
+config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
-from models.db_models import Base
 target_metadata = Base.metadata
 
 

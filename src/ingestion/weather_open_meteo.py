@@ -221,6 +221,46 @@ def ingest_weather(
     return output_path
 
 
+# Wide raw schema (Open-Meteo hourly export incl. city/country/lat/lon columns).
+EXPECTED_RAW_COLUMNS = [
+    "timestamp",
+    "city",
+    "country",
+    "latitude",
+    "longitude",
+    "ambient_temperature_c",
+    "relative_humidity_pct",
+    "dew_point_c",
+    "apparent_temperature_c",
+    "precipitation_mm",
+    "cloud_cover_pct",
+    "wind_speed_10m_kmh",
+    "wind_direction_10m_deg",
+    "solar_radiation_w_m2",
+    "et0_mm",
+]
+_NUMERIC_WEATHER_COLUMNS = [c for c in EXPECTED_RAW_COLUMNS if c not in ("timestamp", "city", "country")]
+
+
+def normalize_weather_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Validate and normalise a wide Open-Meteo frame: UTC timestamps as
+    "YYYY-MM-DD HH:MM:SS+00:00" strings, trimmed lower-case city/country,
+    float64 numeric columns. Raises IngestionValidationError if any expected
+    column is missing.
+
+    NOTE: ingest_weather() above still uses the narrower per-city-file schema
+    and does not call this function.
+    """
+    validate_required_columns(df, EXPECTED_RAW_COLUMNS, source_name="Open-Meteo Weather")
+    out = df[EXPECTED_RAW_COLUMNS].copy()
+    out["timestamp"] = pd.to_datetime(out["timestamp"], utc=True, errors="coerce").astype(str)
+    out["city"] = out["city"].astype(str).str.strip().str.lower()
+    out["country"] = out["country"].astype(str).str.strip()
+    for col in _NUMERIC_WEATHER_COLUMNS:
+        out[col] = pd.to_numeric(out[col], errors="coerce").astype("float64")
+    return out.reset_index(drop=True)
+
+
 def main() -> None:
     """Module entry point called by the ingestion runner."""
     ingest_weather()

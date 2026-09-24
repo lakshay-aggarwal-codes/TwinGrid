@@ -201,7 +201,10 @@ class DigitalTwin:
             self._humidity_pct: float = 50.0
             self._water_pressure_bar: float = 3.0
             self._water_stress: float = 0.0
-            self._carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
+            # is_real is False when data/cleaned/carbon_intensity.csv is absent and the flat
+            # 475 gCO2/kWh fallback is in use; surfaced via carbon_data_is_real so the UI
+            # never presents the fallback as real grid data.
+            self._carbon_intensity_by_hour, self.carbon_data_is_real = load_diurnal_carbon_intensity()
 
             # Dynamic-physics state
             self._thermal_time_constant_min = thermal_time_constant_min
@@ -439,9 +442,9 @@ class DigitalTwin:
         """
         Rule-based cooling mode selection.
 
-        - Free-air when outside < 12°C (no water, high COP).
         - Closed-loop when water stress > DROUGHT_THRESHOLD (patent Claim 3
-          drought override — must match DataCentreEnv's threshold exactly).
+          drought override — checked first; must match DataCentreEnv's threshold).
+        - Free-air when outside < 12°C (no water, high COP).
         - Evaporative when outside hot and water stress low.
         - Hybrid as default balance.
 
@@ -452,12 +455,17 @@ class DigitalTwin:
         Returns:
             Selected CoolingMode.
         """
-        if outside_temp_C < 12.0:
-            mode = CoolingMode.FREE_AIR
-            logger.debug("Selected free_air (outside %.1f < 12°C)", outside_temp_C)
-        elif water_stress > DROUGHT_THRESHOLD:
+        # Drought override FIRST (patent Claim 3): it must win over every other
+        # rule, including free-air, exactly as DataCentreEnv._action_to_control
+        # does. (It was previously checked second, so a cold day with severe
+        # water stress returned free_air while the state still reported
+        # drought_override_active=True.)
+        if water_stress > DROUGHT_THRESHOLD:
             mode = CoolingMode.CLOSED_LOOP
             logger.debug("Selected closed_loop (water_stress %.2f > %.2f)", water_stress, DROUGHT_THRESHOLD)
+        elif outside_temp_C < 12.0:
+            mode = CoolingMode.FREE_AIR
+            logger.debug("Selected free_air (outside %.1f < 12°C)", outside_temp_C)
         elif outside_temp_C > 28.0 and water_stress < 0.3:
             mode = CoolingMode.EVAPORATIVE
             logger.debug("Selected evaporative (hot, low water stress)")

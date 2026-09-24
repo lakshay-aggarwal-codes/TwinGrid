@@ -3,8 +3,8 @@ Centralized logging configuration for the Digital Twin system.
 """
 import logging
 import os
-from logging.handlers import RotatingFileHandler
 import traceback
+from logging.handlers import RotatingFileHandler
 
 
 def setup_logging():
@@ -52,19 +52,23 @@ def setup_logging():
 
 
 def log_function_entry(func_name, **kwargs):
-    """Log function entry with parameters."""
+    """Log function entry with parameters (DEBUG: this fires on every twin step)."""
     logger = logging.getLogger(func_name.split('.')[0] if '.' in func_name else func_name)
+    if not logger.isEnabledFor(logging.DEBUG):
+        return  # skip building the parameter string on the hot path
     params_str = ', '.join([f"{k}={v}" for k, v in kwargs.items()])
-    logger.info(f"ENTER: {func_name}({params_str})")
+    logger.debug(f"ENTER: {func_name}({params_str})")
 
 
 def log_function_exit(func_name, result=None):
-    """Log function exit with result."""
+    """Log function exit with result (DEBUG: this fires on every twin step)."""
     logger = logging.getLogger(func_name.split('.')[0] if '.' in func_name else func_name)
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
     if result is not None:
-        logger.info(f"EXIT: {func_name} -> Result: {result}")
+        logger.debug(f"EXIT: {func_name} -> Result: {result}")
     else:
-        logger.info(f"EXIT: {func_name}")
+        logger.debug(f"EXIT: {func_name}")
 
 
 def log_error(func_name, error, include_traceback=True):
@@ -93,10 +97,12 @@ def log_training_progress(model_name, epoch, loss, accuracy=None, **metrics):
 
 
 def log_simulation_step(step_number, **results):
-    """Log simulation step results."""
+    """Log simulation step results (DEBUG: one line per 5-minute twin step)."""
     logger = logging.getLogger('simulation')
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
     results_str = ', '.join([f"{k}={v}" for k, v in results.items()])
-    logger.info(f"SIMULATION STEP {step_number}: {results_str}")
+    logger.debug(f"SIMULATION STEP {step_number}: {results_str}")
 
 
 # Initialize logging when module is imported

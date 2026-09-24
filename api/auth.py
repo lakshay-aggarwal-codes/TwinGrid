@@ -1,30 +1,32 @@
 """
 JWT authentication and role-based access for the Digital Twin API.
 
-- POST /auth/register — create user (bcrypt hashed password)
+- POST /auth/register — create user (bcrypt hashed password). Registering
+  role "operator" additionally requires the X-Admin-Key header to match the
+  OPERATOR_REGISTRATION_KEY environment variable (disabled if unset).
 - POST /auth/login — returns JWT token
 - All /api/* require valid JWT; POST /api/optimize requires role 'operator'.
 """
 
 from __future__ import annotations
 
+import hmac
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import bcrypt
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from api.rate_limit import limiter
-
 from database import get_db
-from models.db_models import User, USER_ROLE_OPERATOR, USER_ROLE_VIEWER
+from models.db_models import USER_ROLE_OPERATOR, USER_ROLE_VIEWER, User
+
 # -----------------------------------------------------------------------------
 # Config
 # -----------------------------------------------------------------------------
@@ -41,21 +43,47 @@ if not SECRET_KEY:
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=True)
 
 
 # -----------------------------------------------------------------------------
-# Password hashing
+# Password hashing (bcrypt used directly -- passlib is unmaintained and its
+# bcrypt backend breaks with bcrypt>=4.1)
 # -----------------------------------------------------------------------------
+
+_BCRYPT_MAX_BYTES = 72
+
+
+def _bcrypt_input(password: str) -> bytes:
+    """bcrypt only ever uses the first 72 bytes, and bcrypt>=5 raises
+    ValueError for longer input -- truncate explicitly so behaviour is the
+    same on every supported bcrypt version."""
+    return password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(_bcrypt_input(password), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return bcrypt.checkpw(_bcrypt_input(plain), hashed.encode("utf-8"))
+    except ValueError:
+        # Malformed / non-bcrypt stored hash: treat as a failed login, not a 500.
+        return False
+
+
+def operator_registration_allowed(provided_key: Optional[str]) -> bool:
+    """True only if OPERATOR_REGISTRATION_KEY is configured AND matches.
+
+    Read from the environment on every call (not at import) so rotating the
+    key needs no code change. If the variable is unset/empty, operator
+    registration is disabled outright. Constant-time comparison.
+    """
+    expected = os.getenv("OPERATOR_REGISTRATION_KEY")
+    if not expected or not provided_key:
+        return False
+    return hmac.compare_digest(provided_key.encode("utf-8"), expected.encode("utf-8"))
 
 
 # -----------------------------------------------------------------------------
@@ -86,7 +114,7 @@ def decode_token(token: str) -> dict:
 # -----------------------------------------------------------------------------
 
 
-async def get_user_by_username(session: AsyncSession, username: str) -> User | None:
+async def get_user_by_username(session: AsyncSession, username: str) -> Optional[User]:
     result = await session.execute(select(User).where(User.username == username))
     return result.scalar_one_or_none()
 
@@ -168,9 +196,20 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def register(
     request: Request,
     body: RegisterRequest,
+    x_admin_key: Optional[str] = Header(default=None),
     session: AsyncSession = Depends(get_db),
 ) -> User:
-    """Create a new user with hashed password. Default role: viewer. Rate limited: 5/hour per IP."""
+    """Create a new user with hashed password. Default role: viewer. Rate limited: 5/hour per IP.
+
+    Role "operator" requires header ``X-Admin-Key`` matching the
+    OPERATOR_REGISTRATION_KEY env var (403 otherwise, and always 403 if the
+    variable is unset -- operator self-registration is then disabled).
+    """
+    if body.role == USER_ROLE_OPERATOR and not operator_registration_allowed(x_admin_key):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Operator registration requires a valid X-Admin-Key",
+        )
     existing = await get_user_by_username(session, body.username)
     if existing is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")

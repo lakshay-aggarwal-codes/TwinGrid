@@ -27,13 +27,8 @@ async def websocket_live(websocket: WebSocket, token: str = Query(..., alias="to
     await websocket.accept()
     manager.connect(websocket)
     try:
-        while True:
-            # This connection only ever receives broadcasts; it never sends
-            # anything meaningful itself. receive() blocks until either a
-            # (discarded) client message arrives or the socket closes --
-            # the standard FastAPI pattern for detecting disconnect on a
-            # server-push-only connection.
-            await websocket.receive()
+        while True: 
+            await websocket.receive_text()
     except WebSocketDisconnect:
         pass
     except Exception as e:

@@ -7,7 +7,7 @@ single, trivial persistence call.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,8 +46,15 @@ async def save_optimization_result(session: AsyncSession, **fields: Any) -> Opti
     return opt
 
 
-async def save_alert(session: AsyncSession, score: float, alert: bool, type_: str, message: str) -> None:
-    session.add(Alert(score=score, alert=alert, type=type_, message=message))
+async def save_alert(
+    session: AsyncSession,
+    score: float,
+    alert: bool,
+    type_: str,
+    message: str,
+    severity: Optional[str] = None,
+) -> None:
+    session.add(Alert(score=score, alert=alert, type=type_, message=message, severity=severity))
     await session.flush()
 
 

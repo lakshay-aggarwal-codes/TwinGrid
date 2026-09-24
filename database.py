@@ -13,18 +13,17 @@ import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from db_url import DEFAULT_DATABASE_URL, auto_create_tables_enabled, normalize_database_url
 from models.db_models import Base
 
 load_dotenv()
 
-# Expect postgresql+asyncpg://user:password@host:port/dbname
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5432/digital_twin",
-)
+# Accepts postgres:// , postgresql:// or postgresql+asyncpg://user:password@host:port/dbname
+# (see db_url.py) -- managed-Postgres providers hand out the first two.
+DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
 
 # Async engine with pool settings
 engine = create_async_engine(
@@ -59,7 +58,13 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Create all tables (for development; use Alembic in production)."""
+    """Create all tables -- DEVELOPMENT ONLY (see db_url.auto_create_tables_enabled).
+
+    In production the schema comes from `alembic upgrade head` (Procfile release
+    step / container start), so this is a no-op there.
+    """
+    if not auto_create_tables_enabled():
+        return
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

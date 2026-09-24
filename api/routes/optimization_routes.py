@@ -9,7 +9,7 @@ from api.auth import require_operator
 from api.rate_limit import limiter
 from api.repositories import data_repository
 from api.schemas.optimization import OptimizeRequest
-from api.serialization import serialize_timestamps_bulk
+from api.serialization import to_jsonable
 from api.services import optimization_service
 from database import get_db
 from models.db_models import User
@@ -28,8 +28,9 @@ async def optimize(
     """Run RL optimization. Minimizes J = alpha*W + beta*E + gamma*C. Requires 'operator' role. Rate limited: 10/minute."""
     results, summary = await optimization_service.run_optimization(
         body.alpha, body.beta, body.gamma, body.water_stress, body.hours
-    )
-    serialized_results = serialize_timestamps_bulk(results)
+    ) 
+    serialized_results = to_jsonable(results)
+    summary = to_jsonable(summary)
     await data_repository.save_optimization_result(
         session,
         alpha=body.alpha, beta=body.beta, gamma=body.gamma,

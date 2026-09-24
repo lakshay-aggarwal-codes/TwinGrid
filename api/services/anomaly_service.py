@@ -1,32 +1,41 @@
 """Anomaly detector singleton + business logic for GET /api/anomaly_score."""
 
 from __future__ import annotations
-from api.middleware.metrics import MODEL_INFERENCE_COUNT
+
 import json
 import logging
+import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
+from api.middleware.metrics import MODEL_INFERENCE_COUNT
 from src.anomaly_detector import AnomalyDetector
 
 logger = logging.getLogger(__name__)
 
+# models/anomaly must contain config.json + model.keras + scaler.joblib together.
+ANOMALY_DETECTOR_PATH = Path(os.getenv("ANOMALY_DETECTOR_PATH", "models/anomaly"))
 
-_anomaly_detector: AnomalyDetector | None = None
+_anomaly_detector: Optional[AnomalyDetector] = None
 
 
-def get_anomaly_detector() -> AnomalyDetector | None:
+def get_anomaly_detector() -> Optional[AnomalyDetector]:
     global _anomaly_detector
     if _anomaly_detector is None:
         try:
-            detector_path = Path("models/anomaly")
-            if detector_path.exists():
-                _anomaly_detector = AnomalyDetector.load(detector_path)
+            if ANOMALY_DETECTOR_PATH.exists():
+                _anomaly_detector = AnomalyDetector.load(ANOMALY_DETECTOR_PATH)
         except Exception as e:
             logger.warning("Anomaly detector not available: %s", e)
     return _anomaly_detector
+
+
+def alert_severity(score: float, threshold: float) -> str:
+    """CRITICAL when the reconstruction error is more than twice the trained
+    alert threshold, otherwise WARNING. Only meaningful for real alerts."""
+    return "CRITICAL" if score > 2 * threshold else "WARNING"
 
 
 def score_recent_data(recent_data_json: str) -> dict[str, Any]:
