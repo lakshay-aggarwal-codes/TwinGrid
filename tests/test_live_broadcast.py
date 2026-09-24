@@ -9,6 +9,7 @@ import asyncio
 
 import pytest
 
+from api.services import live_broadcast_service
 from api.services.live_broadcast_service import ConnectionManager
 
 
@@ -63,3 +64,59 @@ class TestConnectionManager:
     async def test_broadcast_with_no_clients_is_a_noop(self):
         manager = ConnectionManager()
         await manager.broadcast({"pue": 1.5})  # must not raise
+
+
+class TestBroadcastLoop:
+    """The shared loop must be idle without clients and must survive DB failures."""
+
+    @staticmethod
+    async def _run_loop_briefly(seconds: float = 0.12) -> None:
+        task = asyncio.create_task(live_broadcast_service.run_broadcast_loop())
+        await asyncio.sleep(seconds)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    @pytest.mark.asyncio
+    async def test_no_clients_means_no_tick_and_no_db_write(self, monkeypatch):
+        ticks = []
+
+        async def fake_tick():
+            ticks.append(1)
+            return {"pue": 1.2}
+
+        monkeypatch.setattr(live_broadcast_service, "_tick", fake_tick)
+        monkeypatch.setattr(live_broadcast_service, "BROADCAST_INTERVAL_SECONDS", 0.01)
+        monkeypatch.setattr(live_broadcast_service, "manager", ConnectionManager())
+
+        await self._run_loop_briefly()
+        assert ticks == []
+
+    @pytest.mark.asyncio
+    async def test_ticks_and_broadcasts_when_a_client_is_connected(self, monkeypatch):
+        async def fake_tick():
+            return {"pue": 1.2}
+
+        manager = ConnectionManager()
+        ws = FakeWebSocket()
+        manager.connect(ws)
+        monkeypatch.setattr(live_broadcast_service, "_tick", fake_tick)
+        monkeypatch.setattr(live_broadcast_service, "BROADCAST_INTERVAL_SECONDS", 0.01)
+        monkeypatch.setattr(live_broadcast_service, "manager", manager)
+
+        await self._run_loop_briefly()
+        assert len(ws.received) >= 2
+        assert ws.received[0] == {"pue": 1.2}
+
+    @pytest.mark.asyncio
+    async def test_database_failure_does_not_stop_the_stream(self, monkeypatch):
+        class BrokenSession:
+            async def __aenter__(self):
+                raise ConnectionError("database is down")
+
+            async def __aexit__(self, *exc):
+                return False
+
+        monkeypatch.setattr(live_broadcast_service, "get_session", lambda: BrokenSession())
+        payload = await live_broadcast_service._tick()  # must not raise
+        assert "pue" in payload and isinstance(payload["timestamp"], str)

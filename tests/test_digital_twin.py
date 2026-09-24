@@ -12,6 +12,17 @@ from datetime import datetime, timedelta
 from src.digital_twin import DigitalTwin, CoolingMode, DataCentreState, INLET_TEMP_MIN, INLET_TEMP_MAX, OUTLET_TEMP_MAX, PUE_MAX_SAFE
 
 
+def _expected_cooling_kw(it_power_kw, base_cop, outside_temp_c, max_it_kw=500.0, humidity_pct=None):
+    """Dynamic-COP formula documented in DigitalTwin._effective_cop, written out
+    independently from its constants: -15% COP at full load, -1% per degC above
+    20 degC, and for evaporative mode -0.5% per % humidity above 40%."""
+    load = max(0.0, min(1.0, it_power_kw / max_it_kw))
+    cop = base_cop * (1 - 0.15 * load) * (1 - 0.01 * max(0.0, outside_temp_c - 20.0))
+    if humidity_pct is not None:
+        cop *= 1 - 0.5 * 0.01 * max(0.0, humidity_pct - 40.0)
+    return it_power_kw / max(cop, 0.5)
+
+
 class TestDigitalTwin:
     """Test suite for DigitalTwin class."""
 
@@ -91,7 +102,7 @@ class TestDigitalTwin:
         )
         
         # Free air should have high COP (low power consumption)
-        expected_cooling = it_power / 8.0  # COP = 8.0 for free air
+        expected_cooling = _expected_cooling_kw(it_power, 8.0, 25.0)  # dynamic COP
         assert abs(cooling_power - expected_cooling) < 0.001
 
     def test_compute_cooling_power_closed_loop(self, digital_twin):
@@ -102,7 +113,7 @@ class TestDigitalTwin:
         )
         
         # Closed loop should have medium COP
-        expected_cooling = it_power / 4.5  # COP = 4.5 for closed loop
+        expected_cooling = _expected_cooling_kw(it_power, 4.5, 25.0)  # dynamic COP
         assert abs(cooling_power - expected_cooling) < 0.001
 
     def test_compute_cooling_power_evaporative(self, digital_twin):
@@ -113,7 +124,7 @@ class TestDigitalTwin:
         )
         
         # Evaporative should have lower COP (higher power consumption)
-        expected_cooling = it_power / 3.5  # COP = 3.5 for evaporative
+        expected_cooling = _expected_cooling_kw(it_power, 3.5, 25.0, humidity_pct=50.0)  # dynamic COP
         assert abs(cooling_power - expected_cooling) < 0.001
 
     def test_compute_cooling_power_hybrid(self, digital_twin):
@@ -124,7 +135,7 @@ class TestDigitalTwin:
         )
         
         # Hybrid should have medium COP
-        expected_cooling = it_power / 4.0  # COP = 4.0 for hybrid
+        expected_cooling = _expected_cooling_kw(it_power, 4.0, 25.0)  # dynamic COP
         assert abs(cooling_power - expected_cooling) < 0.001
 
     def test_compute_water_consumption_free_air(self, digital_twin):
