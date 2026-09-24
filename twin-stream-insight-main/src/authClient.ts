@@ -1,5 +1,5 @@
  
-const BASE_URL = 'https://function-bun-production-6ce5.up.railway.app';
+const BASE_URL = 'https://twingrid.onrender.com/';
 
 const DEMO_USERNAME = import.meta.env.VITE_DEMO_USERNAME as string | undefined;
 const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
