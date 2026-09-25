@@ -1,5 +1,5 @@
 {
-  "threshold": 0.006279157940298319,
+  "threshold": 0.006231233477592468,
   "seq_len": 12,
   "feature_columns": [
     "water_flow_lpm",

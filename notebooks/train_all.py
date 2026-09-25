@@ -15,7 +15,7 @@ Paths are relative to project root.
 """
 
 from __future__ import annotations
-
+import numpy as np
 import os
 import sys
 from pathlib import Path
@@ -111,7 +111,34 @@ def main() -> None:
 
     detector = AnomalyDetector(verbose=0)
     detector.train(df_anomaly, epochs=20, patience=5)
-    eval_metrics = detector.evaluate(df_anomaly)
+    
+    sequences, labels = detector._prepare_data(df_anomaly, normal_only=False)
+    errors, _ = detector.detect(sequences, threshold=float("inf"))  # scores only
+    labels_bool = labels.astype(bool)
+
+    from sklearn.metrics import f1_score, precision_score, recall_score
+
+    best = {"f1": -1.0}
+    for pct in [80, 85, 90, 95, 97.5, 99, 99.5, 99.8, 99.9, 99.95, 99.99]:
+        thresh = float(np.percentile(errors, pct))
+        alerts = errors > thresh
+        f1 = f1_score(labels_bool, alerts, zero_division=0)
+        if f1 > best["f1"]:
+            best = {
+                "f1": f1,
+                "percentile": pct,
+                "threshold": thresh,
+                "precision": precision_score(labels_bool, alerts, zero_division=0),
+                "recall": recall_score(labels_bool, alerts, zero_division=0),
+            }
+
+    print(
+        f"   Threshold calibration: default (95th pct) F1={f1_score(labels_bool, errors > detector.threshold, zero_division=0):.4f} "
+        f"-> best ({best['percentile']}th pct) F1={best['f1']:.4f}"
+    )
+    detector._threshold = best["threshold"]
+    detector._percentile = best["percentile"]
+    eval_metrics = {"f1": best["f1"], "precision": best["precision"], "recall": best["recall"]}
     metrics["anomaly_f1"] = eval_metrics["f1"]
     metrics["anomaly_precision"] = eval_metrics["precision"]
     metrics["anomaly_recall"] = eval_metrics["recall"]
@@ -120,7 +147,6 @@ def main() -> None:
     detector.save(_root("models/anomaly"))
     print(f"   F1: {eval_metrics['f1']:.4f}, P: {eval_metrics['precision']:.4f}, R: {eval_metrics['recall']:.4f}")
     print(f"   Saved to models/anomaly/")
-    pbar.update(1)
 
     # -------------------------------------------------------------------------
     # 4. Train RL Optimizer

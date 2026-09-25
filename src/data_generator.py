@@ -111,17 +111,34 @@ def _load_water_stress_baseline(country: str) -> float | None:
             CLEANED_WATER_STRESS_PATH,
         )
         return None
-
     aqueduct = pd.read_csv(CLEANED_WATER_STRESS_PATH)
-    country_rows = aqueduct[aqueduct["country"].str.lower() == country.lower()]
+    # water_stress_aqueduct.py's normalize_aqueduct_dataframe() writes the
+    # WRI Aqueduct 4.0 column names directly: "name_0" is the country name,
+    # "bws_score" is the baseline water-stress score (0-5). This function
+    # previously looked for "country"/"water_stress_score", which the
+    # ingestion module never produces -- that mismatch is what raised
+    # KeyError: 'country' here.
+    required = {"name_0", "bws_score"}
+    if not required.issubset(aqueduct.columns):
+        logger.warning(
+            "%s is missing expected columns %s (has %s); falling back to synthetic water_stress. "
+            "Re-run `python scripts/run_ingestion.py --only water_stress_aqueduct` to regenerate it.",
+            CLEANED_WATER_STRESS_PATH, sorted(required - set(aqueduct.columns)), list(aqueduct.columns),
+        )
+        return None
+
+    country_rows = aqueduct[aqueduct["name_0"].str.lower() == country.lower()]
     if country_rows.empty:
         logger.warning("Country '%s' not found in %s; falling back to synthetic water_stress.", country, CLEANED_WATER_STRESS_PATH)
         return None
 
-    score_min, score_max = aqueduct["water_stress_score"].min(), aqueduct["water_stress_score"].max()
-    if score_max <= score_min:
-        return 0.5  # degenerate case -- can't normalize a constant column
-    raw = country_rows["water_stress_score"].mean()
+    scores = aqueduct["bws_score"].dropna()
+    score_min, score_max = scores.min(), scores.max()
+    if pd.isna(score_min) or score_max <= score_min:
+        return 0.5  # degenerate case -- can't normalize a constant/all-NaN column
+    raw = country_rows["bws_score"].dropna().mean()
+    if pd.isna(raw):
+        return None  # this country's own score is missing (WRI sentinel / no data)
     return float((raw - score_min) / (score_max - score_min))
 
 

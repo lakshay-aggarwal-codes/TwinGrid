@@ -3,5 +3,31 @@
   "beta": 0.3,
   "gamma": 0.2,
   "seed": null,
-  "patent_objective": "J = alpha*W + beta*E + gamma*C"
+  "carbon_intensity_by_hour": [
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0,
+    475.0
+  ],
+  "patent_objective": "J = alpha*W + beta*E + gamma*C (C = real grid carbon emissions)"
 }
