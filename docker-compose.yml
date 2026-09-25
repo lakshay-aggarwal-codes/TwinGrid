@@ -20,13 +20,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    restart: unless-stopped
+    restart: unless-stopped 
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
-      # Overrides .env's DATABASE_URL (which defaults to localhost) --
-      # inside the compose network, the DB is reachable at the service
-      # name "db", not localhost.
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set (in .env or the shell)}
+      OPERATOR_REGISTRATION_KEY: ${OPERATOR_REGISTRATION_KEY:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080} 
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/digital_twin
     ports:
       - "8000:8000"

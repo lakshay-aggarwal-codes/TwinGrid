@@ -1,5 +1,6 @@
-target-version = "py39"  # matches runtime.txt exactly
+target-version = "py312"  # matches runtime.txt exactly
 line-length = 120
+src = ["."]
 
 [lint]
 select = ["E", "F", "I"]  # pyflakes + pycodestyle errors + import sorting
@@ -14,3 +15,9 @@ exclude = [
     "bolt-main",
     ".venv",
 ]
+
+[lint.isort]
+# ./alembic is a directory in this repo, which would make ruff classify the
+# third-party `alembic` package as first-party. Pin the classification.
+known-third-party = ["alembic"]
+known-first-party = ["api", "database", "db_url", "models", "notebooks", "scripts", "src", "tests"]

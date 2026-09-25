@@ -390,3 +390,13 @@ realData/
 *.tgz
 *.rar
 *.7z
+
+# -----------------------------------------------------------------------------
+# Trained model artifacts that the API loads at runtime MUST be committed, or a
+# fresh deploy (Railway/Render/Docker) has nothing to load. These negations come
+# LAST so they override the broad *.keras / *.joblib / *.zip rules above.
+# (models/trained|checkpoints|experiments stay ignored -- those are scratch dirs.)
+# -----------------------------------------------------------------------------
+!models/**/*.keras
+!models/**/*.joblib
+!models/optimizer/ppo_model.zip
