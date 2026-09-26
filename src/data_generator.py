@@ -269,7 +269,9 @@ def generate_sensor_data(
     for i in range(n_intervals):
         u = float(np.clip(utilisation[i], 0.0, 1.0))
         it_power_kw[i] = twin.compute_it_power(u)
-        outlet_temp[i] = twin.compute_outlet_temp(float(inlet_temp[i]), it_power_kw[i], airflow_m3_s=AIR_FLOW_M3_S)
+        outlet_temp[i] = twin.compute_outlet_temp(
+            float(inlet_temp[i]), it_power_kw[i], airflow_m3_s=twin.effective_air_flow_m3_s(it_power_kw[i])
+        )
 
         mode: CoolingMode = twin.select_cooling_mode(float(outside_temp[i]), float(water_stress[i]))
         cooling_mode[i] = mode.value

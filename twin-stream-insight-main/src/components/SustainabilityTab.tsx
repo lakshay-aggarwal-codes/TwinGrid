@@ -39,12 +39,15 @@ export function SustainabilityTab({ liveState, equipmentHealth }: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Water Stress</CardTitle>
+          <CardTitle className="text-sm font-medium">Live Water Stress</CardTitle>
         </CardHeader>
         <CardContent>
           {liveState?.water_stress !== undefined ? (
             <>
               <div className="text-2xl font-bold">{(liveState.water_stress * 100).toFixed(0)}%</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Live facility reading — independent of the Water Stress Index slider (What-If only)
+              </p>
               {liveState.drought_override_active ? (
                 <Badge variant="destructive" className="mt-2">
                   Drought override active — forced to closed-loop cooling
@@ -58,30 +61,24 @@ export function SustainabilityTab({ liveState, equipmentHealth }: Props) {
           )}
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Predictive Maintenance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {equipmentHealth?.available ? (
-            <>
-              <div className="text-2xl font-bold">
-                {equipmentHealth.mae_improvement_pct?.toFixed(0)}%{' '}
-                <span className="text-sm font-normal">MAE improvement over baseline</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                LSTM MAE {equipmentHealth.lstm?.mae.toFixed(1)} vs. baseline {equipmentHealth.baseline?.mae.toFixed(1)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">{equipmentHealth.dataset_caveat}</p>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {equipmentHealth?.message ?? 'Loading...'}
+ 
+      {equipmentHealth?.available ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Predictive Maintenance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {equipmentHealth.mae_improvement_pct?.toFixed(0)}%{' '}
+              <span className="text-sm font-normal">MAE improvement over baseline</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              LSTM MAE {equipmentHealth.lstm?.mae.toFixed(1)} vs. baseline {equipmentHealth.baseline?.mae.toFixed(1)}
             </p>
-          )}
-        </CardContent>
-      </Card>
+            <p className="text-xs text-muted-foreground mt-2">{equipmentHealth.dataset_caveat}</p>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

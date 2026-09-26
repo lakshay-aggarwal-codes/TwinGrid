@@ -46,6 +46,15 @@ INLET_TEMP_MAX: float = 27.0
 OUTLET_TEMP_MAX: float = 45.0
 PUE_MAX_SAFE: float = 2.0
 
+# CRAC/CRAH fan speed (hence delivered airflow) ramps with IT heat load on
+# real hardware. Previously airflow was a fixed constant (self._air_flow_m3_s)
+# regardless of load, so delta-T (Q = m_dot*cp*delta_T in compute_outlet_temp)
+# grew unbounded at high utilisation with nothing to compensate -- this is
+# why outlet temp could hit 49.9C, above the twin's own OUTLET_TEMP_MAX. This
+# is the airflow delivered at 100% utilisation; effective_air_flow_m3_s()
+# below ramps linearly from the configured base/idle airflow up to this.
+AIR_FLOW_FULL_LOAD_M3_S: float = 20.0
+
 # Dynamic-physics tuning constants
 FREE_AIR_INEFFECTIVE_OUTSIDE_TEMP_C: float = 12.0
 DEFAULT_THERMAL_TIME_CONSTANT_MIN: float = 10.0
@@ -300,6 +309,16 @@ class DigitalTwin:
             log_error("DigitalTwin.compute_it_power", e)
             raise
 
+    def effective_air_flow_m3_s(self, it_power_kw: float) -> float:
+        """Airflow ramps linearly from the configured base/idle airflow
+        (self._air_flow_m3_s, unchanged meaning/default) up to
+        AIR_FLOW_FULL_LOAD_M3_S at 100% utilisation -- fan-speed modulation
+        with load, matching a real CRAC/CRAH."""
+        load_fraction = 0.0
+        if self._max_it_power_kw > 0:
+            load_fraction = max(0.0, min(1.0, it_power_kw / self._max_it_power_kw))
+        return self._air_flow_m3_s + (AIR_FLOW_FULL_LOAD_M3_S - self._air_flow_m3_s) * load_fraction
+
     def compute_outlet_temp(
         self,
         inlet_temp_C: float,
@@ -543,7 +562,7 @@ class DigitalTwin:
             target_inlet_C = self._outside_temp_C - FREE_AIR_OFFSET_C
         else:
             target_inlet_C = applied_chilled_water_C + CHILLED_WATER_APPROACH_C
-        target_outlet_C = self.compute_outlet_temp(target_inlet_C, it_power, self._air_flow_m3_s)
+        target_outlet_C = self.compute_outlet_temp(target_inlet_C, it_power, self.effective_air_flow_m3_s(it_power))
 
         # 4. First-order lag toward the targets (thermal inertia). At the
         #    very first call (prev is None) the twin starts already at the

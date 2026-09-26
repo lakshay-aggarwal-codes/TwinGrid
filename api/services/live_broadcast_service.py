@@ -17,6 +17,17 @@ logger = logging.getLogger(__name__)
 
 BROADCAST_INTERVAL_SECONDS = 3
 
+# Slowly-drifting live water-stress reading. This feed is deliberately
+# independent of the sidebar's What-If sliders (it's the facility's own
+# live telemetry, not a preview -- see the WS effect in useSimulation.ts).
+# Previously `random.uniform(0, 0.5)` picked a brand-new value every 3s with
+# no memory, i.e. real white noise -- not how any live sensor behaves, and
+# why the Sustainability tab's number looked broken/nonsensical rather than
+# just "a different metric than the slider". Mean-reverting random walk
+# instead: moves a little each tick, stays in [0, 0.5].
+_water_stress_state = 0.2
+_WATER_STRESS_STEP = 0.02
+
 
 class ConnectionManager:
     """Tracks active WebSocket connections and broadcasts to all of them."""
@@ -55,11 +66,13 @@ manager = ConnectionManager()
 
 async def _tick() -> dict:
     """One shared simulation step, used by every connected client."""
+    global _water_stress_state
     twin = get_twin()
     hour = datetime.now().hour + datetime.now().minute / 60
     utilisation = float(np.clip(0.4 + 0.5 * np.sin((hour - 6) * np.pi / 12), 0, 1))
     outside_temp = 22 + 5 * np.sin(2 * np.pi * (hour - 14) / 24) + random.uniform(-1, 1)
-    water_stress = random.uniform(0, 0.5)
+    _water_stress_state = float(np.clip(_water_stress_state + random.uniform(-_WATER_STRESS_STEP, _WATER_STRESS_STEP), 0, 0.5))
+    water_stress = _water_stress_state
     action = {
         "utilisation": utilisation,
         "outside_temp_C": outside_temp,
