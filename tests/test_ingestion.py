@@ -11,11 +11,8 @@ Covers:
 
 from __future__ import annotations
 
-import io
 import os
-import tempfile
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -40,7 +37,6 @@ from src.ingestion.carbon_electricity_maps import (
 from src.ingestion.solar_nsrdb import (
     NSRDBAPIError,
     NSRDBConfigurationError,
-    fetch_and_ingest_nsrdb,
     fetch_nsrdb_raw_data,
     get_nsrdb_config,
     normalize_nsrdb_raw_text,
@@ -49,7 +45,6 @@ from src.ingestion.water_stress_aqueduct import (
     normalize_aqueduct_dataframe,
 )
 from src.ingestion.weather_open_meteo import (
-    EXPECTED_RAW_COLUMNS,
     normalize_weather_dataframe,
 )
 

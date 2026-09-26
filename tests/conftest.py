@@ -2,15 +2,16 @@
 Pytest configuration and shared fixtures for the digital twin test suite.
 """
 
-import numpy as np
-import pandas as pd
-import pytest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from src.digital_twin import DigitalTwin, CoolingMode, DataCentreState
-from src.lstm_model import DataPipeline
+import numpy as np
+import pandas as pd
+import pytest
+
 from src.anomaly_detector import AnomalyDetector
+from src.digital_twin import CoolingMode, DigitalTwin
+from src.lstm_model import DataPipeline
 
 
 @pytest.fixture

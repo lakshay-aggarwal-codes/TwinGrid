@@ -25,8 +25,6 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from .logging_config import log_function_entry, log_function_exit, log_error
-
 load_dotenv()
 
 logger = logging.getLogger(__name__)

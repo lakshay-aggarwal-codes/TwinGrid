@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 
 from .carbon_provider import load_diurnal_carbon_intensity
-from .logging_config import log_function_entry, log_function_exit, log_error, log_simulation_step
+from .logging_config import log_error, log_function_entry, log_function_exit, log_simulation_step
 
 # Matches DataCentreEnv.DROUGHT_THRESHOLD (src/optimizer.py) exactly --
 # both files enforce the same patent Claim 3 rule.

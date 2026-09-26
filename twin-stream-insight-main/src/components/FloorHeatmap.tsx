@@ -112,6 +112,10 @@ interface Props {
 
 export function FloorHeatmap({ serverUtil, outsideTemp }: Props) {
   const [temps, setTemps] = useState(() => generateTemperatures(serverUtil, outsideTemp));
+  // Bumped on 'webglcontextrestored' to force React to unmount/remount <Canvas>
+  // with a fresh WebGL context (see onCreated below) instead of leaving the
+  // panel dark for the rest of the session.
+  const [canvasKey, setCanvasKey] = useState(0);
 
   useEffect(() => {
     setTemps(generateTemperatures(serverUtil, outsideTemp));
@@ -138,8 +142,29 @@ export function FloorHeatmap({ serverUtil, outsideTemp }: Props) {
           <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ background: '#ef4444' }} />Hot</span>
         </div>
       </div>
-      <div className="h-[280px]">
-        <Canvas camera={{ position: [0, 5, 6], fov: 45 }} gl={{ antialias: true }}>
+      <div className="h-[280px]" key={canvasKey}>
+        <Canvas
+          camera={{ position: [0, 5, 6], fov: 45 }}
+          gl={{ antialias: true }}
+          onCreated={({ gl }) => {
+            // The GPU can drop this tab's WebGL context at any time -- backgrounded
+            // tab, driver reset, GPU memory pressure -- with no error thrown, just a
+            // silent "THREE.WebGLRenderer: Context Lost." in the console and a dark
+            // canvas from then on. preventDefault() on 'webglcontextlost' tells the
+            // browser we intend to recover (without it, the browser may never fire
+            // 'webglcontextrestored' at all); remounting <Canvas> via `canvasKey`
+            // creates a fresh context and re-runs HeatGrid's setup rather than trying
+            // to resurrect GPU objects tied to the dead context.
+            const canvas = gl.domElement;
+            const handleLost = (event: Event) => {
+              event.preventDefault();
+              console.warn('[FloorHeatmap] WebGL context lost -- will remount canvas on restore.');
+            };
+            const handleRestored = () => setCanvasKey((k) => k + 1);
+            canvas.addEventListener('webglcontextlost', handleLost);
+            canvas.addEventListener('webglcontextrestored', handleRestored);
+          }}
+        >
           <ambientLight intensity={0.4} />
           <directionalLight position={[5, 8, 5]} intensity={0.6} />
           <pointLight position={[0, 3, 0]} intensity={0.4} color="#00E5FF" />

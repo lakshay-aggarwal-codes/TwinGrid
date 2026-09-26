@@ -4,12 +4,12 @@ Tests for AnomalyDetector class in anomaly_detector.py.
 Tests anomaly detection on synthetic data with known anomalies.
 """
 
+
 import numpy as np
 import pandas as pd
 import pytest
-from pathlib import Path
 
-from src.anomaly_detector import AnomalyDetector, NotTrainedError, ShapeError
+from src.anomaly_detector import AnomalyDetector, NotTrainedError
 
 
 class TestAnomalyDetector:

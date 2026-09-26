@@ -9,8 +9,10 @@ same threshold in both places.
 import numpy as np
 import pytest
 
-from src.digital_twin import DigitalTwin, CoolingMode, DROUGHT_THRESHOLD as TWIN_THRESHOLD
-from src.optimizer import DataCentreEnv, DROUGHT_THRESHOLD as ENV_THRESHOLD, DROUGHT_OVERRIDE_MODE
+from src.digital_twin import DROUGHT_THRESHOLD as TWIN_THRESHOLD
+from src.digital_twin import CoolingMode, DigitalTwin
+from src.optimizer import DROUGHT_OVERRIDE_MODE, DataCentreEnv
+from src.optimizer import DROUGHT_THRESHOLD as ENV_THRESHOLD
 
 
 class TestDroughtThresholdConsistency:

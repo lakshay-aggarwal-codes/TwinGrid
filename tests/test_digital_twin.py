@@ -4,12 +4,16 @@ Tests for DigitalTwin class in digital_twin.py.
 Tests simulation step(), is_safe(), and cooling mode physics.
 """
 
-import numpy as np
-import pandas as pd
-import pytest
 from datetime import datetime, timedelta
 
-from src.digital_twin import DigitalTwin, CoolingMode, DataCentreState, INLET_TEMP_MIN, INLET_TEMP_MAX, OUTLET_TEMP_MAX, PUE_MAX_SAFE
+import numpy as np
+import pytest
+
+from src.digital_twin import (
+    CoolingMode,
+    DataCentreState,
+    DigitalTwin,
+)
 
 
 def _expected_cooling_kw(it_power_kw, base_cop, outside_temp_c, max_it_kw=500.0, humidity_pct=None):

@@ -14,7 +14,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .logging_config import log_function_entry, log_function_exit, log_error, log_training_progress
+from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +44,8 @@ def _get_sklearn():
     global _sklearn
     if _sklearn is None:
         try:
+            from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
             from sklearn.preprocessing import MinMaxScaler
-            from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
             _sklearn = {
                 "MinMaxScaler": MinMaxScaler,
                 "precision_score": precision_score,

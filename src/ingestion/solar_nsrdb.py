@@ -16,11 +16,10 @@ Features:
 from __future__ import annotations
 
 import io
-import logging
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import pandas as pd
 import requests
@@ -30,7 +29,6 @@ from .base import (
     deduplicate_records,
     get_ingestion_logger,
     save_cleaned_dataset,
-    validate_lat_lon,
     validate_non_empty,
     validate_numeric_range,
     validate_required_columns,

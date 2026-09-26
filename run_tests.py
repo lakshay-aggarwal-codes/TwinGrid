@@ -4,10 +4,9 @@ Simple test runner for the digital twin test suite.
 Runs tests without pytest dependency issues.
 """
 
-import sys
 import os
+import sys
 import traceback
-from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -47,7 +46,7 @@ def run_test_module(module_name, test_class_name):
                 passed += 1
                 
             except Exception as e:
-                print(f"✗ FAILED")
+                print("✗ FAILED")
                 print(f"    Error: {str(e)}")
                 failed += 1
                 if '--tb' in sys.argv:

@@ -2,11 +2,11 @@
 Simple tests for the digital twin system without complex dependencies.
 """
 
-import sys
 import os
+import sys
+
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -16,7 +16,7 @@ def test_digital_twin_basic():
     print("Testing DigitalTwin basic functionality...")
     
     try:
-        from src.digital_twin import DigitalTwin, CoolingMode
+        from src.digital_twin import CoolingMode, DigitalTwin
         
         # Test initialization
         twin = DigitalTwin()

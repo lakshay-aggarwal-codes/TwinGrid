@@ -15,14 +15,12 @@ import os
 import smtplib
 import ssl
 import urllib.request
-from datetime import datetime, timezone, timedelta
-from email.mime.text import MIMEText
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import Any
 
 from dotenv import load_dotenv
-
-from .logging_config import log_function_entry, log_function_exit, log_error
 
 load_dotenv()
 

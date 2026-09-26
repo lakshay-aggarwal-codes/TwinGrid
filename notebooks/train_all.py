@@ -15,10 +15,12 @@ Paths are relative to project root.
 """
 
 from __future__ import annotations
-import numpy as np
+
 import os
 import sys
 from pathlib import Path
+
+import numpy as np
 
 # Ensure project root is on path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -95,7 +97,7 @@ def main() -> None:
     forecaster.save(_root("models/forecaster/thermal.keras"))
     pipe.save_scaler(_root("models/forecaster/scaler.joblib"))
     print(f"   RMSE: {rmse:.4f}, MAE: {mae:.4f}")
-    print(f"   Saved to models/forecaster/")
+    print("   Saved to models/forecaster/")
     pbar.update(1)
 
     # -------------------------------------------------------------------------
@@ -146,7 +148,7 @@ def main() -> None:
     _root("models/anomaly").mkdir(parents=True, exist_ok=True)
     detector.save(_root("models/anomaly"))
     print(f"   F1: {eval_metrics['f1']:.4f}, P: {eval_metrics['precision']:.4f}, R: {eval_metrics['recall']:.4f}")
-    print(f"   Saved to models/anomaly/")
+    print("   Saved to models/anomaly/")
 
     # -------------------------------------------------------------------------
     # 4. Train RL Optimizer
@@ -163,7 +165,7 @@ def main() -> None:
     )
     _root("models/optimizer").mkdir(parents=True, exist_ok=True)
     optimizer.save(_root("models/optimizer"))
-    print(f"   Saved to models/optimizer/")
+    print("   Saved to models/optimizer/")
     pbar.update(1)
 
     # -------------------------------------------------------------------------

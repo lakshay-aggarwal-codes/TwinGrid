@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .logging_config import log_function_entry, log_function_exit, log_error, log_training_progress
+from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
 
 logger = logging.getLogger(__name__)
 

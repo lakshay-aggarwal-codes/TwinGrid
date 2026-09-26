@@ -7,8 +7,9 @@ Tests original vs optimized implementation for 24-hour simulation (288 steps).
 
 import sys
 import time
+from datetime import datetime
+
 import numpy as np
-from datetime import datetime, timedelta
 
 # Add src to path
 sys.path.insert(0, 'src')
@@ -167,7 +168,7 @@ def benchmark_vectorized_functions():
         if batch_time > 0:
             print(f"  Speedup: {individual_time/batch_time:.1f}x")
         else:
-            print(f"  Speedup: >1000x (batch too fast to measure)")
+            print("  Speedup: >1000x (batch too fast to measure)")
         
         # Verify results are equivalent
         max_diff = np.max(np.abs(np.array(it_powers_batch) - np.array(it_powers_individual)))
@@ -187,7 +188,7 @@ def benchmark_vectorized_functions():
         if batch_temp_time > 0:
             print(f"  Speedup: {individual_temp_time/batch_temp_time:.1f}x")
         else:
-            print(f"  Speedup: >1000x (batch too fast to measure)")
+            print("  Speedup: >1000x (batch too fast to measure)")
         
         return batch_time, individual_time
         
@@ -199,8 +200,8 @@ def main():
     """Run all benchmarks."""
     print("Digital Twin Performance Benchmark")
     print("=" * 50)
-    print(f"Test: 24-hour simulation (288 steps)")
-    print(f"Target: < 2 seconds for real-time dashboard")
+    print("Test: 24-hour simulation (288 steps)")
+    print("Target: < 2 seconds for real-time dashboard")
     print("=" * 50)
     
     # Run benchmarks

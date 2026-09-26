@@ -54,14 +54,12 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from pathlib import Path
-from typing import Any, Callable
 from functools import lru_cache
+from typing import Any
 
 import numpy as np
-import pandas as pd
 
-from .logging_config import log_function_entry, log_function_exit, log_error, log_simulation_step
+from .logging_config import log_error, log_function_entry, log_function_exit, log_simulation_step
 
 # Performance optimization: try to import numba, fallback if not available
 try:

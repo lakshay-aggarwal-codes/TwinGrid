@@ -7,8 +7,8 @@ Demonstrates both single-step and batch processing capabilities.
 
 import sys
 import time
+
 import numpy as np
-from datetime import datetime, timedelta
 
 # Add src to path
 sys.path.insert(0, 'src')
@@ -96,11 +96,11 @@ def example_batch_processing():
     first_state = states[0]
     last_state = states[-1]
     
-    print(f"\nFirst step (hour 0):")
+    print("\nFirst step (hour 0):")
     print(f"  PUE={first_state.pue:.3f}, Outlet={first_state.server_outlet_temp_C:.1f}°C")
     print(f"  Power: IT={first_state.it_power_kw:.1f}kW, Cooling={first_state.cooling_power_kw:.1f}kW")
     
-    print(f"\nLast step (hour 24):")
+    print("\nLast step (hour 24):")
     print(f"  PUE={last_state.pue:.3f}, Outlet={last_state.server_outlet_temp_C:.1f}°C")
     print(f"  Power: IT={last_state.it_power_kw:.1f}kW, Cooling={last_state.cooling_power_kw:.1f}kW")
     print(f"  Total water consumed: {last_state.water_consumed_L:.1f}L")

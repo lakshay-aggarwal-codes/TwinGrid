@@ -18,16 +18,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import logging
 import sys
 import time
-from pathlib import Path
 from typing import Dict, List, Optional
 
 from .base import get_cleaned_data_dir, get_ingestion_logger
 from .carbon_electricity_maps import ingest_electricity_maps
 from .solar_nsrdb import (
-    NSRDBAPIError,
     NSRDBConfigurationError,
     fetch_and_ingest_nsrdb,
 )

@@ -4,12 +4,12 @@ Tests for DataPipeline class in lstm_model.py.
 Tests data loading, cleaning, sequence creation, and preprocessing functionality.
 """
 
+
 import numpy as np
 import pandas as pd
 import pytest
-from pathlib import Path
 
-from src.lstm_model import DataPipeline, DEFAULT_FEATURE_COLUMNS, TARGET_COLUMN
+from src.lstm_model import DEFAULT_FEATURE_COLUMNS, TARGET_COLUMN, DataPipeline
 
 
 class TestDataPipeline:

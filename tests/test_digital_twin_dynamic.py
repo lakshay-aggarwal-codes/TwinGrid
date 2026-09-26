@@ -9,11 +9,11 @@ cosmetic safety clamps.
 """
 
 from src.digital_twin import (
-    DigitalTwin,
-    CoolingMode,
-    OUTLET_TEMP_MAX,
-    INLET_TEMP_MIN,
     INLET_TEMP_MAX,
+    INLET_TEMP_MIN,
+    OUTLET_TEMP_MAX,
+    CoolingMode,
+    DigitalTwin,
 )
 
 

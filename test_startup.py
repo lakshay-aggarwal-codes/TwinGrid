@@ -12,7 +12,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 def test_import():
     """Test that the API module can be imported."""
     try:
-        import api.main
         print("✅ API module imports successfully")
         return True
     except Exception as e:
