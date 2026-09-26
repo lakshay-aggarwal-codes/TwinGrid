@@ -37,6 +37,7 @@ async def simulate(
     _user: Annotated[User, Depends(get_current_user)],
     session: AsyncSession = Depends(get_db),
     utilisation: float = Query(0.7, ge=0, le=1),
+    outside_temp: float = Query(25.0, ge=-10, le=50, description="Mean outside temp (°C) for the run"),
     stress: float = Query(0.3, ge=0, le=1, description="Water stress"),
 ) -> list[dict[str, Any]]:
     """Simulate for N hours, returning hourly snapshots.
@@ -44,8 +45,14 @@ async def simulate(
     ``hours`` outside 1-168 is rejected with 422 by request validation (it used
     to reach the service and surface as a 500). The simulation is CPU-bound, so
     it runs in a worker thread instead of blocking the event loop.
+
+    ``utilisation``/``outside_temp`` are the run's means; compute_simulation
+    builds a diurnal curve around each rather than holding them flat for the
+    whole period.
     """
-    hourly = to_jsonable(await run_in_threadpool(twin_service.compute_simulation, hours, utilisation, stress))
+    hourly = to_jsonable(
+        await run_in_threadpool(twin_service.compute_simulation, hours, utilisation, outside_temp, stress)
+    )
     run = await data_repository.save_simulation_run(session, hours, utilisation, stress, hourly)
     await data_repository.save_sensor_readings_bulk(session, hourly, "simulation", simulation_run_id=run.id)
     return hourly

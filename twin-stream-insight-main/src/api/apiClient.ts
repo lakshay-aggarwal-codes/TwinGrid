@@ -129,6 +129,7 @@ export async function fetchState(params: FetchStateParams = {}): Promise<StateRe
 
 export interface FetchSimulationParams {
   utilisation?: number;
+  outside_temp?: number;
   stress?: number;
 }
 
@@ -139,6 +140,7 @@ export async function fetchSimulation(
 ): Promise<StateResponse[]> {
   const url = buildUrl(`/api/simulate/${hours}`, {
     utilisation: params.utilisation,
+    outside_temp: params.outside_temp,
     stress: params.stress,
   });
   const response = await authedFetch(url);

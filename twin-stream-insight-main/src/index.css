@@ -5,27 +5,32 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @layer base {
-  :root {
-    --background: 213 58% 11%;
-    --foreground: 200 20% 90%;
+    :root {
+    /* True black/graphite base (was a navy-tinted dark blue, hue 213) --
+       every neutral surface role below is now hue-independent (0 0% N%),
+       so no panel, border, or card reads as blue anymore. The cyan
+       accent (187 100% 50%) is kept as-is: it's the control-room "glow"
+       identity, not the blue this was meant to replace. */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 92%;
 
-    --card: 213 50% 14%;
-    --card-foreground: 200 20% 90%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 92%;
 
-    --popover: 213 50% 14%;
-    --popover-foreground: 200 20% 90%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 92%;
 
     --primary: 187 100% 50%;
-    --primary-foreground: 213 58% 8%;
+    --primary-foreground: 0 0% 6%;
 
-    --secondary: 213 40% 20%;
-    --secondary-foreground: 200 20% 85%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 85%;
 
-    --muted: 213 35% 18%;
-    --muted-foreground: 200 15% 55%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 0 0% 58%;
 
     --accent: 187 100% 50%;
-    --accent-foreground: 213 58% 8%;
+    --accent-foreground: 0 0% 6%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -36,19 +41,19 @@
     --warning: 38 92% 50%;
     --warning-foreground: 38 92% 10%;
 
-    --border: 213 30% 22%;
-    --input: 213 30% 22%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
     --ring: 187 100% 50%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 213 55% 9%;
-    --sidebar-foreground: 200 20% 80%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 82%;
     --sidebar-primary: 187 100% 50%;
-    --sidebar-primary-foreground: 213 58% 8%;
-    --sidebar-accent: 213 40% 16%;
-    --sidebar-accent-foreground: 200 20% 90%;
-    --sidebar-border: 213 30% 18%;
+    --sidebar-primary-foreground: 0 0% 6%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 0 0% 14%;
     --sidebar-ring: 187 100% 50%;
 
     --chart-cyan: 187 100% 50%;
@@ -86,8 +91,8 @@
   .glow-text {
     text-shadow: 0 0 10px hsl(187 100% 50% / 0.5);
   }
-  .card-grid-glow {
-    background: linear-gradient(135deg, hsl(213 55% 13%) 0%, hsl(213 50% 16%) 100%);
+    .card-grid-glow {
+    background: linear-gradient(135deg, hsl(0 0% 7%) 0%, hsl(0 0% 10%) 100%);
     border: 1px solid hsl(187 100% 50% / 0.12);
   }
   .gauge-ring {

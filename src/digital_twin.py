@@ -56,6 +56,15 @@ FREE_AIR_OFFSET_C: float = 2.0  # inlet ≈ outside temp - offset, in free-air m
 COP_LOAD_DERATE: float = 0.15  # COP loses up to 15% at full load
 COP_OUTSIDE_TEMP_DERATE_PER_C: float = 0.01  # per °C above 20°C
 COP_MIN: float = 0.5
+# A warmer chilled-water setpoint means less compressor lift (smaller gap to
+# the condenser/outside side), so it takes less compressor work per kW of
+# heat rejected -- i.e. higher COP. Only applies to modes that actually run
+# a chiller against this setpoint (CLOSED_LOOP, HYBRID); FREE_AIR and
+# EVAPORATIVE reject heat without a compressor lift to this setpoint at all.
+# Reference point is DEFAULT_CHILLED_WATER_TEMP_C, so omitting the setpoint
+# (or passing exactly the default) reproduces the previous, setpoint-blind
+# COP exactly -- this is an additive, backward-compatible physics term.
+COP_CHILLED_WATER_LIFT_DERATE_PER_C: float = 0.02  # +/-2% COP per °C vs default
 WATER_FLOW_SCALE_LPM_PER_KW: float = 30.0
 WATER_TEMP_FACTOR_PER_C: float = 0.02
 WATER_HUMIDITY_FACTOR_PER_PCT: float = 0.01
@@ -318,10 +327,17 @@ class DigitalTwin:
         delta_t = heat_w / denom if denom > 0 else 0.0
         return inlet_temp_C + delta_t
 
-    def _effective_cop(self, mode: CoolingMode, it_power_kw: float, outside_temp_C: float) -> float:
+    def _effective_cop(
+        self,
+        mode: CoolingMode,
+        it_power_kw: float,
+        outside_temp_C: float,
+        chilled_water_temp_C: float | None = None,
+    ) -> float:
         """
         Derate the nominal per-mode COP by load fraction, outside temperature,
-        and (for evaporative) humidity. Never substitutes modes — mode
+        (for evaporative) humidity, and (for CLOSED_LOOP/HYBRID) the chilled-
+        water setpoint's compressor lift. Never substitutes modes — mode
         substitution happens once, earlier, in `_determine_applied_cooling_mode`.
         """
         base_cop = _BASE_COP[mode]
@@ -339,7 +355,19 @@ class DigitalTwin:
                 0.0, self._humidity_pct - EVAPORATIVE_HUMIDITY_REFERENCE_PCT
             )
 
-        cop = base_cop * load_penalty * outside_penalty * humidity_penalty
+        # Chilled-water lift term: only the modes that actually run a chiller
+        # against this setpoint (CLOSED_LOOP, HYBRID) benefit from a warmer
+        # setpoint. Omitting chilled_water_temp_C -- or passing exactly
+        # DEFAULT_CHILLED_WATER_TEMP_C -- gives a bonus of 1.0, i.e. the
+        # pre-existing setpoint-blind COP is preserved exactly.
+        water_temp_bonus = 1.0
+        if chilled_water_temp_C is not None and mode in (CoolingMode.CLOSED_LOOP, CoolingMode.HYBRID):
+            water_temp_bonus = 1.0 + COP_CHILLED_WATER_LIFT_DERATE_PER_C * (
+                chilled_water_temp_C - DEFAULT_CHILLED_WATER_TEMP_C
+            )
+            water_temp_bonus = max(0.5, water_temp_bonus)  # floor: never let a cold setpoint collapse/invert COP
+
+        cop = base_cop * load_penalty * outside_penalty * humidity_penalty * water_temp_bonus
         return max(cop, COP_MIN)
 
     def compute_cooling_power(
@@ -347,12 +375,15 @@ class DigitalTwin:
         it_power_kw: float,
         mode: CoolingMode,
         outside_temp_C: float,
+        chilled_water_temp_C: float | None = None,
     ) -> float:
         """
         Compute cooling system power from IT heat load and dynamic COP.
 
-        COP is derated by load fraction, outside temperature, and (for
-        evaporative mode) current humidity — it is never a fixed per-mode
+        COP is derated by load fraction, outside temperature, (for
+        evaporative mode) current humidity, and -- when chilled_water_temp_C
+        is supplied, for CLOSED_LOOP/HYBRID modes -- the compressor lift
+        implied by the chilled-water setpoint. It is never a fixed per-mode
         constant. This method never substitutes modes internally; mode
         substitution is resolved once, earlier in the pipeline, by
         `_determine_applied_cooling_mode`, and `mode` here is always the
@@ -362,11 +393,14 @@ class DigitalTwin:
             it_power_kw: IT power (heat load) in kW.
             mode: Cooling mode (already resolved/applied).
             outside_temp_C: Outside air temperature (°C).
+            chilled_water_temp_C: Applied chilled-water setpoint (°C), if the
+                caller has one available. Optional and backward-compatible:
+                omitting it reproduces the previous setpoint-blind COP.
 
         Returns:
             Cooling power in kW.
         """
-        cop = self._effective_cop(mode, it_power_kw, outside_temp_C)
+        cop = self._effective_cop(mode, it_power_kw, outside_temp_C, chilled_water_temp_C)
         return it_power_kw / cop if cop > 0 else 0.0
 
     # -------------------------------------------------------------------------
@@ -526,8 +560,11 @@ class DigitalTwin:
         self._inlet_temp_C = new_inlet_C
         self._outlet_temp_C = new_outlet_C
 
-        # 5. Cooling power via dynamic COP, using the applied mode only.
-        cooling = self.compute_cooling_power(it_power, applied_mode, self._outside_temp_C)
+        # 5. Cooling power via dynamic COP, using the applied mode and the
+        #    applied chilled-water setpoint (compressor-lift term above).
+        cooling = self.compute_cooling_power(
+            it_power, applied_mode, self._outside_temp_C, chilled_water_temp_C=applied_chilled_water_C
+        )
 
         # 6. Water: flow computed first, consumed derived from flow (never
         #    the reverse).

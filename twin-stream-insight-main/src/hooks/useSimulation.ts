@@ -234,7 +234,11 @@ export function useSimulation() {
 
   const runSimulation = useCallback(() => {
     setSimRunning(true);
-    fetchSimulation(24, { utilisation: config.serverUtil / 100, stress: config.waterStress })
+    fetchSimulation(24, {
+      utilisation: config.serverUtil / 100,
+      outside_temp: config.outsideTemp,
+      stress: config.waterStress,
+    })
       .then((states) => setHourlyData(stateToHourlyData(states)))
       .catch((e) => {
         console.warn('[useSimulation] fetchSimulation failed:', e);

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+from datetime import datetime, timedelta
 from typing import Any, Optional
 
 from src.digital_twin import INTERVAL_MINUTES, CoolingMode, DigitalTwin
@@ -10,6 +12,36 @@ _twin: Optional[DigitalTwin] = None
 
 STEPS_PER_HOUR = 60 // INTERVAL_MINUTES
 WHATIF_HOURS = 24
+
+# Diurnal-curve amplitudes for compute_simulation(). The requested
+# utilisation/outside_temp are treated as the DAY'S MEAN, not a flat value
+# held for the whole run -- these swing around that mean by time-of-day,
+# using the same phase DataCentreEnv uses for its own training-time profile
+# (src/optimizer.py: _compute_utilisation peaks ~midday, _compute_outside_temp
+# peaks mid-afternoon), just anchored to the caller's mean instead of a fixed
+# baseline.
+_UTIL_DIURNAL_AMPLITUDE = 0.15
+_OUTSIDE_TEMP_DIURNAL_AMPLITUDE_C = 4.0
+
+
+def _diurnal_utilisation(mean_utilisation: float, n_steps: int, start_time: datetime) -> list[float]:
+    values = []
+    for i in range(n_steps):
+        t = start_time + timedelta(minutes=i * INTERVAL_MINUTES)
+        hour = t.hour + t.minute / 60.0
+        v = mean_utilisation + _UTIL_DIURNAL_AMPLITUDE * math.sin((hour - 6) * math.pi / 12)
+        values.append(float(min(1.0, max(0.0, v))))
+    return values
+
+
+def _diurnal_outside_temp(mean_outside_temp_C: float, n_steps: int, start_time: datetime) -> list[float]:
+    values = []
+    for i in range(n_steps):
+        t = start_time + timedelta(minutes=i * INTERVAL_MINUTES)
+        hour = t.hour + t.minute / 60.0
+        v = mean_outside_temp_C + _OUTSIDE_TEMP_DIURNAL_AMPLITUDE_C * math.sin(2 * math.pi * (hour - 14) / 24)
+        values.append(float(v))
+    return values
 
 
 def get_twin() -> DigitalTwin:
@@ -47,7 +79,7 @@ def compute_state(utilisation: float, outside_temp: float, water_stress: float, 
     return {**state.to_dict(), "carbon_data_is_real": twin.carbon_data_is_real}
 
 
-def compute_simulation(hours: int, utilisation: float, stress: float) -> list[dict[str, Any]]:
+def compute_simulation(hours: int, utilisation: float, outside_temp: float, stress: float) -> list[dict[str, Any]]:
     """Returns raw hourly records (timestamps NOT yet serialized -- callers
     must pass them through api.serialization.to_jsonable).
 
@@ -58,15 +90,24 @@ def compute_simulation(hours: int, utilisation: float, stress: float) -> list[di
     ``water_consumed_L`` for as long as the instance lives, so on the shared
     twin every call would start from wherever the previous one (or the live
     WebSocket feed) left off -- and would also perturb the live feed.
+
+    ``utilisation`` and ``outside_temp`` are the requested MEANS for the run,
+    not held flat for the whole period -- they're the center of a diurnal
+    curve (see _diurnal_utilisation/_diurnal_outside_temp above), so the
+    24h/168h chart actually has time-of-day shape to react to instead of a
+    flat line and a single-color cooling-mode donut.
     """
     if hours < 1 or hours > 168:
         raise ValueError("hours must be between 1 and 168")
     twin = DigitalTwin()
     n_steps = hours * STEPS_PER_HOUR
+    start_time = twin.state.timestamp
+    util_profile = _diurnal_utilisation(utilisation, n_steps, start_time)
+    temp_profile = _diurnal_outside_temp(outside_temp, n_steps, start_time)
     df = twin.run_scenario(
         n_steps=n_steps,
-        util_profile=[utilisation] * n_steps,
-        temp_profile=[25.0] * n_steps,
+        util_profile=util_profile,
+        temp_profile=temp_profile,
         use_auto_cooling=True,
         water_stress=stress,
     )
