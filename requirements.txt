@@ -41,7 +41,15 @@ openpyxl>=3.1,<4
 # Utils
 python-dotenv>=1.0,<2
 tqdm>=4.66,<5
+reportlab>=4.0,<5
 
 # Rate limiting & observability
 slowapi>=0.1.9,<1
 prometheus-client>=0.19,<1
+
+# Task queue (Phase 4) -- moves PPO fallback training off the request path.
+# See src/task_queue.py and api/services/optimization_service.py's
+# _ensure_optimizer for why this is additive, not a replacement of the
+# existing synchronous /api/optimize.
+redis>=5.0,<6
+rq>=1.16,<2
