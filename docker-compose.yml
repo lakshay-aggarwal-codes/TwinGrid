@@ -16,6 +16,38 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    # Runs POST /api/optimize/train_async jobs (src/task_jobs.py) via RQ --
+    # see src/task_queue.py and ADR 002 in docs/adr/. Same image as
+    # `backend`, different command: no uvicorn, just the RQ worker loop.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: rq worker twingrid --url redis://redis:6379/0
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      OPTIMIZER_MODEL_PATH: /app/models/optimizer
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./models:/app/models
+
   backend:
     build:
       context: .
@@ -29,10 +61,13 @@ services:
       OPERATOR_REGISTRATION_KEY: ${OPERATOR_REGISTRATION_KEY:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080} 
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/digital_twin
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       # Mount models/ read-write so a model trained locally (outside

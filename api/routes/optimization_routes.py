@@ -10,9 +10,10 @@ from api.rate_limit import limiter
 from api.repositories import data_repository
 from api.schemas.optimization import OptimizeRequest
 from api.serialization import to_jsonable
-from api.services import optimization_service
+from api.services import audit_service, optimization_service
 from database import get_db
 from models.db_models import User
+from src.task_queue import enqueue, get_status
 
 router = APIRouter(tags=["optimization"])
 
@@ -31,7 +32,7 @@ async def optimize(
     ) 
     serialized_results = to_jsonable(results)
     summary = to_jsonable(summary)
-    await data_repository.save_optimization_result(
+    opt_result = await data_repository.save_optimization_result(
         session,
         alpha=body.alpha, beta=body.beta, gamma=body.gamma,
         water_stress=body.water_stress, hours=body.hours,
@@ -41,4 +42,44 @@ async def optimize(
         total_reward=summary["total_reward"], safety_violations=summary["safety_violations"],
         results_json=serialized_results,
     )
+    # Adjusting live cooling-optimization parameters is exactly the kind of
+    # operator action worth a durable, who/when/what-params record.
+    await audit_service.log_action(
+        session,
+        action="optimize_triggered",
+        user=_user,
+        resource_type="optimization_result",
+        resource_id=opt_result.id,
+        details={
+            "alpha": body.alpha, "beta": body.beta, "gamma": body.gamma,
+            "water_stress": body.water_stress, "hours": body.hours,
+        },
+        request=request,
+    )
     return {"results": serialized_results, "summary": summary}
+
+
+@router.post("/api/optimize/train_async")
+@limiter.limit("5/minute")
+async def train_optimizer_async(
+    request: Request,
+    body: OptimizeRequest,
+    _user: Annotated[User, Depends(require_operator)],
+) -> dict[str, str]:
+    """Enqueue PPO (re)training as an RQ job instead of running it inline
+    (see src/task_queue.py, src/task_jobs.py). Returns immediately with a
+    job_id -- poll GET /api/optimize/jobs/{job_id} for status/result. This
+    is additive: POST /api/optimize above is unchanged and still works
+    synchronously with in-process fallback training. Requires a running
+    Redis + `rq worker` (see docker-compose.yml's `worker` service) -- a
+    job just sits queued forever with no worker running.
+    """
+    job_id = enqueue("src.task_jobs.train_optimizer_job", body.alpha, body.beta, body.gamma, body.water_stress)
+    return {"job_id": job_id}
+
+
+@router.get("/api/optimize/jobs/{job_id}")
+async def get_optimize_job(job_id: str, _user: Annotated[User, Depends(require_operator)]) -> dict[str, Any]:
+    """Status (queued/started/finished/failed) + result of a job enqueued by
+    POST /api/optimize/train_async."""
+    return get_status(job_id)
