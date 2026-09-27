@@ -12,6 +12,7 @@ from api.serialization import to_jsonable
 from api.services import twin_service
 from database import get_db
 from models.db_models import User
+from src.facility_benchmarking import benchmark_pue
 
 router = APIRouter(tags=["digital-twin"])
 
@@ -29,6 +30,20 @@ async def get_state(
     result = to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, mode))
     await data_repository.save_sensor_reading(session, result, "api")
     return result
+
+
+@router.get("/api/benchmark")
+async def get_benchmark(
+    _user: Annotated[User, Depends(get_current_user)],
+    utilisation: float = Query(0.5, ge=0, le=1),
+    outside_temp: float = Query(25.0, ge=-10, le=50),
+    water_stress: float = Query(0.0, ge=0, le=1),
+) -> dict[str, Any]:
+    """Current-state PUE classified against the Uptime Institute 2024
+    industry survey (see src/facility_benchmarking.py) instead of an
+    arbitrary hand-picked threshold."""
+    state = to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, "auto"))
+    return benchmark_pue(state["pue"])
 
 
 @router.get("/api/simulate/{hours}")
