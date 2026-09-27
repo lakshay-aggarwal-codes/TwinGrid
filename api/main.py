@@ -36,9 +36,11 @@ from api.routes import (
     anomaly_routes,
     digital_twin_routes,
     equipment_health_routes,
+    esg_report_routes,
     health_routes,
     metrics_routes,
     optimization_routes,
+    shadow_mode_routes,
     websocket_routes,
 )
 from api.services import optimization_service
@@ -71,6 +73,20 @@ app = FastAPI(
     description=settings.APP_DESCRIPTION,
     version=settings.APP_VERSION,
     lifespan=lifespan,
+    # Swagger UI (/docs) and ReDoc (/redoc) are FastAPI defaults, already
+    # exposed. This tag metadata is what actually organizes them into
+    # something a third-party integrator (or Redoc-CLI, for a hosted static
+    # copy: `redocly build-docs openapi.json`) can navigate, instead of one
+    # flat undifferentiated endpoint list.
+    openapi_tags=[
+        {"name": "digital-twin", "description": "Live state, 24h+ simulation, and what-if scenarios."},
+        {"name": "optimization", "description": "PPO cooling optimizer: run optimization, compare scenarios."},
+        {"name": "anomaly", "description": "Autoencoder anomaly scoring, alert history, webhook subscriptions."},
+        {"name": "shadow-mode", "description": "Log PPO's recommended actions vs. the rule-based baseline without applying them."},
+        {"name": "esg-report", "description": "Downloadable PDF sustainability report."},
+        {"name": "equipment-health", "description": "Predictive-maintenance model status (see docs/model_cards/)."},
+        {"name": "health", "description": "Liveness/readiness."},
+    ],
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -82,6 +98,8 @@ app.include_router(optimization_routes.router)
 app.include_router(anomaly_routes.router)
 app.include_router(websocket_routes.router)
 app.include_router(equipment_health_routes.router)
+app.include_router(shadow_mode_routes.router)
+app.include_router(esg_report_routes.router)
 app.include_router(metrics_routes.router)
 
 # CORS origins come from CORS_ALLOWED_ORIGINS (comma-separated) -- see api/config.py.
