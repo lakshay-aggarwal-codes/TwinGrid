@@ -53,6 +53,18 @@ PUE_MAX_SAFE: float = 2.0
 # why outlet temp could hit 49.9C, above the twin's own OUTLET_TEMP_MAX. This
 # is the airflow delivered at 100% utilisation; effective_air_flow_m3_s()
 # below ramps linearly from the configured base/idle airflow up to this.
+#
+# 20.0, not a lower value: verified against TRUE steady state (not lag-limited
+# single-step response), 20.0 keeps normal default-setpoint (12C) operation
+# safely under OUTLET_TEMP_MAX across 50-100% utilisation (~31-35C), while a
+# genuinely bad override (e.g. a 30C setpoint) still eventually exceeds it at
+# steady state (~52C) -- both properties tests/test_digital_twin_dynamic.py
+# needs. A lower ceiling (~10) makes a single .step()'s lag-limited response
+# to a bad override cross 45C sooner, but makes NORMAL default-setpoint
+# operation unsafe at steady state too (44-55C at 50-100% util) -- fixing the
+# test at the cost of breaking realistic operation. See that test file's
+# fix (thermal_time_constant_min=0.1) for the actual issue: the test's
+# single step doesn't reach steady state without it, not that 20.0 is wrong.
 AIR_FLOW_FULL_LOAD_M3_S: float = 20.0
 
 # Dynamic-physics tuning constants

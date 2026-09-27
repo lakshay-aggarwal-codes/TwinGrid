@@ -1,0 +1,67 @@
+[
+  {
+    "name": "forecaster",
+    "version": "20260927T142935Z",
+    "trained_at": "2026-09-27T14:29:35.613866+00:00",
+    "metrics": {
+      "rmse": 0.5231534242630005,
+      "mae": 0.4206322729587555
+    },
+    "data_source": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\data\\raw\\sensor_data.csv",
+    "artifact_path": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\models\\forecaster\\thermal.keras",
+    "params": {
+      "seq_len": 12,
+      "horizon": 6,
+      "train_ratio": 0.8,
+      "epochs": 30,
+      "patience": 8
+    },
+    "python": "3.12.10"
+  },
+  {
+    "name": "anomaly_detector",
+    "version": "20260927T143100Z",
+    "trained_at": "2026-09-27T14:31:00.514952+00:00",
+    "metrics": {
+      "f1": 0.96,
+      "precision": 0.9230769230769231,
+      "recall": 1.0
+    },
+    "data_source": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\data\\raw\\sensor_data.csv (rows 0:20736 train, 20736:25920 held out)",
+    "artifact_path": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\models\\anomaly",
+    "params": {
+      "threshold_percentile": 99.5,
+      "seq_len": 12
+    },
+    "python": "3.12.10"
+  },
+  {
+    "name": "ppo_optimizer",
+    "version": "20260927T143232Z",
+    "trained_at": "2026-09-27T14:32:32.917913+00:00",
+    "metrics": {
+      "pue_improvement_mean_pct": -2.267707427967431,
+      "pue_improvement_std_pct": 0.09835029269020382,
+      "pue_improvement_ci95_pct": 0.11129383320075262,
+      "pue_improvement_per_seed_pct": {
+        "0": -2.366168399559505,
+        "1": -2.1694681891051575,
+        "2": -2.2674856952376308
+      }
+    },
+    "data_source": "live DigitalTwin simulation (no historical dataset)",
+    "artifact_path": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\models\\optimizer",
+    "params": {
+      "alpha": 0.5,
+      "beta": 0.3,
+      "gamma": 0.2,
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "total_timesteps": 50000
+    },
+    "python": "3.12.10"
+  }
+]

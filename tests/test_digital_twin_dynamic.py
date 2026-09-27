@@ -118,8 +118,13 @@ class TestDynamicPhysics:
 
     def test_no_cosmetic_clamp_allows_is_safe_to_detect_unsafe_outlet(self):
         """With no artificial ceiling on achieved outlet temperature,
-        a genuinely poor control choice must be observable via is_safe()."""
-        twin = DigitalTwin(max_chilled_water_rate_C_per_step=50.0)
+        a genuinely poor control choice must be observable via is_safe().
+        Uses a fast thermal response (like test_no_cosmetic_clamp_on_inlet_either
+        below) so thermal lag doesn't mask the steady-state-unsafe outcome
+        within the single step this test takes -- without it, a single step
+        only partially converges toward the (still genuinely unsafe) target,
+        which is a lag artifact, not a cosmetic clamp."""
+        twin = DigitalTwin(max_chilled_water_rate_C_per_step=50.0, thermal_time_constant_min=0.1)
         twin.step(
             {
                 "utilisation": 0.9,
