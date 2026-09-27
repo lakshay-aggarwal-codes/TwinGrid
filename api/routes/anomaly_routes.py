@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.auth import get_current_user
+from api.auth import get_current_user, require_operator
 from api.repositories import data_repository
 from api.schemas.optimization import AnomalyScoreResponse
-from api.services import anomaly_service
+from api.services import anomaly_service, audit_service, webhook_service
 from database import get_db
 from models.db_models import User
 
@@ -36,7 +36,28 @@ async def anomaly_score(
             result["message"],
             severity=anomaly_service.alert_severity(result["score"], result["threshold"]),
         )
+        # Webhook subscribers get pushed the same alert instead of having to
+        # poll GET /api/alerts. No-ops instantly if nobody's registered.
+        await webhook_service.dispatch_alert(
+            {"score": result["score"], "type": result["type"], "message": result["message"]}
+        )
     return AnomalyScoreResponse(**result)
+
+
+@router.post("/api/webhooks")
+async def register_webhook(_user: Annotated[User, Depends(get_current_user)], url: str = Query(...)) -> dict:
+    """Register a URL to receive POSTed alert events (see
+    api/services/webhook_service.py). Returns the current subscriber list."""
+    from src.webhook_registry import register
+
+    return {"subscribers": register(url)}
+
+
+@router.delete("/api/webhooks")
+async def unregister_webhook(_user: Annotated[User, Depends(get_current_user)], url: str = Query(...)) -> dict:
+    from src.webhook_registry import unregister
+
+    return {"subscribers": unregister(url)}
 
 
 @router.get("/api/alerts")
@@ -56,6 +77,36 @@ async def list_alerts(
             "severity": a.severity or "INFO",
             "score": a.score,
             "alert": a.alert,
+            "acknowledged": a.acknowledged,
+            "acknowledged_by": a.acknowledged_by,
+            "acknowledged_at": a.acknowledged_at.isoformat() if a.acknowledged_at else None,
         }
         for a in alerts
     ]
+
+
+@router.post("/api/alerts/{alert_id}/acknowledge")
+async def acknowledge_alert(
+    alert_id: int,
+    request: Request,
+    user: Annotated[User, Depends(require_operator)],
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """Acknowledge an alert. Requires 'operator' role; audit-logged."""
+    alert = await data_repository.acknowledge_alert(session, alert_id, acknowledged_by=user.username)
+    if alert is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+    await audit_service.log_action(
+        session,
+        action="alert_acknowledged",
+        user=user,
+        resource_type="alert",
+        resource_id=alert_id,
+        request=request,
+    )
+    return {
+        "id": alert.id,
+        "acknowledged": alert.acknowledged,
+        "acknowledged_by": alert.acknowledged_by,
+        "acknowledged_at": alert.acknowledged_at.isoformat() if alert.acknowledged_at else None,
+    }

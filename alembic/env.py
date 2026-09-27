@@ -14,6 +14,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from api.secrets import read_secret
 from db_url import DEFAULT_DATABASE_URL, normalize_database_url
 from models.db_models import Base
 
@@ -25,8 +26,9 @@ if config.config_file_name is not None:
 
 # Same normalisation as database.py: postgres:// and postgresql:// become
 # postgresql+asyncpg:// so `alembic upgrade head` works against the URL a
-# managed-Postgres provider hands out.
-database_url = normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
+# managed-Postgres provider hands out. DATABASE_URL_FILE is supported the
+# same way as in database.py (see api/secrets.py).
+database_url = normalize_database_url(read_secret("DATABASE_URL") or DEFAULT_DATABASE_URL)
 sync_url = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)  # offline mode only (no driver needed)
 
 # configparser treats "%" as interpolation syntax, so a percent-encoded

@@ -36,6 +36,57 @@ class User(Base):
         return self.role == USER_ROLE_OPERATOR
 
 
+class RefreshToken(Base):
+    """
+    Opaque refresh token for a User, used to mint new short-lived JWT access
+    tokens without re-authenticating. Only the SHA-256 hash of the token is
+    stored (see api/auth.py) -- a DB dump never yields a usable token.
+
+    Rotated on every use: ``replaced_by_id`` chains an old, revoked token to
+    the new one it was exchanged for, which makes token-reuse (a revoked
+    token presented again) detectable after the fact.
+    """
+
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    replaced_by_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("refresh_tokens.id", ondelete="SET NULL"), nullable=True
+    )
+
+    user: Mapped["User"] = relationship("User")
+
+
+class AuditLog(Base):
+    """
+    Append-only record of sensitive actions: operator account creation,
+    POST /api/optimize triggers, and alert acknowledgment. See
+    api/services/audit_service.py for the writer; nothing in this codebase
+    updates or deletes a row here.
+    """
+
+    __tablename__ = "audit_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)
+
+    # Denormalized username: the row still reads sensibly if the user is later deleted.
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    username: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+    action: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    resource_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    resource_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    details: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+
 class SensorReading(Base):
     """
     Single sensor/state snapshot from the digital twin.
@@ -217,4 +268,11 @@ class Alert(Base):
 
     # Optional link to sensor reading that triggered the alert
     sensor_reading_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sensor_readings.id", ondelete="SET NULL"), nullable=True)
+
+    # Acknowledgment (operator-only, see POST /api/alerts/{id}/acknowledge). Who
+    # acknowledged is stored as a username, not a user_id FK, for the same reason
+    # as AuditLog.username: it should still read sensibly if the account is deleted.
+    acknowledged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    acknowledged_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 

@@ -7,6 +7,7 @@ single, trivial persistence call.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import select
@@ -61,3 +62,20 @@ async def save_alert(
 async def list_recent_alerts(session: AsyncSession, limit: int) -> list[Alert]:
     result = await session.execute(select(Alert).order_by(Alert.created_at.desc()).limit(limit))
     return list(result.scalars().all())
+
+
+async def get_alert(session: AsyncSession, alert_id: int) -> Optional[Alert]:
+    return await session.get(Alert, alert_id)
+
+
+async def acknowledge_alert(session: AsyncSession, alert_id: int, acknowledged_by: str) -> Optional[Alert]:
+    """Mark an alert acknowledged. Returns None if the alert doesn't exist.
+    Idempotent: acknowledging an already-acknowledged alert just updates who/when."""
+    alert = await session.get(Alert, alert_id)
+    if alert is None:
+        return None
+    alert.acknowledged = True
+    alert.acknowledged_by = acknowledged_by
+    alert.acknowledged_at = datetime.now(timezone.utc)
+    await session.flush()
+    return alert

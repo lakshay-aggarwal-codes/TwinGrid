@@ -16,6 +16,7 @@ from typing import AsyncGenerator
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from api.secrets import read_secret
 from db_url import DEFAULT_DATABASE_URL, auto_create_tables_enabled, normalize_database_url
 from models.db_models import Base
 
@@ -23,7 +24,10 @@ load_dotenv()
 
 # Accepts postgres:// , postgresql:// or postgresql+asyncpg://user:password@host:port/dbname
 # (see db_url.py) -- managed-Postgres providers hand out the first two.
-DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
+# A full connection string (including its password) is exactly what a
+# secrets manager hands out, so DATABASE_URL_FILE is supported the same way
+# JWT_SECRET_KEY_FILE is (see api/secrets.py).
+DATABASE_URL = normalize_database_url(read_secret("DATABASE_URL") or DEFAULT_DATABASE_URL)
 
 # Async engine with pool settings
 engine = create_async_engine(
