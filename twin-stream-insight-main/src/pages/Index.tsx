@@ -11,7 +11,7 @@ import { useSimulation } from '@/hooks/useSimulation';
 
 const Index = () => {
   const {
-    config, setConfig, kpi, anomalyScore, events, hourlyData, simRunning,
+    config, setConfig, kpi, anomalyScore, latestAnomaly, events, hourlyData, simRunning,
     runSimulation, liveState, equipmentHealth,
   } = useSimulation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -46,7 +46,7 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="live">
-              <LiveMonitor kpi={kpi} anomalyScore={anomalyScore} events={events} serverUtil={config.serverUtil} outsideTemp={config.outsideTemp} />
+              <LiveMonitor kpi={kpi} anomalyScore={anomalyScore} latestAnomaly={latestAnomaly} events={events} serverUtil={config.serverUtil} outsideTemp={config.outsideTemp} />
             </TabsContent>
             <TabsContent value="sim">
               <SimulationTab data={hourlyData} />

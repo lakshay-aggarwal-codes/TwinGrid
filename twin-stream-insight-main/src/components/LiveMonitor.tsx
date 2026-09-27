@@ -4,20 +4,21 @@ import { AnomalyGauge } from './AnomalyGauge';
 import { EventLog } from './EventLog';
 import { FloorHeatmap } from './FloorHeatmap';
 import { AnomalyAlert } from './AnomalyAlert';
-import type { KpiData, EventItem } from '@/hooks/useSimulation';
+import type { KpiData, EventItem, LatestAnomaly } from '@/hooks/useSimulation';
 
 interface Props {
   kpi: KpiData;
   anomalyScore: number;
+  latestAnomaly: LatestAnomaly | null;
   events: EventItem[];
   serverUtil: number;
   outsideTemp: number;
 }
 
-export function LiveMonitor({ kpi, anomalyScore, events, serverUtil, outsideTemp }: Props) {
+export function LiveMonitor({ kpi, anomalyScore, latestAnomaly, events, serverUtil, outsideTemp }: Props) {
   return (
     <div className="space-y-4">
-      <AnomalyAlert anomalyScore={anomalyScore} />
+      <AnomalyAlert anomalyScore={anomalyScore} anomaly={latestAnomaly} />
 
       <div className="grid grid-cols-3 gap-3">
         <KpiCard label="PUE" value={kpi.pue} trend={kpi.pueTrend} icon={Activity} color="text-primary" />

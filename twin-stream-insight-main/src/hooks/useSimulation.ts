@@ -30,6 +30,11 @@ export interface KpiData {
   waterPerHour: number;
 }
 
+export interface LatestAnomaly {
+  type: string;
+  message: string;
+}
+
 export interface EventItem {
   id: number;
   time: string;
@@ -148,6 +153,7 @@ export function useSimulation() {
   const [liveState, setLiveState] = useState<StateResponse | null>(null);
   const [equipmentHealth, setEquipmentHealth] = useState<EquipmentHealthResponse | null>(null);
   const [anomalyScore, setAnomalyScore] = useState(0);
+  const [latestAnomaly, setLatestAnomaly] = useState<LatestAnomaly | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
   const [simRunning, setSimRunning] = useState(false);
@@ -223,6 +229,7 @@ export function useSimulation() {
           setAnomalyScore(normalized);
           if (result.alert) {
             pushEvent(result.message, result.type === 'error' ? 'error' : 'warning');
+            setLatestAnomaly({ type: result.type, message: result.message });
           }
         } catch (e) {
           console.warn('[useSimulation] fetchAnomalyScore failed:', e);
@@ -252,6 +259,7 @@ export function useSimulation() {
     setConfig,
     kpi,
     anomalyScore,
+    latestAnomaly,
     events,
     hourlyData,
     simRunning,

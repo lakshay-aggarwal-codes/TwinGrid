@@ -96,9 +96,8 @@ function generateTemperatures(serverUtil: number, outsideTemp: number): number[]
       const base = (serverUtil / 100) * 0.6;
       const hotAisle = r === 1 || r === 3 ? 0.2 : 0;
       const center = 1 - Math.abs(c - 4.5) / 5 * 0.3;
-      const noise = (Math.random() - 0.5) * 0.1;
       const tempInfluence = (outsideTemp - 10) / 40 * 0.15;
-      row.push(Math.max(0, Math.min(1, base + hotAisle + center * 0.1 + noise + tempInfluence)));
+      row.push(Math.max(0, Math.min(1, base + hotAisle + center * 0.1 + tempInfluence)));
     }
     grid.push(row);
   }
@@ -121,19 +120,11 @@ export function FloorHeatmap({ serverUtil, outsideTemp }: Props) {
     setTemps(generateTemperatures(serverUtil, outsideTemp));
   }, [serverUtil, outsideTemp]);
 
-  // animate changes periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTemps(generateTemperatures(serverUtil, outsideTemp));
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [serverUtil, outsideTemp]);
-
   return (
     <div className="card-grid-glow rounded-lg overflow-hidden">
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Data Centre Floor — Thermal Heatmap
+          Data Centre Floor — Illustrative Airflow Pattern
         </h3>
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
           <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ background: '#2563eb' }} />Cool</span>
@@ -142,6 +133,10 @@ export function FloorHeatmap({ serverUtil, outsideTemp }: Props) {
           <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ background: '#ef4444' }} />Hot</span>
         </div>
       </div>
+      <p className="px-4 pb-2 text-[11px] text-muted-foreground">
+        Illustrative pattern derived from facility-wide utilisation and outside temperature only —
+        not measured per-rack data. See the Live Twin for the real spatial model.
+      </p>
       <div className="h-[280px]" key={canvasKey}>
         <Canvas
           camera={{ position: [0, 5, 6], fov: 45 }}

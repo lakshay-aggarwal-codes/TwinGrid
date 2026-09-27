@@ -1,33 +1,23 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, X, Droplets, Thermometer, Zap } from 'lucide-react';
-
-export type AnomalyType = 'Water Leak' | 'Thermal Spike' | 'Power Surge';
-
-const ANOMALY_CONFIG: Record<AnomalyType, { icon: React.ElementType; color: string }> = {
-  'Water Leak': { icon: Droplets, color: 'text-chart-blue' },
-  'Thermal Spike': { icon: Thermometer, color: 'text-chart-red' },
-  'Power Surge': { icon: Zap, color: 'text-chart-orange' },
-};
-
-const ANOMALY_TYPES: AnomalyType[] = ['Water Leak', 'Thermal Spike', 'Power Surge'];
+import { AlertTriangle, X } from 'lucide-react';
+import type { LatestAnomaly } from '@/hooks/useSimulation';
 
 interface Props {
   anomalyScore: number;
+  /**
+   * The real anomaly type/message from the backend's trained detector
+   * (/api/anomaly_score). Null if the score is elevated but no alert
+   * payload has arrived yet (e.g. the rolling 12-reading buffer hasn't
+   * filled) -- in that case this shows a generic, honest label rather
+   * than guessing a category (see the Stage 0 audit: a previous version
+   * of this component picked one at random on a timer).
+   */
+  anomaly: LatestAnomaly | null;
 }
 
-export function AnomalyAlert({ anomalyScore }: Props) {
+export function AnomalyAlert({ anomalyScore, anomaly }: Props) {
   const [dismissed, setDismissed] = useState(false);
-  const [anomalyType, setAnomalyType] = useState<AnomalyType>('Thermal Spike');
   const isActive = anomalyScore > 5;
-
-  // rotate anomaly type occasionally
-  useEffect(() => {
-    if (!isActive) return;
-    const interval = setInterval(() => {
-      setAnomalyType(ANOMALY_TYPES[Math.floor(Math.random() * ANOMALY_TYPES.length)]);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [isActive]);
 
   // un-dismiss when score changes significantly
   useEffect(() => {
@@ -35,9 +25,6 @@ export function AnomalyAlert({ anomalyScore }: Props) {
   }, [anomalyScore > 50]);
 
   if (!isActive || dismissed) return null;
-
-  const cfg = ANOMALY_CONFIG[anomalyType];
-  const Icon = cfg.icon;
 
   return (
     <div className="anomaly-alert-banner rounded-lg px-4 py-3 flex items-center gap-3 mb-4 border border-destructive/40 bg-destructive/10 backdrop-blur-sm">
@@ -47,9 +34,11 @@ export function AnomalyAlert({ anomalyScore }: Props) {
       </div>
       <div className="h-4 w-px bg-destructive/30" />
       <div className="flex items-center gap-1.5 flex-1">
-        <Icon className={`h-4 w-4 ${cfg.color}`} />
-        <span className="text-sm text-foreground font-medium">{anomalyType}</span>
-        <span className="text-sm text-muted-foreground">— Score: <span className="font-mono text-destructive">{Math.round(anomalyScore)}%</span></span>
+        <span className="text-sm text-foreground font-medium">
+          {anomaly ? anomaly.type : 'Classifying…'}
+        </span>
+        {anomaly && <span className="text-sm text-muted-foreground">— {anomaly.message}</span>}
+        <span className="text-sm text-muted-foreground">Score: <span className="font-mono text-destructive">{Math.round(anomalyScore)}%</span></span>
       </div>
       <button onClick={() => setDismissed(true)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
         <X className="h-3.5 w-3.5" />
