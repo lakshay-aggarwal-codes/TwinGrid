@@ -21,3 +21,9 @@ class AnomalyScoreResponse(BaseModel):
     alert: bool = Field(description="True if anomaly detected")
     type: str = Field(description="Anomaly type or 'normal'")
     message: str = Field(description="Human-readable message")
+    explanation: dict | None = Field(
+        None,
+        description="Only populated when alert=True: which of the 5 input "
+        "features drove the score (feature_contributions_pct, top_feature). "
+        "See src/anomaly_explain.py.",
+    )

@@ -12,6 +12,7 @@ import numpy as np
 
 from api.middleware.metrics import MODEL_INFERENCE_COUNT
 from src.anomaly_detector import AnomalyDetector
+from src.anomaly_explain import explain
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,14 @@ def score_recent_data(recent_data_json: str) -> dict[str, Any]:
     """Returns a dict matching AnomalyScoreResponse's fields."""
     detector = get_anomaly_detector()
     if detector is None:
-        return {"score": 0.0, "threshold": 1.0, "alert": False, "type": "normal", "message": "Anomaly detector not available"}
+        return {
+            "score": 0.0,
+            "threshold": 1.0,
+            "alert": False,
+            "type": "normal",
+            "message": "Anomaly detector not available",
+            "explanation": None,
+        }
 
     try:
         data = json.loads(recent_data_json)
@@ -54,7 +62,11 @@ def score_recent_data(recent_data_json: str) -> dict[str, Any]:
         score = float(errors[0])
         alert = bool(alerts[0])
         threshold = detector.threshold or 1.0
+        explanation = None
         if alert:
+            # Only explain real alerts -- a second forward pass through the
+            # model, not worth paying on every 3s "normal" poll.
+            explanation = explain(detector, arr.reshape(1, 12, 5))[0]
             if arr[-1, 1] < 2.0:
                 anomaly_type, message = "water_leak", "Water pressure anomaly detected - possible leak"
             elif arr[-1, 2] > 45:
@@ -63,7 +75,21 @@ def score_recent_data(recent_data_json: str) -> dict[str, Any]:
                 anomaly_type, message = "unknown", "Anomaly detected"
         else:
             anomaly_type, message = "normal", "No anomalies detected"
-        return {"score": score, "threshold": threshold, "alert": alert, "type": anomaly_type, "message": message}
+        return {
+            "score": score,
+            "threshold": threshold,
+            "alert": alert,
+            "type": anomaly_type,
+            "message": message,
+            "explanation": explanation,
+        }
     except Exception as e:
         logger.exception("Anomaly detection error: %s", e)
-        return {"score": 0.0, "threshold": 1.0, "alert": False, "type": "error", "message": f"Error: {str(e)}"}
+        return {
+            "score": 0.0,
+            "threshold": 1.0,
+            "alert": False,
+            "type": "error",
+            "message": f"Error: {str(e)}",
+            "explanation": None,
+        }
