@@ -19,9 +19,9 @@ export function AnomalyAlert({ anomalyScore, anomaly }: Props) {
   const [dismissed, setDismissed] = useState(false);
   const isActive = anomalyScore > 5;
 
-  // un-dismiss when score changes significantly
-   useEffect(() => {
-     if (anomalyScore > 50) setDismissed(false);
+  // un-dismiss when score climbs back into elevated territory
+  useEffect(() => {
+    if (anomalyScore > 50) setDismissed(false);
   }, [anomalyScore]);
 
   if (!isActive || dismissed) return null;
