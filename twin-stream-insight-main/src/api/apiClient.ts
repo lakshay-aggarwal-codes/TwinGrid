@@ -6,6 +6,7 @@
  * how that token is obtained (demo viewer account, no login screen).
  */
 
+import { reportError } from '@/lib/errorReporter.ts';
 import { getToken } from '../authClient';
 import { API_BASE_URL as BASE_URL, WS_LIVE_URL as WS_BASE_URL, assertApiConfigured } from '../config';
 
@@ -64,6 +65,35 @@ export interface AnomalyScoreResponse {
   alert: boolean;
   type: string;
   message: string;
+}
+
+/**
+ * A single row from GET /api/alerts, exactly as api/routes/anomaly_routes.py's
+ * list_alerts returns it -- see api/models/db_models.py's Alert table for the
+ * backing schema. This is deliberately the FULL set of fields the backend
+ * attaches to an alert: there is no rack/equipment ID and no facility-state
+ * snapshot (Alert.sensor_reading_id exists in the schema but
+ * data_repository.save_alert never sets it, so it's always null and the API
+ * doesn't even expose it) -- don't assume either exists elsewhere in the app.
+ */
+export interface AlertRecord {
+  id: number;
+  created_at: string | null;
+  type: string;
+  message: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL' | string;
+  score: number;
+  alert: boolean;
+  acknowledged: boolean;
+  acknowledged_by: string | null;
+  acknowledged_at: string | null;
+}
+
+/** GET /api/alerts — recent persisted alerts, newest first. */
+export async function fetchAlerts(limit = 50): Promise<AlertRecord[]> {
+  const url = buildUrl('/api/alerts', { limit });
+  const response = await authedFetch(url);
+  return handleResponse<AlertRecord[]>(response);
 }
 
 function buildUrl(path: string, params: Record<string, string | number | undefined> = {}): string {
@@ -231,7 +261,7 @@ export function connectWebSocket(onMessage: (state: StateResponse) => void): { d
     try {
       token = await getToken();
     } catch (e) {
-      console.warn('[apiClient] WebSocket auth failed, will retry:', e);
+      reportError('apiClient.websocket.auth', e, 'warning');
       scheduleReconnect();
       return;
     }
@@ -249,15 +279,21 @@ export function connectWebSocket(onMessage: (state: StateResponse) => void): { d
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         onMessage(data as StateResponse);
       } catch (e) {
-        console.warn('[apiClient] WebSocket parse error:', e);
+        reportError('apiClient.websocket.parse', e, 'warning');
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       ws = null;
-      if (!closed) scheduleReconnect();
+      if (closed) return;
+      // Previously silent. The header's Live/Connecting indicator shows this to
+      // an operator watching; this makes it visible to anyone who isn't.
+      reportError('apiClient.websocket.closed', `WebSocket closed (code ${event.code}); reconnecting`, 'warning');
+      scheduleReconnect();
     };
 
+    // The browser gives no detail on WebSocket errors (a close event always
+    // follows and is what gets reported), so nothing more to add here.
     ws.onerror = () => {};
 
     ws.onopen = () => {

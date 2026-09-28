@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/errorReporter.ts';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   fetchState,
@@ -173,7 +174,7 @@ export function useSimulation() {
       .then((health) => {
         if (!cancelled) setEquipmentHealth(health);
       })
-      .catch((e) => console.warn('[useSimulation] fetchEquipmentHealth failed:', e));
+      .catch((e) => reportError('useSimulation.fetchEquipmentHealth', e, 'warning'));
     return () => {
       cancelled = true;
     };
@@ -196,7 +197,7 @@ export function useSimulation() {
         setKpi(stateToKpi(state, prevPueRef.current));
         prevPueRef.current = state.pue;
       } catch (e) {
-        console.warn('[useSimulation] fetchState failed, keeping previous KPI values:', e);
+        reportError('useSimulation.fetchState', e, 'warning');
         pushEvent('Live data temporarily unavailable', 'warning');
       }
     }, 300);
@@ -232,7 +233,7 @@ export function useSimulation() {
             setLatestAnomaly({ type: result.type, message: result.message });
           }
         } catch (e) {
-          console.warn('[useSimulation] fetchAnomalyScore failed:', e);
+          reportError('useSimulation.fetchAnomalyScore', e, 'warning');
         }
       }
     });
@@ -248,7 +249,7 @@ export function useSimulation() {
     })
       .then((states) => setHourlyData(stateToHourlyData(states)))
       .catch((e) => {
-        console.warn('[useSimulation] fetchSimulation failed:', e);
+        reportError('useSimulation.fetchSimulation', e, 'warning');
         pushEvent('Simulation request failed', 'error');
       })
       .finally(() => setSimRunning(false));
