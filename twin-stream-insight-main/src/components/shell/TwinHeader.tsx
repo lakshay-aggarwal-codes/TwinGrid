@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
-import { Boxes, Radio } from "lucide-react";
-import { LocateControl } from "./LocateControl";
+import { Boxes, Radio, FlaskConical, Wrench, AlertTriangle, Search } from "lucide-react";
 import { ModeSwitcher } from "./ModeSwitcher";
 import type { StateResponse } from "@/api/apiClient";
 import type { VisualizationMode } from "@/three/visualizationModes";
 
 interface TwinHeaderProps {
-  onLocateRack: (rackId: string) => void;
+  /** Stage 11: opens the command palette (replaces the Stage 4 Locate
+   * dropdown -- everything it could do is reachable through search). */
+  onOpenSearch: () => void;
   /** Real live facility state from the WebSocket feed (see useSimulation's
    * `liveState`). Null until the first message arrives -- rendered as an
    * explicit "Connecting" state, never a guessed number (Stage 6). */
@@ -14,6 +15,14 @@ interface TwinHeaderProps {
   /** Active visualization mode (Stage 8) + its setter. */
   mode: VisualizationMode;
   onModeChange: (mode: VisualizationMode) => void;
+  /** Stage 9/10: the two left-rail tools. Mutually exclusive -- see LiveTwin.tsx. */
+  simulationOpen: boolean;
+  onToggleSimulation: () => void;
+  operationsOpen: boolean;
+  onToggleOperations: () => void;
+  /** Stage 12: the compact incident list, same mutually-exclusive left rail. */
+  incidentsOpen: boolean;
+  onToggleIncidents: () => void;
 }
 
 function Reading({ label, value }: { label: string; value: string }) {
@@ -26,7 +35,18 @@ function Reading({ label, value }: { label: string; value: string }) {
 }
 
 /** Minimal shell header for the 3D Live Twin page. */
-export function TwinHeader({ onLocateRack, liveState, mode, onModeChange }: TwinHeaderProps) {
+export function TwinHeader({
+  onOpenSearch,
+  liveState,
+  mode,
+  onModeChange,
+  simulationOpen,
+  onToggleSimulation,
+  operationsOpen,
+  onToggleOperations,
+  incidentsOpen,
+  onToggleIncidents,
+}: TwinHeaderProps) {
   const isLive = liveState !== null;
 
   return (
@@ -37,6 +57,33 @@ export function TwinHeader({ onLocateRack, liveState, mode, onModeChange }: Twin
         </div>
         <h1 className="text-lg font-semibold tracking-tight text-foreground">Live Twin</h1>
         <ModeSwitcher mode={mode} onChange={onModeChange} />
+        <button
+          onClick={onToggleSimulation}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] uppercase tracking-wide transition-colors ${
+            simulationOpen ? "border-primary/40 bg-primary/20 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <FlaskConical className="h-3.5 w-3.5" />
+          Simulation Lab
+        </button>
+        <button
+          onClick={onToggleOperations}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] uppercase tracking-wide transition-colors ${
+            operationsOpen ? "border-primary/40 bg-primary/20 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Wrench className="h-3.5 w-3.5" />
+          Operations
+        </button>
+        <button
+          onClick={onToggleIncidents}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] uppercase tracking-wide transition-colors ${
+            incidentsOpen ? "border-primary/40 bg-primary/20 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <AlertTriangle className="h-3.5 w-3.5" />
+          Incidents
+        </button>
       </div>
 
       {/* Real facility-wide telemetry from the live WebSocket feed. Facility-wide
@@ -55,7 +102,15 @@ export function TwinHeader({ onLocateRack, liveState, mode, onModeChange }: Twin
       </div>
 
       <div className="flex items-center gap-4">
-        <LocateControl onLocate={onLocateRack} />
+        <button
+          onClick={onOpenSearch}
+          className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Search racks, zones and alerts"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span>Search</span>
+          <kbd className="font-mono text-[10px] rounded border border-border px-1 py-px text-muted-foreground">Ctrl K</kbd>
+        </button>
         <Link to="/legacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
           Legacy Dashboard
         </Link>

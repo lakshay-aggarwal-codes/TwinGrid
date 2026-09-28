@@ -5,11 +5,16 @@ import {
   type VisualizationMode,
 } from "@/three/visualizationModes";
 import { ThermalLegend } from "./ThermalLegend";
+import { FileText } from "lucide-react";
+import { StatusMessage } from "./StatusMessage";
+import { buildSustainabilityReport, type Report } from "@/reports/reports";
 import type { StateResponse } from "@/api/apiClient";
 
 interface ModeLegendProps {
   mode: VisualizationMode;
   liveState: StateResponse | null;
+  /** Stage 13: hands a freshly built report to the page-level viewer. */
+  onGenerateReport: (report: Report) => void;
 }
 
 /**
@@ -21,7 +26,7 @@ interface ModeLegendProps {
  * themselves only carry color, so without a legend a viewer would have no
  * way to know what a color actually means.
  */
-export function ModeLegend({ mode, liveState }: ModeLegendProps) {
+export function ModeLegend({ mode, liveState, onGenerateReport }: ModeLegendProps) {
   if (mode === "physical") return null;
 
   if (mode === "thermal") {
@@ -40,7 +45,7 @@ export function ModeLegend({ mode, liveState }: ModeLegendProps) {
         {MODE_LABELS[mode]} — Facility-wide
       </p>
       {!liveState ? (
-        <p className="text-xs text-muted-foreground">Connecting to live feed…</p>
+        <StatusMessage kind="loading">Connecting to live feed…</StatusMessage>
       ) : (
         <div className="space-y-0.5">
           {readings.map((r) => (
@@ -54,6 +59,14 @@ export function ModeLegend({ mode, liveState }: ModeLegendProps) {
       <p className="text-[10px] text-muted-foreground mt-1.5 leading-snug">
         Every rack shares this same value — no per-rack data exists yet.
       </p>
+      {mode === "sustainability" && liveState && (
+        <button
+          onClick={() => onGenerateReport(buildSustainabilityReport(liveState))}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 rounded border border-border px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+        >
+          <FileText className="h-3 w-3" /> Generate sustainability report
+        </button>
+      )}
       {isCarbonDataFallback(liveState) && (
         <p className="text-[10px] text-warning mt-1 leading-snug">
           Carbon intensity is a flat fallback figure, not live grid data.

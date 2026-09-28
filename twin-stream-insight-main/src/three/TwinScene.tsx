@@ -6,14 +6,19 @@ import { Facility } from "./Facility";
 import { useCameraFocus } from "./useCameraFocus";
 import type { VisualizationMode } from "./visualizationModes";
 import type { StateResponse } from "@/api/apiClient";
+import { DEFAULT_CAMERA_POSITION, DEFAULT_CAMERA_TARGET } from "./cameraDefaults";
 
-export interface FocusRequest {
-  rackId: string;
-  /** Bumped on every request so double-clicking the *same already-focused*
-   * rack still re-triggers the camera tween (a plain rackId string wouldn't
-   * change and so wouldn't re-fire the effect below). */
-  nonce: number;
-}
+/** `nonce` is bumped on every request so re-selecting the *same* already-
+ * focused rack/zone still re-triggers the camera tween (an unchanged id
+ * alone wouldn't re-fire the effect below).
+ *  - "rack": zoom to one rack (double-click, search).
+ *  - "zone": frame a whole zone (Stage 11 search).
+ *  - "overview": whole-facility default framing (Stage 12 -- alerts have no
+ *    rack to point at, see IncidentsPanel). */
+export type FocusRequest =
+  | { type: "rack"; rackId: string; nonce: number }
+  | { type: "zone"; zoneId: string; nonce: number }
+  | { type: "overview"; nonce: number };
 
 export interface TwinSceneProps {
   selectedRackId: string | null;
@@ -36,14 +41,19 @@ function SceneContents({
 }: TwinSceneProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const isInteractingRef = useRef(false);
-  const { focusOnRack } = useCameraFocus(controlsRef);
+  const { focusOnRack, focusOnZone, focusOnOverview } = useCameraFocus(controlsRef);
 
   useEffect(() => {
-    if (focusRequest) {
+    if (!focusRequest) return;
+    if (focusRequest.type === "rack") {
       focusOnRack(focusRequest.rackId);
+    } else if (focusRequest.type === "zone") {
+      focusOnZone(focusRequest.zoneId);
+    } else {
+      focusOnOverview();
     }
-    // Only the request itself should retrigger this -- focusOnRack is stable
-    // per the camera/controlsRef it closes over.
+    // Only the request itself should retrigger this -- the focus functions
+    // are stable per the camera/controlsRef they close over.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusRequest]);
 
@@ -70,7 +80,7 @@ function SceneContents({
         minDistance={3}
         maxDistance={40}
         maxPolarAngle={Math.PI / 2.05}
-        target={[11, 0, 0]}
+        target={DEFAULT_CAMERA_TARGET}
         onStart={() => {
           isInteractingRef.current = true;
         }}
@@ -91,7 +101,12 @@ export function TwinScene(props: TwinSceneProps) {
   return (
     <Canvas
       shadows
-      camera={{ position: [16, 14, 22], fov: 50 }}
+      // Stage 14: render only when something changed (data tick, hover/select,
+      // camera move, tween frame) instead of 60x/s while the scene is idle.
+      // Every animation here calls invalidate(); OrbitControls invalidates
+      // itself on input and damping.
+      frameloop="demand"
+      camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}
       onPointerMissed={props.onDeselect}
     >
       <SceneContents {...props} />

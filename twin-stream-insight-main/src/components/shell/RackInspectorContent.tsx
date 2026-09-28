@@ -1,4 +1,5 @@
 import { AlertCircle } from "lucide-react";
+import { StatusMessage } from "./StatusMessage";
 import { findRack } from "@/three/facilityLayout";
 import type { StateResponse } from "@/api/apiClient";
 
@@ -113,7 +114,7 @@ export function RackInspectorContent({ rackId, liveState }: RackInspectorContent
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground pt-0.5">Connecting to live feed…</p>
+          <StatusMessage kind="loading">Connecting to live feed…</StatusMessage>
         )}
       </div>
     </div>

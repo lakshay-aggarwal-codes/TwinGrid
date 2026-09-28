@@ -98,9 +98,9 @@ export function findRack(rackId: string): RackDef | undefined {
 }
 
 /**
- * Racks grouped by zone, for the header's Locate control (Stage 4).
- * Re-added here: this branch was continued from a point before Stage 4's
- * LocateControl/listRacksByZone landed, so it was missing from this copy.
+ * Racks grouped by zone. Introduced for Stage 4's header Locate dropdown;
+ * since Stage 11 it feeds the command palette's rack results instead (the
+ * dropdown itself was retired -- everything it did is reachable via search).
  */
 export interface LocateOption {
   rackId: string;

@@ -4,6 +4,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import type { RackDef } from "./facilityLayout";
 import { WAITING_COLOR, type ThermalColors } from "./thermalMapping";
 import type { ModeColor, VisualizationMode } from "./visualizationModes";
+import { AnimatedMaterial } from "./AnimatedMaterial";
 
 // Matches the app's existing neutral/cyan-accent look (see src/index.css --accent:
 // 187 100% 50%, --border: 0 0% 18%). No new color language is introduced here --
@@ -124,13 +125,7 @@ export function Rack({
       {mode === "physical" && (
         <mesh castShadow receiveShadow>
           <boxGeometry args={rack.size} />
-          <meshStandardMaterial
-            color={physicalBody}
-            emissive={ACCENT_CYAN}
-            emissiveIntensity={physicalEmissiveIntensity}
-            roughness={0.6}
-            metalness={0.2}
-          />
+          <AnimatedMaterial color={physicalBody} emissive={ACCENT_CYAN} emissiveIntensity={physicalEmissiveIntensity} />
           <Edges color={state === "idle" ? IDLE_EDGE : ACCENT_CYAN} threshold={15} />
         </mesh>
       )}
@@ -140,19 +135,19 @@ export function Rack({
           // No live reading yet -- explicit waiting color, never a guess.
           <mesh castShadow receiveShadow>
             <boxGeometry args={rack.size} />
-            <meshStandardMaterial color={WAITING_COLOR} emissive={ACCENT_CYAN} emissiveIntensity={0} roughness={0.6} metalness={0.2} />
+            <AnimatedMaterial color={WAITING_COLOR} emissive={ACCENT_CYAN} emissiveIntensity={0} />
             <Edges color={thermalEdge} threshold={15} />
           </mesh>
         ) : (
           <>
             <mesh castShadow receiveShadow position={[0, -height / 4, 0]}>
               <boxGeometry args={[width, height / 2, depth]} />
-              <meshStandardMaterial color={thermalColors.inlet} emissive={ACCENT_CYAN} emissiveIntensity={0} roughness={0.6} metalness={0.2} />
+              <AnimatedMaterial color={thermalColors.inlet} emissive={ACCENT_CYAN} emissiveIntensity={0} />
               <Edges color={thermalEdge} threshold={15} />
             </mesh>
             <mesh castShadow receiveShadow position={[0, height / 4, 0]}>
               <boxGeometry args={[width, height / 2, depth]} />
-              <meshStandardMaterial color={thermalColors.outlet} emissive={ACCENT_CYAN} emissiveIntensity={0} roughness={0.6} metalness={0.2} />
+              <AnimatedMaterial color={thermalColors.outlet} emissive={ACCENT_CYAN} emissiveIntensity={0} />
               <Edges color={thermalEdge} threshold={15} />
             </mesh>
           </>
@@ -161,13 +156,7 @@ export function Rack({
       {(mode === "energy" || mode === "cooling" || mode === "sustainability") && (
         <mesh castShadow receiveShadow>
           <boxGeometry args={rack.size} />
-          <meshStandardMaterial
-            color={tintBody}
-            emissive={tintEmissive}
-            emissiveIntensity={tintEmissiveIntensity}
-            roughness={0.6}
-            metalness={0.2}
-          />
+          <AnimatedMaterial color={tintBody} emissive={tintEmissive} emissiveIntensity={tintEmissiveIntensity} />
           <Edges color={tintEdge} threshold={15} />
         </mesh>
       )}
