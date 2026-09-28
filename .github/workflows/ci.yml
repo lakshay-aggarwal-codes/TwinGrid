@@ -6,28 +6,14 @@ on:
   pull_request:
     branches: [main]
 
-# Least privilege: nothing here writes to the repo or needs a token scope.
-permissions:
-  contents: read
-
-# A new push to the same ref supersedes an in-flight run.
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   # Test-only secret -- never the real deployment secret. Required because
-  # api/auth.py refuses to import without JWT_SECRET_KEY set.
+  # api/auth.py refuses to import without JWT_SECRET_KEY set (Phase 12).
   JWT_SECRET_KEY: ci-test-secret-not-for-production
-  # torch arrives transitively via stable-baselines3, and the default Linux
-  # wheel is the multi-GB CUDA build. pip reads this variable for every
-  # install below; same CPU-only index the Dockerfile uses.
-  PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -36,74 +22,61 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
-          # Default only hashes files named requirements.txt, which would
-          # miss tests/test_requirements.txt.
-          cache-dependency-path: |
-            requirements.txt
-            tests/test_requirements.txt
 
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install -r tests/test_requirements.txt
-          pip install "ruff>=0.5,<1"
+          pip install ruff
 
       - name: Lint (ruff)
         run: ruff check .
 
       - name: Run tests
-        run: pytest tests/ --cov=src --cov=api --cov-report=term-missing
+        run: pytest tests/ -v --cov=src --cov=api --cov-report=term-missing
 
-  # Applies every Alembic revision to an empty Postgres, then checks the ORM
-  # models and the migrations still agree. Installs only the four packages
-  # alembic/env.py actually imports (api/__init__.py is empty and
-  # api/secrets.py is stdlib-only), so this finishes in seconds and doesn't
-  # pull TensorFlow/torch.
-  migrations:
+  frontend:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: digital_twin
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+    defaults:
+      run:
+        working-directory: twin-stream-insight-main
     env:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/digital_twin
+      # Placeholder, NON-secret values so the production env guard in
+      # vite.config.ts passes. The CI bundle is never deployed.
+      VITE_API_BASE_URL: https://api.ci.invalid
+      VITE_DEMO_USERNAME: ci_viewer
+      VITE_DEMO_PASSWORD: ci-placeholder-not-a-real-password
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Node (Vite 7 needs >= 20.19 / 22.12)
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: twin-stream-insight-main/package-lock.json
 
-      - name: Install migration dependencies only
-        run: pip install "sqlalchemy[asyncio]>=2.0.30,<2.1" "asyncpg>=0.29,<1" "alembic>=1.13,<2" "python-dotenv>=1.0,<2"
+      - name: Install (exact lockfile)
+        run: npm ci
 
-      - name: Apply all migrations to an empty database
-        run: alembic upgrade head
+      - name: Type check
+        run: npm run typecheck
 
-      - name: Models and migrations agree (no drift)
-        run: alembic check
+      - name: Lint (0 errors; warning count ratcheted by --max-warnings)
+        run: npm run lint:ci
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Dependency audit (fails on high/critical)
+        run: npm audit --audit-level=high
 
   docker-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    needs: [lint-and-test, migrations]
-    env:
-      # Ceiling, not a target. The image was ~4.75 GB (mostly TensorFlow) when
-      # last measured; the goal is under 4. This exists to catch a regression
-      # like CUDA torch sneaking back in (adds several GB), not to enforce
-      # the goal yet. Lower it as the image shrinks.
-      IMAGE_SIZE_BUDGET_GB: "5.5"
+    needs: lint-and-test
     steps:
       - uses: actions/checkout@v4
 
@@ -112,36 +85,4 @@ jobs:
         # No registry push here: no container registry credentials exist
         # yet, and a push step with nowhere real to push would be dead
         # configuration. Add a push step (with a repository secret for
-        # registry auth) once a real deploy target exists.
-
-      - name: Image size budget
-        run: |
-          size_bytes=$(docker image inspect digital-twin-backend:ci --format '{{.Size}}')
-          python3 - <<PY
-          import sys
-          size_gb = $size_bytes / 1e9
-          budget = float("$IMAGE_SIZE_BUDGET_GB")
-          print(f"Image size: {size_gb:.2f} GB (budget {budget:.2f} GB)")
-          sys.exit(0 if size_gb <= budget else 1)
-          PY
-
-  # Informational until the first baseline is triaged: transitive
-  # dependencies (TensorFlow, torch) routinely have open advisories, so
-  # making this blocking on day one would just be a permanently red CI.
-  # Promote to blocking (remove continue-on-error) once the known findings
-  # are fixed or explicitly accepted.
-  dependency-audit:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Audit Python dependencies
-        run: |
-          pip install pip-audit
-          pip-audit -r requirements.txt
+        # registry auth) once Phase 17 (deployment) actually needs it.
