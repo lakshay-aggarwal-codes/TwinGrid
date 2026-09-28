@@ -1,9 +1,15 @@
 """
-Tests for DataPipeline class in lstm_model.py.
+Tests for DataPipeline in src/lstm_model.py.
 
-Tests data loading, cleaning, sequence creation, and preprocessing functionality.
+The real API is small: load_csv() (load + fill nulls + drop 3-sigma outliers),
+prepare() (sliding windows, chronological train/test split, scaler fit on
+train only), plus scaler save/load and transform_sequence(). Everything else
+(seq_len, horizon, ...) is private state -- tests check it through behaviour
+(output shapes), not by reaching into attributes.
+
+Note prepare() returns (X_train, y_train, X_test, y_test) -- targets are
+interleaved with features per split, not (X_train, X_test, y_train, y_test).
 """
-
 
 import numpy as np
 import pandas as pd
@@ -12,275 +18,197 @@ import pytest
 from src.lstm_model import DEFAULT_FEATURE_COLUMNS, TARGET_COLUMN, DataPipeline
 
 
-class TestDataPipeline:
-    """Test suite for DataPipeline class."""
+def _frame(n: int = 200, seed: int = 0) -> pd.DataFrame:
+    """Small deterministic frame with every default feature column."""
+    rng = np.random.default_rng(seed)
+    data = {"timestamp": pd.date_range("2024-01-01", periods=n, freq="5min")}
+    for i, col in enumerate(DEFAULT_FEATURE_COLUMNS):
+        data[col] = 10.0 * (i + 1) + rng.normal(0, 1.0, n)
+    return pd.DataFrame(data)
 
-    def test_init(self, data_pipeline):
-        """Test DataPipeline initialization."""
-        assert data_pipeline.seq_len == 12
-        assert data_pipeline.horizon == 6
-        assert data_pipeline.train_ratio == 0.8
-        assert data_pipeline.feature_columns == DEFAULT_FEATURE_COLUMNS
-        assert data_pipeline.target_column == TARGET_COLUMN
-        assert data_pipeline.scaler is None
-        assert data_pipeline.data is None
 
-    def test_init_custom_params(self):
-        """Test DataPipeline initialization with custom parameters."""
-        custom_features = ["server_utilisation", "outside_temp_C"]
-        pipeline = DataPipeline(
-            seq_len=10,
-            horizon=5,
-            train_ratio=0.7,
-            feature_columns=custom_features,
-            target_column="server_outlet_temp_C"
-        )
-        assert pipeline.seq_len == 10
-        assert pipeline.horizon == 5
-        assert pipeline.train_ratio == 0.7
-        assert pipeline.feature_columns == custom_features
-        assert pipeline.target_column == "server_outlet_temp_C"
+class TestInit:
+    def test_defaults(self):
+        pipe = DataPipeline()
+        assert pipe.feature_columns == DEFAULT_FEATURE_COLUMNS
+        assert pipe.scaler is None
 
-    def test_load_data_from_csv(self, data_pipeline, sample_csv_file):
-        """Test loading data from CSV file."""
-        data_pipeline.load_data(sample_csv_file)
-        
-        assert data_pipeline.data is not None
-        assert isinstance(data_pipeline.data, pd.DataFrame)
-        assert len(data_pipeline.data) > 0
-        assert all(col in data_pipeline.data.columns for col in data_pipeline.feature_columns)
-        assert data_pipeline.target_column in data_pipeline.data.columns
+    def test_default_feature_columns_are_not_shared_state(self):
+        """Mutating one pipeline's feature list must not leak into another
+        (the constructor copies DEFAULT_FEATURE_COLUMNS)."""
+        a, b = DataPipeline(), DataPipeline()
+        a.feature_columns.append("junk")
+        assert "junk" not in b.feature_columns
+        assert "junk" not in DEFAULT_FEATURE_COLUMNS
 
-    def test_load_data_from_dataframe(self, data_pipeline, sample_sensor_data):
-        """Test loading data from pandas DataFrame."""
-        data_pipeline.load_data(sample_sensor_data)
-        
-        assert data_pipeline.data is not None
-        assert len(data_pipeline.data) == len(sample_sensor_data)
-        assert data_pipeline.data.equals(sample_sensor_data)
+    def test_custom_feature_columns(self):
+        cols = ["server_utilisation", "outside_temp_C"]
+        assert DataPipeline(feature_columns=cols).feature_columns == cols
 
-    def test_load_data_missing_file(self, data_pipeline):
-        """Test loading data from non-existent file."""
+
+class TestLoadCsv:
+    def test_loads_and_stores_dataframe(self, data_pipeline, sample_csv_file):
+        df = data_pipeline.load_csv(sample_csv_file)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) > 0
+        assert all(c in df.columns for c in data_pipeline.feature_columns)
+        assert TARGET_COLUMN in df.columns
+        assert pd.api.types.is_datetime64_any_dtype(df["timestamp"])
+
+    def test_missing_file_raises(self, data_pipeline):
         with pytest.raises(FileNotFoundError):
-            data_pipeline.load_data("non_existent_file.csv")
+            data_pipeline.load_csv("non_existent_file.csv")
 
-    def test_load_data_missing_columns(self, data_pipeline, temp_data_dir):
-        """Test loading data with missing required columns."""
-        # Create CSV with missing columns
-        incomplete_data = pd.DataFrame({
-            "timestamp": pd.date_range("2024-01-01", periods=100, freq="5min"),
-            "server_utilisation": np.random.random(100)
-            # Missing other required columns
-        })
-        
-        csv_path = temp_data_dir / "incomplete_data.csv"
-        incomplete_data.to_csv(csv_path, index=False)
-        
-        with pytest.raises(KeyError):
-            data_pipeline.load_data(csv_path)
+    def test_sorts_by_timestamp(self, data_pipeline, temp_data_dir):
+        df = _frame(100).iloc[::-1]  # reversed
+        path = temp_data_dir / "reversed.csv"
+        df.to_csv(path, index=False)
+        loaded = data_pipeline.load_csv(path)
+        assert loaded["timestamp"].is_monotonic_increasing
 
-    def test_clean_data(self, data_pipeline, sample_sensor_data):
-        """Test data cleaning functionality."""
-        # Add some null values and outliers
-        dirty_data = sample_sensor_data.copy()
-        dirty_data.loc[10:15, "server_utilisation"] = np.nan
-        dirty_data.loc[20, "server_outlet_temp_C"] = 100  # Outlier
-        dirty_data.loc[30, "it_power_kw"] = -10  # Invalid negative value
-        
-        data_pipeline.load_data(dirty_data)
-        original_length = len(data_pipeline.data)
-        
-        data_pipeline.clean_data()
-        
-        # Check that null values are filled
-        assert not data_pipeline.data["server_utilisation"].isnull().any()
-        
-        # Check that data length is preserved (nulls filled, not dropped)
-        assert len(data_pipeline.data) == original_length
+    def test_fills_nulls(self, data_pipeline, temp_data_dir):
+        df = _frame(100)
+        df.loc[10:14, "server_utilisation"] = np.nan
+        path = temp_data_dir / "nulls.csv"
+        df.to_csv(path, index=False)
+        loaded = data_pipeline.load_csv(path)
+        assert not loaded[data_pipeline.feature_columns].isnull().any().any()
 
-    def test_create_sequences(self, data_pipeline, sample_sensor_data):
-        """Test sequence creation for LSTM."""
-        data_pipeline.load_data(sample_sensor_data)
-        data_pipeline.clean_data()
-        
-        sequences, targets = data_pipeline.create_sequences()
-        
-        # Check sequence shapes
-        expected_seq_len = len(data_pipeline.data) - data_pipeline.seq_len - data_pipeline.horizon + 1
-        assert sequences.shape[0] == expected_seq_len
-        assert sequences.shape[1] == data_pipeline.seq_len
-        assert sequences.shape[2] == len(data_pipeline.feature_columns)
-        
-        # Check target shapes
-        assert targets.shape[0] == expected_seq_len
-        assert len(targets.shape) == 1  # Should be 1D array
+    def test_removes_extreme_outlier_rows(self, data_pipeline, temp_data_dir):
+        df = _frame(200)
+        df.loc[100, "it_power_kw"] = 1e6  # far beyond 3 sigma
+        path = temp_data_dir / "outlier.csv"
+        df.to_csv(path, index=False)
+        loaded = data_pipeline.load_csv(path)
+        # The planted row is gone...
+        assert loaded["it_power_kw"].max() < 1e5
+        # ...but the filter isn't wiping data: even clean Gaussian noise loses a
+        # few rows across 10 columns at +/-3 sigma (~3% here), so allow that,
+        # not an exact count.
+        assert 0.9 * len(df) < len(loaded) < len(df)
 
-    def test_create_sequences_insufficient_data(self, data_pipeline):
-        """Test sequence creation with insufficient data."""
-        # Create very small dataset
-        small_data = pd.DataFrame({
-            "timestamp": pd.date_range("2024-01-01", periods=10, freq="5min"),
-            "server_utilisation": np.random.random(10),
-            "outside_temp_C": np.random.random(10),
-            "server_inlet_temp_C": np.random.random(10),
-            "server_outlet_temp_C": np.random.random(10),
-            "it_power_kw": np.random.random(10),
-            "cooling_power_kw": np.random.random(10),
-            "total_power_kw": np.random.random(10),
-            "pue": np.random.random(10),
-            "water_flow_lpm": np.random.random(10),
-            "humidity_pct": np.random.random(10)
-        })
-        
-        data_pipeline.load_data(small_data)
-        data_pipeline.clean_data()
-        
-        sequences, targets = data_pipeline.create_sequences()
-        
-        # Should have very few or no sequences
-        assert sequences.shape[0] >= 0
-        assert targets.shape[0] == sequences.shape[0]
+    def test_missing_feature_columns_do_not_fail_at_load(self, data_pipeline, temp_data_dir):
+        """load_csv only outlier-checks columns that exist; a CSV missing
+        feature columns loads fine and the problem surfaces in prepare()."""
+        df = _frame(100)[["timestamp", "server_utilisation"]]
+        path = temp_data_dir / "incomplete.csv"
+        df.to_csv(path, index=False)
+        loaded = data_pipeline.load_csv(path)
+        assert len(loaded) == 100
+        with pytest.raises(ValueError, match="Missing columns"):
+            data_pipeline.prepare()
 
-    def test_split_data(self, data_pipeline, sample_sensor_data):
-        """Test train/test data splitting."""
-        data_pipeline.load_data(sample_sensor_data)
-        data_pipeline.clean_data()
-        sequences, targets = data_pipeline.create_sequences()
-        
-        X_train, X_test, y_train, y_test = data_pipeline.split_data(sequences, targets)
-        
-        # Check split ratios
-        total_samples = len(sequences)
-        expected_train_size = int(total_samples * data_pipeline.train_ratio)
-        
-        assert len(X_train) == expected_train_size
-        assert len(X_test) == total_samples - expected_train_size
-        assert len(y_train) == len(X_train)
-        assert len(y_test) == len(X_test)
 
-    def test_split_data_custom_ratio(self, data_pipeline, sample_sensor_data):
-        """Test train/test data splitting with custom ratio."""
-        data_pipeline.train_ratio = 0.6
-        data_pipeline.load_data(sample_sensor_data)
-        data_pipeline.clean_data()
-        sequences, targets = data_pipeline.create_sequences()
-        
-        X_train, X_test, y_train, y_test = data_pipeline.split_data(sequences, targets)
-        
-        total_samples = len(sequences)
-        expected_train_size = int(total_samples * 0.6)
-        
-        assert len(X_train) == expected_train_size
-        assert len(X_test) == total_samples - expected_train_size
+class TestPrepare:
+    def test_returns_four_arrays_in_documented_order(self, data_pipeline, sample_sensor_data):
+        out = data_pipeline.prepare(sample_sensor_data)
+        assert len(out) == 4
+        X_train, y_train, X_test, y_test = out
+        assert all(isinstance(a, np.ndarray) for a in out)
+        assert X_train.ndim == 3 and X_test.ndim == 3
+        assert y_train.ndim == 1 and y_test.ndim == 1
+        assert len(X_train) == len(y_train)
+        assert len(X_test) == len(y_test)
 
-    def test_fit_scaler(self, data_pipeline, sample_sensor_data):
-        """Test scaler fitting on training data."""
-        data_pipeline.load_data(sample_sensor_data)
-        data_pipeline.clean_data()
-        sequences, targets = data_pipeline.create_sequences()
-        X_train, X_test, y_train, y_test = data_pipeline.split_data(sequences, targets)
-        
-        # Fit scaler on training data
-        data_pipeline.fit_scaler(X_train)
-        
+    def test_shapes_and_split_sizes(self, data_pipeline, sample_sensor_data):
+        X_train, y_train, X_test, y_test = data_pipeline.prepare(sample_sensor_data)
+        n_feat = len(data_pipeline.feature_columns)
+        assert X_train.shape[1:] == (12, n_feat)
+        assert X_test.shape[1:] == (12, n_feat)
+
+        n = len(sample_sensor_data) - 12 - 6 + 1  # seq_len=12, horizon=6
+        assert len(X_train) == int(n * 0.8)
+        assert len(X_train) + len(X_test) == n
+
+    def test_custom_seq_len_horizon_features_reflected_in_shapes(self):
+        cols = ["server_utilisation", "outside_temp_C"]
+        pipe = DataPipeline(seq_len=6, horizon=3, train_ratio=0.5, feature_columns=cols)
+        X_train, y_train, X_test, y_test = pipe.prepare(_frame(100))
+        n = 100 - 6 - 3 + 1
+        assert X_train.shape == (int(n * 0.5), 6, 2)
+        assert len(X_train) + len(X_test) == n
+
+    def test_split_is_chronological_and_targets_are_raw(self, data_pipeline):
+        """Targets are the value `horizon` steps after each window, in time
+        order (train first, then test), and are NOT scaled."""
+        df = _frame(150)
+        _, y_train, _, y_test = data_pipeline.prepare(df)
+        expected = df[TARGET_COLUMN].values[12 + 6 - 1 :].astype(np.float32)
+        np.testing.assert_array_equal(np.concatenate([y_train, y_test]), expected)
+
+    def test_scaler_fit_on_train_only(self, data_pipeline, sample_sensor_data):
+        X_train, _, X_test, _ = data_pipeline.prepare(sample_sensor_data)
         assert data_pipeline.scaler is not None
-        
-        # Test scaling
-        X_train_scaled = data_pipeline.scale_data(X_train)
-        X_test_scaled = data_pipeline.scale_data(X_test)
-        
-        # Check shapes are preserved
-        assert X_train_scaled.shape == X_train.shape
-        assert X_test_scaled.shape == X_test.shape
-        
-        # Check that training data is roughly in [0, 1] range
-        assert X_train_scaled.min() >= 0
-        assert X_train_scaled.max() <= 1.1  # Allow small tolerance
+        # One scaler row per (window, timestep) of the TRAIN split only.
+        assert data_pipeline.scaler.n_samples_seen_ == X_train.shape[0] * X_train.shape[1]
+        # Train features land in [0, 1]; test is transformed (not clipped),
+        # so it may legitimately fall outside that range.
+        assert X_train.min() >= -1e-6
+        assert X_train.max() <= 1 + 1e-6
 
-    def test_scale_data_without_scaler(self, data_pipeline):
-        """Test scaling data without fitting scaler first."""
-        dummy_data = np.random.random((100, 12, 10))
-        
+    def test_deterministic(self, sample_sensor_data):
+        a = DataPipeline().prepare(sample_sensor_data)
+        b = DataPipeline().prepare(sample_sensor_data)
+        for x, y in zip(a, b):
+            np.testing.assert_array_equal(x, y)
+
+    def test_uses_loaded_data_when_no_df_given(self, data_pipeline, sample_csv_file):
+        data_pipeline.load_csv(sample_csv_file)
+        X_train, y_train, X_test, y_test = data_pipeline.prepare()
+        assert len(X_train) > 0 and len(X_test) > 0
+
+    def test_no_data_loaded_raises(self, data_pipeline):
+        with pytest.raises(ValueError, match="No data loaded"):
+            data_pipeline.prepare()
+
+    def test_missing_feature_column_raises(self, data_pipeline, sample_sensor_data):
+        with pytest.raises(ValueError, match="Missing columns"):
+            data_pipeline.prepare(sample_sensor_data.drop(columns=["server_utilisation"]))
+
+    def test_missing_target_column_raises(self):
+        # Target is separate from features: drop it from a frame whose
+        # features are otherwise complete (server_outlet_temp_C is both, in
+        # the defaults, so use a pipeline with a distinct target).
+        pipe = DataPipeline(feature_columns=["server_utilisation"], target_column="pue")
+        df = _frame(100).drop(columns=["pue"])
+        with pytest.raises(ValueError, match="Missing columns"):
+            pipe.prepare(df)
+
+    def test_not_enough_data_raises(self, data_pipeline):
+        with pytest.raises(ValueError, match="Not enough data"):
+            data_pipeline.prepare(_frame(12 + 6 - 1))  # one row short of a single window
+
+
+class TestScalerHelpers:
+    def test_save_scaler_before_prepare_raises(self, data_pipeline, temp_data_dir):
         with pytest.raises(ValueError, match="Scaler not fitted"):
-            data_pipeline.scale_data(dummy_data)
+            data_pipeline.save_scaler(temp_data_dir / "scaler.joblib")
 
-    def test_prepare_data_complete_pipeline(self, data_pipeline, sample_sensor_data):
-        """Test complete data preparation pipeline."""
-        X_train, X_test, y_train, y_test = data_pipeline.prepare_data(sample_sensor_data)
-        
-        # Check that all outputs are numpy arrays
-        assert isinstance(X_train, np.ndarray)
-        assert isinstance(X_test, np.ndarray)
-        assert isinstance(y_train, np.ndarray)
-        assert isinstance(y_test, np.ndarray)
-        
-        # Check shapes
-        assert X_train.shape[1] == data_pipeline.seq_len
-        assert X_train.shape[2] == len(data_pipeline.feature_columns)
-        assert X_test.shape[1] == data_pipeline.seq_len
-        assert X_test.shape[2] == len(data_pipeline.feature_columns)
-        
-        # Check that scaler was fitted
-        assert data_pipeline.scaler is not None
-        
-        # Check train/test split
-        total_sequences = X_train.shape[0] + X_test.shape[0]
-        train_ratio = X_train.shape[0] / total_sequences
-        assert abs(train_ratio - data_pipeline.train_ratio) < 0.01
+    def test_transform_sequence_before_prepare_raises(self, data_pipeline):
+        with pytest.raises(ValueError, match="Scaler not fitted"):
+            data_pipeline.transform_sequence(np.zeros((12, 10)))
 
-    def test_prepare_data_with_validation(self, data_pipeline, sample_sensor_data):
-        """Test data preparation with validation split."""
-        X_train, X_val, X_test, y_train, y_val, y_test = data_pipeline.prepare_data(
-            sample_sensor_data, validation_split=0.1
+    def test_transform_sequence_preserves_shape_and_matches_training_scale(
+        self, data_pipeline, sample_sensor_data
+    ):
+        data_pipeline.prepare(sample_sensor_data)
+        raw = sample_sensor_data[data_pipeline.feature_columns].values[:12].astype(np.float32)
+
+        scaled_2d = data_pipeline.transform_sequence(raw)
+        scaled_3d = data_pipeline.transform_sequence(raw[np.newaxis])
+        assert scaled_2d.shape == (12, 10)
+        assert scaled_3d.shape == (1, 12, 10)
+        np.testing.assert_allclose(scaled_2d, scaled_3d[0], rtol=1e-6)
+
+    def test_scaler_save_load_roundtrip(self, data_pipeline, sample_sensor_data, temp_data_dir):
+        data_pipeline.prepare(sample_sensor_data)
+        path = temp_data_dir / "scaler.joblib"
+        data_pipeline.save_scaler(path)
+        assert path.exists()
+
+        fresh = DataPipeline()
+        fresh.load_scaler(path)
+        raw = sample_sensor_data[fresh.feature_columns].values[:12].astype(np.float32)
+        np.testing.assert_allclose(
+            fresh.transform_sequence(raw), data_pipeline.transform_sequence(raw), rtol=1e-6
         )
-        
-        # Check that we have three splits
-        assert X_train.shape[0] > 0
-        assert X_val.shape[0] > 0
-        assert X_test.shape[0] > 0
-        
-        # Check that validation split is approximately correct
-        total_samples = X_train.shape[0] + X_val.shape[0] + X_test.shape[0]
-        val_ratio = X_val.shape[0] / total_samples
-        assert abs(val_ratio - 0.1) < 0.01
-
-    def test_feature_column_validation(self, data_pipeline, sample_sensor_data):
-        """Test validation of feature columns."""
-        # Remove a required column
-        incomplete_data = sample_sensor_data.drop(columns=["server_utilisation"])
-        
-        with pytest.raises(KeyError):
-            data_pipeline.prepare_data(incomplete_data)
-
-    def test_target_column_validation(self, data_pipeline, sample_sensor_data):
-        """Test validation of target column."""
-        # Remove target column
-        incomplete_data = sample_sensor_data.drop(columns=["server_outlet_temp_C"])
-        
-        with pytest.raises(KeyError):
-            data_pipeline.prepare_data(incomplete_data)
-
-    def test_data_types(self, data_pipeline, sample_sensor_data):
-        """Test that data types are handled correctly."""
-        data_pipeline.prepare_data(sample_sensor_data)
-        
-        # Check that the loaded data has correct types
-        assert pd.api.types.is_datetime64_any_dtype(data_pipeline.data["timestamp"])
-        assert pd.api.types.is_numeric_dtype(data_pipeline.data["server_utilisation"])
-        assert pd.api.types.is_numeric_dtype(data_pipeline.data["server_outlet_temp_C"])
-
-    def test_reproducibility(self, data_pipeline, sample_sensor_data):
-        """Test that data preparation is reproducible."""
-        # First preparation
-        X_train1, X_test1, y_train1, y_test1 = data_pipeline.prepare_data(sample_sensor_data)
-        
-        # Reset and prepare again
-        data_pipeline.scaler = None
-        data_pipeline.data = None
-        X_train2, X_test2, y_train2, y_test2 = data_pipeline.prepare_data(sample_sensor_data)
-        
-        # Results should be identical
-        np.testing.assert_array_equal(X_train1, X_train2)
-        np.testing.assert_array_equal(X_test1, X_test2)
-        np.testing.assert_array_equal(y_train1, y_train2)
-        np.testing.assert_array_equal(y_test1, y_test2)

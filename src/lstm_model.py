@@ -229,7 +229,11 @@ class DataPipeline:
         Returns:
             (X_train, y_train, X_test, y_test) as numpy arrays.
         """
-        df = df or self._df
+        # `df or self._df` would call bool() on a DataFrame, which raises
+        # "truth value of a DataFrame is ambiguous" for any real DataFrame --
+        # so passing df explicitly always crashed; only the df=None path worked.
+        if df is None:
+            df = self._df
         if df is None:
             raise ValueError("No data loaded. Call load_csv() first.")
 
