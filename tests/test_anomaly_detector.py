@@ -302,21 +302,20 @@ class TestAnomalyDetector:
     # ---- thresholding / reproducibility -------------------------------
 
     def test_threshold_computation(self, anomaly_detector, sample_sensor_data):
-        """Test threshold computation during training."""
-        # Train with different percentiles
+        """Higher percentile -> higher threshold, holding the model constant."""
+        import tensorflow as tf
+
+        thresholds = {}
         for percentile in [90, 95, 99]:
+            # Same seed before every run => identical initial weights and batch order,
+            # so the only thing that differs between runs is the percentile.
+            tf.keras.utils.set_random_seed(42)
             detector = AnomalyDetector(percentile=percentile)
             detector.train(sample_sensor_data, epochs=2, batch_size=16)
-
             assert detector._threshold > 0
+            thresholds[percentile] = detector._threshold
 
-            # Higher percentile should give higher threshold
-            if percentile == 99:
-                high_threshold = detector._threshold
-            elif percentile == 90:
-                low_threshold = detector._threshold
-
-        assert high_threshold > low_threshold
+        assert thresholds[99] > thresholds[90]
 
     def test_reproducibility(self, anomaly_detector, sample_sensor_data):
         """Test that training is reproducible with same seed."""
