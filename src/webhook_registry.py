@@ -43,4 +43,3 @@ def unregister(url: str) -> list[str]:
 
 def list_subscribers() -> list[str]:
     return _load()
-

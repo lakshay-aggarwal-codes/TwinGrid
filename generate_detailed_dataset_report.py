@@ -12,6 +12,7 @@ MAX_SAMPLE_ROWS = 5
 # GENERAL HELPERS
 # ============================================================
 
+
 def size_string(size):
     if size < 1024:
         return f"{size} B"
@@ -39,12 +40,7 @@ def csv_info(path, sample_rows=5):
 
     try:
         # Header only
-        header = pd.read_csv(
-            path,
-            nrows=0,
-            low_memory=False,
-            on_bad_lines="skip"
-        )
+        header = pd.read_csv(path, nrows=0, low_memory=False, on_bad_lines="skip")
 
         lines.append(f"COLUMNS: {len(header.columns)}")
 
@@ -52,12 +48,7 @@ def csv_info(path, sample_rows=5):
             lines.append(f"  - {col}")
 
         # Small sample
-        sample = pd.read_csv(
-            path,
-            nrows=sample_rows,
-            low_memory=False,
-            on_bad_lines="skip"
-        )
+        sample = pd.read_csv(path, nrows=sample_rows, low_memory=False, on_bad_lines="skip")
 
         lines.append(f"SAMPLE ROWS: {len(sample)}")
         lines.append(sample.to_string(index=False))
@@ -82,11 +73,7 @@ def excel_info(path):
         for sheet in xls.sheet_names:
             lines.append(f"\nSHEET: {sheet}")
 
-            df = pd.read_excel(
-                path,
-                sheet_name=sheet,
-                nrows=MAX_SAMPLE_ROWS
-            )
+            df = pd.read_excel(path, sheet_name=sheet, nrows=MAX_SAMPLE_ROWS)
 
             lines.append(f"COLUMNS: {len(df.columns)}")
 
@@ -131,6 +118,7 @@ def text_info(path):
 # 1. OPEN-METEO
 # ============================================================
 
+
 def inspect_open_meteo(report):
 
     report.extend(section("1. OPEN-METEO"))
@@ -146,7 +134,6 @@ def inspect_open_meteo(report):
     report.append(f"CSV FILES FOUND: {len(files)}")
 
     for path in files:
-
         report.extend(section(f"OPEN-METEO FILE: {path.name}"))
 
         report.extend(csv_info(path))
@@ -156,20 +143,17 @@ def inspect_open_meteo(report):
 # 2. SPECPOWER
 # ============================================================
 
+
 def inspect_specpower(report):
 
     report.extend(section("2. SPECPOWER"))
 
-    candidates = [
-        ROOT / "power_ssj2008-results-20260906-021726.csv"
-    ]
+    candidates = [ROOT / "power_ssj2008-results-20260906-021726.csv"]
 
     found = False
 
     for path in candidates:
-
         if path.exists():
-
             found = True
 
             report.extend(csv_info(path))
@@ -182,6 +166,7 @@ def inspect_specpower(report):
 # 3. CMAPSS
 # ============================================================
 
+
 def inspect_cmapss(report):
 
     report.extend(section("3. NASA C-MAPSS"))
@@ -193,7 +178,6 @@ def inspect_cmapss(report):
         return
 
     for path in sorted(folder.iterdir()):
-
         if not path.is_file():
             continue
 
@@ -208,6 +192,7 @@ def inspect_cmapss(report):
 # ============================================================
 # 4. NAB
 # ============================================================
+
 
 def inspect_nab(report):
 
@@ -229,7 +214,6 @@ def inspect_nab(report):
     selected = []
 
     for path in csv_files:
-
         text = str(path).lower()
 
         if "realAWSCloudwatch" in text:
@@ -242,32 +226,25 @@ def inspect_nab(report):
             break
 
     for path in selected:
-
         report.extend(section(f"NAB FILE: {path.relative_to(ROOT)}"))
 
         report.extend(csv_info(path))
-
 
     # Labels
     labels = folder / "labels"
 
     if labels.exists():
-
         report.extend(section("NAB LABEL FILES"))
 
         for path in sorted(labels.rglob("*")):
-
             if path.is_file():
-
-                report.append(
-                    f"{path.relative_to(ROOT)} | "
-                    f"{size_string(path.stat().st_size)}"
-                )
+                report.append(f"{path.relative_to(ROOT)} | {size_string(path.stat().st_size)}")
 
 
 # ============================================================
 # 5. ELECTRICITY MAPS
 # ============================================================
+
 
 def inspect_electricity_maps(report):
 
@@ -280,24 +257,16 @@ def inspect_electricity_maps(report):
         return
 
     for path in sorted(folder.rglob("*")):
-
         if not path.is_file():
             continue
 
-        report.extend(section(
-            f"ELECTRICITY MAPS FILE: {path.relative_to(ROOT)}"
-        ))
+        report.extend(section(f"ELECTRICITY MAPS FILE: {path.relative_to(ROOT)}"))
 
         if path.suffix.lower() == ".csv":
-
             report.extend(csv_info(path))
 
         elif path.suffix.lower() == ".py":
-
-            lines = path.read_text(
-                encoding="utf-8",
-                errors="replace"
-            ).splitlines()
+            lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
 
             report.append("PYTHON SCRIPT")
             report.append("FIRST 40 LINES:")
@@ -305,17 +274,12 @@ def inspect_electricity_maps(report):
             report.extend(lines[:40])
 
         else:
-
-            report.append(
-                f"TYPE: {path.suffix}"
-            )
-
+            report.append(f"TYPE: {path.suffix}")
 
     # Top-level coverage CSV
     coverage = ROOT / "2026-09-06-electricity-maps-coverage-data.csv"
 
     if coverage.exists():
-
         report.extend(section("ELECTRICITY MAPS COVERAGE CSV"))
 
         report.extend(csv_info(coverage))
@@ -324,6 +288,7 @@ def inspect_electricity_maps(report):
 # ============================================================
 # 6. ASHRAE ENERGY PREDICTION
 # ============================================================
+
 
 def inspect_ashrae_energy(report):
 
@@ -338,30 +303,25 @@ def inspect_ashrae_energy(report):
     files = sorted(folder.iterdir())
 
     for path in files:
-
         if not path.is_file():
             continue
 
         report.extend(section(path.name))
 
         if path.suffix.lower() == ".csv":
-
             report.extend(csv_info(path))
 
         elif path.suffix.lower() in {".txt", ".md"}:
-
             report.extend(text_info(path))
 
         else:
-
-            report.append(
-                f"FILE TYPE: {path.suffix}"
-            )
+            report.append(f"FILE TYPE: {path.suffix}")
 
 
 # ============================================================
 # 7. AQUEDUCT
 # ============================================================
+
 
 def inspect_aqueduct(report):
 
@@ -373,56 +333,35 @@ def inspect_aqueduct(report):
     ]
 
     for folder in folders:
-
         if not folder.exists():
             continue
 
-        report.extend(section(
-            f"AQUEDUCT FOLDER: {folder.name}"
-        ))
+        report.extend(section(f"AQUEDUCT FOLDER: {folder.name}"))
 
         files = list(folder.rglob("*"))
 
         for path in files:
-
             if not path.is_file():
                 continue
 
-            report.append(
-                f"{path.relative_to(ROOT)} | "
-                f"{size_string(path.stat().st_size)}"
-            )
+            report.append(f"{path.relative_to(ROOT)} | {size_string(path.stat().st_size)}")
 
-            if path.suffix.lower() in {
-                ".csv",
-                ".xlsx",
-                ".xls"
-            }:
-
+            if path.suffix.lower() in {".csv", ".xlsx", ".xls"}:
                 try:
-
                     if path.suffix.lower() == ".csv":
-
-                        report.extend(
-                            csv_info(path)
-                        )
+                        report.extend(csv_info(path))
 
                     else:
-
-                        report.extend(
-                            excel_info(path)
-                        )
+                        report.extend(excel_info(path))
 
                 except Exception as e:
-
-                    report.append(
-                        f"ERROR: {type(e).__name__}: {e}"
-                    )
+                    report.append(f"ERROR: {type(e).__name__}: {e}")
 
 
 # ============================================================
 # 8. CLUSTER DATA
 # ============================================================
+
 
 def inspect_cluster_data(report):
 
@@ -434,80 +373,56 @@ def inspect_cluster_data(report):
     ]
 
     for folder in folders:
-
         if not folder.exists():
             continue
 
-        report.extend(section(
-            f"CLUSTER FOLDER: {folder.name}"
-        ))
+        report.extend(section(f"CLUSTER FOLDER: {folder.name}"))
 
         files = list(folder.rglob("*"))
 
-        report.append(
-            f"TOTAL FILES: "
-            f"{sum(p.is_file() for p in files)}"
-        )
+        report.append(f"TOTAL FILES: {sum(p.is_file() for p in files)}")
 
         # Focus on CSV / header / README files
         interesting = []
 
         for path in files:
-
             if not path.is_file():
                 continue
 
             suffix = path.suffix.lower()
 
-            if suffix in {
-                ".csv",
-                ".header",
-                ".md",
-                ".proto"
-            }:
-
+            if suffix in {".csv", ".header", ".md", ".proto"}:
                 interesting.append(path)
 
         for path in interesting[:30]:
-
-            report.append(
-                f"{path.relative_to(ROOT)} | "
-                f"{size_string(path.stat().st_size)}"
-            )
+            report.append(f"{path.relative_to(ROOT)} | {size_string(path.stat().st_size)}")
 
             if path.suffix.lower() == ".csv":
+                report.extend(csv_info(path))
 
-                report.extend(
-                    csv_info(path)
-                )
-
-            elif path.suffix.lower() in {
-                ".md",
-                ".proto",
-                ".header"
-            }:
-
-                report.extend(
-                    text_info(path)
-                )
+            elif path.suffix.lower() in {".md", ".proto", ".header"}:
+                report.extend(text_info(path))
 
 
 # ============================================================
 # RUN ALL DATASET INSPECTIONS
 # ============================================================
 
+
 def main():
 
     report = []
 
-    report.extend([
-        "TWINGRID DETAILED DATASET SCHEMA REPORT",
-        "=" * 100,
-        f"ROOT: {ROOT.resolve()}",
-        "",
-        "This report contains metadata, schemas and small samples only.",
-        "It does NOT copy entire datasets.",
-    ])
+    report.extend(
+        [
+            "TWINGRID DETAILED DATASET SCHEMA REPORT",
+            "=" * 100,
+            f"ROOT: {ROOT.resolve()}",
+            "",
+            "This report contains metadata, schemas and small samples only.",
+            "It does NOT copy entire datasets.",
+        ]
+    )
 
     inspect_open_meteo(report)
     inspect_specpower(report)
@@ -518,10 +433,7 @@ def main():
     inspect_aqueduct(report)
     inspect_cluster_data(report)
 
-    OUTPUT.write_text(
-        "\n".join(report),
-        encoding="utf-8"
-    )
+    OUTPUT.write_text("\n".join(report), encoding="utf-8")
 
     print()
     print("=" * 70)

@@ -22,7 +22,7 @@ def get_equipment_health_summary() -> dict[str, Any]:
         return {
             "available": False,
             "message": "No predictive-maintenance training run found. "
-                        "Run `python -m src.predictive_maintenance.train` first.",
+            "Run `python -m src.predictive_maintenance.train` first.",
         }
     metrics = json.loads(METRICS_PATH.read_text())
     return {"available": True, **metrics}

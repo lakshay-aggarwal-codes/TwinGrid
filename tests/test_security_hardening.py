@@ -70,9 +70,7 @@ class TestCorsProductionGuard:
         monkeypatch.delenv("CORS_ALLOWED_ORIGINS", raising=False)
         monkeypatch.setenv("ENVIRONMENT", "development")
         config_module = self._reload_config(monkeypatch)
-        assert config_module.settings.CORS_ALLOW_ORIGINS == [
-            "https://digital-twin-dc-conservation.lovable.app"
-        ]
+        assert config_module.settings.CORS_ALLOW_ORIGINS == ["https://digital-twin-dc-conservation.lovable.app"]
 
     def test_explicit_origins_always_respected(self, monkeypatch):
         monkeypatch.setenv("ENVIRONMENT", "production")

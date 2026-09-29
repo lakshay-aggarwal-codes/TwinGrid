@@ -96,9 +96,7 @@ def _list_source_files(source_dir: Path, glob_pattern: str) -> List[Path]:
     """
     files = sorted(source_dir.glob(glob_pattern))
     if not files:
-        raise FileNotFoundError(
-            f"No files matching '{glob_pattern}' found in {source_dir}"
-        )
+        raise FileNotFoundError(f"No files matching '{glob_pattern}' found in {source_dir}")
     return files
 
 
@@ -162,29 +160,21 @@ def ingest_weather(
         cleaned = pd.DataFrame(
             {
                 "city": city_name_from_filename(path),
-                "timestamp_utc": pd.to_datetime(
-                    raw[time_col], utc=True, errors="coerce"
-                ),
+                "timestamp_utc": pd.to_datetime(raw[time_col], utc=True, errors="coerce"),
                 "outside_temp_C": pd.to_numeric(raw[temp_col], errors="coerce"),
                 "humidity_pct": pd.to_numeric(raw[humidity_col], errors="coerce"),
             }
         )
 
         before = len(cleaned)
-        cleaned = cleaned.dropna(
-            subset=["timestamp_utc", "outside_temp_C", "humidity_pct"]
-        )
+        cleaned = cleaned.dropna(subset=["timestamp_utc", "outside_temp_C", "humidity_pct"])
         dropped = before - len(cleaned)
         if dropped:
-            logger.warning(
-                f"{path.name}: dropped {dropped} rows with unparseable values"
-            )
+            logger.warning(f"{path.name}: dropped {dropped} rows with unparseable values")
         frames.append(cleaned)
 
     if not frames:
-        raise FileNotFoundError(
-            "No weather files could be parsed successfully."
-        )
+        raise FileNotFoundError("No weather files could be parsed successfully.")
 
     combined = pd.concat(frames, ignore_index=True)
     validate_non_empty(combined, source_name="Open-Meteo Weather")
@@ -198,9 +188,7 @@ def ingest_weather(
     )
 
     # Sort deterministically
-    sorted_df = deduped.sort_values(
-        by=["city", "timestamp_utc"]
-    ).reset_index(drop=True)
+    sorted_df = deduped.sort_values(by=["city", "timestamp_utc"]).reset_index(drop=True)
 
     # Add provenance
     sorted_df["data_source"] = "open_meteo"
@@ -213,10 +201,7 @@ def ingest_weather(
     )
 
     cities = sorted_df["city"].nunique()
-    logger.info(
-        f"Open-Meteo ingestion complete: {len(sorted_df):,} cleaned rows "
-        f"across {cities} cities."
-    )
+    logger.info(f"Open-Meteo ingestion complete: {len(sorted_df):,} cleaned rows across {cities} cities.")
     return output_path
 
 

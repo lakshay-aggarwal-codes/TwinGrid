@@ -17,6 +17,7 @@ Endpoints (unchanged from before the refactor):
 - GET /api/equipment/health
 - WebSocket /ws/live
 """
+
 import asyncio
 import os
 from contextlib import asynccontextmanager
@@ -82,7 +83,10 @@ app = FastAPI(
         {"name": "digital-twin", "description": "Live state, 24h+ simulation, and what-if scenarios."},
         {"name": "optimization", "description": "PPO cooling optimizer: run optimization, compare scenarios."},
         {"name": "anomaly", "description": "Autoencoder anomaly scoring, alert history, webhook subscriptions."},
-        {"name": "shadow-mode", "description": "Log PPO's recommended actions vs. the rule-based baseline without applying them."},
+        {
+            "name": "shadow-mode",
+            "description": "Log PPO's recommended actions vs. the rule-based baseline without applying them.",
+        },
         {"name": "esg-report", "description": "Downloadable PDF sustainability report."},
         {"name": "equipment-health", "description": "Predictive-maintenance model status (see docs/model_cards/)."},
         {"name": "health", "description": "Liveness/readiness."},

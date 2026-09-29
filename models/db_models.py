@@ -77,7 +77,9 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)
 
     # Denormalized username: the row still reads sensibly if the user is later deleted.
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     username: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     action: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
@@ -121,7 +123,9 @@ class SensorReading(Base):
     anomaly: Mapped[int] = mapped_column(Integer, default=0)
 
     # Optional: link to simulation or optimization run
-    simulation_run_id: Mapped[Optional[int]] = mapped_column(ForeignKey("simulation_runs.id", ondelete="SET NULL"), nullable=True, index=True)
+    simulation_run_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("simulation_runs.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     optimization_result_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("optimization_results.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -267,7 +271,9 @@ class Alert(Base):
     severity: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)  # INFO | WARNING | CRITICAL
 
     # Optional link to sensor reading that triggered the alert
-    sensor_reading_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sensor_readings.id", ondelete="SET NULL"), nullable=True)
+    sensor_reading_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("sensor_readings.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Acknowledgment (operator-only, see POST /api/alerts/{id}/acknowledge). Who
     # acknowledged is stored as a username, not a user_id FK, for the same reason
@@ -275,4 +281,3 @@ class Alert(Base):
     acknowledged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     acknowledged_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-

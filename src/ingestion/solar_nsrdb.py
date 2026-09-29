@@ -133,9 +133,7 @@ def get_nsrdb_config(
         raise NSRDBConfigurationError(f"Invalid year value: {year_val}")
 
     if yr < 1998 or yr > 2024:
-        raise NSRDBConfigurationError(
-            f"NSRDB PSM3 typically covers years 1998 to 2023. Got: {yr}"
-        )
+        raise NSRDBConfigurationError(f"NSRDB PSM3 typically covers years 1998 to 2023. Got: {yr}")
 
     return {
         "api_key": key.strip(),
@@ -214,17 +212,13 @@ def fetch_nsrdb_raw_data(
 
             # Handle bad request
             if resp.status_code == 400:
-                raise NSRDBAPIError(
-                    f"NSRDB API returned bad request (HTTP 400): {resp.text[:300]}"
-                )
+                raise NSRDBAPIError(f"NSRDB API returned bad request (HTTP 400): {resp.text[:300]}")
 
             # Raise other HTTP errors
             resp.raise_for_status()
 
             # Successful response
-            logger.info(
-                f"NSRDB API responded successfully (HTTP {resp.status_code}, {len(resp.content):,} bytes)."
-            )
+            logger.info(f"NSRDB API responded successfully (HTTP {resp.status_code}, {len(resp.content):,} bytes).")
             return resp.text
 
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as net_err:
@@ -232,20 +226,14 @@ def fetch_nsrdb_raw_data(
                 f"NSRDB network error on attempt {attempt}/{max_retries}: {net_err}. Retrying in {delay:.1f}s..."
             )
             if attempt >= max_retries:
-                raise NSRDBAPIError(
-                    f"Failed to connect to NSRDB API after {max_retries} attempts: {net_err}"
-                )
+                raise NSRDBAPIError(f"Failed to connect to NSRDB API after {max_retries} attempts: {net_err}")
             time.sleep(delay)
             delay *= backoff_factor
 
-    raise NSRDBAPIError(
-        f"NSRDB API request failed after {max_retries} retry attempts."
-    )
+    raise NSRDBAPIError(f"NSRDB API request failed after {max_retries} retry attempts.")
 
 
-def normalize_nsrdb_raw_text(
-    csv_text: str, facility_lat: float, facility_lon: float
-) -> pd.DataFrame:
+def normalize_nsrdb_raw_text(csv_text: str, facility_lat: float, facility_lon: float) -> pd.DataFrame:
     """
     Parse and normalize NSRDB raw CSV output.
 
@@ -273,9 +261,7 @@ def normalize_nsrdb_raw_text(
             break
 
     if header_idx == -1:
-        raise NSRDBAPIError(
-            f"Could not locate data header in NSRDB response. Preview: {lines[:3]}"
-        )
+        raise NSRDBAPIError(f"Could not locate data header in NSRDB response. Preview: {lines[:3]}")
 
     # Parse CSV starting from header row
     data_stream = io.StringIO("\n".join(lines[header_idx:]))
@@ -336,15 +322,9 @@ def normalize_nsrdb_raw_text(
     clean_df["data_source"] = "nrel_nsrdb_psm3"
 
     # Validation
-    validate_numeric_range(
-        clean_df, "ghi_w_m2", min_value=0.0, max_value=2000.0, source_name="NSRDB GHI"
-    )
-    validate_numeric_range(
-        clean_df, "dni_w_m2", min_value=0.0, max_value=2000.0, source_name="NSRDB DNI"
-    )
-    validate_numeric_range(
-        clean_df, "dhi_w_m2", min_value=0.0, max_value=2000.0, source_name="NSRDB DHI"
-    )
+    validate_numeric_range(clean_df, "ghi_w_m2", min_value=0.0, max_value=2000.0, source_name="NSRDB GHI")
+    validate_numeric_range(clean_df, "dni_w_m2", min_value=0.0, max_value=2000.0, source_name="NSRDB DNI")
+    validate_numeric_range(clean_df, "dhi_w_m2", min_value=0.0, max_value=2000.0, source_name="NSRDB DHI")
 
     return clean_df[NORMALIZED_COLUMNS]
 

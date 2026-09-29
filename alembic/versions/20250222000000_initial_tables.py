@@ -5,6 +5,7 @@ Revises:
 Create Date: 2025-02-22
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -72,8 +73,12 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["simulation_run_id"], ["simulation_runs.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_sensor_readings_optimization_result_id"), "sensor_readings", ["optimization_result_id"], unique=False)
-    op.create_index(op.f("ix_sensor_readings_simulation_run_id"), "sensor_readings", ["simulation_run_id"], unique=False)
+    op.create_index(
+        op.f("ix_sensor_readings_optimization_result_id"), "sensor_readings", ["optimization_result_id"], unique=False
+    )
+    op.create_index(
+        op.f("ix_sensor_readings_simulation_run_id"), "sensor_readings", ["simulation_run_id"], unique=False
+    )
     op.create_index(op.f("ix_sensor_readings_source"), "sensor_readings", ["source"], unique=False)
     op.create_table(
         "alerts",

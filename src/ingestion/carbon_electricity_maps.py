@@ -79,9 +79,7 @@ def resolve_electricity_maps_source(source_path: Optional[Path] = None) -> Path:
     if candidates:
         return sorted(candidates)[0]
 
-    raise FileNotFoundError(
-        f"Could not find Electricity Maps CSV file in {real_data_dir}"
-    )
+    raise FileNotFoundError(f"Could not find Electricity Maps CSV file in {real_data_dir}")
 
 
 def normalize_electricity_maps_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -100,9 +98,7 @@ def normalize_electricity_maps_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Cleaned, normalized DataFrame.
     """
-    validate_required_columns(
-        df, EXPECTED_RAW_COLUMNS, source_name="Electricity Maps"
-    )
+    validate_required_columns(df, EXPECTED_RAW_COLUMNS, source_name="Electricity Maps")
 
     clean_df = df.copy()
 
@@ -178,9 +174,7 @@ def ingest_electricity_maps(
     )
 
     # Sort deterministically
-    sorted_df = deduped.sort_values(
-        by=["zone", "signal", "available_from_utc"]
-    ).reset_index(drop=True)
+    sorted_df = deduped.sort_values(by=["zone", "signal", "available_from_utc"]).reset_index(drop=True)
 
     output_path = save_cleaned_dataset(
         sorted_df,

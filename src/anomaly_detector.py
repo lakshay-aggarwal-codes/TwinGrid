@@ -30,6 +30,7 @@ def _get_tf():
     if _tf is None:
         try:
             import tensorflow as tf
+
             _tf = tf
         except ImportError as e:
             raise ImportError("TensorFlow required. pip install tensorflow") from e
@@ -46,6 +47,7 @@ def _get_sklearn():
         try:
             from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
             from sklearn.preprocessing import MinMaxScaler
+
             _sklearn = {
                 "MinMaxScaler": MinMaxScaler,
                 "precision_score": precision_score,
@@ -63,6 +65,7 @@ def _get_joblib():
     if _joblib is None:
         try:
             import joblib
+
             _joblib = joblib
         except ImportError as e:
             raise ImportError("joblib required. pip install joblib") from e
@@ -160,9 +163,7 @@ class AnomalyDetector:
         repeat = K.layers.RepeatVector(self._seq_len, name="repeat")(x)
         x = K.layers.LSTM(8, return_sequences=True, name="lstm_dec_1")(repeat)
         x = K.layers.LSTM(32, return_sequences=True, name="lstm_dec_2")(x)
-        decoder_output = K.layers.TimeDistributed(
-            K.layers.Dense(N_FEATURES, name="dense_output")
-        )(x)
+        decoder_output = K.layers.TimeDistributed(K.layers.Dense(N_FEATURES, name="dense_output"))(x)
 
         model = K.Model(encoder_input, decoder_output, name="lstm_autoencoder")
         model.compile(optimizer="adam", loss="mse")
@@ -251,9 +252,9 @@ class AnomalyDetector:
             epochs=epochs,
             batch_size=batch_size,
             validation_split=validation_split,
-            patience=patience
+            patience=patience,
         )
-        
+
         try:
             MinMaxScaler = _get_sklearn()["MinMaxScaler"]
 
@@ -264,9 +265,7 @@ class AnomalyDetector:
                 raise ValueError(error_msg)
 
             self._scaler = MinMaxScaler()
-            sequences_scaled = self._scaler.fit_transform(
-                sequences.reshape(-1, N_FEATURES)
-            ).reshape(sequences.shape)
+            sequences_scaled = self._scaler.fit_transform(sequences.reshape(-1, N_FEATURES)).reshape(sequences.shape)
 
             if self._model is None:
                 self._model = self._build_model()
@@ -276,10 +275,7 @@ class AnomalyDetector:
                 def on_epoch_end(self, epoch, logs=None):
                     logs = logs or {}
                     log_training_progress(
-                        "AnomalyDetector",
-                        epoch=epoch + 1,
-                        loss=logs.get('loss', 0),
-                        val_loss=logs.get('val_loss', 0)
+                        "AnomalyDetector", epoch=epoch + 1, loss=logs.get("loss", 0), val_loss=logs.get("val_loss", 0)
                     )
 
             keras = _get_keras()
@@ -313,8 +309,10 @@ class AnomalyDetector:
                 self._percentile,
                 self._threshold,
             )
-            
-            log_function_exit("AnomalyDetector.train", result=f"Training completed with threshold: {self._threshold:.6f}")
+
+            log_function_exit(
+                "AnomalyDetector.train", result=f"Training completed with threshold: {self._threshold:.6f}"
+            )
             return dict(history.history)
         except Exception as e:
             log_error("AnomalyDetector.train", e)
@@ -324,9 +322,7 @@ class AnomalyDetector:
         """Compute reconstruction MSE per sample."""
         if self._scaler is None:
             raise NotTrainedError("Detector must be trained first.")
-        sequences_scaled = self._scaler.transform(
-            sequences.reshape(-1, N_FEATURES)
-        ).reshape(sequences.shape)
+        sequences_scaled = self._scaler.transform(sequences.reshape(-1, N_FEATURES)).reshape(sequences.shape)
         reconstructions = self._model.predict(sequences_scaled, verbose=0)
         return np.mean((sequences_scaled - reconstructions) ** 2, axis=(1, 2))
 
@@ -354,9 +350,7 @@ class AnomalyDetector:
             raise NotTrainedError("Threshold not set. Train or load first.")
 
         if sequences.ndim != 3 or sequences.shape[1] != self._seq_len or sequences.shape[2] != N_FEATURES:
-            raise ShapeError(
-                f"sequences must be (n, {self._seq_len}, {N_FEATURES}), got {sequences.shape}"
-            )
+            raise ShapeError(f"sequences must be (n, {self._seq_len}, {N_FEATURES}), got {sequences.shape}")
 
         error_scores = self._compute_errors(sequences)
         alerts = error_scores > thresh
@@ -416,12 +410,15 @@ class AnomalyDetector:
         self._model.save(str(path / "model.keras"))
         _get_joblib().dump(self._scaler, path / "scaler.joblib")
         (path / "config.json").write_text(
-            json.dumps({
-                "threshold": self._threshold,
-                "seq_len": self._seq_len,
-                "feature_columns": self._feature_columns,
-                "percentile": self._percentile,
-            }, indent=2)
+            json.dumps(
+                {
+                    "threshold": self._threshold,
+                    "seq_len": self._seq_len,
+                    "feature_columns": self._feature_columns,
+                    "percentile": self._percentile,
+                },
+                indent=2,
+            )
         )
         logger.info("Saved to %s", path)
 

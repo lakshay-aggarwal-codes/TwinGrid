@@ -45,11 +45,13 @@ class TestFeatureSelection:
         varying one should be kept."""
         from src.predictive_maintenance.data_loader import CMAPSSDataset
 
-        df = pd.DataFrame({
-            "sensor_1": np.random.normal(50, 10, 100),  # real variance -- keep
-            "sensor_2": np.full(100, 5.0),               # constant -- drop
-            "op_setting_1": np.full(100, 1.0) + np.random.normal(0, 1e-6, 100),  # near-constant -- drop
-        })
+        df = pd.DataFrame(
+            {
+                "sensor_1": np.random.normal(50, 10, 100),  # real variance -- keep
+                "sensor_2": np.full(100, 5.0),  # constant -- drop
+                "op_setting_1": np.full(100, 1.0) + np.random.normal(0, 1e-6, 100),  # near-constant -- drop
+            }
+        )
         dataset = CMAPSSDataset()
         selected = dataset._select_features(df, std_threshold=1e-3)
         assert "sensor_1" in selected

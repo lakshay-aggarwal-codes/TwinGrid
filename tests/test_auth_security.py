@@ -24,6 +24,7 @@ class TestJWTSecretEnforcement:
     def test_present_secret_allows_import(self, monkeypatch):
         monkeypatch.setenv("JWT_SECRET_KEY", "test-secret-for-suite-only")
         import api.auth as auth_module
+
         importlib.reload(auth_module)
         assert auth_module.SECRET_KEY == "test-secret-for-suite-only"
 
@@ -32,6 +33,7 @@ class TestTokenValidation:
     def test_invalid_token_raises_401(self, monkeypatch):
         monkeypatch.setenv("JWT_SECRET_KEY", "test-secret-for-suite-only")
         import api.auth as auth_module
+
         importlib.reload(auth_module)
 
         with pytest.raises(HTTPException) as exc_info:
@@ -41,6 +43,7 @@ class TestTokenValidation:
     def test_valid_token_round_trips(self, monkeypatch):
         monkeypatch.setenv("JWT_SECRET_KEY", "test-secret-for-suite-only")
         import api.auth as auth_module
+
         importlib.reload(auth_module)
 
         token = auth_module.create_access_token(subject=1, role="viewer")
@@ -53,6 +56,7 @@ class TestRoleEnforcement:
     def test_require_operator_rejects_viewer(self, monkeypatch):
         monkeypatch.setenv("JWT_SECRET_KEY", "test-secret-for-suite-only")
         import api.auth as auth_module
+
         importlib.reload(auth_module)
 
         from models.db_models import USER_ROLE_VIEWER, User
@@ -65,6 +69,7 @@ class TestRoleEnforcement:
     def test_require_operator_accepts_operator(self, monkeypatch):
         monkeypatch.setenv("JWT_SECRET_KEY", "test-secret-for-suite-only")
         import api.auth as auth_module
+
         importlib.reload(auth_module)
 
         from models.db_models import USER_ROLE_OPERATOR, User

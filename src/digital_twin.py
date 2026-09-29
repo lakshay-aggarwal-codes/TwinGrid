@@ -21,7 +21,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from numba import jit
 from typing import Any, Callable
 
 import numpy as np
@@ -257,9 +256,7 @@ class DigitalTwin:
     # Requested -> applied control pipeline (runs BEFORE physics)
     # -------------------------------------------------------------------------
 
-    def _determine_applied_cooling_mode(
-        self, requested_mode: CoolingMode, outside_temp_C: float
-    ) -> CoolingMode:
+    def _determine_applied_cooling_mode(self, requested_mode: CoolingMode, outside_temp_C: float) -> CoolingMode:
         """
         Resolve the mode physics will actually use this step.
 
@@ -562,9 +559,7 @@ class DigitalTwin:
         """
         # 1. Requested -> applied pipeline (before physics).
         applied_mode = self._determine_applied_cooling_mode(self._cooling_mode, self._outside_temp_C)
-        applied_chilled_water_C = self._determine_applied_chilled_water_temp_C(
-            self._requested_chilled_water_temp_C
-        )
+        applied_chilled_water_C = self._determine_applied_chilled_water_temp_C(self._requested_chilled_water_temp_C)
         self._applied_chilled_water_temp_C = applied_chilled_water_C
 
         # 2. IT power (from current utilisation).
@@ -720,8 +715,7 @@ class DigitalTwin:
         """
         s = self._state
         ok_temp = (
-            INLET_TEMP_MIN <= s.server_inlet_temp_C <= INLET_TEMP_MAX
-            and s.server_outlet_temp_C <= OUTLET_TEMP_MAX
+            INLET_TEMP_MIN <= s.server_inlet_temp_C <= INLET_TEMP_MAX and s.server_outlet_temp_C <= OUTLET_TEMP_MAX
         )
         ok_pue = s.pue <= PUE_MAX_SAFE
         return bool(ok_temp and ok_pue)

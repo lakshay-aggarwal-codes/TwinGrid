@@ -31,7 +31,7 @@ def normalize_database_url(url: str) -> str:
     url = url.strip()
     for prefix in _REWRITE_PREFIXES:
         if url.startswith(prefix):
-            url = _ASYNC_SCHEME + url[len(prefix):]
+            url = _ASYNC_SCHEME + url[len(prefix) :]
             break
     else:
         return url

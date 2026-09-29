@@ -58,7 +58,9 @@ def generate_report(state: dict[str, Any], output_path: str | Path) -> Path:
         [
             "Carbon intensity data",
             "Real" if state.get("carbon_data_is_real") else "Flat fallback",
-            "" if state.get("carbon_data_is_real") else "Not yet backed by a real grid-carbon API -- see model limitations",
+            ""
+            if state.get("carbon_data_is_real")
+            else "Not yet backed by a real grid-carbon API -- see model limitations",
         ],
     ]
     table = Table(rows, colWidths=[2.1 * inch, 1.3 * inch, 3.0 * inch])

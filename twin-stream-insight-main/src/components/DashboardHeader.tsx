@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Activity } from "lucide-react";
+import { Activity, Boxes } from "lucide-react";
+import { RotateLink } from "@/components/transition/RotateLink";
 import { Badge } from "@/components/ui/badge";
 
 export function DashboardHeader() {
@@ -22,6 +23,14 @@ export function DashboardHeader() {
         </h1>
       </div>
       <div className="flex items-center gap-4">
+        <RotateLink
+          to="/"
+          direction={-1}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Boxes className="h-3.5 w-3.5" />
+          Live Twin
+        </RotateLink>
         <span className="font-mono text-sm text-muted-foreground">
           {time.toLocaleDateString("en-GB", {
             day: "2-digit",

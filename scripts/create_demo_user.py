@@ -36,8 +36,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", required=True, help="Deployed backend base URL, e.g. https://...railway.app")
     parser.add_argument("--username", default="demo_viewer")
-    parser.add_argument("--password", required=True, help="Use a real, unique password -- this account is public-facing")
-    parser.add_argument("--role", choices=["viewer", "operator"], default="viewer", help="Account role (default: viewer)")
+    parser.add_argument(
+        "--password", required=True, help="Use a real, unique password -- this account is public-facing"
+    )
+    parser.add_argument(
+        "--role", choices=["viewer", "operator"], default="viewer", help="Account role (default: viewer)"
+    )
     parser.add_argument(
         "--admin-key",
         default=os.getenv("OPERATOR_REGISTRATION_KEY"),
@@ -63,8 +67,11 @@ def main() -> int:
         print(f"Account '{args.username}' already exists -- nothing to do.")
         return 0
     if response.status_code == 403 and args.role == "operator":
-        print("Server rejected operator registration (403): wrong X-Admin-Key, or the server has no "
-              "OPERATOR_REGISTRATION_KEY set.", file=sys.stderr)
+        print(
+            "Server rejected operator registration (403): wrong X-Admin-Key, or the server has no "
+            "OPERATOR_REGISTRATION_KEY set.",
+            file=sys.stderr,
+        )
         return 1
     response.raise_for_status()
     print(f"Created {args.role} account '{args.username}'.")

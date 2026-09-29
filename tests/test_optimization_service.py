@@ -29,8 +29,7 @@ class FakeModel:
 
     def predict(self, obs, deterministic=True):
         assert obs.shape == self.observation_space.shape, (
-            f"Unexpected observation shape {obs.shape} for Box environment, "
-            f"please use {self.observation_space.shape}"
+            f"Unexpected observation shape {obs.shape} for Box environment, please use {self.observation_space.shape}"
         )
         if self.delay:
             time.sleep(self.delay)  # BLOCKING on purpose, like real torch inference
@@ -117,7 +116,9 @@ class TestRunOptimization:
             "total_reward",
             "safety_violations",
         }
-        assert all(k in rows[0] for k in ("pue", "wue", "cooling_power", "chilled_water_temp_C", "cooling_mode", "reward"))
+        assert all(
+            k in rows[0] for k in ("pue", "wue", "cooling_power", "chilled_water_temp_C", "cooling_mode", "reward")
+        )
 
     @pytest.mark.asyncio
     async def test_rollout_does_not_block_the_event_loop(self, monkeypatch):

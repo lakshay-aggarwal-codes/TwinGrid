@@ -40,11 +40,10 @@ def _get_sb3():
         try:
             from stable_baselines3 import PPO
             from stable_baselines3.common.vec_env import DummyVecEnv
+
             _sb3 = {"PPO": PPO, "DummyVecEnv": DummyVecEnv}
         except ImportError as e:
-            raise ImportError(
-                "stable-baselines3 required. pip install stable-baselines3"
-            ) from e
+            raise ImportError("stable-baselines3 required. pip install stable-baselines3") from e
     return _sb3
 
 
@@ -66,7 +65,7 @@ AIRFLOW_M3_S = 8.0
 OUTLET_MAX = OUTLET_TEMP_MAX  # re-exported from digital_twin, not a second copy
 EPISODE_STEPS = 288  # 24 hours at 5-min intervals
 DROUGHT_THRESHOLD = 0.7
-DROUGHT_OVERRIDE_MODE = "closed_loop" 
+DROUGHT_OVERRIDE_MODE = "closed_loop"
 
 # Observation normalisation ranges.
 # inlet_temp widened from the old (15, 30) -- that range was tuned for the
@@ -224,6 +223,7 @@ class DataCentreEnv(gym.Env):
 
         if self._pinn is not None:
             from src.pinn import encode_cooling_mode
+
             mode_enc = encode_cooling_mode(mode)
             pred = self._pinn.predict(
                 np.array([util], dtype=np.float32),
@@ -267,17 +267,20 @@ class DataCentreEnv(gym.Env):
         """9 normalised state variables."""
         s = self._state
         r = OBS_RANGES
-        return np.array([
-            _normalise(s["hour"], r["hour"][0], r["hour"][1]),
-            _normalise(s["utilisation"], r["utilisation"][0], r["utilisation"][1]),
-            _normalise(s["outside_temp"], r["outside_temp"][0], r["outside_temp"][1]),
-            _normalise(s["inlet_temp"], r["inlet_temp"][0], r["inlet_temp"][1]),
-            _normalise(s["outlet_temp"], r["outlet_temp"][0], r["outlet_temp"][1]),
-            _normalise(s["it_power"], r["it_power"][0], r["it_power"][1]),
-            _normalise(s["wue"], r["wue"][0], r["wue"][1]),
-            _normalise(s["pue"], r["pue"][0], r["pue"][1]),
-            _normalise(self._water_stress, r["water_stress"][0], r["water_stress"][1]),
-        ], dtype=np.float32)
+        return np.array(
+            [
+                _normalise(s["hour"], r["hour"][0], r["hour"][1]),
+                _normalise(s["utilisation"], r["utilisation"][0], r["utilisation"][1]),
+                _normalise(s["outside_temp"], r["outside_temp"][0], r["outside_temp"][1]),
+                _normalise(s["inlet_temp"], r["inlet_temp"][0], r["inlet_temp"][1]),
+                _normalise(s["outlet_temp"], r["outlet_temp"][0], r["outlet_temp"][1]),
+                _normalise(s["it_power"], r["it_power"][0], r["it_power"][1]),
+                _normalise(s["wue"], r["wue"][0], r["wue"][1]),
+                _normalise(s["pue"], r["pue"][0], r["pue"][1]),
+                _normalise(self._water_stress, r["water_stress"][0], r["water_stress"][1]),
+            ],
+            dtype=np.float32,
+        )
 
     def _action_to_control(self, action: np.ndarray) -> tuple[float, str]:
         chilled = _denormalise(float(np.asarray(action).flat[0]), 5.0, 15.0)
@@ -385,7 +388,7 @@ class JointOptimizer:
         seed: int | None = None,
         pinn: Any = None,
         carbon_intensity_by_hour: np.ndarray | None = None,
-    ) -> None:  
+    ) -> None:
         self._alpha = alpha
         self._beta = beta
         self._gamma = gamma
@@ -427,9 +430,9 @@ class JointOptimizer:
             total_timesteps=total_timesteps,
             n_envs=n_envs,
             water_stress=water_stress,
-            ppo_kwargs=ppo_kwargs
+            ppo_kwargs=ppo_kwargs,
         )
-        
+
         try:
             sb3 = _get_sb3()
             DummyVecEnv = sb3["DummyVecEnv"]
@@ -450,14 +453,14 @@ class JointOptimizer:
             }
             default_kwargs.update(ppo_kwargs)
             self._model = PPO(env=env, **default_kwargs)
-            
+
             # Log training progress
             log_training_progress("JointOptimizer", epoch=0, loss=0, accuracy=total_timesteps)
-            
+
             self._model.learn(total_timesteps=total_timesteps)
             env.close()
             logger.info("Training complete: %d timesteps", total_timesteps)
-            
+
             log_function_exit("JointOptimizer.train", result=f"Training completed with {total_timesteps} timesteps")
         except Exception as e:
             log_error("JointOptimizer.train", e)
@@ -486,12 +489,14 @@ class JointOptimizer:
             next_obs, reward, term, trunc, info = env.step(action)
             state = info["state"]
             chilled, mode = env._action_to_control(action)
-            rows.append({
-                **state,
-                "chilled_water_temp_C": chilled,
-                "cooling_mode": mode,
-                "reward": reward,
-            })
+            rows.append(
+                {
+                    **state,
+                    "chilled_water_temp_C": chilled,
+                    "cooling_mode": mode,
+                    "reward": reward,
+                }
+            )
             obs = next_obs
             if term or trunc:
                 break
@@ -529,6 +534,7 @@ class JointOptimizer:
                 "total_reward": float(df["reward"].sum()),
                 "safety_violations": int((df["outlet_temp"] > OUTLET_MAX).sum()),
             }
+
         normal = run_and_aggregate(normal_stress)
         drought = run_and_aggregate(drought_stress)
 
@@ -536,9 +542,17 @@ class JointOptimizer:
             "normal": normal,
             "drought": drought,
             "comparison": {
-                "pue_change_pct": (drought["mean_pue"] - normal["mean_pue"]) / normal["mean_pue"] * 100 if normal["mean_pue"] > 0 else 0,
-                "wue_change_pct": (drought["mean_wue"] - normal["mean_wue"]) / normal["mean_wue"] * 100 if normal["mean_wue"] > 0 else 0,
-                "water_reduction_pct": (normal["total_water_consumed_L"] - drought["total_water_consumed_L"]) / normal["total_water_consumed_L"] * 100 if normal["total_water_consumed_L"] > 0 else 0,
+                "pue_change_pct": (drought["mean_pue"] - normal["mean_pue"]) / normal["mean_pue"] * 100
+                if normal["mean_pue"] > 0
+                else 0,
+                "wue_change_pct": (drought["mean_wue"] - normal["mean_wue"]) / normal["mean_wue"] * 100
+                if normal["mean_wue"] > 0
+                else 0,
+                "water_reduction_pct": (normal["total_water_consumed_L"] - drought["total_water_consumed_L"])
+                / normal["total_water_consumed_L"]
+                * 100
+                if normal["total_water_consumed_L"] > 0
+                else 0,
             },
         }
 

@@ -35,15 +35,23 @@ def _root(path: str) -> Path:
 
 class _NoOpPBar:
     """Fallback when tqdm not installed."""
-    def update(self, n=1): pass
-    def set_postfix_str(self, s): pass
-    def close(self): pass
+
+    def update(self, n=1):
+        pass
+
+    def set_postfix_str(self, s):
+        pass
+
+    def close(self):
+        pass
 
 
 def main() -> None:
     import pandas as pd
+
     try:
         from tqdm import tqdm
+
         # pbar_fn = lambda: tqdm(total=6, desc="Training pipeline", unit="step")
         def pbar_fn():
             return tqdm(total=6, desc="Training pipeline", unit="step")
@@ -89,7 +97,8 @@ def main() -> None:
 
     forecaster = ThermalForecaster()
     forecaster.train(
-        X_train, y_train,
+        X_train,
+        y_train,
         epochs=30,
         patience=8,
         checkpoint_dir=_root("models/forecaster"),
@@ -231,7 +240,9 @@ def main() -> None:
 
     pue_improvement_mean = float(np.mean(pue_improvements))
     pue_improvement_std = float(np.std(pue_improvements, ddof=1)) if len(pue_improvements) > 1 else 0.0
-    pue_improvement_ci95 = 1.96 * pue_improvement_std / np.sqrt(len(pue_improvements)) if len(pue_improvements) > 1 else 0.0
+    pue_improvement_ci95 = (
+        1.96 * pue_improvement_std / np.sqrt(len(pue_improvements)) if len(pue_improvements) > 1 else 0.0
+    )
     metrics["pue_improvement_mean_pct"] = pue_improvement_mean
     metrics["pue_improvement_std_pct"] = pue_improvement_std
     metrics["pue_improvement_ci95_pct"] = pue_improvement_ci95
@@ -286,15 +297,15 @@ def main() -> None:
     print(f"""
     | Metric                              | Value    |
     |--------------------------------------|----------|
-    | LSTM RMSE (°C)                       | {metrics.get('lstm_rmse', 0):.4f}   |
-    | LSTM MAE (°C)                        | {metrics.get('lstm_mae', 0):.4f}   |
-    | Anomaly F1 (held-out)                | {metrics.get('anomaly_f1', 0):.4f}   |
-    | Anomaly Precision (held-out)         | {metrics.get('anomaly_precision', 0):.4f}   |
-    | Anomaly Recall (held-out)            | {metrics.get('anomaly_recall', 0):.4f}   |
-    | PUE (baseline, rule-based)           | {metrics.get('pue_baseline', 0):.4f}   |
-    | PUE improvement (mean, {len(PPO_SEEDS)} seeds)       | {metrics.get('pue_improvement_mean_pct', 0):.2f}% +/- {metrics.get('pue_improvement_ci95_pct', 0):.2f}% |
-    | PUE (optimized, normal, seed 0)      | {metrics.get('pue_optimized_normal', 0):.4f}   |
-    | PUE (optimized, drought, seed 0)     | {metrics.get('pue_optimized_drought', 0):.4f}   |
+    | LSTM RMSE (°C)                       | {metrics.get("lstm_rmse", 0):.4f}   |
+    | LSTM MAE (°C)                        | {metrics.get("lstm_mae", 0):.4f}   |
+    | Anomaly F1 (held-out)                | {metrics.get("anomaly_f1", 0):.4f}   |
+    | Anomaly Precision (held-out)         | {metrics.get("anomaly_precision", 0):.4f}   |
+    | Anomaly Recall (held-out)            | {metrics.get("anomaly_recall", 0):.4f}   |
+    | PUE (baseline, rule-based)           | {metrics.get("pue_baseline", 0):.4f}   |
+    | PUE improvement (mean, {len(PPO_SEEDS)} seeds)       | {metrics.get("pue_improvement_mean_pct", 0):.2f}% +/- {metrics.get("pue_improvement_ci95_pct", 0):.2f}% |
+    | PUE (optimized, normal, seed 0)      | {metrics.get("pue_optimized_normal", 0):.4f}   |
+    | PUE (optimized, drought, seed 0)     | {metrics.get("pue_optimized_drought", 0):.4f}   |
     """)
     print("   Registry: models/registry.json (full lineage/metrics history)")
     print("   All models saved to models/")

@@ -87,10 +87,13 @@ class RULPredictor:
 
             validation_data = (X_val, y_val) if X_val is not None else None
             history = self._model.fit(
-                X_train, y_train,
+                X_train,
+                y_train,
                 validation_data=validation_data,
-                epochs=epochs, batch_size=batch_size,
-                callbacks=callbacks, verbose=0,
+                epochs=epochs,
+                batch_size=batch_size,
+                callbacks=callbacks,
+                verbose=0,
             )
             log_training_progress(
                 "RULPredictor", epochs=len(history.history["loss"]), final_loss=history.history["loss"][-1]

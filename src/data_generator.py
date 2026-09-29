@@ -56,7 +56,9 @@ def _compute_utilisation(dt: pd.DatetimeIndex) -> np.ndarray:
     return np.where(weekend, u_base * 0.6, u_base)
 
 
-def _load_real_weather(city: str, n_intervals: int, timestamps: pd.DatetimeIndex) -> tuple[np.ndarray, np.ndarray] | None:
+def _load_real_weather(
+    city: str, n_intervals: int, timestamps: pd.DatetimeIndex
+) -> tuple[np.ndarray, np.ndarray] | None:
     """
     Load real outside_temp_C / humidity_pct for `city` from Phase 2's
     ingestion output, resampled to 5-min intervals and tiled/truncated to
@@ -79,7 +81,9 @@ def _load_real_weather(city: str, n_intervals: int, timestamps: pd.DatetimeIndex
         available = sorted(weather["city"].unique())
         logger.warning(
             "City '%s' not found in %s (available: %s). Falling back to synthetic weather.",
-            city, CLEANED_WEATHER_PATH, available,
+            city,
+            CLEANED_WEATHER_PATH,
+            available,
         )
         return None
 
@@ -123,13 +127,17 @@ def _load_water_stress_baseline(country: str) -> float | None:
         logger.warning(
             "%s is missing expected columns %s (has %s); falling back to synthetic water_stress. "
             "Re-run `python scripts/run_ingestion.py --only water_stress_aqueduct` to regenerate it.",
-            CLEANED_WATER_STRESS_PATH, sorted(required - set(aqueduct.columns)), list(aqueduct.columns),
+            CLEANED_WATER_STRESS_PATH,
+            sorted(required - set(aqueduct.columns)),
+            list(aqueduct.columns),
         )
         return None
 
     country_rows = aqueduct[aqueduct["name_0"].str.lower() == country.lower()]
     if country_rows.empty:
-        logger.warning("Country '%s' not found in %s; falling back to synthetic water_stress.", country, CLEANED_WATER_STRESS_PATH)
+        logger.warning(
+            "Country '%s' not found in %s; falling back to synthetic water_stress.", country, CLEANED_WATER_STRESS_PATH
+        )
         return None
 
     scores = aqueduct["bws_score"].dropna()
@@ -228,11 +236,7 @@ def generate_sensor_data(
             + 3 * np.sin(2 * np.pi * (hour_frac - 14) / 24)
             + np.random.normal(0, 1.0, n_intervals)
         )
-        humidity_pct = (
-            50
-            + 10 * np.sin(2 * np.pi * (hour_frac - 6) / 24)
-            + np.random.normal(0, 3, n_intervals)
-        )
+        humidity_pct = 50 + 10 * np.sin(2 * np.pi * (hour_frac - 6) / 24) + np.random.normal(0, 3, n_intervals)
         humidity_pct = np.clip(humidity_pct, 25, 75)
 
     # 3. Water stress: real Aqueduct baseline + synthetic seasonal/drought overlay
@@ -240,7 +244,8 @@ def generate_sensor_data(
     if water_stress_baseline is not None:
         logger.info(
             "Using real Aqueduct water-stress baseline for country='%s': %.3f",
-            country, water_stress_baseline,
+            country,
+            water_stress_baseline,
         )
     water_stress = _compute_water_stress(n_intervals, timestamps, water_stress_baseline)
 
@@ -358,12 +363,25 @@ def print_summary(df: pd.DataFrame) -> None:
     print(f"Date range: {df['timestamp'].min()} to {df['timestamp'].max()}")
     print(f"\nAnomaly distribution: {df['anomaly'].value_counts().to_dict()}")
     print(f"\nCooling mode distribution:\n{df['cooling_mode'].value_counts().to_string()}")
-    print(f"\nWater stress: min={df['water_stress'].min():.3f}, mean={df['water_stress'].mean():.3f}, max={df['water_stress'].max():.3f}")
+    print(
+        f"\nWater stress: min={df['water_stress'].min():.3f}, mean={df['water_stress'].mean():.3f}, max={df['water_stress'].max():.3f}"
+    )
 
     numeric_cols = [
-        "server_utilisation", "outside_temp_C", "server_inlet_temp_C", "server_outlet_temp_C",
-        "it_power_kw", "cooling_power_kw", "total_power_kw", "pue",
-        "water_flow_lpm", "water_consumed_L", "wue", "humidity_pct", "water_pressure_bar", "water_stress",
+        "server_utilisation",
+        "outside_temp_C",
+        "server_inlet_temp_C",
+        "server_outlet_temp_C",
+        "it_power_kw",
+        "cooling_power_kw",
+        "total_power_kw",
+        "pue",
+        "water_flow_lpm",
+        "water_consumed_L",
+        "wue",
+        "humidity_pct",
+        "water_pressure_bar",
+        "water_stress",
     ]
     print("\nNumeric column statistics:")
     print(df[numeric_cols].describe().round(4).to_string())
@@ -383,7 +401,9 @@ def main() -> None:
         parser.add_argument("--days", type=int, default=90, help="Number of days to generate")
         parser.add_argument("--seed", type=int, default=42, help="Random seed")
         parser.add_argument("--city", type=str, default="Delhi", help="Open-Meteo city for real weather (Phase 2)")
-        parser.add_argument("--country", type=str, default="India", help="Aqueduct country for real water-stress baseline (Phase 2)")
+        parser.add_argument(
+            "--country", type=str, default="India", help="Aqueduct country for real water-stress baseline (Phase 2)"
+        )
         parser.add_argument("--output", type=Path, default=Path("data/raw/sensor_data.csv"), help="Output CSV path")
         args = parser.parse_args()
 

@@ -19,6 +19,8 @@ export const MOTION = {
   panelIn: 0.22,
   /** Panel slide out -- shorter than in so closing never feels sluggish. */
   panelOut: 0.14,
+  /** One half of the page-to-page rotation (out, then in). */
+  pageRotate: 0.38,
   /** Rack selection/hover/mode color changes. */
   material: 0.18,
 } as const;

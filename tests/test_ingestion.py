@@ -102,11 +102,13 @@ class TestBaseIngestion(unittest.TestCase):
             validate_numeric_range(df, "val", max_value=25.0)
 
     def test_deduplicate_records(self):
-        df = pd.DataFrame({
-            "city": ["delhi", "delhi", "mumbai"],
-            "timestamp": ["2025-01-01", "2025-01-01", "2025-01-01"],
-            "val": [1, 1, 2],
-        })
+        df = pd.DataFrame(
+            {
+                "city": ["delhi", "delhi", "mumbai"],
+                "timestamp": ["2025-01-01", "2025-01-01", "2025-01-01"],
+                "val": [1, 1, 2],
+            }
+        )
         deduped = deduplicate_records(df, subset=["city", "timestamp"])
         self.assertEqual(len(deduped), 2)
 
@@ -126,23 +128,25 @@ class TestWeatherIngestion(unittest.TestCase):
     """Test Open-Meteo weather normalization and validation."""
 
     def setUp(self):
-        self.sample_raw_weather = pd.DataFrame({
-            "timestamp": ["2025-01-01 00:00:00", "2025-01-01 01:00:00"],
-            "city": [" Delhi ", "delhi"],
-            "country": ["India", "India"],
-            "latitude": [28.6139, 28.6139],
-            "longitude": [77.2090, 77.2090],
-            "ambient_temperature_c": [8.3, 8.0],
-            "relative_humidity_pct": [100.0, 95.0],
-            "dew_point_c": [8.3, 7.5],
-            "apparent_temperature_c": [7.4, 7.0],
-            "precipitation_mm": [0.0, 0.0],
-            "cloud_cover_pct": [99.0, 100.0],
-            "wind_speed_10m_kmh": [2.8, 2.9],
-            "wind_direction_10m_deg": [288.0, 274.0],
-            "solar_radiation_w_m2": [0.0, 0.0],
-            "et0_mm": [0.0, 0.0],
-        })
+        self.sample_raw_weather = pd.DataFrame(
+            {
+                "timestamp": ["2025-01-01 00:00:00", "2025-01-01 01:00:00"],
+                "city": [" Delhi ", "delhi"],
+                "country": ["India", "India"],
+                "latitude": [28.6139, 28.6139],
+                "longitude": [77.2090, 77.2090],
+                "ambient_temperature_c": [8.3, 8.0],
+                "relative_humidity_pct": [100.0, 95.0],
+                "dew_point_c": [8.3, 7.5],
+                "apparent_temperature_c": [7.4, 7.0],
+                "precipitation_mm": [0.0, 0.0],
+                "cloud_cover_pct": [99.0, 100.0],
+                "wind_speed_10m_kmh": [2.8, 2.9],
+                "wind_direction_10m_deg": [288.0, 274.0],
+                "solar_radiation_w_m2": [0.0, 0.0],
+                "et0_mm": [0.0, 0.0],
+            }
+        )
 
     def test_normalize_weather_dataframe(self):
         clean_df = normalize_weather_dataframe(self.sample_raw_weather)
@@ -164,18 +168,20 @@ class TestCarbonIngestion(unittest.TestCase):
     """Test Electricity Maps carbon & grid coverage normalization."""
 
     def setUp(self):
-        self.sample_carbon_data = pd.DataFrame({
-            "zone": ["Eastern India", "Namibia"],
-            "zone_key": ["IN-EA", np.nan],
-            "tier": ["A", "D"],
-            "signal": ["Carbon Intensity", "Electricity Flows"],
-            "available_from": ["2015-01-01T00:00:00.000Z", "2026-08-31T00:00:00.000Z"],
-            "historical_temporal_granularity": ["hourly", "5min, 15min"],
-            "real_time_granularity": ["hourly", "hourly"],
-            "forecast_source": ["Forecasted by Electricity Maps", "Forecasted"],
-            "horizons": ["24h, 48h", "24h"],
-            "forecast_granularity": ["hourly", "hourly"],
-        })
+        self.sample_carbon_data = pd.DataFrame(
+            {
+                "zone": ["Eastern India", "Namibia"],
+                "zone_key": ["IN-EA", np.nan],
+                "tier": ["A", "D"],
+                "signal": ["Carbon Intensity", "Electricity Flows"],
+                "available_from": ["2015-01-01T00:00:00.000Z", "2026-08-31T00:00:00.000Z"],
+                "historical_temporal_granularity": ["hourly", "5min, 15min"],
+                "real_time_granularity": ["hourly", "hourly"],
+                "forecast_source": ["Forecasted by Electricity Maps", "Forecasted"],
+                "horizons": ["24h, 48h", "24h"],
+                "forecast_granularity": ["hourly", "hourly"],
+            }
+        )
 
     def test_normalize_carbon_dataframe(self):
         clean_df = normalize_electricity_maps_dataframe(self.sample_carbon_data)
@@ -183,9 +189,7 @@ class TestCarbonIngestion(unittest.TestCase):
         # Check zone_key NaN handling
         self.assertEqual(clean_df["zone_key"].iloc[1], "")
         # Check timestamp conversion
-        self.assertEqual(
-            clean_df["available_from_utc"].iloc[0], "2015-01-01 00:00:00+00:00"
-        )
+        self.assertEqual(clean_df["available_from_utc"].iloc[0], "2015-01-01 00:00:00+00:00")
         self.assertEqual(clean_df["data_source"].iloc[0], "electricity_maps")
 
 
@@ -193,41 +197,43 @@ class TestAqueductIngestion(unittest.TestCase):
     """Test WRI Aqueduct water-stress normalization."""
 
     def setUp(self):
-        self.sample_aqueduct_data = pd.DataFrame({
-            "string_id": ["445822-IND.21_1-1764", "111011-None-None"],
-            "aq30_id": [1, 2],
-            "pfaf_id": [445822, 111011],
-            "gid_1": ["IND.21_1", "None"],
-            "aqid": [1764, -9999],
-            "gid_0": ["IND", np.nan],
-            "name_0": ["India", np.nan],
-            "name_1": ["Maharashtra", np.nan],
-            "area_km2": [100.5, 50.2],
-            "bws_raw": [0.45, 9999.0],
-            "bws_score": [3.19, -9999.0],
-            "bws_cat": [3.0, -9999.0],
-            "bws_label": ["High (40-80%)", "Arid and Low Water Use"],
-            "bwd_raw": [0.35, -9999.0],
-            "bwd_score": [2.5, -9999.0],
-            "bwd_cat": [2.0, -9999.0],
-            "bwd_label": ["Medium - High", "No Data"],
-            "iav_raw": [0.8, -9999.0],
-            "iav_score": [3.0, -9999.0],
-            "iav_cat": [2.0, -9999.0],
-            "iav_label": ["Medium - High", "No Data"],
-            "sev_raw": [1.1, -9999.0],
-            "sev_score": [3.2, -9999.0],
-            "sev_cat": [3.0, -9999.0],
-            "sev_label": ["High", "No Data"],
-            "rfr_raw": [0.05, -9999.0],
-            "rfr_score": [1.0, -9999.0],
-            "rfr_cat": [1.0, -9999.0],
-            "rfr_label": ["Low", "No Data"],
-            "drr_raw": [0.6, -9999.0],
-            "drr_score": [3.5, -9999.0],
-            "drr_cat": [3.0, -9999.0],
-            "drr_label": ["Medium - High", "No Data"],
-        })
+        self.sample_aqueduct_data = pd.DataFrame(
+            {
+                "string_id": ["445822-IND.21_1-1764", "111011-None-None"],
+                "aq30_id": [1, 2],
+                "pfaf_id": [445822, 111011],
+                "gid_1": ["IND.21_1", "None"],
+                "aqid": [1764, -9999],
+                "gid_0": ["IND", np.nan],
+                "name_0": ["India", np.nan],
+                "name_1": ["Maharashtra", np.nan],
+                "area_km2": [100.5, 50.2],
+                "bws_raw": [0.45, 9999.0],
+                "bws_score": [3.19, -9999.0],
+                "bws_cat": [3.0, -9999.0],
+                "bws_label": ["High (40-80%)", "Arid and Low Water Use"],
+                "bwd_raw": [0.35, -9999.0],
+                "bwd_score": [2.5, -9999.0],
+                "bwd_cat": [2.0, -9999.0],
+                "bwd_label": ["Medium - High", "No Data"],
+                "iav_raw": [0.8, -9999.0],
+                "iav_score": [3.0, -9999.0],
+                "iav_cat": [2.0, -9999.0],
+                "iav_label": ["Medium - High", "No Data"],
+                "sev_raw": [1.1, -9999.0],
+                "sev_score": [3.2, -9999.0],
+                "sev_cat": [3.0, -9999.0],
+                "sev_label": ["High", "No Data"],
+                "rfr_raw": [0.05, -9999.0],
+                "rfr_score": [1.0, -9999.0],
+                "rfr_cat": [1.0, -9999.0],
+                "rfr_label": ["Low", "No Data"],
+                "drr_raw": [0.6, -9999.0],
+                "drr_score": [3.5, -9999.0],
+                "drr_cat": [3.0, -9999.0],
+                "drr_label": ["Medium - High", "No Data"],
+            }
+        )
 
     def test_normalize_aqueduct_dataframe(self):
         clean_df = normalize_aqueduct_dataframe(self.sample_aqueduct_data)
@@ -275,9 +281,7 @@ Year,Month,Day,Hour,Minute,GHI,DNI,DHI,Temperature,Relative Humidity,Dew Point,W
 2020,1,1,0,0,0.0,0.0,0.0,12.5,80.0,9.0,2.1,300,1013.2
 2020,1,1,12,0,550.0,750.0,120.0,22.0,40.0,8.0,3.5,310,1012.0
 """
-        clean_df = normalize_nsrdb_raw_text(
-            mock_raw_nsrdb, facility_lat=28.6139, facility_lon=77.2090
-        )
+        clean_df = normalize_nsrdb_raw_text(mock_raw_nsrdb, facility_lat=28.6139, facility_lon=77.2090)
         self.assertEqual(len(clean_df), 2)
         self.assertEqual(clean_df["timestamp"].iloc[0], "2020-01-01 00:00:00+00:00")
         self.assertEqual(clean_df["ghi_w_m2"].iloc[1], 550.0)

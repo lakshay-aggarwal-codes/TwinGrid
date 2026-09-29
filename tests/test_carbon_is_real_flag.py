@@ -8,8 +8,10 @@ from src.digital_twin import DigitalTwin
 
 
 def _write_real_csv(path):
-    rows = [{"timestamp_utc": f"2026-01-01T{h:02d}:00:00Z", "zone": "IN-NO", "carbon_intensity_gco2_per_kwh": 300 + h}
-            for h in range(24)]
+    rows = [
+        {"timestamp_utc": f"2026-01-01T{h:02d}:00:00Z", "zone": "IN-NO", "carbon_intensity_gco2_per_kwh": 300 + h}
+        for h in range(24)
+    ]
     pd.DataFrame(rows).to_csv(path, index=False)
 
 

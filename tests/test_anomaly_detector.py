@@ -84,13 +84,13 @@ class TestAnomalyDetector:
         model = anomaly_detector._build_model()
 
         assert model is not None
-        assert hasattr(model, 'input_shape')
-        assert hasattr(model, 'output_shape')
+        assert hasattr(model, "input_shape")
+        assert hasattr(model, "output_shape")
 
     # ---- data preparation (no training needed) ------------------------
 
     def test_prepare_data_normal_only(self, anomaly_detector, sample_sensor_data):
-        normal_data = sample_sensor_data[sample_sensor_data['anomaly'] == 0].copy()
+        normal_data = sample_sensor_data[sample_sensor_data["anomaly"] == 0].copy()
 
         sequences, labels = anomaly_detector._prepare_data(normal_data, normal_only=True)
 
@@ -156,13 +156,7 @@ class TestAnomalyDetector:
 
     def test_train_custom_params(self, anomaly_detector, sample_sensor_data):
         """Test training with custom parameters."""
-        history = anomaly_detector.train(
-            sample_sensor_data,
-            epochs=3,
-            batch_size=8,
-            validation_split=0.3,
-            patience=5
-        )
+        history = anomaly_detector.train(sample_sensor_data, epochs=3, batch_size=8, validation_split=0.3, patience=5)
 
         assert anomaly_detector._is_trained is True
         assert len(history["loss"]) <= 3  # Should stop at or before 3 epochs

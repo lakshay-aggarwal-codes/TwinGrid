@@ -141,9 +141,7 @@ def compute_whatif(
     max_outlet_c = float("-inf")
     last = None
     for _ in range(n_steps):
-        cooling_mode = (
-            twin.select_cooling_mode(outside_temp, water_stress) if mode == "auto" else CoolingMode(mode)
-        )
+        cooling_mode = twin.select_cooling_mode(outside_temp, water_stress) if mode == "auto" else CoolingMode(mode)
         last = twin.step(
             {
                 "utilisation": utilisation,

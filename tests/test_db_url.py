@@ -8,10 +8,7 @@ from db_url import DEFAULT_DATABASE_URL, auto_create_tables_enabled, normalize_d
 class TestNormalizeDatabaseUrl:
     @pytest.mark.parametrize("scheme", ["postgres", "postgresql"])
     def test_plain_postgres_schemes_get_asyncpg(self, scheme):
-        assert (
-            normalize_database_url(f"{scheme}://u:p@host:5432/db")
-            == "postgresql+asyncpg://u:p@host:5432/db"
-        )
+        assert normalize_database_url(f"{scheme}://u:p@host:5432/db") == "postgresql+asyncpg://u:p@host:5432/db"
 
     def test_already_async_url_is_untouched(self):
         url = "postgresql+asyncpg://u:p@host/db"
@@ -47,7 +44,9 @@ class TestAutoCreateTables:
         monkeypatch.setenv("ENVIRONMENT", "production")
         assert auto_create_tables_enabled() is False
 
-    @pytest.mark.parametrize("value,expected", [("true", True), ("1", True), ("false", False), ("0", False), ("", False)])
+    @pytest.mark.parametrize(
+        "value,expected", [("true", True), ("1", True), ("false", False), ("0", False), ("", False)]
+    )
     def test_explicit_flag_wins_over_environment(self, monkeypatch, value, expected):
         monkeypatch.setenv("ENVIRONMENT", "production" if expected else "development")
         monkeypatch.setenv("AUTO_CREATE_TABLES", value)

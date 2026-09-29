@@ -29,17 +29,22 @@ async def optimize(
     """Run RL optimization. Minimizes J = alpha*W + beta*E + gamma*C. Requires 'operator' role. Rate limited: 10/minute."""
     results, summary = await optimization_service.run_optimization(
         body.alpha, body.beta, body.gamma, body.water_stress, body.hours
-    ) 
+    )
     serialized_results = to_jsonable(results)
     summary = to_jsonable(summary)
     opt_result = await data_repository.save_optimization_result(
         session,
-        alpha=body.alpha, beta=body.beta, gamma=body.gamma,
-        water_stress=body.water_stress, hours=body.hours,
-        mean_pue=summary["mean_pue"], mean_wue=summary["mean_wue"],
+        alpha=body.alpha,
+        beta=body.beta,
+        gamma=body.gamma,
+        water_stress=body.water_stress,
+        hours=body.hours,
+        mean_pue=summary["mean_pue"],
+        mean_wue=summary["mean_wue"],
         mean_cooling_power_kw=summary["mean_cooling_power_kw"],
         total_water_consumed_L=summary["total_water_consumed_L"],
-        total_reward=summary["total_reward"], safety_violations=summary["safety_violations"],
+        total_reward=summary["total_reward"],
+        safety_violations=summary["safety_violations"],
         results_json=serialized_results,
     )
     # Adjusting live cooling-optimization parameters is exactly the kind of
@@ -51,8 +56,11 @@ async def optimize(
         resource_type="optimization_result",
         resource_id=opt_result.id,
         details={
-            "alpha": body.alpha, "beta": body.beta, "gamma": body.gamma,
-            "water_stress": body.water_stress, "hours": body.hours,
+            "alpha": body.alpha,
+            "beta": body.beta,
+            "gamma": body.gamma,
+            "water_stress": body.water_stress,
+            "hours": body.hours,
         },
         request=request,
     )

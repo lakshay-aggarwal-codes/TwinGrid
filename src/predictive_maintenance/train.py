@@ -92,21 +92,27 @@ def main() -> None:
     from datetime import datetime, timezone
 
     metrics_path = MODEL_DIR / "metrics.json"
-    metrics_path.write_text(json.dumps({
-        "trained_at_utc": datetime.now(timezone.utc).isoformat(),
-        "subset": args.subset,
-        "baseline": baseline_metrics,
-        "lstm": lstm_metrics,
-        "mae_improvement_pct": improvement,
-        "beats_baseline": improvement > 0,
-        "dataset_caveat": (
-            "Trained on NASA C-MAPSS -- a run-to-failure degradation PROXY dataset "
-            "(aircraft turbofan engines), used because no public data-centre-hardware "
-            "failure dataset exists. These metrics validate the RUL-prediction "
-            "methodology, not measured data-centre equipment behaviour."
-        ),
-    }, indent=2))
+    metrics_path.write_text(
+        json.dumps(
+            {
+                "trained_at_utc": datetime.now(timezone.utc).isoformat(),
+                "subset": args.subset,
+                "baseline": baseline_metrics,
+                "lstm": lstm_metrics,
+                "mae_improvement_pct": improvement,
+                "beats_baseline": improvement > 0,
+                "dataset_caveat": (
+                    "Trained on NASA C-MAPSS -- a run-to-failure degradation PROXY dataset "
+                    "(aircraft turbofan engines), used because no public data-centre-hardware "
+                    "failure dataset exists. These metrics validate the RUL-prediction "
+                    "methodology, not measured data-centre equipment behaviour."
+                ),
+            },
+            indent=2,
+        )
+    )
     print(f"Saved metrics to {metrics_path}")
 
+
 if __name__ == "__main__":
-    main()  
+    main()

@@ -98,9 +98,7 @@ def _build_windows(values: np.ndarray, seq_len: int) -> np.ndarray:
 def validate(relative_path: str = "realKnownCause/machine_temperature_system_failure.csv") -> dict:
     csv_path = NAB_DATA_DIR / relative_path
     if not csv_path.exists():
-        raise FileNotFoundError(
-            f"{csv_path} not found. Confirm realData/NAB-master/data/{relative_path} exists."
-        )
+        raise FileNotFoundError(f"{csv_path} not found. Confirm realData/NAB-master/data/{relative_path} exists.")
 
     df = pd.read_csv(csv_path, parse_dates=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
     windows = _load_nab_windows(relative_path)
@@ -136,8 +134,11 @@ def validate(relative_path: str = "realKnownCause/machine_temperature_system_fai
 
     model = _build_univariate_autoencoder()
     model.fit(
-        train_windows, train_windows,
-        epochs=30, batch_size=32, validation_split=0.1,
+        train_windows,
+        train_windows,
+        epochs=30,
+        batch_size=32,
+        validation_split=0.1,
         callbacks=[K.callbacks.EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)],
         verbose=0,
     )
@@ -153,9 +154,7 @@ def validate(relative_path: str = "realKnownCause/machine_temperature_system_fai
     # Ground truth per window: 1 if ANY row in that window is inside a
     # labeled anomaly -- same "window contains an anomaly" convention
     # AnomalyDetector._prepare_data uses for the production model.
-    true_labels = np.array(
-        [df["is_anomaly"].iloc[i : i + SEQ_LEN].max() for i in range(len(df) - SEQ_LEN + 1)]
-    )
+    true_labels = np.array([df["is_anomaly"].iloc[i : i + SEQ_LEN].max() for i in range(len(df) - SEQ_LEN + 1)])
 
     return {
         "threshold": threshold,

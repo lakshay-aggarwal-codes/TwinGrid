@@ -188,9 +188,7 @@ class TestScalerHelpers:
         with pytest.raises(ValueError, match="Scaler not fitted"):
             data_pipeline.transform_sequence(np.zeros((12, 10)))
 
-    def test_transform_sequence_preserves_shape_and_matches_training_scale(
-        self, data_pipeline, sample_sensor_data
-    ):
+    def test_transform_sequence_preserves_shape_and_matches_training_scale(self, data_pipeline, sample_sensor_data):
         data_pipeline.prepare(sample_sensor_data)
         raw = sample_sensor_data[data_pipeline.feature_columns].values[:12].astype(np.float32)
 
@@ -209,6 +207,4 @@ class TestScalerHelpers:
         fresh = DataPipeline()
         fresh.load_scaler(path)
         raw = sample_sensor_data[fresh.feature_columns].values[:12].astype(np.float32)
-        np.testing.assert_allclose(
-            fresh.transform_sequence(raw), data_pipeline.transform_sequence(raw), rtol=1e-6
-        )
+        np.testing.assert_allclose(fresh.transform_sequence(raw), data_pipeline.transform_sequence(raw), rtol=1e-6)

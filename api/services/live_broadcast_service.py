@@ -71,7 +71,9 @@ async def _tick() -> dict:
     hour = datetime.now().hour + datetime.now().minute / 60
     utilisation = float(np.clip(0.4 + 0.5 * np.sin((hour - 6) * np.pi / 12), 0, 1))
     outside_temp = 22 + 5 * np.sin(2 * np.pi * (hour - 14) / 24) + random.uniform(-1, 1)
-    _water_stress_state = float(np.clip(_water_stress_state + random.uniform(-_WATER_STRESS_STEP, _WATER_STRESS_STEP), 0, 0.5))
+    _water_stress_state = float(
+        np.clip(_water_stress_state + random.uniform(-_WATER_STRESS_STEP, _WATER_STRESS_STEP), 0, 0.5)
+    )
     water_stress = _water_stress_state
     action = {
         "utilisation": utilisation,

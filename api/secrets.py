@@ -32,7 +32,5 @@ def read_secret(env_var: str) -> str | None:
             with open(file_path, "r", encoding="utf-8") as f:
                 return f.read().strip()
         except OSError as exc:
-            raise RuntimeError(
-                f"{env_var}_FILE is set to {file_path!r} but could not be read: {exc}"
-            ) from exc
+            raise RuntimeError(f"{env_var}_FILE is set to {file_path!r} but could not be read: {exc}") from exc
     return os.getenv(env_var)

@@ -17,7 +17,7 @@ const Index = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
       <DashboardHeader />
       <div className="flex flex-1 overflow-hidden">
         <DashboardSidebar

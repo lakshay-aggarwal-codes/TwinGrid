@@ -99,11 +99,7 @@ The optimized version maintains **100% API compatibility**:
 ```python
 # Original API still works
 twin = DigitalTwin(max_it_power_kw=500.0)
-state = twin.step({
-    "utilisation": 0.8,
-    "outside_temp_C": 25.0,
-    "cooling_mode": "closed_loop"
-})
+state = twin.step({"utilisation": 0.8, "outside_temp_C": 25.0, "cooling_mode": "closed_loop"})
 
 # New batch processing API
 states = twin.step_batch(actions)
@@ -154,7 +150,7 @@ def _compute_water_consumption_fast(cooling_power_kw, evap_rate, outside_temp_C,
 twin = DigitalTwinOptimized(
     enable_logging=False,  # Maximum performance
     max_it_power_kw=500.0,
-    initial_cooling_mode=CoolingMode.CLOSED_LOOP
+    initial_cooling_mode=CoolingMode.CLOSED_LOOP,
 )
 
 # Use batch processing for historical data

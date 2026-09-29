@@ -10,15 +10,11 @@ from starlette.requests import Request
 
 registry = CollectorRegistry()
 
-REQUEST_COUNT = Counter(
-    "http_requests_total", "Total HTTP requests", ["method", "path", "status"], registry=registry
-)
+REQUEST_COUNT = Counter("http_requests_total", "Total HTTP requests", ["method", "path", "status"], registry=registry)
 REQUEST_LATENCY = Histogram(
     "http_request_duration_seconds", "HTTP request latency", ["method", "path"], registry=registry
 )
-MODEL_INFERENCE_COUNT = Counter(
-    "model_inference_total", "Model inference calls", ["model"], registry=registry
-)
+MODEL_INFERENCE_COUNT = Counter("model_inference_total", "Model inference calls", ["model"], registry=registry)
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):
@@ -39,4 +35,3 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
 def render_metrics() -> tuple[bytes, str]:
     return generate_latest(registry), CONTENT_TYPE_LATEST
-    

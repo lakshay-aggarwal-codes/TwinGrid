@@ -54,11 +54,14 @@ class TestAnomalyRoutePersistence:
     @pytest.mark.asyncio
     async def test_alert_is_persisted_with_warning_severity(self, monkeypatch):
         _, saved = await self._call(
-            monkeypatch, _result(score=0.008, alert=True, type="thermal_spike", message="Outlet temperature spike detected")
+            monkeypatch,
+            _result(score=0.008, alert=True, type="thermal_spike", message="Outlet temperature spike detected"),
         )
         assert len(saved) == 1 and saved[0]["severity"] == "WARNING" and saved[0]["alert"] is True
 
     @pytest.mark.asyncio
     async def test_strong_alert_is_persisted_as_critical(self, monkeypatch):
-        _, saved = await self._call(monkeypatch, _result(score=0.05, alert=True, type="unknown", message="Anomaly detected"))
+        _, saved = await self._call(
+            monkeypatch, _result(score=0.05, alert=True, type="unknown", message="Anomaly detected")
+        )
         assert len(saved) == 1 and saved[0]["severity"] == "CRITICAL"

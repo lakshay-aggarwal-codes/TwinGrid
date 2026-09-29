@@ -27,7 +27,7 @@ async def websocket_live(websocket: WebSocket, token: str = Query(..., alias="to
     await websocket.accept()
     manager.connect(websocket)
     try:
-        while True: 
+        while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
         pass

@@ -145,7 +145,7 @@ export default function LiveTwin() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-full bg-background">
       <TwinHeader
         onOpenSearch={() => setSearchOpen(true)}
         liveState={liveState}

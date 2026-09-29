@@ -45,7 +45,8 @@ def load_diurnal_carbon_intensity(zone: str | None = None) -> tuple[np.ndarray, 
         logger.warning(
             "%s not found -- run `python scripts/run_ingestion.py --only carbon_electricity_maps` "
             "to use real carbon-intensity data. Using flat fallback of %.0f gCO2/kWh.",
-            CLEANED_CARBON_PATH, FALLBACK_FLAT_INTENSITY_GCO2_PER_KWH,
+            CLEANED_CARBON_PATH,
+            FALLBACK_FLAT_INTENSITY_GCO2_PER_KWH,
         )
         return np.full(24, FALLBACK_FLAT_INTENSITY_GCO2_PER_KWH), False
 
@@ -68,12 +69,12 @@ def load_diurnal_carbon_intensity(zone: str | None = None) -> tuple[np.ndarray, 
         else:
             missing_hours.append(hour)
     if missing_hours:
-        logger.warning(
-            "No real data for hours %s -- using flat fallback for those hours only.", missing_hours
-        )
+        logger.warning("No real data for hours %s -- using flat fallback for those hours only.", missing_hours)
 
     logger.info(
         "Loaded real diurnal carbon intensity: min=%.0f max=%.0f mean=%.0f gCO2/kWh",
-        intensity.min(), intensity.max(), intensity.mean(),
+        intensity.min(),
+        intensity.max(),
+        intensity.mean(),
     )
     return intensity, True

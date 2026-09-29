@@ -56,7 +56,7 @@ SECRET_KEY = read_secret("JWT_SECRET_KEY")
 if not SECRET_KEY:
     raise RuntimeError(
         "JWT_SECRET_KEY (or JWT_SECRET_KEY_FILE) is not set. This app will not start "
-        "without it -- generate one with: python -c \"import secrets; print(secrets.token_hex(32))\" "
+        'without it -- generate one with: python -c "import secrets; print(secrets.token_hex(32))" '
         "and set it in your .env / deployment environment, or point JWT_SECRET_KEY_FILE at a "
         "secrets-manager-mounted file. There is no default: a hardcoded fallback here would mean "
         "every deployment that forgets to set this variable shares the same, publicly-visible "
@@ -296,6 +296,7 @@ def require_operator(user: Annotated[User, Depends(get_current_user)]) -> User:
 # -----------------------------------------------------------------------------
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
 
 @router.post("/register", response_model=UserResponse)
 @limiter.limit("5/hour")

@@ -21,10 +21,9 @@ logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CMAPSS_DIR = REPO_ROOT / "realData" / "CMAPSSData"
 
-_COLUMN_NAMES = (
-    ["unit_number", "time_in_cycles", "op_setting_1", "op_setting_2", "op_setting_3"]
-    + [f"sensor_{i}" for i in range(1, 22)]
-)
+_COLUMN_NAMES = ["unit_number", "time_in_cycles", "op_setting_1", "op_setting_2", "op_setting_3"] + [
+    f"sensor_{i}" for i in range(1, 22)
+]
 
 # Standard piecewise-linear RUL assumption used throughout the C-MAPSS
 # literature: engines run near-healthy for most of their life and degrade

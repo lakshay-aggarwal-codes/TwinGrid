@@ -72,26 +72,25 @@ def _compute_it_power_fast(utilisation: float, max_it_power_kw: float, idle_powe
 ```python
 @jit(nopython=True, cache=True)
 def _compute_outlet_temp_fast(
-    inlet_temp_C: float, it_power_kw: float, airflow_m3_s: float,
-    air_density: float, specific_heat: float
+    inlet_temp_C: float, it_power_kw: float, airflow_m3_s: float, air_density: float, specific_heat: float
 ) -> float:
     """Fast outlet temperature computation using JIT compilation.
-    
+
     Physics Model:
         Q = ṁ × cp × ΔT
         ΔT = Q / (ṁ × cp)
         T_outlet = T_inlet + ΔT
-    
+
     Args:
         inlet_temp_C: Server inlet air temperature (°C)
         it_power_kw: IT equipment power consumption (kW)
         airflow_m3_s: Air flow rate through servers (m³/s)
         air_density: Air density at operating conditions (kg/m³)
         specific_heat: Specific heat capacity of air (J/kg·K)
-    
+
     Returns:
         Server outlet air temperature in Celsius.
-        
+
     Example:
         >>> _compute_outlet_temp_fast(20.0, 400.0, 8.0, 1.2, 1005.0)
         35.0
@@ -184,10 +183,10 @@ def __init__(
     air_flow_m3_s: float = 8.0,
     initial_cooling_mode: CoolingMode = CoolingMode.CLOSED_LOOP,
     start_time: datetime | None = None,
-    enable_logging: bool = True
+    enable_logging: bool = True,
 ) -> None:
     """Initialise the optimized digital twin.
-    
+
     Args:
         max_it_power_kw: Maximum IT power at 100% utilisation (kW).
         idle_power_fraction: Fraction of max power at 0% utilisation (default 0.4).

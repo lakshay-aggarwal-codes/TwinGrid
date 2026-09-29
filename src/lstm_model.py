@@ -31,11 +31,10 @@ def _get_tf():
     if _tf is None:
         try:
             import tensorflow as tf
+
             _tf = tf
         except ImportError as e:
-            raise ImportError(
-                "TensorFlow is required. Install with: pip install tensorflow"
-            ) from e
+            raise ImportError("TensorFlow is required. Install with: pip install tensorflow") from e
     return _tf
 
 
@@ -50,11 +49,10 @@ def _get_plt():
     if _plt is None:
         try:
             import matplotlib.pyplot as plt
+
             _plt = plt
         except ImportError as e:
-            raise ImportError(
-                "Matplotlib is required. Install with: pip install matplotlib"
-            ) from e
+            raise ImportError("Matplotlib is required. Install with: pip install matplotlib") from e
     return _plt
 
 
@@ -64,11 +62,10 @@ def _get_sklearn():
     if _sklearn is None:
         try:
             from sklearn.preprocessing import MinMaxScaler
+
             _sklearn = {"MinMaxScaler": MinMaxScaler}
         except ImportError as e:
-            raise ImportError(
-                "scikit-learn is required. Install with: pip install scikit-learn"
-            ) from e
+            raise ImportError("scikit-learn is required. Install with: pip install scikit-learn") from e
     return _sklearn
 
 
@@ -78,11 +75,10 @@ def _get_joblib():
     if _joblib is None:
         try:
             import joblib
+
             _joblib = joblib
         except ImportError as e:
-            raise ImportError(
-                "joblib is required. Install with: pip install joblib"
-            ) from e
+            raise ImportError("joblib is required. Install with: pip install joblib") from e
     return _joblib
 
 
@@ -199,9 +195,7 @@ class DataPipeline:
         for col in cols_to_check:
             mean, std = df[col].mean(), df[col].std()
             if std > 0:
-                mask &= (df[col] >= mean - self._outlier_std * std) & (
-                    df[col] <= mean + self._outlier_std * std
-                )
+                mask &= (df[col] >= mean - self._outlier_std * std) & (df[col] <= mean + self._outlier_std * std)
         df = df[mask]
 
         self._df = df.reset_index(drop=True)
@@ -249,9 +243,7 @@ class DataPipeline:
         # Time-based split
         n = len(data) - self._seq_len - self._horizon + 1
         if n <= 0:
-            raise ValueError(
-                f"Not enough data for seq_len={self._seq_len}, horizon={self._horizon}"
-            )
+            raise ValueError(f"Not enough data for seq_len={self._seq_len}, horizon={self._horizon}")
         split_idx = int(n * self._train_ratio)
 
         # Create sequences for full data first
@@ -269,13 +261,14 @@ class DataPipeline:
         X_train_flat = X_train.reshape(-1, n_feat)
         self._scaler.fit(X_train_flat)
         X_train = self._scaler.transform(X_train_flat).reshape(n_train, seq_len, n_feat)
-        X_test = self._scaler.transform(X_test.reshape(-1, n_feat)).reshape(
-            X_test.shape[0], seq_len, n_feat
-        )
+        X_test = self._scaler.transform(X_test.reshape(-1, n_feat)).reshape(X_test.shape[0], seq_len, n_feat)
 
         logger.info(
             "Prepared X_train %s, y_train %s, X_test %s, y_test %s",
-            X_train.shape, y_train.shape, X_test.shape, y_test.shape,
+            X_train.shape,
+            y_train.shape,
+            X_test.shape,
+            y_test.shape,
         )
         return X_train, y_train, X_test, y_test
 
@@ -411,9 +404,9 @@ class ThermalForecaster:
             batch_size=batch_size,
             validation_split=validation_split,
             patience=patience,
-            checkpoint_dir=checkpoint_dir
+            checkpoint_dir=checkpoint_dir,
         )
-        
+
         try:
             if X_train.ndim != 3 or X_train.shape[1:] != self._input_shape:
                 error_msg = f"X_train must be (n, 12, 10), got {X_train.shape}"
@@ -437,10 +430,10 @@ class ThermalForecaster:
                     log_training_progress(
                         "ThermalForecaster",
                         epoch=epoch + 1,
-                        loss=logs.get('loss', 0),
-                        val_loss=logs.get('val_loss', 0),
-                        mae=logs.get('mae', 0),
-                        val_mae=logs.get('val_mae', 0)
+                        loss=logs.get("loss", 0),
+                        val_loss=logs.get("val_loss", 0),
+                        mae=logs.get("mae", 0),
+                        val_mae=logs.get("val_mae", 0),
                     )
 
             callbacks: list[Any] = [
@@ -475,11 +468,13 @@ class ThermalForecaster:
             )
             self._history = history.history
             self._is_trained = True
-            
+
             best_val_loss = min(history.history["val_loss"])
             logger.info("Training complete. Best val_loss: %.6f", best_val_loss)
-            
-            log_function_exit("ThermalForecaster.train", result=f"Training completed with best val_loss: {best_val_loss:.6f}")
+
+            log_function_exit(
+                "ThermalForecaster.train", result=f"Training completed with best val_loss: {best_val_loss:.6f}"
+            )
             return dict(self._history)
         except Exception as e:
             log_error("ThermalForecaster.train", e)

@@ -109,9 +109,7 @@ def resolve_aqueduct_source(source_path: Optional[Path] = None) -> Path:
     if matches:
         return matches[0]
 
-    raise FileNotFoundError(
-        f"Aqueduct 4.0 baseline annual CSV not found under {real_data_dir}"
-    )
+    raise FileNotFoundError(f"Aqueduct 4.0 baseline annual CSV not found under {real_data_dir}")
 
 
 def normalize_aqueduct_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -131,32 +129,25 @@ def normalize_aqueduct_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Cleaned, normalized DataFrame.
     """
-    validate_required_columns(
-        df, SELECTED_COLUMNS, source_name="Aqueduct 4.0 Water Stress"
-    )
+    validate_required_columns(df, SELECTED_COLUMNS, source_name="Aqueduct 4.0 Water Stress")
 
     clean_df = df[SELECTED_COLUMNS].copy()
 
     # Normalize text fields
     text_cols = ["string_id", "gid_1", "gid_0", "name_0", "name_1"]
     for col in text_cols:
-        clean_df[col] = clean_df[col].apply(
-            lambda x: str(x).strip() if pd.notna(x) and str(x).strip() != "nan" else ""
-        )
+        clean_df[col] = clean_df[col].apply(lambda x: str(x).strip() if pd.notna(x) and str(x).strip() != "nan" else "")
 
     # Label columns (strip whitespace, fill empty)
     label_cols = [c for c in clean_df.columns if c.endswith("_label")]
     for col in label_cols:
-        clean_df[col] = clean_df[col].apply(
-            lambda x: str(x).strip() if pd.notna(x) else "No Data"
-        )
+        clean_df[col] = clean_df[col].apply(lambda x: str(x).strip() if pd.notna(x) else "No Data")
 
     # Numeric score and raw columns: replace sentinel -9999.0 with NaN
     numeric_cols = [
         c
         for c in clean_df.columns
-        if any(c.endswith(s) for s in ["_raw", "_score", "_cat", "_id", "_km2"])
-        and c != "string_id"
+        if any(c.endswith(s) for s in ["_raw", "_score", "_cat", "_id", "_km2"]) and c != "string_id"
     ]
     for col in numeric_cols:
         clean_df[col] = pd.to_numeric(clean_df[col], errors="coerce")
@@ -169,9 +160,7 @@ def normalize_aqueduct_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     # Validate score range (should be between 0.0 and 5.0 where present)
     for score_col in ["bws_score", "bwd_score", "iav_score", "sev_score"]:
-        validate_numeric_range(
-            clean_df, score_col, min_value=0.0, max_value=5.0, source_name="Aqueduct"
-        )
+        validate_numeric_range(clean_df, score_col, min_value=0.0, max_value=5.0, source_name="Aqueduct")
 
     # Add source provenance column
     clean_df["data_source"] = "wri_aqueduct_4.0"
@@ -230,9 +219,7 @@ def ingest_aqueduct(
         logger=logger,
     )
 
-    countries_count = (
-        sorted_df[sorted_df["name_0"] != ""]["name_0"].nunique()
-    )
+    countries_count = sorted_df[sorted_df["name_0"] != ""]["name_0"].nunique()
     logger.info(
         f"Aqueduct ingestion complete: {len(df_raw):,} raw rows -> "
         f"{len(sorted_df):,} cleaned rows covering {countries_count} countries."

@@ -104,7 +104,9 @@ def build_pinn_model(
     outputs = tf.keras.layers.Dense(output_dim, activation=None, name="outputs")(x)
     # Reasonable output ranges: outlet 20–50°C, water 0–500 L, pue 1–3
     outlet = tf.keras.layers.Lambda(lambda t: 20.0 + 30.0 * tf.nn.sigmoid(t[..., 0:1]), name="outlet_temp")(outputs)
-    water = tf.keras.layers.Lambda(lambda t: 500.0 * tf.nn.softplus(t[..., 1:2]) / tf.math.log(2.0 + 1.0), name="water_consumed")(outputs)
+    water = tf.keras.layers.Lambda(
+        lambda t: 500.0 * tf.nn.softplus(t[..., 1:2]) / tf.math.log(2.0 + 1.0), name="water_consumed"
+    )(outputs)
     pue = tf.keras.layers.Lambda(lambda t: 1.0 + 2.0 * tf.nn.sigmoid(t[..., 2:3]), name="pue")(outputs)
     out_concat = tf.keras.layers.Concatenate(axis=-1, name="prediction")([outlet, water, pue])
     model = tf.keras.Model(inputs=inputs, outputs=out_concat)
@@ -141,12 +143,15 @@ class PhysicsInformedNN:
         cooling_mode_encoded: tf.Tensor,
         chilled_water_temp: tf.Tensor,
     ) -> tf.Tensor:
-        return tf.concat([
-            tf.reshape(utilisation, (-1, 1)),
-            tf.reshape(outside_temp, (-1, 1)),
-            tf.reshape(cooling_mode_encoded, (-1, 4)),
-            tf.reshape(chilled_water_temp, (-1, 1)),
-        ], axis=-1)
+        return tf.concat(
+            [
+                tf.reshape(utilisation, (-1, 1)),
+                tf.reshape(outside_temp, (-1, 1)),
+                tf.reshape(cooling_mode_encoded, (-1, 4)),
+                tf.reshape(chilled_water_temp, (-1, 1)),
+            ],
+            axis=-1,
+        )
 
     def _physics_losses(
         self,
@@ -224,9 +229,9 @@ class PhysicsInformedNN:
             y_shape=y.shape,
             epochs=epochs,
             batch_size=batch_size,
-            validation_split=validation_split
+            validation_split=validation_split,
         )
-        
+
         try:
             n = len(x)
             if n == 0:
@@ -254,12 +259,16 @@ class PhysicsInformedNN:
                 pred_val = self._model(x_val, training=False)
                 L_data_val = float(tf.reduce_mean(tf.square(pred_val - y_val)))
                 L_p1, L_p2, L_p3 = self._physics_losses(x_val, pred_val)
-                val_loss = L_data_val + self.physics_weight * (float(L_p1) + float(L_p2) + float(L_p3)) if len(val_idx) > 0 else mean_loss
+                val_loss = (
+                    L_data_val + self.physics_weight * (float(L_p1) + float(L_p2) + float(L_p3))
+                    if len(val_idx) > 0
+                    else mean_loss
+                )
                 history["loss"].append(mean_loss)
                 history["val_loss"].append(val_loss)
                 history["L_data"].append(metrics["L_data"])
                 history["L_physics_1"].append(metrics["L_physics_1"])
-                
+
                 # Log training progress
                 log_training_progress(
                     "PINN",
@@ -267,15 +276,19 @@ class PhysicsInformedNN:
                     loss=mean_loss,
                     val_loss=val_loss,
                     L_data=metrics["L_data"],
-                    L_physics_1=metrics["L_physics_1"]
+                    L_physics_1=metrics["L_physics_1"],
                 )
-                
+
                 if verbose and (epoch + 1) % max(1, epochs // 10) == 0:
                     logger.info(
                         "PINN epoch %d loss=%.4f val_loss=%.4f L_data=%.4f L_p1=%.4f",
-                        epoch + 1, mean_loss, val_loss, metrics["L_data"], metrics["L_physics_1"],
+                        epoch + 1,
+                        mean_loss,
+                        val_loss,
+                        metrics["L_data"],
+                        metrics["L_physics_1"],
                     )
-            
+
             log_function_exit("PINN.fit", result=f"Training completed for {epochs} epochs")
             return history
         except Exception as e:
@@ -352,11 +365,7 @@ def generate_training_data_from_twin(
         outlet = state.server_outlet_temp_C
         it_power = state.it_power_kw
         pue = state.pue
-        consumed_this_step = (
-            state.wue * it_power * (INTERVAL_MINUTES / 60.0)
-            if state.wue and it_power > 0.01
-            else 0.0
-        )
+        consumed_this_step = state.wue * it_power * (INTERVAL_MINUTES / 60.0) if state.wue and it_power > 0.01 else 0.0
         x_list.append([utilisation, outside_temp] + list(mode_onehot) + [chilled_water])
         y_list.append([outlet, consumed_this_step, pue])
 
