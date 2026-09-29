@@ -7,13 +7,15 @@ import { LiveMonitor } from '@/components/LiveMonitor';
 import { SimulationTab } from '@/components/SimulationTab';
 import { WhatIfTab } from '@/components/WhatIfTab';
 import { SustainabilityTab } from '@/components/SustainabilityTab';
-import { useSimulation } from '@/hooks/useSimulation';
+import { usePageTitle } from '@/hooks/usePageTitle';
+import { useSharedSimulation } from '@/hooks/simulationContext';
 
 const Index = () => {
+  usePageTitle('TwinGrid — Legacy Dashboard');
   const {
     config, setConfig, kpi, anomalyScore, latestAnomaly, events, hourlyData, simRunning,
     runSimulation, liveState, equipmentHealth,
-  } = useSimulation();
+  } = useSharedSimulation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (

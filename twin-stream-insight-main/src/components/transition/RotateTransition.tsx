@@ -24,6 +24,7 @@ export function RotateTransition({ children }: { children: ReactNode }) {
   const busy = useRef(false);
   // Direction of the *arriving* half; set by the leaving half.
   const arriveFrom = useRef<number>(0);
+  const firstRender = useRef(true);
 
   const rotateNavigate = useCallback<RotateNavigate>(
     (to, direction = 1) => {
@@ -53,10 +54,25 @@ export function RotateTransition({ children }: { children: ReactNode }) {
     const el = pageRef.current;
     if (!el) return;
     const duration = motionDuration(MOTION.pageRotate);
+    // Stage 17: after a real navigation, move keyboard/screen-reader focus to
+    // the new page's heading (not on the very first load, which would steal
+    // focus from the browser's own starting point).
+    const focusHeading = () => {
+      if (firstRender.current) {
+        firstRender.current = false;
+        return;
+      }
+      const h1 = el.querySelector("h1");
+      if (h1) {
+        h1.setAttribute("tabindex", "-1");
+        h1.focus({ preventScroll: true });
+      }
+    };
     const from = arriveFrom.current || -90;
     arriveFrom.current = 0;
     if (duration === 0) {
       busy.current = false;
+      focusHeading();
       return;
     }
     const tween = gsap.fromTo(
@@ -72,6 +88,7 @@ export function RotateTransition({ children }: { children: ReactNode }) {
         clearProps: "transform",
         onComplete: () => {
           busy.current = false;
+          focusHeading();
         },
       },
     );

@@ -12,7 +12,8 @@ import { TwinScene, type FocusRequest } from "@/three/TwinScene";
 import { SceneErrorBoundary } from "@/three/SceneErrorBoundary";
 import { MOTION, motionDuration } from "@/three/motion";
 import type { Report } from "@/reports/reports";
-import { useSimulation } from "@/hooks/useSimulation";
+import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSharedSimulation } from "@/hooks/simulationContext";
 import type { VisualizationMode } from "@/three/visualizationModes";
 
 type LeftPanel = "none" | "simulation" | "operations" | "incidents";
@@ -50,6 +51,7 @@ type LeftPanel = "none" | "simulation" | "operations" | "incidents";
  * Sustainability legend) and all funnel into this single viewer.
  */
 export default function LiveTwin() {
+  usePageTitle("TwinGrid — Live Twin");
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [mode, setMode] = useState<VisualizationMode>("physical");
@@ -59,7 +61,7 @@ export default function LiveTwin() {
   // Each panel builds its own report from data it already holds and hands it
   // up here; a report is a snapshot, so it is never recomputed while open.
   const [report, setReport] = useState<Report | null>(null);
-  const { liveState, config, anomalyScore, latestAnomaly, events } = useSimulation();
+  const { liveState, config, anomalyScore, latestAnomaly, events } = useSharedSimulation();
 
   // Stage 14: panel open/close motion. `leftPanel` is what the header says
   // (immediate); `shownPanel` is what is mounted, which lags on close so the
