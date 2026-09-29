@@ -11,6 +11,8 @@
 
 # API & server
 fastapi>=0.115,<1.0
+pydantic>=2.0,<3
+starlette>=0.37,<2
 uvicorn>=0.30,<1.0
 websockets>=12.0
 
@@ -18,6 +20,7 @@ websockets>=12.0
 pandas>=2.2,<4
 numpy>=1.26,<3
 scikit-learn>=1.4,<2
+joblib>=1.4,<2
 tensorflow>=2.18,<3
 
 # RL
