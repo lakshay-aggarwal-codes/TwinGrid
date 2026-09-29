@@ -20,14 +20,14 @@ jobs:
       - name: Set up Python (matches runtime.txt)
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.12.10"
           cache: "pip"
 
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install -r tests/test_requirements.txt
-          pip install ruff
+          pip install ruff==0.6.9
 
       - name: Lint (ruff)
         run: ruff check .
@@ -52,7 +52,7 @@ jobs:
       - name: Set up Node (Vite 7 needs >= 20.19 / 22.12)
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "22.20.0"
           cache: "npm"
           cache-dependency-path: twin-stream-insight-main/package-lock.json
 
@@ -93,7 +93,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "22.20.0"
           cache: "npm"
           cache-dependency-path: twin-stream-insight-main/package-lock.json
 
