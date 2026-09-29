@@ -61,7 +61,7 @@ export function SustainabilityTab({ liveState, equipmentHealth }: Props) {
           )}
         </CardContent>
       </Card>
- 
+
       {equipmentHealth?.available ? (
         <Card>
           <CardHeader>

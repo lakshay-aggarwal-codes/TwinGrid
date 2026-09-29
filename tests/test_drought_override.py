@@ -64,9 +64,9 @@ class TestDataCentreEnvDroughtOverride:
         for mode_action in [0.0, 0.33, 0.66, 1.0]:  # sweeps all 4 discrete modes
             action = np.array([0.5, mode_action], dtype=np.float32)
             _, mode = env._action_to_control(action)
-            assert mode == DROUGHT_OVERRIDE_MODE, (
-                f"Expected override to {DROUGHT_OVERRIDE_MODE} regardless of agent action {mode_action}, got {mode}"
-            )
+            assert (
+                mode == DROUGHT_OVERRIDE_MODE
+            ), f"Expected override to {DROUGHT_OVERRIDE_MODE} regardless of agent action {mode_action}, got {mode}"
 
     def test_no_override_below_threshold(self):
         env = DataCentreEnv(water_stress=0.1)

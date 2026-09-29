@@ -1,0 +1,13 @@
+[build]
+  base = "twin-stream-insight-main"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback so client-side routes don't 404
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

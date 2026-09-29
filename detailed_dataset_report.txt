@@ -743,48 +743,48 @@ SIZE: 1.91 MB
 COLUMNS: 90
   - Benchmark
   - Benchmark Version
-  - Hardware Vendor	
+  - Hardware Vendor
   - System
-  - Nodes	
-  - Form Factor	
-  - Test Method	
+  - Nodes
+  - Form Factor
+  - Test Method
   - Result
-  - ssj_ops @ 100% of target load	
-  - ssj_ops @ 90% of target load	
-  - ssj_ops @ 80% of target load	
-  - ssj_ops @ 70% of target load	
-  - ssj_ops @ 60% of target load	
-  - ssj_ops @ 50% of target load	
-  - ssj_ops @ 40% of target load	
-  - ssj_ops @ 30% of target load	
-  - ssj_ops @ 20% of target load	
-  - ssj_ops @ 10% of target load	
-  - Average watts @ 100% of target load	
-  - Average watts @ 90% of target load	
-  - Average watts @ 80% of target load	
-  - Average watts @ 70% of target load	
-  - Average watts @ 60% of target load	
-  - Average watts @ 50% of target load	
-  - Average watts @ 40% of target load	
-  - Average watts @ 30% of target load	
-  - Average watts @ 20% of target load	
-  - Average watts@10% of target load	
-  - Average watts @ active idle	
-  - Performance/power @ 100% of target load	
-  - Performance/power @ 90% of target load	
-  - Performance/power @ 80% of target load	
-  - Performance/power @ 70% of target load	
-  - Performance/power @ 60% of target load	
-  - Performance/power @ 50% of target load	
-  - Performance/power @ 40% of target load	
-  - Performance/power @ 30% of target load	
-  - Performance/power @ 20% of target load	
-  - Performance/power @ 10% of target load	
+  - ssj_ops @ 100% of target load
+  - ssj_ops @ 90% of target load
+  - ssj_ops @ 80% of target load
+  - ssj_ops @ 70% of target load
+  - ssj_ops @ 60% of target load
+  - ssj_ops @ 50% of target load
+  - ssj_ops @ 40% of target load
+  - ssj_ops @ 30% of target load
+  - ssj_ops @ 20% of target load
+  - ssj_ops @ 10% of target load
+  - Average watts @ 100% of target load
+  - Average watts @ 90% of target load
+  - Average watts @ 80% of target load
+  - Average watts @ 70% of target load
+  - Average watts @ 60% of target load
+  - Average watts @ 50% of target load
+  - Average watts @ 40% of target load
+  - Average watts @ 30% of target load
+  - Average watts @ 20% of target load
+  - Average watts@10% of target load
+  - Average watts @ active idle
+  - Performance/power @ 100% of target load
+  - Performance/power @ 90% of target load
+  - Performance/power @ 80% of target load
+  - Performance/power @ 70% of target load
+  - Performance/power @ 60% of target load
+  - Performance/power @ 50% of target load
+  - Performance/power @ 40% of target load
+  - Performance/power @ 30% of target load
+  - Performance/power @ 20% of target load
+  - Performance/power @ 10% of target load
   - # Cores
-  - # Chips 
-  - # Cores Per Chip 
+  - # Chips
+  - # Cores Per Chip
   - # Threads Per Core
-  - Processor 
+  - Processor
   - Processor MHz
   - Processor Characteristics
   - CPU(s) Orderable
@@ -797,28 +797,28 @@ COLUMNS: 90
   - Operating System Version
   - File System
   - DIMMS
-  - Memory Description	
-  - Network Controller	
-  - NICs Connected	
-  - NICs enabled (firmware)	
-  - NICs enabled (OS)	
+  - Memory Description
+  - Network Controller
+  - NICs Connected
+  - NICs enabled (firmware)
+  - NICs enabled (OS)
   - Network speed
-  - JVM Vendor 
-  - JVM Version 
-  - JVM Instances 
-  - JVM Affinity 
-  - JVM Bitness 
+  - JVM Vendor
+  - JVM Version
+  - JVM Instances
+  - JVM Affinity
+  - JVM Bitness
   - JVM Options
-  - Initial Heap 
-  - Max Heap 
-  - System Source 
-  - System Designation 
-  - Power Provisioning 
-  - Disk Drive 
-  - Disk Controller 
-  - Power Management 
-  - Power Supply Details 
-  - Power Supplies Installed 
+  - Initial Heap
+  - Max Heap
+  - System Source
+  - System Designation
+  - Power Provisioning
+  - Disk Drive
+  - Disk Controller
+  - Power Management
+  - Power Supply Details
+  - Power Supplies Installed
   - Power Supply Rating (watts)
   - HW Avail
   - SW Avail
@@ -827,7 +827,7 @@ COLUMNS: 90
   - Test Sponsor
   - Test Date
   - Published
-  - Updated 
+  - Updated
   - Disclosure
   - Disclosure URL
   - Disclosures
@@ -1373,7 +1373,7 @@ COLUMNS: 1
 SAMPLE:
                                                                                                                                                                                                                                                                                                                                                                                                                                    Unnamed: 0
                                                                                                                                                                                                                                                                                                                                                                                                                                         About
-This file contains tabular rankings of latest water risk data for the current baseline (1979-2019) and future projections (2030, 2050, and 2080). The future projections were created using CMIP6 climate forcings based on three future scenarios: optimistic, business-as-usual, and pessimistic. Data are presented at three scales: country, and state/province. To learn more about the data sets used, please see the citations below. 
+This file contains tabular rankings of latest water risk data for the current baseline (1979-2019) and future projections (2030, 2050, and 2080). The future projections were created using CMIP6 climate forcings based on three future scenarios: optimistic, business-as-usual, and pessimistic. Data are presented at three scales: country, and state/province. To learn more about the data sets used, please see the citations below.
                                                                                                                                                                                                                                                                                                                                                                                                                                           NaN
                                                                                                                                                                                                                                                                                                                                                                                                                                           NaN
                                                                                                                                                                                                                                                                                                                                                                                                                                      Contents
@@ -1480,7 +1480,7 @@ COLUMNS: 1
 SAMPLE:
                                                                                                                                                                                                                                                                                                                                                                                                                 Unnamed: 0
                                                                                                                                                                                                                                                                                                                                                                                                                      About
-This file contains the latest Aqueduct water risk data for the current baseline (1979-2019) and future projections (2030, 2050, and 2080). The future projections were created using CMIP6 climate forcings based on three future scenarios: optimistic, business-as-usual, and pessimistic. Data are presented at the HydroBASINS Level 6 scale. To learn more about the data sets used, please see the citations below. 
+This file contains the latest Aqueduct water risk data for the current baseline (1979-2019) and future projections (2030, 2050, and 2080). The future projections were created using CMIP6 climate forcings based on three future scenarios: optimistic, business-as-usual, and pessimistic. Data are presented at the HydroBASINS Level 6 scale. To learn more about the data sets used, please see the citations below.
                                                                                                                                                                                                                                                                                                                                                                                                                        NaN
                                                                                                                                                                                                                                                                                                                                                                                                                        NaN
                                                                                                                                                                                                                                                                                                                                                                                                                   Contents

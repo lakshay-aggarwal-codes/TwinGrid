@@ -121,7 +121,7 @@ outlet_temps = twin.compute_batch_outlet_temp(inlets, powers)
 def _compute_it_power_fast(utilisation, max_it_power_kw, idle_power_fraction):
     # JIT-compiled for maximum speed
 
-@jit(nopython=True, cache=True) 
+@jit(nopython=True, cache=True)
 def _compute_outlet_temp_fast(inlet_temp_C, it_power_kw, airflow_m3_s, air_density, specific_heat):
     # Vectorized thermodynamic calculation
 

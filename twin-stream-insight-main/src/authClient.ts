@@ -10,7 +10,7 @@ interface CachedToken {
 
 let cached: CachedToken | null = null;
 let inFlight: Promise<string> | null = null;
- 
+
 const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
 async function login(): Promise<string> {
@@ -41,10 +41,10 @@ function decodeExpiryMs(token: string): number {
     if (typeof payload.exp === 'number') return payload.exp * 1000;
   } catch {
     // fall through
-  } 
+  }
   return Date.now() + 10 * 60 * 1000;
 }
- 
+
 export async function getToken(): Promise<string> {
   const now = Date.now();
   if (cached && cached.expiresAtMs - REFRESH_MARGIN_MS > now) {
