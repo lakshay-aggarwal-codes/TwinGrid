@@ -12,6 +12,7 @@ from typing import Any
 
 import requests
 
+from api.services.webhook_security import WebhookURLError, validate_webhook_url
 from src.webhook_registry import list_subscribers
 
 logger = logging.getLogger(__name__)
@@ -21,9 +22,14 @@ WEBHOOK_TIMEOUT_SECONDS = 5
 
 def _post_one(url: str, payload: dict[str, Any]) -> None:
     try:
-        resp = requests.post(url, json=payload, timeout=WEBHOOK_TIMEOUT_SECONDS)
+        # Re-validate at send time: DNS can change after registration.
+        validate_webhook_url(url)
+        # Redirects are refused so a public URL can't bounce us to an internal one.
+        resp = requests.post(url, json=payload, timeout=WEBHOOK_TIMEOUT_SECONDS, allow_redirects=False)
         if resp.status_code >= 400:
             logger.warning("Webhook %s returned %d", url, resp.status_code)
+    except WebhookURLError as e:
+        logger.warning("Webhook %s blocked: %s", url, e)
     except requests.RequestException as e:
         logger.warning("Webhook %s failed: %s", url, e)
 

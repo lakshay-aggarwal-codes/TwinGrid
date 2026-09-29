@@ -60,8 +60,14 @@ def get_twin() -> DigitalTwin:
     return _twin
 
 
-def compute_state(utilisation: float, outside_temp: float, water_stress: float, mode: str) -> dict[str, Any]:
-    twin = get_twin()
+def compute_state(
+    utilisation: float, outside_temp: float, water_stress: float, mode: str, *, live: bool = True
+) -> dict[str, Any]:
+    """One step of the twin. ``live=True`` advances the shared live twin (the
+    one the WebSocket stream shows); ``live=False`` uses a throwaway twin so
+    read-only callers (benchmark, ESG report) never disturb the live feed.
+    Raises ValueError for an unknown cooling mode."""
+    twin = get_twin() if live else DigitalTwin()
     action: dict[str, Any] = {
         "utilisation": utilisation,
         "outside_temp_C": outside_temp,
@@ -73,7 +79,7 @@ def compute_state(utilisation: float, outside_temp: float, water_stress: float, 
         try:
             cooling_mode = CoolingMode(mode)
         except ValueError:
-            cooling_mode = CoolingMode.CLOSED_LOOP
+            raise ValueError(f"Unknown cooling mode: {mode!r}") from None
     action["cooling_mode"] = cooling_mode
     state = twin.step(action)
     return {**state.to_dict(), "carbon_data_is_real": twin.carbon_data_is_real}

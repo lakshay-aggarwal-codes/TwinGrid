@@ -179,6 +179,35 @@ async def get_active_refresh_token(session: AsyncSession, plaintext: str) -> Opt
     return token
 
 
+async def revoke_descendants_if_reused(session: AsyncSession, plaintext: str) -> bool:
+    """Reuse detection. A refresh token that was already *rotated* (revoked and
+    replaced by a successor) is being presented again -- either the legitimate
+    client or an attacker holds a stale copy, and we can't tell which. Revoke
+    every token that descends from it so neither side keeps a working session.
+
+    Tokens revoked by /auth/logout have no successor and are NOT treated as
+    reuse (replaying a logout is harmless). Returns True if a chain was revoked.
+    """
+    result = await session.execute(
+        select(RefreshToken).where(RefreshToken.token_hash == _hash_refresh_token(plaintext))
+    )
+    token = result.scalar_one_or_none()
+    if token is None or token.revoked_at is None or token.replaced_by_id is None:
+        return False
+    now = datetime.now(timezone.utc)
+    next_id, seen = token.replaced_by_id, {token.id}
+    while next_id is not None and next_id not in seen:  # `seen` guards against a cycle
+        seen.add(next_id)
+        successor = await session.get(RefreshToken, next_id)
+        if successor is None:
+            break
+        if successor.revoked_at is None:
+            successor.revoked_at = now
+        next_id = successor.replaced_by_id
+    await session.flush()
+    return True
+
+
 async def rotate_refresh_token(session: AsyncSession, old_token: RefreshToken) -> str:
     """Revoke ``old_token`` and issue a fresh one for the same user.
 
@@ -373,6 +402,10 @@ async def refresh(
     module docstring's "Refresh tokens" section)."""
     existing = await get_active_refresh_token(session, body.refresh_token)
     if existing is None:
+        if await revoke_descendants_if_reused(session, body.refresh_token):
+            # get_db rolls back when the request raises, which would undo the
+            # revocation -- commit it explicitly before responding 401.
+            await session.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid, expired, or already-used refresh token",

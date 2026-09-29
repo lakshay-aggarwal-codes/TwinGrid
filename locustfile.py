@@ -1,13 +1,31 @@
-from locust import HttpUser, between, task
+import os
+
+import requests
+from locust import HttpUser, between, events, task
+
+TOKEN = None
+
+
+@events.test_start.add_listener
+def login_once(environment, **kwargs):
+    global TOKEN
+    r = requests.post(
+        f"{environment.host}/auth/login",
+        json={
+            "username": os.environ.get("LOAD_USER", "viewer1"),
+            "password": os.environ.get("LOAD_PASSWORD", "password123"),
+        },
+        timeout=10,
+    )
+    r.raise_for_status()
+    TOKEN = r.json()["access_token"]
 
 
 class Viewer(HttpUser):
     wait_time = between(0.5, 2)
 
     def on_start(self):
-        self.client.post("/auth/register", json={"username": f"load{id(self)}", "password": "password123"})
-        r = self.client.post("/auth/login", json={"username": f"load{id(self)}", "password": "password123"})
-        self.h = {"Authorization": f"Bearer {r.json().get('access_token','')}"}
+        self.h = {"Authorization": f"Bearer {TOKEN}"}
 
     @task(5)
     def whatif(self):
