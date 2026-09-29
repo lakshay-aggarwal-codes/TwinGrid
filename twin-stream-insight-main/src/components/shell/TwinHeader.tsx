@@ -1,5 +1,5 @@
 import { RotateLink } from "@/components/transition/RotateLink";
-import { loadLegacyPage } from "@/pages/lazyPages";
+import { loadLegacyPage } from "@/pages/lazyPages.ts";
 import { Boxes, Radio, FlaskConical, Wrench, AlertTriangle, Search } from "lucide-react";
 import { ModeSwitcher } from "./ModeSwitcher";
 import type { StateResponse } from "@/api/apiClient";

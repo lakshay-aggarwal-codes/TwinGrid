@@ -59,5 +59,17 @@ export default defineConfig(({ mode, command }) => {
       },
       dedupe: ["react", "react-dom"],
     },
+    build: {
+      rollupOptions: {
+        output: {
+          // Split the heavy, rarely-changing libraries into their own files so
+          // they cache across deploys and load in parallel. Measured: the
+          // build was one ~1.98 MB index chunk before this.
+          manualChunks: {
+            three: ["three", "@react-three/fiber"],
+          },
+        },
+      },
+    },
   };
 });
