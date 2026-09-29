@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
+from numba import jit
 from typing import Any, Callable
 
 import numpy as np

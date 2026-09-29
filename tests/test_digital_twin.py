@@ -189,7 +189,7 @@ class TestDigitalTwin:
 
     def test_step_partial_action(self, digital_twin):
         """Test simulation step with partial action dict."""
-        initial_utilisation = digital_twin._utilisation
+        # initial_utilisation = digital_twin._utilisation
         
         # Only update utilisation
         action = {"utilisation": 0.6}

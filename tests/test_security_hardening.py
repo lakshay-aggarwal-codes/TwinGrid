@@ -12,8 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import StaticPool
 
 from api.secrets import read_secret
-from models.db_models import USER_ROLE_OPERATOR, USER_ROLE_VIEWER, AuditLog, Base, RefreshToken, User
-
+from models.db_models import USER_ROLE_VIEWER, Base, RefreshToken, User
 
 # -----------------------------------------------------------------------------
 # api/secrets.py

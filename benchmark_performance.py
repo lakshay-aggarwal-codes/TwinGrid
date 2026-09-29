@@ -6,6 +6,7 @@ Tests original vs optimized implementation for 24-hour simulation (288 steps).
 """
 
 import sys
+import numpy as np
 import time
 from datetime import datetime
 
@@ -17,7 +18,7 @@ sys.path.insert(0, 'src')
 def generate_test_actions(n_steps=288):
     """Generate realistic test actions for 24-hour simulation."""
     actions = []
-    base_time = datetime(2024, 1, 1, 0, 0, 0)
+    # base_time = datetime(2024, 1, 1, 0, 0, 0)
     
     for i in range(n_steps):
         # Simulate daily patterns
@@ -176,11 +177,13 @@ def benchmark_vectorized_functions():
         
         # Benchmark batch outlet temperature computation
         start_time = time.time()
-        outlet_temps_batch = twin.compute_batch_outlet_temp(inlet_temps, it_powers)
+        # outlet_temps_batch = twin.compute_batch_outlet_temp(inlet_temps, it_powers)
+        _ = twin.compute_batch_outlet_temp(inlet_temps, it_powers)
         batch_temp_time = time.time() - start_time
         
         start_time = time.time()
-        outlet_temps_individual = [twin.compute_outlet_temp(inlet_temps[i], it_powers[i]) for i in range(n_samples)]
+        # outlet_temps_individual = [twin.compute_outlet_temp(inlet_temps[i], it_powers[i]) for i in range(n_samples)]
+        _ = [twin.compute_outlet_temp(inlet_temps[i], it_powers[i]) for i in range(n_samples)]
         individual_temp_time = time.time() - start_time
         
         print(f"  Batch outlet temp ({n_samples} values): {batch_temp_time:.6f} seconds")

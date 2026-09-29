@@ -185,7 +185,7 @@ def fetch_nsrdb_raw_data(
     safe_params = {k: ("***" if k == "api_key" else v) for k, v in params.items()}
     logger.info(
         f"Requesting NSRDB solar data for lat={config['latitude']}, lon={config['longitude']}, year={config['year']} "
-        f"(API key scrubbed)."
+        f"params={safe_params}"
     )
 
     attempt = 0

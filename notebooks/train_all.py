@@ -44,9 +44,13 @@ def main() -> None:
     import pandas as pd
     try:
         from tqdm import tqdm
-        pbar_fn = lambda: tqdm(total=6, desc="Training pipeline", unit="step")
+        # pbar_fn = lambda: tqdm(total=6, desc="Training pipeline", unit="step")
+        def pbar_fn():
+            return tqdm(total=6, desc="Training pipeline", unit="step")
     except ImportError:
-        pbar_fn = lambda: _NoOpPBar()
+        # pbar_fn = lambda: _NoOpPBar()
+        def pbar_fn():
+            return _NoOpPBar()
 
     from src.anomaly_detector import AnomalyDetector
     from src.data_generator import generate_sensor_data

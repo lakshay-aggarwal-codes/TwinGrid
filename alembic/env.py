@@ -5,7 +5,6 @@ Uses DATABASE_URL from environment. Run: alembic upgrade head (from project root
 """
 
 import asyncio
-import os
 from logging.config import fileConfig
 
 from alembic import context
