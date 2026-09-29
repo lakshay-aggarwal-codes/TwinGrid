@@ -1,5 +1,5 @@
 import { RotateLink } from "@/components/transition/RotateLink";
-import { loadLegacyPage } from "@/pages/lazyPages";
+import { loadAnalyticsPage } from "@/pages/lazyPages.ts";
 import { Boxes, Radio, FlaskConical, Wrench, AlertTriangle, Search } from "lucide-react";
 import { ModeSwitcher } from "./ModeSwitcher";
 import type { StateResponse } from "@/api/apiClient";
@@ -125,13 +125,13 @@ export function TwinHeader({
           <kbd className="hidden min-[1600px]:inline font-mono text-[10px] rounded border border-border px-1 py-px text-muted-foreground">Ctrl K</kbd>
         </button>
         <RotateLink
-          to="/legacy"
+          to="/analytics"
           direction={1}
-          onPointerEnter={() => void loadLegacyPage()}
-          onFocus={() => void loadLegacyPage()}
-          onTouchStart={() => void loadLegacyPage()}
+          onPointerEnter={() => void loadAnalyticsPage()}
+          onFocus={() => void loadAnalyticsPage()}
+          onTouchStart={() => void loadAnalyticsPage()}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          Legacy Dashboard
+          Analytics
         </RotateLink>
       </div>
     </header>

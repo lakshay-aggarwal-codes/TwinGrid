@@ -4,3 +4,4 @@
  * same import() -- the browser fetches the chunk once, whichever runs first.
  */
 export const loadLegacyPage = () => import("./Index");
+export const loadAnalyticsPage = () => import("./Index");
