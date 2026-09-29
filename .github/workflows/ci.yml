@@ -33,7 +33,7 @@ jobs:
         run: ruff check .
 
       - name: Run tests
-        run: pytest tests/ -v --cov=src --cov=api --cov-report=term-missing
+        run: pytest tests/ -v --cov=src --cov=api --cov-report=term-missing --cov-fail-under=70
 
   frontend:
     runs-on: ubuntu-latest
