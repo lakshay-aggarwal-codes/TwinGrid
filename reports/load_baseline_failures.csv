@@ -1,0 +1,8 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,/auth/register,HTTPError('429 Client Error: Too Many Requests for url: /auth/register'),47,2026-09-29T03:42:41Z,2026-09-29T03:42:50Z
+GET,/api/simulate/24,HTTPError('401 Client Error: Unauthorized for url: /api/simulate/24'),962,2026-09-29T03:42:43Z,2026-09-29T03:44:37Z
+GET,/api/state,HTTPError('401 Client Error: Unauthorized for url: /api/state'),960,2026-09-29T03:42:43Z,2026-09-29T03:44:37Z
+GET,/api/alerts,HTTPError('401 Client Error: Unauthorized for url: /api/alerts'),335,2026-09-29T03:42:43Z,2026-09-29T03:44:37Z
+GET,/api/whatif,HTTPError('401 Client Error: Unauthorized for url: /api/whatif'),1612,2026-09-29T03:42:43Z,2026-09-29T03:44:37Z
+POST,/auth/login,HTTPError('429 Client Error: Too Many Requests for url: /auth/login'),40,2026-09-29T03:42:43Z,2026-09-29T03:42:50Z
+POST,/auth/login,HTTPError('401 Client Error: Unauthorized for url: /auth/login'),7,2026-09-29T03:42:43Z,2026-09-29T03:42:43Z

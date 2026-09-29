@@ -19,7 +19,7 @@ export function DashboardHeader() {
         </div>
         <h1 className="text-lg font-semibold tracking-tight text-foreground">
           TwinGrid —{" "}
-          <span className="text-primary glow-text">DC Conservation</span>{" "}
+          <span className="text-primary glow-text">Analytics</span>{" "}
         </h1>
       </div>
       <div className="flex items-center gap-4">

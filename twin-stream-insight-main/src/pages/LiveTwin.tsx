@@ -12,8 +12,10 @@ import { TwinScene, type FocusRequest } from "@/three/TwinScene";
 import { SceneErrorBoundary } from "@/three/SceneErrorBoundary";
 import { MOTION, motionDuration } from "@/three/motion";
 import type { Report } from "@/reports/reports";
-import { useSimulation } from "@/hooks/useSimulation";
+import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSharedSimulation } from "@/hooks/simulationContext";
 import type { VisualizationMode } from "@/three/visualizationModes";
+import { describeRack, isNavKey, nextRackId } from "@/three/rackNavigation.ts";
 
 type LeftPanel = "none" | "simulation" | "operations" | "incidents";
 
@@ -50,6 +52,7 @@ type LeftPanel = "none" | "simulation" | "operations" | "incidents";
  * Sustainability legend) and all funnel into this single viewer.
  */
 export default function LiveTwin() {
+  usePageTitle("TwinGrid — Live Twin");
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [mode, setMode] = useState<VisualizationMode>("physical");
@@ -59,7 +62,7 @@ export default function LiveTwin() {
   // Each panel builds its own report from data it already holds and hands it
   // up here; a report is a snapshot, so it is never recomputed while open.
   const [report, setReport] = useState<Report | null>(null);
-  const { liveState, config, anomalyScore, latestAnomaly, events } = useSimulation();
+  const { liveState, config, anomalyScore, latestAnomaly, events } = useSharedSimulation();
 
   // Stage 14: panel open/close motion. `leftPanel` is what the header says
   // (immediate); `shownPanel` is what is mounted, which lags on close so the
@@ -126,6 +129,24 @@ export default function LiveTwin() {
     setFocusRequest((prev) => ({ type: "zone", zoneId, nonce: (prev?.nonce ?? 0) + 1 }));
   }, []);
 
+  // Stage 21: keyboard traversal of the 3D scene. Only reacts when the scene
+  // wrapper itself has focus (never while typing in a panel or the palette).
+  // Arrows/Home/End move the selection; Enter or Space zooms the camera to it.
+  const handleSceneKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.target !== event.currentTarget) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isNavKey(event.key)) {
+        event.preventDefault();
+        setSelectedRackId(nextRackId(selectedRackId, event.key));
+      } else if ((event.key === "Enter" || event.key === " ") && selectedRackId) {
+        event.preventDefault();
+        handleRequestFocus(selectedRackId);
+      }
+    },
+    [selectedRackId, handleRequestFocus],
+  );
+
   // Keyboard: Escape deselects without a mouse. Reaching a rack by keyboard
   // in the first place (tab order / arrow-key traversal of the 3D scene)
   // is deferred -- see the Stage 3 report's known limitations.
@@ -187,7 +208,23 @@ export default function LiveTwin() {
             onGenerateReport={setReport}
           />
         </div>
-        <div className="flex-1 min-w-0 relative">
+        <div
+          className="flex-1 min-w-0 relative outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
+          tabIndex={0}
+          role="group"
+          aria-roledescription="3D facility view"
+          aria-label="3D facility view. Arrow keys move between racks, Home and End jump to the first and last rack, Enter zooms to the selected rack, Escape clears the selection."
+          onKeyDown={handleSceneKeyDown}
+          // Clicking the canvas should also give the wrapper keyboard focus, so
+          // arrow keys work right after a mouse selection (OrbitControls may
+          // swallow the default focus-on-click).
+          onPointerDownCapture={(event) => event.currentTarget.focus({ preventScroll: true })}
+        >
+          {/* Screen-reader announcement of the current selection, whether it
+              came from the keyboard, a click, the search palette or an alert. */}
+          <div className="sr-only" role="status" aria-live="polite">
+            {selectedRackId ? `Selected ${describeRack(selectedRackId)}` : ""}
+          </div>
           <SceneErrorBoundary>
             <TwinScene
               selectedRackId={selectedRackId}

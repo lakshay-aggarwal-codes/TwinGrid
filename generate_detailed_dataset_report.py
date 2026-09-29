@@ -120,7 +120,6 @@ def text_info(path):
 
 
 def inspect_open_meteo(report):
-
     report.extend(section("1. OPEN-METEO"))
 
     folder = ROOT / "open_meteo"
@@ -145,7 +144,6 @@ def inspect_open_meteo(report):
 
 
 def inspect_specpower(report):
-
     report.extend(section("2. SPECPOWER"))
 
     candidates = [ROOT / "power_ssj2008-results-20260906-021726.csv"]
@@ -168,7 +166,6 @@ def inspect_specpower(report):
 
 
 def inspect_cmapss(report):
-
     report.extend(section("3. NASA C-MAPSS"))
 
     folder = ROOT / "CMAPSSData"
@@ -195,7 +192,6 @@ def inspect_cmapss(report):
 
 
 def inspect_nab(report):
-
     report.extend(section("4. NAB ANOMALY BENCHMARK"))
 
     folder = ROOT / "NAB-master"
@@ -247,7 +243,6 @@ def inspect_nab(report):
 
 
 def inspect_electricity_maps(report):
-
     report.extend(section("5. ELECTRICITY MAPS"))
 
     folder = ROOT / "electricity_maps"
@@ -291,7 +286,6 @@ def inspect_electricity_maps(report):
 
 
 def inspect_ashrae_energy(report):
-
     report.extend(section("6. ASHRAE ENERGY PREDICTION"))
 
     folder = ROOT / "ashrae-energy-prediction"
@@ -324,7 +318,6 @@ def inspect_ashrae_energy(report):
 
 
 def inspect_aqueduct(report):
-
     report.extend(section("7. AQUEDUCT WATER-STRESS DATA"))
 
     folders = [
@@ -364,7 +357,6 @@ def inspect_aqueduct(report):
 
 
 def inspect_cluster_data(report):
-
     report.extend(section("8. CLUSTER / ALIBABA WORKLOAD DATA"))
 
     folders = [
@@ -410,7 +402,6 @@ def inspect_cluster_data(report):
 
 
 def main():
-
     report = []
 
     report.extend(

@@ -79,7 +79,7 @@ export function OperationsConsole({
   };
 
   return (
-    <aside className="w-80 border-r border-border bg-sidebar flex flex-col shrink-0">
+    <aside aria-label="Operations console" className="w-80 border-r border-border bg-sidebar flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Operations Console</span>
         <button onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" aria-label="Close operations console">

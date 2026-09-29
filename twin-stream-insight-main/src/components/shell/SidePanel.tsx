@@ -18,7 +18,7 @@ interface SidePanelProps {
  */
 export function SidePanel({ selectedRackId, onDeselect, liveState }: SidePanelProps) {
   return (
-    <aside className="w-80 border-l border-border bg-sidebar flex flex-col shrink-0">
+    <aside aria-label="Rack inspector" className="w-80 border-l border-border bg-sidebar flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Inspector</span>
         {selectedRackId && (

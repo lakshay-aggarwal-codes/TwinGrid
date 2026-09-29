@@ -50,18 +50,18 @@ This document summarizes the comprehensive documentation added to the DigitalTwi
 @jit(nopython=True, cache=True)
 def _compute_it_power_fast(utilisation: float, max_it_power_kw: float, idle_power_fraction: float) -> float:
     """Fast IT power computation using JIT compilation.
-    
+
     Physics Model:
         P_IT = P_idle + (1 - f_idle) × utilisation × P_max
-    
+
     Args:
         utilisation: Server utilisation fraction (0.0 to 1.0)
         max_it_power_kw: Maximum IT power at full utilisation (kW)
         idle_power_fraction: Fraction of max power consumed at idle (0.0 to 1.0)
-    
+
     Returns:
         IT power consumption in kilowatts.
-        
+
     Example:
         >>> _compute_it_power_fast(0.8, 500.0, 0.4)
         440.0
@@ -102,17 +102,17 @@ def _compute_outlet_temp_fast(
 @jit(nopython=True, cache=True)
 def _compute_cooling_power_fast(it_power_kw: float, cop_value: float) -> float:
     """Fast cooling power computation using JIT compilation.
-    
+
     Physics Model:
         P_cooling = Q_IT / COP
-    
+
     Args:
         it_power_kw: IT heat load that must be removed (kW)
         cop_value: Coefficient of Performance for the cooling system
-    
+
     Returns:
         Cooling system power consumption in kilowatts.
-        
+
     Example:
         >>> _compute_cooling_power_fast(400.0, 4.5)  # Closed-loop cooling
         88.88888888888889
@@ -126,22 +126,22 @@ def _compute_water_consumption_fast(
     cooling_power_kw: float, evap_rate: float, outside_temp_C: float, interval_minutes: int
 ) -> tuple[float, float]:
     """Fast water consumption computation using JIT compilation.
-    
+
     Physics Model:
         Water Consumption = P_cooling × f_evap × f_temp × f_duration
         Flow Rate = Consumption / (Δt × evap_rate)
-    
+
     Args:
         cooling_power_kw: Cooling system power consumption (kW)
         evap_rate: Base evaporation rate for the cooling mode (L/min per kW)
         outside_temp_C: Outside air temperature (°C)
         interval_minutes: Simulation time interval in minutes
-    
+
     Returns:
         Tuple of (flow_lpm, consumed_L) where:
         - flow_lpm: Water flow rate in liters per minute
         - consumed_L: Water consumed during the interval (L)
-        
+
     Example:
         >>> _compute_water_consumption_fast(100.0, 0.03, 25.0, 5)  # Evaporative cooling
         (15.0, 0.75)
@@ -155,14 +155,14 @@ def _compute_water_consumption_fast(
 @lru_cache(maxsize=128)
 def _get_idle_power(max_it_power_kw: float, idle_power_fraction: float) -> float:
     """Cached idle power calculation for performance optimization.
-    
+
     Args:
         max_it_power_kw: Maximum IT power at full utilisation (kW)
         idle_power_fraction: Fraction of max power consumed at idle (0.0 to 1.0)
-    
+
     Returns:
         Idle power consumption in kilowatts.
-        
+
     Example:
         >>> _get_idle_power(500.0, 0.4)
         200.0
@@ -201,16 +201,16 @@ def __init__(
 ```python
 def step(self, action_dict: dict[str, Any]) -> DataCentreState:
     """Advance simulation by 5 minutes (optimized single step).
-    
+
     Expected keys: utilisation, outside_temp_C, cooling_mode (optional),
     humidity_pct (optional), water_pressure_bar (optional).
-    
+
     Args:
         action_dict: Control actions for this step.
-    
+
     Returns:
         New DataCentreState after the step.
-    
+
     Example:
         >>> state = twin.step({
         ...     "utilisation": 0.8,
@@ -225,13 +225,13 @@ def step(self, action_dict: dict[str, Any]) -> DataCentreState:
 ```python
 def step_batch(self, action_dicts: list[dict[str, Any]]) -> list[DataCentreState]:
     """Advance simulation by multiple steps (vectorized batch processing).
-    
+
     Args:
         action_dicts: List of action dictionaries for each step.
-    
+
     Returns:
         List of DataCentreState objects for each step.
-    
+
     Example:
         >>> actions = generate_24h_actions()
         >>> states = twin.step_batch(actions)  # ~0.004 seconds
@@ -243,15 +243,15 @@ def step_batch(self, action_dicts: list[dict[str, Any]]) -> list[DataCentreState
 ```python
 def compute_it_power(self, utilisation: float) -> float:
     """Compute IT power from server utilisation with idle fraction 0.4.
-    
+
     Power = idle_power + (1 - idle_frac) * utilisation * max_power.
-    
+
     Args:
         utilisation: Server utilisation in [0, 1].
-    
+
     Returns:
         IT power in kW.
-    
+
     Raises:
         ValueError: If utilisation not in [0, 1].
     """
@@ -266,14 +266,14 @@ def compute_outlet_temp(
     airflow_m3_s: float = 8.0,
 ) -> float:
     """Compute server outlet temperature from energy balance: Q = ṁ·cp·ΔT.
-    
+
     ΔT = IT_power_W / (ρ · V̇ · cp).
-    
+
     Args:
         inlet_temp_C: Server inlet air temperature (°C).
         it_power_kw: IT power in kW.
         airflow_m3_s: Air flow rate (m³/s), default 8.0.
-    
+
     Returns:
         Outlet temperature in °C.
     """
@@ -288,15 +288,15 @@ def compute_cooling_power(
     outside_temp_C: float,
 ) -> float:
     """Compute cooling system power from IT heat load and COP.
-    
+
     COP varies by mode. Free-air only effective when outside < 12°C;
     otherwise falls back to hybrid COP for calculation.
-    
+
     Args:
         it_power_kw: IT power (heat load) in kW.
         mode: Cooling mode.
         outside_temp_C: Outside air temperature (°C).
-    
+
     Returns:
         Cooling power in kW.
     """
@@ -311,15 +311,15 @@ def compute_water_consumption(
     outside_temp_C: float,
 ) -> tuple[float, float]:
     """Compute water flow and consumption for the cooling mode.
-    
+
     Free-air uses no water. Other modes scale with cooling load and
     outside temperature (higher temp → more evaporation).
-    
+
     Args:
         cooling_power_kw: Cooling system power in kW.
         mode: Cooling mode.
         outside_temp_C: Outside air temperature (°C).
-    
+
     Returns:
         Tuple of (flow_lpm, consumed_L_per_5min).
     """
@@ -331,13 +331,13 @@ def compute_water_consumption(
 ```python
 def compute_batch_it_power(self, utilisations: np.ndarray) -> np.ndarray:
     """Compute IT power for multiple utilisation values (vectorized).
-    
+
     Args:
         utilisations: Array of utilisation values in [0, 1].
-    
+
     Returns:
         Array of IT power values in kW.
-    
+
     Example:
         >>> utilisations = np.array([0.5, 0.7, 0.9])
         >>> powers = twin.compute_batch_it_power(utilisations)
@@ -354,12 +354,12 @@ def compute_batch_outlet_temp(
     airflow_m3_s: float = 8.0,
 ) -> np.ndarray:
     """Compute outlet temperatures for multiple values (vectorized).
-    
+
     Args:
         inlet_temps: Array of inlet temperatures (°C).
         it_powers: Array of IT power values (kW).
         airflow_m3_s: Air flow rate (m³/s).
-    
+
     Returns:
         Array of outlet temperatures (°C).
     """
@@ -375,19 +375,19 @@ def select_cooling_mode(
     water_stress: float,
 ) -> CoolingMode:
     """Rule-based cooling mode selection.
-    
+
     - Free-air when outside < 12°C (no water, high COP).
     - Closed-loop when water stress high (lowest evaporation).
     - Evaporative when outside hot and water stress low.
     - Hybrid as default balance.
-    
+
     Args:
         outside_temp_C: Outside air temperature (°C).
         water_stress: Water stress indicator in [0, 1], 1 = critical.
-    
+
     Returns:
         Selected CoolingMode.
-    
+
     Example:
         >>> mode = twin.select_cooling_mode(30.0, 0.2)  # Hot, low water stress
         >>> print(f"Selected mode: {mode.value}")
@@ -398,10 +398,10 @@ def select_cooling_mode(
 ```python
 def is_safe(self) -> bool:
     """Check temperature and PUE constraints.
-    
+
     Returns:
         True if inlet 18–27°C, outlet ≤ 45°C, and PUE ≤ 2.0.
-    
+
     Example:
         >>> if twin.is_safe():
         ...     print("System operating within safe limits")
@@ -416,14 +416,14 @@ def is_safe(self) -> bool:
 ```python
 def to_dict(self) -> dict[str, Any]:
     """Convert DataCentreState to dictionary for DataFrame construction.
-    
+
     This method converts the dataclass to a dictionary format compatible with
     pandas DataFrame creation and CSV export. The cooling mode is converted to its
     string representation for serialization.
-    
+
     Returns:
         Dictionary containing all state data with string keys.
-    
+
     Example:
         >>> state_dict = state.to_dict()
         >>> df = pd.DataFrame([state_dict])
@@ -440,22 +440,22 @@ All functions and classes follow Google-style docstring format:
 ```python
 def function_name(param1: type1, param2: type2) -> return_type:
     """Brief description of the function.
-    
+
     Extended description explaining the physics model or algorithm.
-    
+
     Physics Model:
         Equation with variable definitions
-    
+
     Args:
         param1: Description of parameter 1.
         param2: Description of parameter 2.
-    
+
     Returns:
         Description of return value.
-    
+
     Raises:
         ErrorType: Description of when this error occurs.
-    
+
     Example:
         >>> result = function_name(1.0, 2.0)
         >>> print(f"Result: {result}")
@@ -571,28 +571,28 @@ Supporting Joint Optimization J = α·W + β·E + γ·C
 
 ### Completeness Check
 
-✅ **All public classes** documented with comprehensive docstrings  
-✅ **All public methods** documented with Args, Returns, Raises, Examples  
-✅ **All parameters** have type hints  
-✅ **Physics models** explained with equations  
-✅ **Usage examples** provided for all major functions  
-✅ **Performance characteristics** documented  
+✅ **All public classes** documented with comprehensive docstrings
+✅ **All public methods** documented with Args, Returns, Raises, Examples
+✅ **All parameters** have type hints
+✅ **Physics models** explained with equations
+✅ **Usage examples** provided for all major functions
+✅ **Performance characteristics** documented
 
 ### Standards Compliance
 
-✅ **Google-style docstrings** consistently applied  
-✅ **Type hints** follow PEP 484  
-✅ **Physics explanations** include variable definitions  
-✅ **Examples** are tested and functional  
-✅ **Error handling** documented with specific exceptions  
+✅ **Google-style docstrings** consistently applied
+✅ **Type hints** follow PEP 484
+✅ **Physics explanations** include variable definitions
+✅ **Examples** are tested and functional
+✅ **Error handling** documented with specific exceptions
 
 ### Patent Readiness
 
-✅ **Physics models** clearly explained with equations  
-✅ **Performance claims** substantiated with benchmarks  
-✅ **Innovation aspects** highlighted in documentation  
-✅ **Technical implementation** detailed for patent specifications  
-✅ **Real-world applicability** demonstrated with examples  
+✅ **Physics models** clearly explained with equations
+✅ **Performance claims** substantiated with benchmarks
+✅ **Innovation aspects** highlighted in documentation
+✅ **Technical implementation** detailed for patent specifications
+✅ **Real-world applicability** demonstrated with examples
 
 ## Summary
 

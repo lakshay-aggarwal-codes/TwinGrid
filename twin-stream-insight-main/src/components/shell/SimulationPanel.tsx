@@ -110,7 +110,7 @@ export function SimulationPanel({ open, onClose, baseConfig, liveState, onGenera
   const flatCarbon = (a !== null && !a.carbon_data_is_real) || (b !== null && !b.carbon_data_is_real);
 
   return (
-    <aside className="w-80 border-r border-border bg-sidebar flex flex-col shrink-0">
+    <aside aria-label="Simulation Lab" className="w-80 border-r border-border bg-sidebar flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Simulation Lab</span>
         <button onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" aria-label="Close simulation lab">

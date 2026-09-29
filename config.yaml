@@ -17,7 +17,7 @@ training:
   n_epochs: 10
   gamma: 0.99
   verbose: 1
-  
+
   # Retry configuration for numerical instability
   max_retries: 3
   retry_delay: 5  # seconds
@@ -30,7 +30,7 @@ training:
 environment:
   max_steps: 288  # 24 hours at 5-minute intervals
   episode_length: 288
-  
+
   # Physics constants
   air_density: 1.2
   specific_heat: 1005.0
@@ -38,12 +38,12 @@ environment:
   max_it_power_kw: 500.0
   idle_fraction: 0.4
   airflow_m3_s: 8.0
-  
+
   # Temperature constraints (ASHRAE)
   inlet_temp_min: 18.0
   inlet_temp_max: 27.0
   outlet_temp_max: 45.0
-  
+
   # Cooling mode parameters
   cooling_modes:
     free_air:
@@ -84,12 +84,12 @@ validation:
   temperature_range: [-50.0, 100.0]
   power_range: [0.0, 1000.0]
   water_stress_range: [0.0, 1.0]
-  
+
   # Safety thresholds
   max_outlet_temp: 45.0
   max_pue: 2.5
   max_wue: 5.0
-  
+
   # Data validation
   min_data_points: 10
   max_missing_ratio: 0.1
@@ -101,7 +101,7 @@ logging:
   file_path: "logs/optimizer.log"
   max_file_size: 10485760  # 10MB
   backup_count: 5
-  
+
   # Progress logging
   log_training_progress: true
   log_episode_summary: true
@@ -113,7 +113,7 @@ persistence:
   config_file: "config.json"
   model_file: "ppo_model"
   save_frequency: 1000  # Save every N timesteps
-  
+
 # Performance Optimization
 performance:
   enable_jit: true
@@ -126,15 +126,15 @@ scenarios:
   normal:
     water_stress: 0.0
     description: "Normal water availability"
-  
+
   drought:
     water_stress: 0.8
     description: "High water stress scenario"
-  
+
   extreme_heat:
     outside_temp_offset: 10.0
     description: "Extreme temperature conditions"
-  
+
   high_load:
     utilisation_multiplier: 1.2
     description: "High IT load scenario"

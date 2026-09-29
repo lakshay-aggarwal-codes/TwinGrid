@@ -128,3 +128,10 @@
     animation: scan-line 8s linear infinite;
   }
 }
+
+/* Stage 17: the page heading receives programmatic focus after a route change
+   (screen readers / keyboard users land at the top of the new page). It is not
+   an interactive control, so it gets no focus ring. */
+h1[tabindex="-1"]:focus {
+  outline: none;
+}

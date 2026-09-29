@@ -28,9 +28,9 @@ class FakeModel:
         self.delay = delay
 
     def predict(self, obs, deterministic=True):
-        assert obs.shape == self.observation_space.shape, (
-            f"Unexpected observation shape {obs.shape} for Box environment, please use {self.observation_space.shape}"
-        )
+        assert (
+            obs.shape == self.observation_space.shape
+        ), f"Unexpected observation shape {obs.shape} for Box environment, please use {self.observation_space.shape}"
         if self.delay:
             time.sleep(self.delay)  # BLOCKING on purpose, like real torch inference
         return np.array([0.5, 0.5], dtype=np.float32), None
