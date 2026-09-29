@@ -10,6 +10,7 @@ from datetime import datetime
 
 import numpy as np
 import pytest
+from redis.exceptions import ConnectionError as RedisConnectionError
 from sqlalchemy import select
 
 from api.routes import optimization_routes, shadow_mode_routes
@@ -96,13 +97,55 @@ async def test_job_status_operator_only_and_passthrough(client, viewer_headers, 
     assert r.status_code == 200 and r.json() == {"job_id": "abc", "status": "queued"}
 
 
-@pytest.mark.xfail(strict=True, reason="Stage 1: unknown job id surfaces as HTTP 500; should be 404")
 async def test_unknown_job_is_404(client, operator_headers, monkeypatch):
+    from src.task_queue import JobNotFoundError
+
     def boom(job_id):
-        raise KeyError(job_id)  # stands in for rq.exceptions.NoSuchJobError
+        raise JobNotFoundError(job_id)
 
     monkeypatch.setattr(optimization_routes, "get_status", boom)
     assert (await client.get("/api/optimize/jobs/nope", headers=operator_headers)).status_code == 404
+
+
+async def test_queue_outage_is_503_not_500(client, operator_headers, monkeypatch):
+    def down(*a, **k):
+        raise RedisConnectionError("redis is down")
+
+    monkeypatch.setattr(optimization_routes, "enqueue", down)
+    monkeypatch.setattr(optimization_routes, "get_status", down)
+    assert (await client.post("/api/optimize/train_async", json={}, headers=operator_headers)).status_code == 503
+    assert (await client.get("/api/optimize/jobs/x", headers=operator_headers)).status_code == 503
+
+
+def test_train_job_never_writes_to_live_model_path(tmp_path, monkeypatch):
+    """Regression: the 5k-step fallback job used to save over models/optimizer (the real model)."""
+    import src.optimizer as optimizer_module
+    from src import task_jobs
+
+    live = tmp_path / "live_model"
+    live.mkdir()
+    (live / "ppo_model.zip").write_bytes(b"precious")
+    saved_to = []
+
+    class FakeOptimizer:
+        def __init__(self, **kwargs):
+            pass
+
+        def train(self, **kwargs):
+            pass
+
+        def save(self, path):
+            saved_to.append(path)
+
+    monkeypatch.setattr(optimizer_module, "JointOptimizer", FakeOptimizer)
+    monkeypatch.setenv("OPTIMIZER_MODEL_PATH", str(live))
+    monkeypatch.setenv("OPTIMIZER_CANDIDATE_DIR", str(tmp_path / "candidates"))
+
+    result = task_jobs.train_optimizer_job(0.5, 0.3, 0.2, 0.0)
+
+    assert (live / "ppo_model.zip").read_bytes() == b"precious"
+    assert saved_to and saved_to[0] != live and (tmp_path / "candidates") in saved_to[0].parents
+    assert result["promoted"] is False and result["saved_to"] == str(saved_to[0])
 
 
 # ----------------------------------------------------------------------------- ESG report
@@ -192,3 +235,26 @@ async def test_equipment_health_serves_metrics_file(client, viewer_headers, tmp_
     monkeypatch.setattr(equipment_health_service, "METRICS_PATH", path)
     body = (await client.get("/api/equipment/health", headers=viewer_headers)).json()
     assert body["available"] is True and body["lstm_rmse"] == 12.3
+
+
+async def test_esg_report_uses_private_temp_file_and_cleans_up(client, viewer_headers, tmp_path, monkeypatch):
+    import tempfile
+
+    monkeypatch.chdir(tmp_path)
+    tmp_dir = tmp_path / "tmp"
+    tmp_dir.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_dir))
+
+    r = await client.get("/api/esg_report", headers=viewer_headers)
+    assert r.status_code == 200 and r.content[:5] == b"%PDF-"
+    assert list(tmp_dir.glob("twingrid_esg_*")) == []  # deleted after the response
+    assert not (tmp_path / "data" / "reports" / "esg_report_latest.pdf").exists()  # old shared path unused
+
+
+async def test_esg_report_does_not_disturb_live_twin(client, viewer_headers, tmp_path, monkeypatch):
+    from api.services import twin_service
+
+    monkeypatch.chdir(tmp_path)
+    before = twin_service.get_twin().state.timestamp
+    assert (await client.get("/api/esg_report", headers=viewer_headers)).status_code == 200
+    assert twin_service.get_twin().state.timestamp == before

@@ -25,11 +25,17 @@ from typing import Any
 
 from redis import Redis
 from rq import Queue
+from rq.exceptions import NoSuchJobError
 from rq.job import Job
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 QUEUE_NAME = "twingrid"
 JOB_TIMEOUT_SECONDS = 600  # fallback training is capped at FALLBACK_TRAIN_TIMESTEPS, should finish well under this
+
+
+class JobNotFoundError(LookupError):
+    """The job id was never enqueued, or has expired from Redis."""
+
 
 _redis: Redis | None = None
 _queue: Queue | None = None
@@ -53,8 +59,11 @@ def enqueue(func_path: str, *args: Any, **kwargs: Any) -> str:
 
 def get_status(job_id: str) -> dict[str, Any]:
     """Job status + result (if finished) + error (if failed). Raises if
-    job_id was never enqueued or has already expired from Redis."""
-    job = Job.fetch(job_id, connection=_get_queue().connection)
+    job_id was never enqueued or has already expired (JobNotFoundError)."""
+    try:
+        job = Job.fetch(job_id, connection=_get_queue().connection)
+    except NoSuchJobError as exc:
+        raise JobNotFoundError(job_id) from exc
     result: dict[str, Any] = {"job_id": job_id, "status": job.get_status()}
     if job.is_finished:
         result["result"] = job.result

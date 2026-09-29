@@ -3,12 +3,14 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import get_current_user, require_operator
 from api.repositories import data_repository
 from api.schemas.optimization import AnomalyScoreResponse
 from api.services import anomaly_service, audit_service, webhook_service
+from api.services.webhook_security import WebhookURLError, validate_webhook_url
 from database import get_db
 from models.db_models import User
 
@@ -45,16 +47,32 @@ async def anomaly_score(
 
 
 @router.post("/api/webhooks")
-async def register_webhook(_user: Annotated[User, Depends(get_current_user)], url: str = Query(...)) -> dict:
+async def register_webhook(
+    _user: Annotated[User, Depends(require_operator)],
+    url: str = Query(..., max_length=2048),
+) -> dict:
     """Register a URL to receive POSTed alert events (see
-    api/services/webhook_service.py). Returns the current subscriber list."""
-    from src.webhook_registry import register
+    api/services/webhook_service.py). Operator-only. The URL must be https and
+    resolve to a public address (SSRF guard: api/services/webhook_security.py).
+    Returns the current subscriber list."""
+    from src.webhook_registry import SubscriberLimitError, register
 
-    return {"subscribers": register(url)}
+    try:
+        # DNS lookup blocks, so keep it off the event loop.
+        await run_in_threadpool(validate_webhook_url, url)
+    except WebhookURLError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    try:
+        return {"subscribers": register(url)}
+    except SubscriberLimitError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 @router.delete("/api/webhooks")
-async def unregister_webhook(_user: Annotated[User, Depends(get_current_user)], url: str = Query(...)) -> dict:
+async def unregister_webhook(
+    _user: Annotated[User, Depends(require_operator)],
+    url: str = Query(..., max_length=2048),
+) -> dict:
     from src.webhook_registry import unregister
 
     return {"subscribers": unregister(url)}

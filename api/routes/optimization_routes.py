@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from redis.exceptions import RedisError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import require_operator
@@ -13,7 +14,7 @@ from api.serialization import to_jsonable
 from api.services import audit_service, optimization_service
 from database import get_db
 from models.db_models import User
-from src.task_queue import enqueue, get_status
+from src.task_queue import JobNotFoundError, enqueue, get_status
 
 router = APIRouter(tags=["optimization"])
 
@@ -82,12 +83,20 @@ async def train_optimizer_async(
     Redis + `rq worker` (see docker-compose.yml's `worker` service) -- a
     job just sits queued forever with no worker running.
     """
-    job_id = enqueue("src.task_jobs.train_optimizer_job", body.alpha, body.beta, body.gamma, body.water_stress)
+    try:
+        job_id = enqueue("src.task_jobs.train_optimizer_job", body.alpha, body.beta, body.gamma, body.water_stress)
+    except RedisError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Job queue unavailable") from exc
     return {"job_id": job_id}
 
 
 @router.get("/api/optimize/jobs/{job_id}")
 async def get_optimize_job(job_id: str, _user: Annotated[User, Depends(require_operator)]) -> dict[str, Any]:
     """Status (queued/started/finished/failed) + result of a job enqueued by
-    POST /api/optimize/train_async."""
-    return get_status(job_id)
+    POST /api/optimize/train_async. 404 for an unknown/expired job id."""
+    try:
+        return get_status(job_id)
+    except JobNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found") from exc
+    except RedisError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Job queue unavailable") from exc

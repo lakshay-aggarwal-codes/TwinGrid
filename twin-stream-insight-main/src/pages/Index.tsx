@@ -11,7 +11,7 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import { useSharedSimulation } from '@/hooks/simulationContext';
 
 const Index = () => {
-  usePageTitle('TwinGrid — Legacy Dashboard');
+  usePageTitle('TwinGrid — Analytics');
   const {
     config, setConfig, kpi, anomalyScore, latestAnomaly, events, hourlyData, simRunning,
     runSimulation, liveState, equipmentHealth,

@@ -23,4 +23,12 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // shadcn/ui components are generated vendor code that deliberately
+    // co-export variants/hooks (buttonVariants, useFormField, ...) next to the
+    // component. Fast-refresh purity is not worth forking them; app code
+    // (everything outside components/ui) stays under the rule.
+    files: ["src/components/ui/**/*.{ts,tsx}"],
+    rules: { "react-refresh/only-export-components": "off" },
+  },
 );

@@ -24,7 +24,9 @@ async def get_state(
     utilisation: float = Query(0.5, ge=0, le=1, description="Server utilisation [0-1]"),
     outside_temp: float = Query(25.0, ge=-10, le=50, description="Outside temp (°C)"),
     water_stress: float = Query(0.0, ge=0, le=1, description="Water stress [0-1]"),
-    mode: str = Query("auto", description="Cooling mode: auto, free_air, closed_loop, evaporative, hybrid"),
+    mode: Literal["auto", "free_air", "closed_loop", "evaporative", "hybrid"] = Query(
+        "auto", description="Cooling mode: auto, free_air, closed_loop, evaporative, hybrid"
+    ),
 ) -> dict[str, Any]:
     """Get current state after one step. If mode='auto', uses rule-based selection."""
     result = to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, mode))
@@ -42,7 +44,7 @@ async def get_benchmark(
     """Current-state PUE classified against the Uptime Institute 2024
     industry survey (see src/facility_benchmarking.py) instead of an
     arbitrary hand-picked threshold."""
-    state = to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, "auto"))
+    state = to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, "auto", live=False))
     return benchmark_pue(state["pue"])
 
 

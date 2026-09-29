@@ -1,0 +1,109 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.6, platformdirs-4.12.1, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 356 items
+
+tests\test_anomaly_alerts.py ......                                      [  1%]
+tests\test_anomaly_detector.py ................................          [ 10%]
+tests\test_api_routes_smoke.py .....................................     [ 21%]
+tests\test_auth_security.py .............                                [ 24%]
+tests\test_carbon_is_real_flag.py ...                                    [ 25%]
+tests\test_data_generator_consistency.py ....                            [ 26%]
+tests\test_data_pipeline.py ........................                     [ 33%]
+tests\test_db_url.py ................                                    [ 37%]
+tests\test_digital_twin.py .............................                 [ 46%]
+tests\test_digital_twin_dynamic.py .............                         [ 49%]
+tests\test_drought_override.py ........                                  [ 51%]
+tests\test_ingestion.py .................                                [ 56%]
+tests\test_live_broadcast.py .......                                     [ 58%]
+tests\test_optimization_service.py ........                              [ 60%]
+tests\test_optimizer_observation_space.py ...                            [ 61%]
+tests\test_predictive_maintenance.py .....                               [ 63%]
+tests\test_routes_alerts_webhooks.py ..................xxxx              [ 69%]
+tests\test_routes_auth_refresh.py ................xF                     [ 74%]
+tests\test_routes_health_metrics.py ..............                       [ 78%]
+tests\test_routes_optimize_esg_shadow.py ...........x.........           [ 84%]
+tests\test_routes_state_whatif.py ......x.................               [ 91%]
+tests\test_security_hardening.py ..................                      [ 96%]
+tests\test_serialization.py ........                                     [ 98%]
+tests\test_websocket.py ......                                           [100%]
+
+================================== FAILURES ===================================
+_________________________ test_login_is_rate_limited __________________________
+
+client = <httpx.AsyncClient object at 0x000001C6E7AE47D0>
+
+    async def test_login_is_rate_limited(client):
+        limiter.enabled = True
+        limiter.reset()
+        try:
+            codes = []
+            for _ in range(12):
+                r = await client.post("/auth/login", json={"username": "ghost", "password": "whatever1"})
+                codes.append(r.status_code)
+            assert 429 in codes
+>           assert codes[0] == 401  # limiter only kicks in after the quota (10/min)
+            ^^^^^^^^^^^^^^^^^^^^^^
+E           assert 429 == 401
+
+tests\test_routes_auth_refresh.py:172: AssertionError
+---------------------------- Captured stderr call -----------------------------
+2026-09-29 13:38:03 - slowapi - INFO - reset:361 - Storage has been reset and all limits cleared
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - WARNING - __evaluate_limits:515 - ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+2026-09-29 13:38:03 - httpx - INFO - _send_single_request:1740 - HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+2026-09-29 13:38:03 - slowapi - INFO - reset:361 - Storage has been reset and all limits cleared
+------------------------------ Captured log call ------------------------------
+INFO     slowapi:extension.py:361 Storage has been reset and all limits cleared
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+WARNING  slowapi:extension.py:515 ratelimit 10 per 1 minute (127.0.0.1) exceeded at endpoint: /auth/login
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/auth/login "HTTP/1.1 429 Too Many Requests"
+INFO     slowapi:extension.py:361 Storage has been reset and all limits cleared
+=========================== short test summary info ===========================
+FAILED tests/test_routes_auth_refresh.py::test_login_is_rate_limited - assert...
+============= 1 failed, 348 passed, 7 xfailed in 66.36s (0:01:06) =============

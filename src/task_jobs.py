@@ -15,25 +15,31 @@ from typing import Any
 
 
 def train_optimizer_job(alpha: float, beta: float, gamma: float, water_stress: float) -> dict[str, Any]:
-    """Same fallback training _train_fallback_optimizer() in
-    optimization_service.py does, but as a queued job instead of inline in
-    a request. Saves to OPTIMIZER_MODEL_PATH (same path the live API's
-    _load_saved_optimizer() reads from) so once this job finishes, the NEXT
-    /api/optimize call picks up the freshly-trained model instead of
-    retraining again -- the queued job and the live singleton share the
-    same artifact path, not separate state.
+    """Train a *candidate* optimizer as a queued job.
+
+    The short fallback run (FALLBACK_TRAIN_TIMESTEPS, default 5000 steps) is far
+    weaker than the full-length production model, so it must NEVER be saved to
+    the live path (OPTIMIZER_MODEL_PATH, default models/optimizer) -- doing so
+    would silently replace a well-trained model with a weak one on the next
+    restart. It is saved to its own directory under OPTIMIZER_CANDIDATE_DIR
+    (default models/optimizer_candidates/<timestamp>_<id>) and only promoted to
+    the live path by a deliberate, evaluated step (roadmap Stage 3).
     """
     import os
+    import uuid
+    from datetime import datetime, timezone
 
     from src.optimizer import JointOptimizer
 
     fallback_timesteps = int(os.getenv("FALLBACK_TRAIN_TIMESTEPS", "5000"))
-    optimizer_path = Path(os.getenv("OPTIMIZER_MODEL_PATH", "models/optimizer"))
+    candidates_root = Path(os.getenv("OPTIMIZER_CANDIDATE_DIR", "models/optimizer_candidates"))
+    run_id = f"{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}_{uuid.uuid4().hex[:8]}"
+    candidate_path = candidates_root / run_id
 
     optimizer = JointOptimizer(alpha=alpha, beta=beta, gamma=gamma)
     optimizer.train(total_timesteps=fallback_timesteps, n_envs=1, water_stress=water_stress)
-    optimizer_path.mkdir(parents=True, exist_ok=True)
-    optimizer.save(optimizer_path)
+    candidate_path.mkdir(parents=True, exist_ok=True)
+    optimizer.save(candidate_path)
 
     return {
         "alpha": alpha,
@@ -41,5 +47,6 @@ def train_optimizer_job(alpha: float, beta: float, gamma: float, water_stress: f
         "gamma": gamma,
         "water_stress": water_stress,
         "total_timesteps": fallback_timesteps,
-        "saved_to": str(optimizer_path),
+        "saved_to": str(candidate_path),
+        "promoted": False,
     }

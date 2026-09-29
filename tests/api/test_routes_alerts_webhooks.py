@@ -173,34 +173,110 @@ async def test_acknowledge_unknown_alert_404(client, operator_headers):
 # ----------------------------------------------------------------------------- webhooks
 @pytest.fixture
 def webhook_file(tmp_path, monkeypatch):
+    """Isolated registry file + stubbed DNS (tests must never touch the network)."""
     import src.webhook_registry as registry
+    from api.services import webhook_security
 
     monkeypatch.setattr(registry, "REGISTRY_PATH", tmp_path / "webhooks.json")
+    monkeypatch.setattr(webhook_security, "_resolve_host", lambda host, port: ["93.184.216.34"])
+    monkeypatch.delenv("WEBHOOK_ALLOW_HTTP", raising=False)
     return registry.REGISTRY_PATH
 
 
-async def test_webhook_register_list_unregister(client, viewer_headers, webhook_file):
+async def test_webhook_register_list_unregister(client, operator_headers, webhook_file):
     url = "https://example.com/hook"
-    r = await client.post("/api/webhooks", params={"url": url}, headers=viewer_headers)
+    r = await client.post("/api/webhooks", params={"url": url}, headers=operator_headers)
     assert r.status_code == 200 and r.json()["subscribers"] == [url]
 
-    again = await client.post("/api/webhooks", params={"url": url}, headers=viewer_headers)
+    again = await client.post("/api/webhooks", params={"url": url}, headers=operator_headers)
     assert again.json()["subscribers"] == [url]  # idempotent, no duplicates
 
-    r = await client.delete("/api/webhooks", params={"url": url}, headers=viewer_headers)
+    r = await client.delete("/api/webhooks", params={"url": url}, headers=operator_headers)
     assert r.json()["subscribers"] == []
 
 
-async def test_webhook_requires_auth_and_url(client, viewer_headers, webhook_file):
-    assert (await client.post("/api/webhooks", params={"url": "https://a.b"})).status_code in UNAUTHENTICATED
-    assert (await client.post("/api/webhooks", headers=viewer_headers)).status_code == 422
+async def test_webhooks_are_operator_only(client, viewer_headers, webhook_file):
+    url = "https://example.com/hook"
+    assert (await client.post("/api/webhooks", params={"url": url}, headers=viewer_headers)).status_code == 403
+    assert (await client.delete("/api/webhooks", params={"url": url}, headers=viewer_headers)).status_code == 403
+    assert (await client.post("/api/webhooks", params={"url": url})).status_code in UNAUTHENTICATED
 
 
-@pytest.mark.xfail(strict=True, reason="Stage 1: SSRF - webhook registration accepts internal/link-local/non-http URLs")
+async def test_webhook_requires_url(client, operator_headers, webhook_file):
+    assert (await client.post("/api/webhooks", headers=operator_headers)).status_code == 422
+
+
 @pytest.mark.parametrize(
     "bad_url",
-    ["http://169.254.169.254/latest/meta-data/", "http://localhost:6379", "file:///etc/passwd", "not a url"],
+    [
+        "http://169.254.169.254/latest/meta-data/",  # cloud metadata, and not https
+        "https://169.254.169.254/latest/meta-data/",  # link-local
+        "https://localhost:6379",
+        "https://127.0.0.1/hook",
+        "https://10.0.0.5/hook",
+        "https://[::1]/hook",
+        "https://[::ffff:127.0.0.1]/hook",  # IPv4-mapped loopback
+        "file:///etc/passwd",
+        "ftp://example.com/x",
+        "https://user:pw@example.com/hook",
+        "not a url",
+    ],
 )
-async def test_webhook_rejects_internal_and_invalid_targets(client, viewer_headers, webhook_file, bad_url):
-    r = await client.post("/api/webhooks", params={"url": bad_url}, headers=viewer_headers)
-    assert r.status_code in (400, 422)
+async def test_webhook_rejects_internal_and_invalid_targets(client, operator_headers, webhook_file, bad_url):
+    r = await client.post("/api/webhooks", params={"url": bad_url}, headers=operator_headers)
+    assert r.status_code == 422
+    assert not webhook_file.exists() or bad_url not in webhook_file.read_text()
+
+
+async def test_webhook_rejects_hostname_resolving_to_private_ip(client, operator_headers, webhook_file, monkeypatch):
+    from api.services import webhook_security
+
+    monkeypatch.setattr(webhook_security, "_resolve_host", lambda host, port: ["93.184.216.34", "10.1.2.3"])
+    r = await client.post("/api/webhooks", params={"url": "https://sneaky.example.com/x"}, headers=operator_headers)
+    assert r.status_code == 422  # ANY private address in the answer set rejects it
+
+
+async def test_webhook_http_allowed_only_when_opted_in(client, operator_headers, webhook_file, monkeypatch):
+    url = "http://example.com/hook"
+    assert (await client.post("/api/webhooks", params={"url": url}, headers=operator_headers)).status_code == 422
+    monkeypatch.setenv("WEBHOOK_ALLOW_HTTP", "1")
+    assert (await client.post("/api/webhooks", params={"url": url}, headers=operator_headers)).status_code == 200
+
+
+async def test_webhook_subscriber_cap(client, operator_headers, webhook_file, monkeypatch):
+    import src.webhook_registry as registry
+
+    monkeypatch.setattr(registry, "MAX_SUBSCRIBERS", 2)
+    for i in range(2):
+        assert (
+            await client.post("/api/webhooks", params={"url": f"https://example.com/{i}"}, headers=operator_headers)
+        ).status_code == 200
+    assert (
+        await client.post("/api/webhooks", params={"url": "https://example.com/3"}, headers=operator_headers)
+    ).status_code == 409
+
+
+def test_registry_concurrent_registrations_are_lossless(webhook_file, monkeypatch):
+    import threading
+
+    import src.webhook_registry as registry
+
+    monkeypatch.setattr(registry, "MAX_SUBSCRIBERS", 100)
+    threads = [threading.Thread(target=registry.register, args=(f"https://h{i}.example.com",)) for i in range(60)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert len(registry.list_subscribers()) == 60
+
+
+async def test_dispatch_skips_targets_that_became_internal(monkeypatch, webhook_file, caplog):
+    """DNS can change after registration: dispatch re-validates and never POSTs to a private address."""
+    import src.webhook_registry as registry
+    from api.services import webhook_security, webhook_service
+
+    registry.register("https://example.com/hook")
+    monkeypatch.setattr(webhook_security, "_resolve_host", lambda host, port: ["127.0.0.1"])
+    posted = []
+    monkeypatch.setattr(webhook_service.requests, "post", lambda *a, **k: posted.append((a, k)))
+
+    await webhook_service.dispatch_alert({"type": "thermal_spike"})
+    assert posted == []
