@@ -119,7 +119,7 @@ export function buildOperationalReport(input: OperationalInput): Report {
   if (optimizeSummary) {
     const o = optimizeSummary;
     sections.push({
-      title: "Most recent cooling optimization run (this session)",
+      title: "Most recent cooling optimization run (this session; experimental, simulator-only)",
       note: "Result of a 24h evaluation of the trained PPO policy, triggered from the Operations Console.",
       rows: [
         { item: "Mean PUE", value: f(o.mean_pue, 2), source: "POST /api/optimize → summary.mean_pue" },

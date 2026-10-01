@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
 # ---- Builder stage: compile/install dependencies, discarded afterward ----
-FROM python:3.12-slim AS builder
-# Matches runtime.txt (Python 3.12) so container behaviour matches the
+FROM python:3.12.10-slim AS builder
+# Matches runtime.txt (Python 3.12.10) so container behaviour matches the
 # Railway/Nixpacks deployment rather than introducing a second, silently
 # different Python version.
 
@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/wh
 
 
 # ---- Runtime stage: slim image, no build toolchain ----
-FROM python:3.12-slim AS runtime
+FROM python:3.12.10-slim AS runtime
 
 # libpq5 (runtime lib, not -dev) for asyncpg; curl for the HEALTHCHECK below.
 RUN apt-get update && apt-get install -y --no-install-recommends \

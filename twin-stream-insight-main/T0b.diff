@@ -1,0 +1,324 @@
+diff -ruN -x __pycache__ orig_snapshot/api/routes/health_routes.py TwinGrid-main/api/routes/health_routes.py
+--- orig_snapshot/api/routes/health_routes.py	2026-10-01 06:28:40.677287672 +0000
++++ TwinGrid-main/api/routes/health_routes.py	2026-10-01 06:28:40.717129572 +0000
+@@ -1,5 +1,6 @@
+ from __future__ import annotations
+
++import logging
+ from datetime import datetime
+ from typing import Annotated
+
+@@ -11,6 +12,8 @@
+ from database import get_db
+ from models.db_models import User
+
++logger = logging.getLogger(__name__)
++
+ router = APIRouter(tags=["health"])
+
+
+@@ -30,8 +33,10 @@
+     """
+     try:
+         await session.execute(text("SELECT 1"))
+-    except Exception as e:
+-        raise HTTPException(status_code=503, detail=f"Database unreachable: {e}")
++    except Exception:
++        # Raw exception text (driver/DSN/host details) stays server-side only.
++        logger.exception("Health check: database unreachable")
++        raise HTTPException(status_code=503, detail="Service unavailable") from None
+     return {"status": "ok", "database": "ok", "timestamp": datetime.now().isoformat()}
+
+
+diff -ruN -x __pycache__ orig_snapshot/models/optimizer/config.json TwinGrid-main/models/optimizer/config.json
+--- orig_snapshot/models/optimizer/config.json	2026-10-01 06:28:40.679788268 +0000
++++ TwinGrid-main/models/optimizer/config.json	2026-10-01 06:28:40.717397389 +0000
+@@ -29,5 +29,5 @@
+     475.0,
+     475.0
+   ],
+-  "patent_objective": "J = alpha*W + beta*E + gamma*C (C = real grid carbon emissions)"
++  "patent_objective": "J = alpha*W + beta*E + gamma*C (C = carbon emissions; flat 475 gCO2/kWh fallback unless real carbon data is loaded)"
+ }
+diff -ruN -x __pycache__ orig_snapshot/tests/api/test_routes_health_metrics.py TwinGrid-main/tests/api/test_routes_health_metrics.py
+--- orig_snapshot/tests/api/test_routes_health_metrics.py	2026-10-01 06:28:40.680879022 +0000
++++ TwinGrid-main/tests/api/test_routes_health_metrics.py	2026-10-01 06:28:57.073549248 +0000
+@@ -15,10 +15,12 @@
+     assert body["status"] == "ok" and body["database"] == "ok"
+
+
+-async def test_healthz_returns_503_when_db_down(client):
++async def test_healthz_returns_503_when_db_down(client, caplog):
++    secret = "postgresql://user:hunter2@internal-db.example:5432/twingrid refused"
++
+     class BrokenSession:
+         async def execute(self, *a, **k):
+-            raise RuntimeError("db down")
++            raise RuntimeError(secret)
+
+     async def broken_db():
+         yield BrokenSession()
+@@ -26,11 +28,15 @@
+     previous = app.dependency_overrides[get_db]
+     app.dependency_overrides[get_db] = broken_db
+     try:
+-        r = await client.get("/healthz")
++        with caplog.at_level("ERROR"):
++            r = await client.get("/healthz")
+     finally:
+         app.dependency_overrides[get_db] = previous
+     assert r.status_code == 503
+-    assert "Database unreachable" in r.json()["detail"]
++    assert r.json() == {"detail": "Service unavailable"}
++    assert "hunter2" not in r.text and "internal-db" not in r.text and "RuntimeError" not in r.text
++    # The raw exception is still recorded server-side.
++    assert any("hunter2" in (rec.exc_text or "") or rec.exc_info for rec in caplog.records)
+
+
+ async def test_api_health_requires_token(client):
+diff -ruN -x __pycache__ orig_snapshot/tests/test_truth_copy.py TwinGrid-main/tests/test_truth_copy.py
+--- orig_snapshot/tests/test_truth_copy.py	1970-01-01 00:00:00.000000000 +0000
++++ TwinGrid-main/tests/test_truth_copy.py	2026-10-01 06:28:57.073690945 +0000
+@@ -0,0 +1,29 @@
++"""T0b: no served/rendered copy may call the carbon signal "real grid carbon"
++while the flat fallback is in use (carbon_data_is_real is False)."""
++
++import json
++from pathlib import Path
++
++from src import carbon_provider
++from src.digital_twin import DigitalTwin
++
++ROOT = Path(__file__).resolve().parent.parent
++PHRASE = "real grid carbon"
++
++
++def test_optimizer_config_does_not_claim_real_carbon_when_fallback(tmp_path, monkeypatch):
++    monkeypatch.setattr(carbon_provider, "CLEANED_CARBON_PATH", tmp_path / "missing.csv")
++    assert DigitalTwin().carbon_data_is_real is False
++    cfg = (ROOT / "models" / "optimizer" / "config.json").read_text(encoding="utf-8")
++    json.loads(cfg)  # still valid JSON
++    assert PHRASE not in cfg.lower()
++
++
++def test_frontend_sources_do_not_contain_real_grid_carbon_claim():
++    src = ROOT / "twin-stream-insight-main" / "src"
++    offenders = [
++        str(p.relative_to(ROOT))
++        for p in list(src.rglob("*.ts")) + list(src.rglob("*.tsx"))
++        if ".test." not in p.name and PHRASE in p.read_text(encoding="utf-8").lower()
++    ]
++    assert offenders == []
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/components/DashboardHeader.tsx TwinGrid-main/twin-stream-insight-main/src/components/DashboardHeader.tsx
+--- orig_snapshot/twin-stream-insight-main/src/components/DashboardHeader.tsx	2026-10-01 06:28:40.682254017 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/components/DashboardHeader.tsx	2026-10-01 06:28:40.720364267 +0000
+@@ -12,6 +12,14 @@
+   }, []);
+
+   return (
++    <>
++      <div
++        role="status"
++        data-testid="simulated-banner"
++        className="shrink-0 border-b border-warning/40 bg-warning/10 px-6 py-1 text-center text-[11px] font-medium uppercase tracking-wider text-warning"
++      >
++        SIMULATED — no measured telemetry
++      </div>
+     <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
+       <div className="flex items-center gap-3">
+         <div className="h-8 w-8 rounded-md bg-primary/20 flex items-center justify-center">
+@@ -48,5 +56,6 @@
+         </Badge>
+       </div>
+     </header>
++    </>
+   );
+ }
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/components/DashboardSidebar.tsx TwinGrid-main/twin-stream-insight-main/src/components/DashboardSidebar.tsx
+--- orig_snapshot/twin-stream-insight-main/src/components/DashboardSidebar.tsx	2026-10-01 06:28:40.682272366 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/components/DashboardSidebar.tsx	2026-10-01 06:28:40.718573977 +0000
+@@ -74,7 +74,7 @@
+             </div>
+
+             <div className="flex items-center justify-between">
+-              <Label className="text-xs text-muted-foreground">AI Optimizer</Label>
++              <Label className="text-xs text-muted-foreground">Optimizer (experimental, simulator-only)</Label>
+               <Switch checked={config.aiOptimizer} onCheckedChange={v => set({ aiOptimizer: v })} />
+             </div>
+
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/components/SustainabilityTab.test.tsx TwinGrid-main/twin-stream-insight-main/src/components/SustainabilityTab.test.tsx
+--- orig_snapshot/twin-stream-insight-main/src/components/SustainabilityTab.test.tsx	1970-01-01 00:00:00.000000000 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/components/SustainabilityTab.test.tsx	2026-10-01 06:29:00.118062355 +0000
+@@ -0,0 +1,17 @@
++import { describe, it, expect } from "vitest";
++import { render, screen } from "@testing-library/react";
++import { SustainabilityTab } from "./SustainabilityTab";
++
++describe("SustainabilityTab carbon wording (T0b)", () => {
++  it("labels carbon as fallback when carbon_data_is_real is false", () => {
++    render(
++      <SustainabilityTab
++        liveState={{ carbon_intensity_gco2_per_kwh: 475, carbon_gco2: 1, carbon_data_is_real: false } as never}
++        equipmentHealth={null}
++      />,
++    );
++    expect(screen.getByText("Carbon Intensity (fallback)")).toBeTruthy();
++    expect(screen.queryByText("Grid Carbon Intensity")).toBeNull();
++    expect(screen.getByText(/not real grid data/i)).toBeTruthy();
++  });
++});
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/components/SustainabilityTab.tsx TwinGrid-main/twin-stream-insight-main/src/components/SustainabilityTab.tsx
+--- orig_snapshot/twin-stream-insight-main/src/components/SustainabilityTab.tsx	2026-10-01 06:28:40.682349390 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/components/SustainabilityTab.tsx	2026-10-01 06:28:40.719824756 +0000
+@@ -12,7 +12,9 @@
+     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+       <Card>
+         <CardHeader>
+-          <CardTitle className="text-sm font-medium">Grid Carbon Intensity</CardTitle>
++          <CardTitle className="text-sm font-medium">
++            {liveState?.carbon_data_is_real === true ? 'Grid Carbon Intensity' : 'Carbon Intensity (fallback)'}
++          </CardTitle>
+         </CardHeader>
+         <CardContent>
+           {liveState?.carbon_intensity_gco2_per_kwh !== undefined ? (
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/components/WhatIfTab.tsx TwinGrid-main/twin-stream-insight-main/src/components/WhatIfTab.tsx
+--- orig_snapshot/twin-stream-insight-main/src/components/WhatIfTab.tsx	2026-10-01 06:28:40.682359447 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/components/WhatIfTab.tsx	2026-10-01 06:28:40.718737007 +0000
+@@ -91,7 +91,7 @@
+
+       <p className="text-xs text-muted-foreground">
+         Results come from the backend digital twin: an isolated 24 h run at constant inputs
+-        {a ? ` (${a.basis})` : ''}. The AI optimizer policy is not applied here.
++        {a ? ` (${a.basis})` : ''}. The experimental optimizer policy is not applied here.
+         {loading && ' Updating…'}
+       </p>
+       {error && (
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/components/shell/OperationsConsole.test.tsx TwinGrid-main/twin-stream-insight-main/src/components/shell/OperationsConsole.test.tsx
+--- orig_snapshot/twin-stream-insight-main/src/components/shell/OperationsConsole.test.tsx	1970-01-01 00:00:00.000000000 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/components/shell/OperationsConsole.test.tsx	2026-10-01 06:29:00.115325477 +0000
+@@ -0,0 +1,22 @@
++import { describe, it, expect } from "vitest";
++import { render, screen } from "@testing-library/react";
++import { OperationsConsole } from "./OperationsConsole";
++
++describe("OperationsConsole (T0b optimization label)", () => {
++  it("labels optimization as experimental and simulator-only", () => {
++    render(
++      <OperationsConsole
++        open
++        onClose={() => {}}
++        liveState={null}
++        anomalyScore={0}
++        latestAnomaly={null}
++        events={[]}
++        onOpenSimulationLab={() => {}}
++        onGenerateReport={() => {}}
++      />,
++    );
++    expect(screen.getByText("Experimental — simulator-only")).toBeTruthy();
++    expect(screen.queryByText(/real trained RL policy/i)).toBeNull();
++  });
++});
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/components/shell/OperationsConsole.tsx TwinGrid-main/twin-stream-insight-main/src/components/shell/OperationsConsole.tsx
+--- orig_snapshot/twin-stream-insight-main/src/components/shell/OperationsConsole.tsx	2026-10-01 06:28:40.682439447 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/components/shell/OperationsConsole.tsx	2026-10-01 06:28:40.718386129 +0000
+@@ -171,11 +171,15 @@
+             <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
+               <Sparkles className="h-3.5 w-3.5 text-primary" />
+               Run cooling optimization (PPO)
++              <span className="ml-auto rounded border border-warning/50 px-1.5 py-px text-[9px] uppercase tracking-wider text-warning">
++                Experimental — simulator-only
++              </span>
+             </div>
+             <p className="text-[10px] text-muted-foreground leading-snug">
+-              Calls the real trained RL policy via POST /api/optimize. Requires operator
+-              permission and is rate-limited to 10 runs/minute. This is a real backend action,
+-              logged in the audit trail -- confirm before running.
++              Experimental: runs a trained RL policy inside the simulator via POST /api/optimize.
++              Results are simulated, not measured. Requires operator permission and is
++              rate-limited to 10 runs/minute. This is a backend action, logged in the audit
++              trail -- confirm before running.
+             </p>
+
+             {optimize.status === "idle" && (
+@@ -187,7 +191,7 @@
+             {optimize.status === "confirming" && (
+               <div className="space-y-1.5">
+                 <p className="text-[11px] text-warning flex items-center gap-1">
+-                  <ShieldAlert className="h-3 w-3" /> This will run a real 24h RL policy evaluation.
++                  <ShieldAlert className="h-3 w-3" /> This will run an experimental 24h RL policy evaluation in the simulator.
+                 </p>
+                 <div className="flex gap-1.5">
+                   <Button size="sm" className="flex-1" onClick={runOptimization}>Confirm</Button>
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/components/shell/TwinHeader.test.tsx TwinGrid-main/twin-stream-insight-main/src/components/shell/TwinHeader.test.tsx
+--- orig_snapshot/twin-stream-insight-main/src/components/shell/TwinHeader.test.tsx	1970-01-01 00:00:00.000000000 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/components/shell/TwinHeader.test.tsx	2026-10-01 06:29:00.116803101 +0000
+@@ -0,0 +1,31 @@
++import { describe, it, expect, vi } from "vitest";
++import { render, screen } from "@testing-library/react";
++import { MemoryRouter } from "react-router-dom";
++import { TwinHeader } from "./TwinHeader";
++
++// Navigation/transition internals are irrelevant to this copy test.
++vi.mock("@/components/transition/RotateLink", () => ({
++  RotateLink: ({ children }: { children: React.ReactNode }) => <a href="/analytics">{children}</a>,
++}));
++
++describe("TwinHeader (T0b temporary banner)", () => {
++  it("always shows the simulated / no-measured-telemetry banner", () => {
++    render(
++      <MemoryRouter>
++        <TwinHeader
++          onOpenSearch={() => {}}
++          liveState={null}
++          mode="physical"
++          onModeChange={() => {}}
++          simulationOpen={false}
++          onToggleSimulation={() => {}}
++          operationsOpen={false}
++          onToggleOperations={() => {}}
++          incidentsOpen={false}
++          onToggleIncidents={() => {}}
++        />
++      </MemoryRouter>,
++    );
++    expect(screen.getByTestId("simulated-banner").textContent).toBe("SIMULATED — no measured telemetry");
++  });
++});
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/components/shell/TwinHeader.tsx TwinGrid-main/twin-stream-insight-main/src/components/shell/TwinHeader.tsx
+--- orig_snapshot/twin-stream-insight-main/src/components/shell/TwinHeader.tsx	2026-10-01 06:28:40.682522737 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/components/shell/TwinHeader.tsx	2026-10-01 06:28:40.720048728 +0000
+@@ -51,6 +51,14 @@
+   const isLive = liveState !== null;
+
+   return (
++    <>
++      <div
++        role="status"
++        data-testid="simulated-banner"
++        className="shrink-0 border-b border-warning/40 bg-warning/10 px-6 py-1 text-center text-[11px] font-medium uppercase tracking-wider text-warning"
++      >
++        SIMULATED — no measured telemetry
++      </div>
+     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm shrink-0">
+       <div className="flex flex-wrap items-center gap-3">
+         <div className="h-8 w-8 rounded-md bg-primary/20 flex items-center justify-center">
+@@ -135,5 +143,6 @@
+         </RotateLink>
+       </div>
+     </header>
++    </>
+   );
+ }
+diff -ruN -x __pycache__ orig_snapshot/twin-stream-insight-main/src/reports/reports.ts TwinGrid-main/twin-stream-insight-main/src/reports/reports.ts
+--- orig_snapshot/twin-stream-insight-main/src/reports/reports.ts	2026-10-01 06:28:40.683459846 +0000
++++ TwinGrid-main/twin-stream-insight-main/src/reports/reports.ts	2026-10-01 06:28:40.718971426 +0000
+@@ -119,7 +119,7 @@
+   if (optimizeSummary) {
+     const o = optimizeSummary;
+     sections.push({
+-      title: "Most recent cooling optimization run (this session)",
++      title: "Most recent cooling optimization run (this session; experimental, simulator-only)",
+       note: "Result of a 24h evaluation of the trained PPO policy, triggered from the Operations Console.",
+       rows: [
+         { item: "Mean PUE", value: f(o.mean_pue, 2), source: "POST /api/optimize → summary.mean_pue" },

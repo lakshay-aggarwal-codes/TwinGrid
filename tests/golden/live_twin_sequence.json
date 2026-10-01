@@ -1,0 +1,785 @@
+{
+  "data": {
+    "steps": [
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 10.852245277701067,
+          "outlet_temp_C": 25.035043984211097,
+          "time": "2026-01-01T12:35:00",
+          "water_consumed_cumulative_L": 0.0
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 8.0,
+          "utilisation": 0.3,
+          "water_stress": 0.0
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 1571.6274187659728,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "free_air",
+          "cooling_power_kw": 39.70427163198247,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 290.0,
+          "outside_temp_C": 8.0,
+          "pue": 1.1369112814895947,
+          "server_inlet_temp_C": 10.852245277701067,
+          "server_outlet_temp_C": 25.035043984211097,
+          "server_utilisation": 0.3,
+          "timestamp": "2026-01-01T12:35:00",
+          "total_power_kw": 329.70427163198246,
+          "water_consumed_L": 0.0,
+          "water_flow_lpm": 0.0,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.0,
+          "wue": 0.0
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 9.611933407860061,
+          "outlet_temp_C": 24.6422592226219,
+          "time": "2026-01-01T12:40:00",
+          "water_consumed_cumulative_L": 0.0
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 9.7,
+          "utilisation": 0.33,
+          "water_stress": 0.05
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 1625.2082646746494,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "free_air",
+          "cooling_power_kw": 41.05789300230693,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 299.0,
+          "outside_temp_C": 9.7,
+          "pue": 1.137317367900692,
+          "server_inlet_temp_C": 9.611933407860061,
+          "server_outlet_temp_C": 24.6422592226219,
+          "server_utilisation": 0.33,
+          "timestamp": "2026-01-01T12:40:00",
+          "total_power_kw": 340.0578930023069,
+          "water_consumed_L": 0.0,
+          "water_flow_lpm": 0.0,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.05,
+          "wue": 0.0
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 11.338503075006395,
+          "outlet_temp_C": 26.983444337668473,
+          "time": "2026-01-01T12:45:00",
+          "water_consumed_cumulative_L": 505.2074876481641
+        },
+        "inputs": {
+          "mode": "evaporative",
+          "outside_temp": 11.4,
+          "utilisation": 0.36,
+          "water_stress": 0.1
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 4039.9588658733655,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "evaporative",
+          "cooling_power_kw": 102.06211871680082,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 308.0,
+          "outside_temp_C": 11.4,
+          "pue": 1.3313705153142883,
+          "server_inlet_temp_C": 11.338503075006395,
+          "server_outlet_temp_C": 26.983444337668473,
+          "server_utilisation": 0.36,
+          "timestamp": "2026-01-01T12:45:00",
+          "total_power_kw": 410.0621187168008,
+          "water_consumed_L": 505.2074876481641,
+          "water_flow_lpm": 101.04149752963282,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.1,
+          "wue": 19.68340860966873
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 12.385720514260484,
+          "outlet_temp_C": 28.50122573245691,
+          "time": "2026-01-01T12:50:00",
+          "water_consumed_cumulative_L": 702.2596481078833
+        },
+        "inputs": {
+          "mode": "hybrid",
+          "outside_temp": 13.1,
+          "utilisation": 0.39,
+          "water_stress": 0.15
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 3466.6583784580243,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "hybrid",
+          "cooling_power_kw": 87.57873798209746,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 317.0,
+          "outside_temp_C": 13.1,
+          "pue": 1.276273621394629,
+          "server_inlet_temp_C": 12.385720514260484,
+          "server_outlet_temp_C": 28.50122573245691,
+          "server_utilisation": 0.39,
+          "timestamp": "2026-01-01T12:50:00",
+          "total_power_kw": 404.57873798209744,
+          "water_consumed_L": 702.2596481078833,
+          "water_flow_lpm": 39.41043209194386,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.15,
+          "wue": 7.45938777765499
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.02088999855384,
+          "outlet_temp_C": 29.51691807892794,
+          "time": "2026-01-01T12:55:00",
+          "water_consumed_cumulative_L": 714.3042797490567
+        },
+        "inputs": {
+          "mode": "closed_loop",
+          "outside_temp": 14.8,
+          "utilisation": 0.42,
+          "water_stress": 0.2
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 3178.44446086521,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "closed_loop",
+          "cooling_power_kw": 80.29754427448952,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 326.0,
+          "outside_temp_C": 14.8,
+          "pue": 1.246311485504569,
+          "server_inlet_temp_C": 13.02088999855384,
+          "server_outlet_temp_C": 29.51691807892794,
+          "server_utilisation": 0.42,
+          "timestamp": "2026-01-01T12:55:00",
+          "total_power_kw": 406.2975442744895,
+          "water_consumed_L": 714.3042797490567,
+          "water_flow_lpm": 2.4089263282346858,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.2,
+          "wue": 0.44336067390822437
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.406139764891623,
+          "outlet_temp_C": 30.22551642001138,
+          "time": "2026-01-01T13:00:00",
+          "water_consumed_cumulative_L": 930.0804053744041
+        },
+        "inputs": {
+          "mode": "free_air",
+          "outside_temp": 16.5,
+          "utilisation": 0.45,
+          "water_stress": 0.25
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 3685.4965721697245,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "hybrid",
+          "cooling_power_kw": 93.10728182323514,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 335.0,
+          "outside_temp_C": 16.5,
+          "pue": 1.2779321845469707,
+          "server_inlet_temp_C": 13.406139764891623,
+          "server_outlet_temp_C": 30.22551642001138,
+          "server_utilisation": 0.45,
+          "timestamp": "2026-01-01T13:00:00",
+          "total_power_kw": 428.10728182323516,
+          "water_consumed_L": 930.0804053744041,
+          "water_flow_lpm": 43.155225125069485,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.25,
+          "wue": 7.729294052251252
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.639805559822618,
+          "outlet_temp_C": 30.745393338906343,
+          "time": "2026-01-01T13:05:00",
+          "water_consumed_cumulative_L": 1159.6566765608447
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 18.2,
+          "utilisation": 0.48,
+          "water_stress": 0.3
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 3795.9039548022592,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "hybrid",
+          "cooling_power_kw": 95.8965209634255,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 344.0,
+          "outside_temp_C": 18.2,
+          "pue": 1.2787689562890276,
+          "server_inlet_temp_C": 13.639805559822618,
+          "server_outlet_temp_C": 30.745393338906343,
+          "server_utilisation": 0.48,
+          "timestamp": "2026-01-01T13:05:00",
+          "total_power_kw": 439.8965209634255,
+          "water_consumed_L": 1159.6566765608447,
+          "water_flow_lpm": 45.915254237288124,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.3,
+          "wue": 8.008474576271185
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.78153102857439,
+          "outlet_temp_C": 31.148442191761514,
+          "time": "2026-01-01T13:10:00",
+          "water_consumed_cumulative_L": 1805.02032615009
+        },
+        "inputs": {
+          "mode": "evaporative",
+          "outside_temp": 19.9,
+          "utilisation": 0.51,
+          "water_stress": 0.35
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 4700.124093927919,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "evaporative",
+          "cooling_power_kw": 118.73997710975796,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 353.0,
+          "outside_temp_C": 19.9,
+          "pue": 1.3363738728321755,
+          "server_inlet_temp_C": 13.78153102857439,
+          "server_outlet_temp_C": 31.148442191761514,
+          "server_utilisation": 0.51,
+          "timestamp": "2026-01-01T13:10:00",
+          "total_power_kw": 471.73997710975794,
+          "water_consumed_L": 1805.02032615009,
+          "water_flow_lpm": 129.07272991784907,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.35,
+          "wue": 21.938707634761883
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.867491870634485,
+          "outlet_temp_C": 31.478360249103805,
+          "time": "2026-01-01T13:15:00",
+          "water_consumed_cumulative_L": 2067.8109076962464
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 21.6,
+          "utilisation": 0.54,
+          "water_stress": 0.0
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 4084.0703518657356,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "hybrid",
+          "cooling_power_kw": 103.17651415239753,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 362.0,
+          "outside_temp_C": 21.6,
+          "pue": 1.2850179948961258,
+          "server_inlet_temp_C": 13.867491870634485,
+          "server_outlet_temp_C": 31.478360249103805,
+          "server_utilisation": 0.54,
+          "timestamp": "2026-01-01T13:15:00",
+          "total_power_kw": 465.17651415239754,
+          "water_consumed_L": 2067.8109076962464,
+          "water_flow_lpm": 52.55811630923131,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.0,
+          "wue": 8.71128999600519
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.919629756878647,
+          "outlet_temp_C": 31.761738301720705,
+          "time": "2026-01-01T13:20:00",
+          "water_consumed_cumulative_L": 2350.958799606731
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 23.3,
+          "utilisation": 0.57,
+          "water_stress": 0.05
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 4272.131651657466,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "hybrid",
+          "cooling_power_kw": 107.92753646292546,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 371.0,
+          "outside_temp_C": 23.3,
+          "pue": 1.290909801786861,
+          "server_inlet_temp_C": 13.919629756878647,
+          "server_outlet_temp_C": 31.761738301720705,
+          "server_utilisation": 0.57,
+          "timestamp": "2026-01-01T13:20:00",
+          "total_power_kw": 478.92753646292545,
+          "water_consumed_L": 2350.958799606731,
+          "water_flow_lpm": 56.62957838209699,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.05,
+          "wue": 9.158422379853961
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.95125298341834,
+          "outlet_temp_C": 32.01478714245405,
+          "time": "2026-01-01T13:25:00",
+          "water_consumed_cumulative_L": 2655.699205927273
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 25.0,
+          "utilisation": 0.6,
+          "water_stress": 0.1
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 4467.644845748683,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "hybrid",
+          "cooling_power_kw": 112.86681715575621,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 380.0,
+          "outside_temp_C": 25.0,
+          "pue": 1.297017939883569,
+          "server_inlet_temp_C": 13.95125298341834,
+          "server_outlet_temp_C": 32.01478714245405,
+          "server_utilisation": 0.6,
+          "timestamp": "2026-01-01T13:25:00",
+          "total_power_kw": 492.8668171557562,
+          "water_consumed_L": 2655.699205927273,
+          "water_flow_lpm": 60.948081264108346,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.1,
+          "wue": 9.623381252227635
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.970433439873704,
+          "outlet_temp_C": 32.24741765734692,
+          "time": "2026-01-01T13:30:00",
+          "water_consumed_cumulative_L": 2983.3395803926564
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 26.7,
+          "utilisation": 0.63,
+          "water_stress": 0.15
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 4671.024007175016,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "hybrid",
+          "cooling_power_kw": 118.00481702336884,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 389.0,
+          "outside_temp_C": 26.7,
+          "pue": 1.3033542854071178,
+          "server_inlet_temp_C": 13.970433439873704,
+          "server_outlet_temp_C": 32.24741765734692,
+          "server_utilisation": 0.63,
+          "timestamp": "2026-01-01T13:30:00",
+          "total_power_kw": 507.00481702336884,
+          "water_consumed_L": 2983.3395803926564,
+          "water_flow_lpm": 65.5280748930767,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.15,
+          "wue": 10.10715808119435
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.982066974781164,
+          "outlet_temp_C": 32.46571577951574,
+          "time": "2026-01-01T13:35:00",
+          "water_consumed_cumulative_L": 3914.751347022445
+        },
+        "inputs": {
+          "mode": "evaporative",
+          "outside_temp": 28.4,
+          "utilisation": 0.66,
+          "water_stress": 0.2
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 5873.941692810724,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "evaporative",
+          "cooling_power_kw": 148.39431644995514,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 398.0,
+          "outside_temp_C": 28.4,
+          "pue": 1.3728500413315454,
+          "server_inlet_temp_C": 13.982066974781164,
+          "server_outlet_temp_C": 32.46571577951574,
+          "server_utilisation": 0.66,
+          "timestamp": "2026-01-01T13:35:00",
+          "total_power_kw": 546.3943164499551,
+          "water_consumed_L": 3914.751347022445,
+          "water_flow_lpm": 186.28235332595773,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.2,
+          "wue": 28.082766833058955
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.989123070383377,
+          "outlet_temp_C": 32.673443859562,
+          "time": "2026-01-01T13:40:00",
+          "water_consumed_cumulative_L": 4292.430644405306
+        },
+        "inputs": {
+          "mode": "hybrid",
+          "outside_temp": 30.1,
+          "utilisation": 0.69,
+          "water_stress": 0.25
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 5103.193555693777,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "hybrid",
+          "cooling_power_kw": 128.92278456489544,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 407.0,
+          "outside_temp_C": 30.1,
+          "pue": 1.3167635984395465,
+          "server_inlet_temp_C": 13.989123070383377,
+          "server_outlet_temp_C": 32.673443859562,
+          "server_utilisation": 0.69,
+          "timestamp": "2026-01-01T13:40:00",
+          "total_power_kw": 535.9227845648954,
+          "water_consumed_L": 4292.430644405306,
+          "water_flow_lpm": 75.53585947657224,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.25,
+          "wue": 11.13550753954382
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.993402808703982,
+          "outlet_temp_C": 32.87295151083005,
+          "time": "2026-01-01T13:45:00",
+          "water_consumed_cumulative_L": 4316.430169057743
+        },
+        "inputs": {
+          "mode": "closed_loop",
+          "outside_temp": 31.8,
+          "utilisation": 0.72,
+          "water_stress": 0.3
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 4740.425070653445,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "closed_loop",
+          "cooling_power_kw": 119.75810704808704,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 416.0,
+          "outside_temp_C": 31.8,
+          "pue": 1.28788006501944,
+          "server_inlet_temp_C": 13.993402808703982,
+          "server_outlet_temp_C": 32.87295151083005,
+          "server_utilisation": 0.72,
+          "timestamp": "2026-01-01T13:45:00",
+          "total_power_kw": 535.758107048087,
+          "water_consumed_L": 4316.430169057743,
+          "water_flow_lpm": 4.799904930487329,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.3,
+          "wue": 0.6922939803587495
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.995998601210976,
+          "outlet_temp_C": 33.06572826752498,
+          "time": "2026-01-01T13:50:00",
+          "water_consumed_cumulative_L": 4750.390948824873
+        },
+        "inputs": {
+          "mode": "free_air",
+          "outside_temp": 33.5,
+          "utilisation": 0.75,
+          "water_stress": 0.35
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 5572.624233289717,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "hybrid",
+          "cooling_power_kw": 140.78208589363499,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 425.0,
+          "outside_temp_C": 33.5,
+          "pue": 1.331251966808553,
+          "server_inlet_temp_C": 13.995998601210976,
+          "server_outlet_temp_C": 33.06572826752498,
+          "server_utilisation": 0.75,
+          "timestamp": "2026-01-01T13:50:00",
+          "total_power_kw": 565.782085893635,
+          "water_consumed_L": 4750.390948824873,
+          "water_flow_lpm": 86.79215595342596,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.35,
+          "wue": 12.253010252248371
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.99757302895272,
+          "outlet_temp_C": 33.25273897709459,
+          "time": "2026-01-01T13:55:00",
+          "water_consumed_cumulative_L": 5980.249403427433
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 35.2,
+          "utilisation": 0.78,
+          "water_stress": 0.0
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 7004.791096341094,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "evaporative",
+          "cooling_power_kw": 176.96314348651185,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 434.0,
+          "outside_temp_C": 35.2,
+          "pue": 1.40774917854035,
+          "server_inlet_temp_C": 13.99757302895272,
+          "server_outlet_temp_C": 33.25273897709459,
+          "server_utilisation": 0.78,
+          "timestamp": "2026-01-01T13:55:00",
+          "total_power_kw": 610.9631434865119,
+          "water_consumed_L": 5980.249403427433,
+          "water_flow_lpm": 245.97169092051203,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.0,
+          "wue": 34.00530289223669
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.99852796764959,
+          "outlet_temp_C": 33.43462740118427,
+          "time": "2026-01-01T14:00:00",
+          "water_consumed_cumulative_L": 7296.401110988035
+        },
+        "inputs": {
+          "mode": "evaporative",
+          "outside_temp": 36.9,
+          "utilisation": 0.81,
+          "water_stress": 0.05
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 7319.041845100115,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "evaporative",
+          "cooling_power_kw": 184.9021097709503,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 443.0,
+          "outside_temp_C": 36.9,
+          "pue": 1.4173862523046283,
+          "server_inlet_temp_C": 13.99852796764959,
+          "server_outlet_temp_C": 33.43462740118427,
+          "server_utilisation": 0.81,
+          "timestamp": "2026-01-01T14:00:00",
+          "total_power_kw": 627.9021097709503,
+          "water_consumed_L": 7296.401110988035,
+          "water_flow_lpm": 263.2303415121203,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.05,
+          "wue": 35.65196499035489
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.999107167247388,
+          "outlet_temp_C": 33.61183986900439,
+          "time": "2026-01-01T14:05:00",
+          "water_consumed_cumulative_L": 8704.135211676177
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 38.6,
+          "utilisation": 0.84,
+          "water_stress": 0.1
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 7647.508804380623,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "evaporative",
+          "cooling_power_kw": 193.20022242645786,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 452.0,
+          "outside_temp_C": 38.6,
+          "pue": 1.4274341204125176,
+          "server_inlet_temp_C": 13.999107167247388,
+          "server_outlet_temp_C": 33.61183986900439,
+          "server_utilisation": 0.84,
+          "timestamp": "2026-01-01T14:05:00",
+          "total_power_kw": 645.2002224264579,
+          "water_consumed_L": 8704.135211676177,
+          "water_flow_lpm": 281.5468201376285,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.1,
+          "wue": 37.3734716996852
+        }
+      },
+      {
+        "accumulators": {
+          "applied_chilled_water_temp_C": 12.0,
+          "inlet_temp_C": 13.999458469561546,
+          "outlet_temp_C": 33.78470042894369,
+          "time": "2026-01-01T14:10:00",
+          "water_consumed_cumulative_L": 10209.095472062552
+        },
+        "inputs": {
+          "mode": "auto",
+          "outside_temp": 40.3,
+          "utilisation": 0.87,
+          "water_stress": 0.15
+        },
+        "output": {
+          "anomaly": 0,
+          "carbon_data_is_real": false,
+          "carbon_gco2": 7991.112136007357,
+          "carbon_intensity_gco2_per_kwh": 475.0,
+          "cooling_mode": "evaporative",
+          "cooling_power_kw": 201.88072764650164,
+          "drought_override_active": false,
+          "humidity_pct": 50.0,
+          "it_power_kw": 461.0,
+          "outside_temp_C": 40.3,
+          "pue": 1.4379191489078127,
+          "server_inlet_temp_C": 13.999458469561546,
+          "server_outlet_temp_C": 33.78470042894369,
+          "server_utilisation": 0.87,
+          "timestamp": "2026-01-01T14:10:00",
+          "total_power_kw": 662.8807276465017,
+          "water_consumed_L": 10209.095472062552,
+          "water_flow_lpm": 300.99205207727516,
+          "water_pressure_bar": 3.0,
+          "water_stress": 0.15,
+          "wue": 39.17467055235686
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "commit": "unknown \u2014 no .git in snapshot",
+    "frozen_now": "2026-01-01T12:30:00",
+    "generated_on": "2026-10-01",
+    "note": "Informational metadata only: comparisons use the 'data' block. Hash mismatches are expected once later tasks legitimately edit the hashed files.",
+    "numpy": "2.4.4",
+    "physics_version": "legacy-0 (implicit)",
+    "python": "3.12.3",
+    "scenario_id": "live_twin_sequence",
+    "source_sha256": {
+      "api/services/live_broadcast_service.py": "32923b3edd87c1b48701e2c083ea832501d43885b110c92b82597ff87d23bd8c",
+      "api/services/twin_service.py": "65c3076f3fcf885dae345e5653d0b912c7e92b1b3228de66b774a8e4772b3841",
+      "src/digital_twin.py": "f90345162ff3f6478dadd873fb80bf08a71d5200b1645bb57f932547fac2d482"
+    },
+    "tolerance": {
+      "absolute": 1e-12,
+      "relative": 1e-09
+    }
+  }
+}

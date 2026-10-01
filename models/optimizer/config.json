@@ -29,5 +29,5 @@
     475.0,
     475.0
   ],
-  "patent_objective": "J = alpha*W + beta*E + gamma*C (C = real grid carbon emissions)"
+  "patent_objective": "J = alpha*W + beta*E + gamma*C (C = carbon emissions; flat 475 gCO2/kWh fallback unless real carbon data is loaded)"
 }

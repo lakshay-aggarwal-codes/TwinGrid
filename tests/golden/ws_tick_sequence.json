@@ -1,0 +1,211 @@
+{
+  "data": {
+    "key_set": [
+      "anomaly",
+      "carbon_data_is_real",
+      "carbon_gco2",
+      "carbon_intensity_gco2_per_kwh",
+      "cooling_mode",
+      "cooling_power_kw",
+      "drought_override_active",
+      "humidity_pct",
+      "it_power_kw",
+      "outside_temp_C",
+      "pue",
+      "server_inlet_temp_C",
+      "server_outlet_temp_C",
+      "server_utilisation",
+      "timestamp",
+      "total_power_kw",
+      "water_consumed_L",
+      "water_flow_lpm",
+      "water_pressure_bar",
+      "water_stress",
+      "wue"
+    ],
+    "payloads": [
+      {
+        "anomaly": 0,
+        "carbon_data_is_real": false,
+        "carbon_gco2": 5397.281467597464,
+        "carbon_intensity_gco2_per_kwh": 475.0,
+        "cooling_mode": "hybrid",
+        "cooling_power_kw": 136.35237391825174,
+        "drought_override_active": false,
+        "humidity_pct": 50.0,
+        "it_power_kw": 468.71672920607153,
+        "outside_temp_C": 19.176017223640926,
+        "pue": 1.2909057121754757,
+        "server_inlet_temp_C": 14.0,
+        "server_outlet_temp_C": 29.802647480976553,
+        "server_utilisation": 0.8957224306869052,
+        "timestamp": "2026-01-01T12:35:00",
+        "total_power_kw": 605.0691031243233,
+        "water_consumed_L": 332.41628510457906,
+        "water_flow_lpm": 66.48325702091581,
+        "water_pressure_bar": 3.0,
+        "water_stress": 0.19191342441949702,
+        "wue": 8.51046095156801
+      },
+      {
+        "anomaly": 0,
+        "carbon_data_is_real": false,
+        "carbon_gco2": 5397.281467597464,
+        "carbon_intensity_gco2_per_kwh": 475.0,
+        "cooling_mode": "hybrid",
+        "cooling_power_kw": 136.35237391825174,
+        "drought_override_active": false,
+        "humidity_pct": 50.0,
+        "it_power_kw": 468.71672920607153,
+        "outside_temp_C": 19.099545642970075,
+        "pue": 1.2909057121754757,
+        "server_inlet_temp_C": 14.0,
+        "server_outlet_temp_C": 31.52919426821754,
+        "server_utilisation": 0.8957224306869052,
+        "timestamp": "2026-01-01T12:40:00",
+        "total_power_kw": 605.0691031243233,
+        "water_consumed_L": 664.3633515388792,
+        "water_flow_lpm": 66.38941328686003,
+        "water_pressure_bar": 3.0,
+        "water_stress": 0.20721410420856634,
+        "wue": 8.49844810096444
+      },
+      {
+        "anomaly": 0,
+        "carbon_data_is_real": false,
+        "carbon_gco2": 5450.208245057398,
+        "carbon_intensity_gco2_per_kwh": 475.0,
+        "cooling_mode": "hybrid",
+        "cooling_power_kw": 137.68947145408163,
+        "drought_override_active": false,
+        "humidity_pct": 50.0,
+        "it_power_kw": 468.71672920607153,
+        "outside_temp_C": 20.971096425681164,
+        "pue": 1.2937583893950293,
+        "server_inlet_temp_C": 14.0,
+        "server_outlet_temp_C": 32.576397830107545,
+        "server_utilisation": 0.8957224306869052,
+        "timestamp": "2026-01-01T12:45:00",
+        "total_power_kw": 606.4062006601532,
+        "water_consumed_L": 1011.1617322989657,
+        "water_flow_lpm": 69.3596761520173,
+        "water_pressure_bar": 3.0,
+        "water_stress": 0.2025643526400076,
+        "wue": 8.878668734888269
+      },
+      {
+        "anomaly": 0,
+        "carbon_data_is_real": false,
+        "carbon_gco2": 5444.984950880011,
+        "carbon_intensity_gco2_per_kwh": 475.0,
+        "cooling_mode": "hybrid",
+        "cooling_power_kw": 137.55751454854766,
+        "drought_override_active": false,
+        "humidity_pct": 50.0,
+        "it_power_kw": 468.71672920607153,
+        "outside_temp_C": 20.876099451383,
+        "pue": 1.2934768613476786,
+        "server_inlet_temp_C": 14.0,
+        "server_outlet_temp_C": 33.21155889735411,
+        "server_utilisation": 0.8957224306869052,
+        "timestamp": "2026-01-01T12:50:00",
+        "total_power_kw": 606.2742437546192,
+        "water_consumed_L": 1357.0397136429528,
+        "water_flow_lpm": 69.1755962687974,
+        "water_pressure_bar": 3.0,
+        "water_stress": 0.189667115069502,
+        "wue": 8.855104837325017
+      },
+      {
+        "anomaly": 0,
+        "carbon_data_is_real": false,
+        "carbon_gco2": 5403.306792917242,
+        "carbon_intensity_gco2_per_kwh": 475.0,
+        "cooling_mode": "hybrid",
+        "cooling_power_kw": 136.50459266317245,
+        "drought_override_active": false,
+        "humidity_pct": 50.0,
+        "it_power_kw": 468.71672920607153,
+        "outside_temp_C": 20.111511812130964,
+        "pue": 1.2912304685484315,
+        "server_inlet_temp_C": 14.0,
+        "server_outlet_temp_C": 33.59680355849495,
+        "server_utilisation": 0.8957224306869052,
+        "timestamp": "2026-01-01T12:55:00",
+        "total_power_kw": 605.221321869244,
+        "water_consumed_L": 1695.5735648364478,
+        "water_flow_lpm": 67.706770238699,
+        "water_pressure_bar": 3.0,
+        "water_stress": 0.1711156480873409,
+        "wue": 8.66708176002803
+      }
+    ],
+    "persistence_per_run": {
+      "commits": 5,
+      "rows_added": [
+        {
+          "class": "SensorReading",
+          "source": "ws"
+        },
+        {
+          "class": "SensorReading",
+          "source": "ws"
+        },
+        {
+          "class": "SensorReading",
+          "source": "ws"
+        },
+        {
+          "class": "SensorReading",
+          "source": "ws"
+        },
+        {
+          "class": "SensorReading",
+          "source": "ws"
+        }
+      ]
+    },
+    "value_types": {
+      "anomaly": "int",
+      "carbon_data_is_real": "bool",
+      "carbon_gco2": "float",
+      "carbon_intensity_gco2_per_kwh": "float",
+      "cooling_mode": "str",
+      "cooling_power_kw": "float",
+      "drought_override_active": "bool",
+      "humidity_pct": "float",
+      "it_power_kw": "float",
+      "outside_temp_C": "float",
+      "pue": "float",
+      "server_inlet_temp_C": "float",
+      "server_outlet_temp_C": "float",
+      "server_utilisation": "float",
+      "timestamp": "str",
+      "total_power_kw": "float",
+      "water_consumed_L": "float",
+      "water_flow_lpm": "float",
+      "water_pressure_bar": "float",
+      "water_stress": "float",
+      "wue": "float"
+    }
+  },
+  "metadata": {
+    "commit": "unknown \u2014 no .git in snapshot",
+    "frozen_now": "2026-01-01T12:30:00",
+    "generated_on": "2026-10-01",
+    "note": "Informational metadata only: comparisons use the 'data' block. Hash mismatches are expected once later tasks legitimately edit the hashed files.",
+    "numpy": "2.4.4",
+    "physics_version": "legacy-0 (implicit)",
+    "python": "3.12.3",
+    "scenario_id": "ws_tick_sequence",
+    "source_sha256": {
+      "api/services/live_broadcast_service.py": "32923b3edd87c1b48701e2c083ea832501d43885b110c92b82597ff87d23bd8c",
+      "api/services/twin_service.py": "65c3076f3fcf885dae345e5653d0b912c7e92b1b3228de66b774a8e4772b3841",
+      "src/digital_twin.py": "f90345162ff3f6478dadd873fb80bf08a71d5200b1645bb57f932547fac2d482"
+    },
+    "tolerance": {
+      "absolute": 1e-12,
+      "relative": 1e-09
+    }
+  }
+}
