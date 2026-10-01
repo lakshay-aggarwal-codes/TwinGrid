@@ -171,11 +171,15 @@ export function OperationsConsole({
             <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               Run cooling optimization (PPO)
+              <span className="ml-auto rounded border border-warning/50 px-1.5 py-px text-[9px] uppercase tracking-wider text-warning">
+                Experimental — simulator-only
+              </span>
             </div>
             <p className="text-[10px] text-muted-foreground leading-snug">
-              Calls the real trained RL policy via POST /api/optimize. Requires operator
-              permission and is rate-limited to 10 runs/minute. This is a real backend action,
-              logged in the audit trail -- confirm before running.
+              Experimental: runs a trained RL policy inside the simulator via POST /api/optimize.
+              Results are simulated, not measured. Requires operator permission and is
+              rate-limited to 10 runs/minute. This is a backend action, logged in the audit
+              trail -- confirm before running.
             </p>
 
             {optimize.status === "idle" && (
@@ -187,7 +191,7 @@ export function OperationsConsole({
             {optimize.status === "confirming" && (
               <div className="space-y-1.5">
                 <p className="text-[11px] text-warning flex items-center gap-1">
-                  <ShieldAlert className="h-3 w-3" /> This will run a real 24h RL policy evaluation.
+                  <ShieldAlert className="h-3 w-3" /> This will run an experimental 24h RL policy evaluation in the simulator.
                 </p>
                 <div className="flex gap-1.5">
                   <Button size="sm" className="flex-1" onClick={runOptimization}>Confirm</Button>

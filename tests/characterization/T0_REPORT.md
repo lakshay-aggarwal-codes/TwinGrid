@@ -1,5 +1,10 @@
 # T0 report — characterization and contract freeze
 
+<<<<<<< HEAD
+=======
+> **Note (T0b):** counts and the tree hash below were measured at T0 on the unmodified snapshot. After T0b the healthz tests changed and the tree hash differs; see `T0b_REPORT.md`.
+
+>>>>>>> 018fac7 (fix all the issues with tests)
 Task: T0 (roadmap section 7). Production code changed: **none**. Frontend source changed: **none**.
 
 ## 1. Changed files (all new)
