@@ -8,14 +8,15 @@ STATE_KEYS = {"timestamp", "pue", "wue", "cooling_mode", "it_power_kw", "cooling
 
 
 # ----------------------------------------------------------------------------- /api/state
-async def test_state_returns_expected_shape_and_persists_one_row(client, viewer_headers, count_rows):
+async def test_state_returns_expected_shape_and_persists_nothing(client, viewer_headers, count_rows):
+    # T2: /api/state is a stateless preview. (Previously asserted one "api" row was written.)
     r = await client.get("/api/state", params={"utilisation": 0.6, "outside_temp": 22}, headers=viewer_headers)
     assert r.status_code == 200
     body = r.json()
     assert STATE_KEYS <= body.keys()
     assert body["pue"] >= 1.0
     assert isinstance(body["timestamp"], str)  # serialised, not a pandas Timestamp
-    assert await count_rows(SensorReading, SensorReading.source == "api") == 1
+    assert await count_rows(SensorReading) == 0
 
 
 @pytest.mark.parametrize(

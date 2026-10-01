@@ -7,7 +7,6 @@ from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import get_current_user
-from api.rate_limit import http_limit
 from api.repositories import data_repository
 from api.serialization import to_jsonable
 from api.services import twin_service
@@ -18,10 +17,9 @@ from src.facility_benchmarking import benchmark_pue
 router = APIRouter(tags=["digital-twin"])
 
 
-@router.get("/api/state", dependencies=[Depends(http_limit("state"))])
+@router.get("/api/state")
 async def get_state(
     _user: Annotated[User, Depends(get_current_user)],
-    session: AsyncSession = Depends(get_db),
     utilisation: float = Query(0.5, ge=0, le=1, description="Server utilisation [0-1]"),
     outside_temp: float = Query(25.0, ge=-10, le=50, description="Outside temp (°C)"),
     water_stress: float = Query(0.0, ge=0, le=1, description="Water stress [0-1]"),
@@ -29,13 +27,20 @@ async def get_state(
         "auto", description="Cooling mode: auto, free_air, closed_loop, evaporative, hybrid"
     ),
 ) -> dict[str, Any]:
-    """Get current state after one step. If mode='auto', uses rule-based selection."""
-    result = to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, mode))
-    await data_repository.save_sensor_reading(session, result, "api")
-    return result
+    """Stateless PREVIEW of one twin step for the given inputs. If mode='auto',
+    uses rule-based selection.
+
+    This is a what-the-twin-would-do-now calculation, not the live state (the
+    live state is what the WebSocket broadcasts). It runs on a throwaway twin
+    (``live=False``), so it does not advance the shared live twin, does not
+    touch its clock/thermal state/cumulative counters, and persists nothing.
+    Because the twin is fresh on every call, cumulative fields such as
+    ``water_consumed_L`` reflect a single step, not the live accumulator.
+    """
+    return to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, mode, live=False))
 
 
-@router.get("/api/benchmark", dependencies=[Depends(http_limit("benchmark"))])
+@router.get("/api/benchmark")
 async def get_benchmark(
     _user: Annotated[User, Depends(get_current_user)],
     utilisation: float = Query(0.5, ge=0, le=1),
@@ -49,7 +54,7 @@ async def get_benchmark(
     return benchmark_pue(state["pue"])
 
 
-@router.get("/api/simulate/{hours}", dependencies=[Depends(http_limit("simulate"))])
+@router.get("/api/simulate/{hours}")
 async def simulate(
     hours: Annotated[int, Path(ge=1, le=168, description="Hours to simulate (1-168)")],
     _user: Annotated[User, Depends(get_current_user)],
@@ -76,7 +81,7 @@ async def simulate(
     return hourly
 
 
-@router.get("/api/whatif", dependencies=[Depends(http_limit("whatif"))])
+@router.get("/api/whatif")
 async def whatif(
     _user: Annotated[User, Depends(get_current_user)],
     utilisation: float = Query(0.65, ge=0, le=1, description="Server utilisation [0-1]"),
