@@ -1,0 +1,135 @@
+{
+  "data": {
+    "1.0": {
+      "band": "elite",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Hyperscale-competitive efficiency",
+      "pue": 1.0,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.1": {
+      "band": "elite",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Hyperscale-competitive efficiency",
+      "pue": 1.1,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.2": {
+      "band": "elite",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Hyperscale-competitive efficiency",
+      "pue": 1.2,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.2000001": {
+      "band": "efficient",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Better than the capacity-weighted industry average (1.47)",
+      "pue": 1.2000001,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.3": {
+      "band": "efficient",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Better than the capacity-weighted industry average (1.47)",
+      "pue": 1.3,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.4": {
+      "band": "efficient",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Better than the capacity-weighted industry average (1.47)",
+      "pue": 1.4,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.4000001": {
+      "band": "average",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "In line with the 2024 industry average (1.56)",
+      "pue": 1.4000001,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.5": {
+      "band": "average",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "In line with the 2024 industry average (1.56)",
+      "pue": 1.5,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.56": {
+      "band": "average",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "In line with the 2024 industry average (1.56)",
+      "pue": 1.56,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.6": {
+      "band": "average",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "In line with the 2024 industry average (1.56)",
+      "pue": 1.6,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.6000001": {
+      "band": "below_average",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Worse than the 2024 industry average (1.56)",
+      "pue": 1.6000001,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "1.61": {
+      "band": "below_average",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Worse than the 2024 industry average (1.56)",
+      "pue": 1.61,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "2.0": {
+      "band": "below_average",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Worse than the 2024 industry average (1.56)",
+      "pue": 2.0,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    },
+    "3.5": {
+      "band": "below_average",
+      "industry_average_2024": 1.56,
+      "industry_capacity_weighted_2024": 1.47,
+      "note": "Worse than the 2024 industry average (1.56)",
+      "pue": 3.5,
+      "source": "Uptime Institute Global Data Center Survey 2024"
+    }
+  },
+  "metadata": {
+    "commit": "unknown \u2014 no .git in snapshot",
+    "frozen_now": "2026-01-01T12:30:00",
+    "generated_on": "2026-10-01",
+    "note": "Informational metadata only: comparisons use the 'data' block. Hash mismatches are expected once later tasks legitimately edit the hashed files.",
+    "numpy": "2.4.4",
+    "physics_version": "legacy-0 (implicit)",
+    "python": "3.12.3",
+    "scenario_id": "benchmark_pue",
+    "source_sha256": {
+      "api/services/live_broadcast_service.py": "32923b3edd87c1b48701e2c083ea832501d43885b110c92b82597ff87d23bd8c",
+      "api/services/twin_service.py": "65c3076f3fcf885dae345e5653d0b912c7e92b1b3228de66b774a8e4772b3841",
+      "src/digital_twin.py": "f90345162ff3f6478dadd873fb80bf08a71d5200b1645bb57f932547fac2d482"
+    },
+    "tolerance": {
+      "absolute": 1e-12,
+      "relative": 1e-09
+    }
+  }
+}

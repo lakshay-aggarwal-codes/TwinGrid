@@ -1,0 +1,543 @@
+{
+  "data": {
+    "u=0.3|t=10.0|w=0.0|mode=auto|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "free_air",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "auto",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.3,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 24.073819849061287,
+      "mean_pue": 1.1369112814895925,
+      "total_co2_kg": 3758.628696604611,
+      "total_energy_kwh": 7912.902519167551,
+      "total_water_L": 0.0,
+      "wue": 0.0
+    },
+    "u=0.3|t=10.0|w=0.0|mode=closed_loop|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.3,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.2704420375103078,
+      "total_co2_kg": 4200.08137600911,
+      "total_energy_kwh": 8842.276581071717,
+      "total_water_L": 3388.0978459291787,
+      "wue": 0.48679566751855835
+    },
+    "u=0.3|t=10.0|w=0.0|mode=evaporative|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "evaporative",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.3,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.3294106020802205,
+      "total_co2_kg": 4395.031450477244,
+      "total_energy_kwh": 9252.697790478356,
+      "total_water_L": 136186.2487544156,
+      "wue": 19.566989763565388
+    },
+    "u=0.3|t=10.0|w=0.8|mode=auto|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "auto",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.3,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.2704420375103078,
+      "total_co2_kg": 4200.08137600911,
+      "total_energy_kwh": 8842.276581071717,
+      "total_water_L": 3388.0978459291787,
+      "wue": 0.48679566751855835
+    },
+    "u=0.3|t=10.0|w=0.8|mode=closed_loop|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.3,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.2704420375103078,
+      "total_co2_kg": 4200.08137600911,
+      "total_energy_kwh": 8842.276581071717,
+      "total_water_L": 3388.0978459291787,
+      "wue": 0.48679566751855835
+    },
+    "u=0.3|t=10.0|w=0.8|mode=evaporative|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "evaporative",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.3,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.3294106020802205,
+      "total_co2_kg": 4395.031450477244,
+      "total_energy_kwh": 9252.697790478356,
+      "total_water_L": 136186.2487544156,
+      "wue": 19.566989763565388
+    },
+    "u=0.3|t=35.0|w=0.0|mode=auto|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "auto",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.3,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.3875418848002705,
+      "total_co2_kg": 4587.213471149684,
+      "total_energy_kwh": 9657.29151820984,
+      "total_water_L": 224306.76265433323,
+      "wue": 32.227983139990286
+    },
+    "u=0.3|t=35.0|w=0.0|mode=closed_loop|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.3,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.3181671029533004,
+      "total_co2_kg": 4357.860442363629,
+      "total_energy_kwh": 9174.44303655502,
+      "total_water_L": 5580.396452118664,
+      "wue": 0.8017810994423338
+    },
+    "u=0.3|t=35.0|w=0.0|mode=evaporative|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "evaporative",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.3,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.3875418848002705,
+      "total_co2_kg": 4587.213471149684,
+      "total_energy_kwh": 9657.29151820984,
+      "total_water_L": 224306.76265433323,
+      "wue": 32.227983139990286
+    },
+    "u=0.3|t=35.0|w=0.8|mode=auto|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "auto",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.3,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.3181671029533004,
+      "total_co2_kg": 4357.860442363629,
+      "total_energy_kwh": 9174.44303655502,
+      "total_water_L": 5580.396452118664,
+      "wue": 0.8017810994423338
+    },
+    "u=0.3|t=35.0|w=0.8|mode=closed_loop|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.3,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.3181671029533004,
+      "total_co2_kg": 4357.860442363629,
+      "total_energy_kwh": 9174.44303655502,
+      "total_water_L": 5580.396452118664,
+      "wue": 0.8017810994423338
+    },
+    "u=0.3|t=35.0|w=0.8|mode=evaporative|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "evaporative",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.3,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 25.073819849061287,
+      "mean_pue": 1.3875418848002705,
+      "total_co2_kg": 4587.213471149684,
+      "total_energy_kwh": 9657.29151820984,
+      "total_water_L": 224306.76265433323,
+      "wue": 32.227983139990286
+    },
+    "u=0.65|t=22.0|w=0.0|mode=closed_loop|chw=12.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 12.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 22.0,
+        "utilisation": 0.65,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 32.73735821275013,
+      "mean_pue": 1.257240351235969,
+      "total_co2_kg": 5661.353301615619,
+      "total_energy_kwh": 11918.638529717105,
+      "total_water_L": 5004.086262979372,
+      "wue": 0.5278572007362203
+    },
+    "u=0.65|t=22.0|w=0.0|mode=closed_loop|chw=5.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 5.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 22.0,
+        "utilisation": 0.65,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 25.73735821275013,
+      "mean_pue": 1.2991166874836986,
+      "total_co2_kg": 5849.922443739097,
+      "total_energy_kwh": 12315.62619734537,
+      "total_water_L": 5818.704956952799,
+      "wue": 0.6137874427165396
+    },
+    "u=0.9|t=10.0|w=0.0|mode=auto|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "free_air",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "auto",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.9,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 28.213593168321598,
+      "mean_pue": 1.1455180442374833,
+      "total_co2_kg": 6137.685681024421,
+      "total_energy_kwh": 12921.443538998767,
+      "total_water_L": 0.0,
+      "wue": 0.0
+    },
+    "u=0.9|t=10.0|w=0.0|mode=closed_loop|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.9,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.2874430503456449,
+      "total_co2_kg": 6898.119863751965,
+      "total_energy_kwh": 14522.357607898992,
+      "total_water_L": 5836.243694218067,
+      "wue": 0.51739749062217
+    },
+    "u=0.9|t=10.0|w=0.0|mode=evaporative|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "evaporative",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.9,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.350118602676659,
+      "total_co2_kg": 7233.935473141567,
+      "total_energy_kwh": 15229.337838192796,
+      "total_water_L": 234590.66758864466,
+      "wue": 20.79704499899336
+    },
+    "u=0.9|t=10.0|w=0.8|mode=auto|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "auto",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.9,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.2874430503456449,
+      "total_co2_kg": 6898.119863751965,
+      "total_energy_kwh": 14522.357607898992,
+      "total_water_L": 5836.243694218067,
+      "wue": 0.51739749062217
+    },
+    "u=0.9|t=10.0|w=0.8|mode=closed_loop|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.9,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.2874430503456449,
+      "total_co2_kg": 6898.119863751965,
+      "total_energy_kwh": 14522.357607898992,
+      "total_water_L": 5836.243694218067,
+      "wue": 0.51739749062217
+    },
+    "u=0.9|t=10.0|w=0.8|mode=evaporative|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "evaporative",
+        "outside_temp_C": 10.0,
+        "utilisation": 0.9,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.350118602676659,
+      "total_co2_kg": 7233.935473141567,
+      "total_energy_kwh": 15229.337838192796,
+      "total_water_L": 234590.66758864466,
+      "wue": 20.79704499899336
+    },
+    "u=0.9|t=35.0|w=0.0|mode=auto|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "auto",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.9,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.4119042384431277,
+      "total_co2_kg": 7564.982909578293,
+      "total_energy_kwh": 15926.279809638518,
+      "total_water_L": 386384.62896953494,
+      "wue": 34.25395646893047
+    },
+    "u=0.9|t=35.0|w=0.0|mode=closed_loop|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.9,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.3381682945242848,
+      "total_co2_kg": 7169.905722061141,
+      "total_energy_kwh": 15094.538362233974,
+      "total_water_L": 9612.636672829813,
+      "wue": 0.8521841022012262
+    },
+    "u=0.9|t=35.0|w=0.0|mode=evaporative|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": false,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "evaporative",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.9,
+        "water_stress": 0.0
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.4119042384431277,
+      "total_co2_kg": 7564.982909578293,
+      "total_energy_kwh": 15926.279809638518,
+      "total_water_L": 386384.62896953494,
+      "wue": 34.25395646893047
+    },
+    "u=0.9|t=35.0|w=0.8|mode=auto|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "auto",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.9,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.3381682945242848,
+      "total_co2_kg": 7169.905722061141,
+      "total_energy_kwh": 15094.538362233974,
+      "total_water_L": 9612.636672829813,
+      "wue": 0.8521841022012262
+    },
+    "u=0.9|t=35.0|w=0.8|mode=closed_loop|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "closed_loop",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "closed_loop",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.9,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.3381682945242848,
+      "total_co2_kg": 7169.905722061141,
+      "total_energy_kwh": 15094.538362233974,
+      "total_water_L": 9612.636672829813,
+      "wue": 0.8521841022012262
+    },
+    "u=0.9|t=35.0|w=0.8|mode=evaporative|chw=7.0": {
+      "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+      "carbon_data_is_real": false,
+      "drought_override_active": true,
+      "final_cooling_mode": "evaporative",
+      "hours": 24,
+      "inputs": {
+        "chilled_water_temp_C": 7.0,
+        "mode": "evaporative",
+        "outside_temp_C": 35.0,
+        "utilisation": 0.9,
+        "water_stress": 0.8
+      },
+      "max_outlet_temp_C": 29.213593168321598,
+      "mean_pue": 1.4119042384431277,
+      "total_co2_kg": 7564.982909578293,
+      "total_energy_kwh": 15926.279809638518,
+      "total_water_L": 386384.62896953494,
+      "wue": 34.25395646893047
+    }
+  },
+  "metadata": {
+    "commit": "unknown \u2014 no .git in snapshot",
+    "frozen_now": "2026-01-01T12:30:00",
+    "generated_on": "2026-10-01",
+    "note": "Informational metadata only: comparisons use the 'data' block. Hash mismatches are expected once later tasks legitimately edit the hashed files.",
+    "numpy": "2.4.4",
+    "physics_version": "legacy-0 (implicit)",
+    "python": "3.12.3",
+    "scenario_id": "compute_whatif_grid",
+    "source_sha256": {
+      "api/services/live_broadcast_service.py": "32923b3edd87c1b48701e2c083ea832501d43885b110c92b82597ff87d23bd8c",
+      "api/services/twin_service.py": "65c3076f3fcf885dae345e5653d0b912c7e92b1b3228de66b774a8e4772b3841",
+      "src/digital_twin.py": "f90345162ff3f6478dadd873fb80bf08a71d5200b1645bb57f932547fac2d482"
+    },
+    "tolerance": {
+      "absolute": 1e-12,
+      "relative": 1e-09
+    }
+  }
+}

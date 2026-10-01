@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Annotated
 
@@ -10,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.auth import get_current_user
 from database import get_db
 from models.db_models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["health"])
 
@@ -30,8 +33,10 @@ async def liveness_check(session: AsyncSession = Depends(get_db)) -> dict[str, s
     """
     try:
         await session.execute(text("SELECT 1"))
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Database unreachable: {e}")
+    except Exception:
+        # Raw exception text (driver/DSN/host details) stays server-side only.
+        logger.exception("Health check: database unreachable")
+        raise HTTPException(status_code=503, detail="Service unavailable") from None
     return {"status": "ok", "database": "ok", "timestamp": datetime.now().isoformat()}
 
 

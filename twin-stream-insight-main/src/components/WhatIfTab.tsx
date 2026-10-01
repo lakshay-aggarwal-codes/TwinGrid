@@ -91,7 +91,7 @@ export function WhatIfTab({ baseConfig }: Props) {
 
       <p className="text-xs text-muted-foreground">
         Results come from the backend digital twin: an isolated 24 h run at constant inputs
-        {a ? ` (${a.basis})` : ''}. The AI optimizer policy is not applied here.
+        {a ? ` (${a.basis})` : ''}. The experimental optimizer policy is not applied here.
         {loading && ' Updating…'}
       </p>
       {error && (

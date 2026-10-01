@@ -15,10 +15,12 @@ async def test_healthz_ok_without_auth(client):
     assert body["status"] == "ok" and body["database"] == "ok"
 
 
-async def test_healthz_returns_503_when_db_down(client):
+async def test_healthz_returns_503_when_db_down(client, caplog):
+    secret = "postgresql://user:hunter2@internal-db.example:5432/twingrid refused"
+
     class BrokenSession:
         async def execute(self, *a, **k):
-            raise RuntimeError("db down")
+            raise RuntimeError(secret)
 
     async def broken_db():
         yield BrokenSession()
@@ -26,11 +28,15 @@ async def test_healthz_returns_503_when_db_down(client):
     previous = app.dependency_overrides[get_db]
     app.dependency_overrides[get_db] = broken_db
     try:
-        r = await client.get("/healthz")
+        with caplog.at_level("ERROR"):
+            r = await client.get("/healthz")
     finally:
         app.dependency_overrides[get_db] = previous
     assert r.status_code == 503
-    assert "Database unreachable" in r.json()["detail"]
+    assert r.json() == {"detail": "Service unavailable"}
+    assert "hunter2" not in r.text and "internal-db" not in r.text and "RuntimeError" not in r.text
+    # The raw exception is still recorded server-side.
+    assert any("hunter2" in (rec.exc_text or "") or rec.exc_info for rec in caplog.records)
 
 
 async def test_api_health_requires_token(client):

@@ -12,6 +12,14 @@ export function DashboardHeader() {
   }, []);
 
   return (
+    <>
+      <div
+        role="status"
+        data-testid="simulated-banner"
+        className="shrink-0 border-b border-warning/40 bg-warning/10 px-6 py-1 text-center text-[11px] font-medium uppercase tracking-wider text-warning"
+      >
+        SIMULATED — no measured telemetry
+      </div>
     <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
       <div className="flex items-center gap-3">
         <div className="h-8 w-8 rounded-md bg-primary/20 flex items-center justify-center">
@@ -48,5 +56,6 @@ export function DashboardHeader() {
         </Badge>
       </div>
     </header>
+    </>
   );
 }

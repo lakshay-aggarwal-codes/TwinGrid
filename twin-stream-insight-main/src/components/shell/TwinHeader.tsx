@@ -51,6 +51,14 @@ export function TwinHeader({
   const isLive = liveState !== null;
 
   return (
+    <>
+      <div
+        role="status"
+        data-testid="simulated-banner"
+        className="shrink-0 border-b border-warning/40 bg-warning/10 px-6 py-1 text-center text-[11px] font-medium uppercase tracking-wider text-warning"
+      >
+        SIMULATED — no measured telemetry
+      </div>
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm shrink-0">
       <div className="flex flex-wrap items-center gap-3">
         <div className="h-8 w-8 rounded-md bg-primary/20 flex items-center justify-center">
@@ -135,5 +143,6 @@ export function TwinHeader({
         </RotateLink>
       </div>
     </header>
+    </>
   );
 }

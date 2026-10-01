@@ -74,7 +74,7 @@ export function DashboardSidebar({ config, onChange, onRunSim, simRunning, colla
             </div>
 
             <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">AI Optimizer</Label>
+              <Label className="text-xs text-muted-foreground">Optimizer (experimental, simulator-only)</Label>
               <Switch checked={config.aiOptimizer} onCheckedChange={v => set({ aiOptimizer: v })} />
             </div>
 

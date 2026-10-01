@@ -12,7 +12,9 @@ export function SustainabilityTab({ liveState, equipmentHealth }: Props) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Grid Carbon Intensity</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {liveState?.carbon_data_is_real === true ? 'Grid Carbon Intensity' : 'Carbon Intensity (fallback)'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {liveState?.carbon_intensity_gco2_per_kwh !== undefined ? (
