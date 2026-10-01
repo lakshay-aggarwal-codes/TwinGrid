@@ -7,6 +7,7 @@ from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import get_current_user
+from api.rate_limit import http_limit
 from api.repositories import data_repository
 from api.serialization import to_jsonable
 from api.services import twin_service
@@ -17,7 +18,7 @@ from src.facility_benchmarking import benchmark_pue
 router = APIRouter(tags=["digital-twin"])
 
 
-@router.get("/api/state")
+@router.get("/api/state", dependencies=[Depends(http_limit("state"))])
 async def get_state(
     _user: Annotated[User, Depends(get_current_user)],
     session: AsyncSession = Depends(get_db),
@@ -34,7 +35,7 @@ async def get_state(
     return result
 
 
-@router.get("/api/benchmark")
+@router.get("/api/benchmark", dependencies=[Depends(http_limit("benchmark"))])
 async def get_benchmark(
     _user: Annotated[User, Depends(get_current_user)],
     utilisation: float = Query(0.5, ge=0, le=1),
@@ -48,7 +49,7 @@ async def get_benchmark(
     return benchmark_pue(state["pue"])
 
 
-@router.get("/api/simulate/{hours}")
+@router.get("/api/simulate/{hours}", dependencies=[Depends(http_limit("simulate"))])
 async def simulate(
     hours: Annotated[int, Path(ge=1, le=168, description="Hours to simulate (1-168)")],
     _user: Annotated[User, Depends(get_current_user)],
@@ -75,7 +76,7 @@ async def simulate(
     return hourly
 
 
-@router.get("/api/whatif")
+@router.get("/api/whatif", dependencies=[Depends(http_limit("whatif"))])
 async def whatif(
     _user: Annotated[User, Depends(get_current_user)],
     utilisation: float = Query(0.65, ge=0, le=1, description="Server utilisation [0-1]"),

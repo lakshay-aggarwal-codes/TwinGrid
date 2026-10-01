@@ -7,6 +7,8 @@ from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import get_current_user, require_operator
+from api.config import MAX_RECENT_DATA_CHARS
+from api.rate_limit import http_limit
 from api.repositories import data_repository
 from api.schemas.optimization import AnomalyScoreResponse
 from api.services import anomaly_service, audit_service, webhook_service
@@ -17,11 +19,15 @@ from models.db_models import User
 router = APIRouter(tags=["anomaly"])
 
 
-@router.get("/api/anomaly_score")
+@router.get("/api/anomaly_score", dependencies=[Depends(http_limit("anomaly_score"))])
 async def anomaly_score(
     _user: Annotated[User, Depends(get_current_user)],
     session: AsyncSession = Depends(get_db),
-    recent_data: str = Query(..., description="JSON array of recent sensor readings, shape (12, 5)"),
+    recent_data: str = Query(
+        ...,
+        max_length=MAX_RECENT_DATA_CHARS,
+        description="JSON array of recent sensor readings, shape (12, 5)",
+    ),
 ) -> AnomalyScoreResponse:
     """Compute anomaly score from the last 12 timesteps of 5 sensor features."""
     result = anomaly_service.score_recent_data(recent_data)
@@ -46,7 +52,7 @@ async def anomaly_score(
     return AnomalyScoreResponse(**result)
 
 
-@router.post("/api/webhooks")
+@router.post("/api/webhooks", dependencies=[Depends(http_limit("webhook"))])
 async def register_webhook(
     _user: Annotated[User, Depends(require_operator)],
     url: str = Query(..., max_length=2048),
@@ -68,7 +74,7 @@ async def register_webhook(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
-@router.delete("/api/webhooks")
+@router.delete("/api/webhooks", dependencies=[Depends(http_limit("webhook"))])
 async def unregister_webhook(
     _user: Annotated[User, Depends(require_operator)],
     url: str = Query(..., max_length=2048),
@@ -103,7 +109,7 @@ async def list_alerts(
     ]
 
 
-@router.post("/api/alerts/{alert_id}/acknowledge")
+@router.post("/api/alerts/{alert_id}/acknowledge", dependencies=[Depends(http_limit("alert_ack"))])
 async def acknowledge_alert(
     alert_id: int,
     request: Request,

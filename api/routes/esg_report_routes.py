@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from api.auth import get_current_user
+from api.rate_limit import http_limit
 from api.serialization import to_jsonable
 from api.services import esg_report_service, twin_service
 from models.db_models import User
@@ -18,7 +19,7 @@ from models.db_models import User
 router = APIRouter(tags=["esg-report"])
 
 
-@router.get("/api/esg_report")
+@router.get("/api/esg_report", dependencies=[Depends(http_limit("esg_report"))])
 async def esg_report(
     _user: Annotated[User, Depends(get_current_user)],
     utilisation: float = Query(0.5, ge=0, le=1),

@@ -5,6 +5,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.auth import get_current_user
+from api.rate_limit import http_limit
 from api.services import shadow_mode_service
 from api.services.optimization_service import _ensure_optimizer
 from models.db_models import User
@@ -12,7 +13,7 @@ from models.db_models import User
 router = APIRouter(tags=["shadow-mode"])
 
 
-@router.post("/api/shadow_mode/sample")
+@router.post("/api/shadow_mode/sample", dependencies=[Depends(http_limit("shadow_sample"))])
 async def shadow_mode_sample(_user: Annotated[User, Depends(get_current_user)]) -> dict[str, Any]:
     """One shadow-mode sample: log what PPO would have done vs. the
     rule-based baseline for the live twin's CURRENT state, without applying

@@ -38,3 +38,71 @@ class Settings:
 
 
 settings = Settings()
+
+
+# -----------------------------------------------------------------------------
+# HTTP limits (T5). Read from the environment at call time (not import time) so
+# an override never needs a code change and tests can monkeypatch the env.
+# Rate strings look like "30/minute" (units: second|minute|hour|day, short forms
+# s/sec/m/min/h/d accepted). In-memory, per process -- see api/rate_limit.py.
+# -----------------------------------------------------------------------------
+
+# scope -> (environment variable, default)
+RATE_LIMIT_DEFAULTS: dict[str, tuple[str, str]] = {
+    "state": ("RATE_LIMIT_STATE", "30/minute"),
+    "whatif": ("RATE_LIMIT_WHATIF", "30/minute"),
+    "benchmark": ("RATE_LIMIT_BENCHMARK", "30/minute"),
+    "simulate": ("RATE_LIMIT_SIMULATE", "6/minute"),
+    "anomaly_score": ("RATE_LIMIT_ANOMALY_SCORE", "30/minute"),
+    "esg_report": ("RATE_LIMIT_ESG_REPORT", "6/minute"),
+    "shadow_sample": ("RATE_LIMIT_SHADOW_SAMPLE", "10/minute"),
+    "alert_ack": ("RATE_LIMIT_ALERT_ACK", "30/minute"),
+    "webhook": ("RATE_LIMIT_WEBHOOK", "30/minute"),
+    "optimize": ("RATE_LIMIT_OPTIMIZE", "10/minute"),
+    "train_async": ("RATE_LIMIT_TRAIN_ASYNC", "5/minute"),
+}
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int, minimum: int = 1) -> int:
+    raw = os.getenv(name)
+    try:
+        value = int(raw) if raw is not None and raw.strip() else default
+    except ValueError:
+        return default
+    return max(minimum, value)
+
+
+def rate_limit_setting(scope: str) -> str:
+    """Raw rate string for a limit scope (env override, else the default)."""
+    env_name, default = RATE_LIMIT_DEFAULTS[scope]
+    raw = os.getenv(env_name)
+    return raw.strip() if raw and raw.strip() else default
+
+
+def trust_proxy_headers() -> bool:
+    """TRUST_PROXY_HEADERS=true: derive the client IP from X-Forwarded-For.
+    Default false -- the header is ignored (it is trivially spoofable)."""
+    return _env_bool("TRUST_PROXY_HEADERS", False)
+
+
+def trusted_proxy_hops() -> int:
+    """Number of trusted proxies in front of the app. The client IP is the
+    X-Forwarded-For entry that many positions from the RIGHT (the one appended
+    by the nearest trusted proxy), never the client-controlled leftmost entry."""
+    return _env_int("TRUSTED_PROXY_HOPS", 1)
+
+
+def max_query_string_chars() -> int:
+    """Requests to limited routes with a longer raw query string get 413."""
+    return _env_int("MAX_QUERY_STRING_CHARS", 16384)
+
+
+# Static bound used in a Query(max_length=...) declaration (import time; 422).
+MAX_RECENT_DATA_CHARS: int = _env_int("MAX_RECENT_DATA_CHARS", 4096)

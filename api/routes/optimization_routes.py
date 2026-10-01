@@ -7,7 +7,7 @@ from redis.exceptions import RedisError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import require_operator
-from api.rate_limit import limiter
+from api.rate_limit import http_limit
 from api.repositories import data_repository
 from api.schemas.optimization import OptimizeRequest
 from api.serialization import to_jsonable
@@ -19,8 +19,7 @@ from src.task_queue import JobNotFoundError, enqueue, get_status
 router = APIRouter(tags=["optimization"])
 
 
-@router.post("/api/optimize")
-@limiter.limit("10/minute")
+@router.post("/api/optimize", dependencies=[Depends(http_limit("optimize"))])
 async def optimize(
     request: Request,
     body: OptimizeRequest,
@@ -68,8 +67,7 @@ async def optimize(
     return {"results": serialized_results, "summary": summary}
 
 
-@router.post("/api/optimize/train_async")
-@limiter.limit("5/minute")
+@router.post("/api/optimize/train_async", dependencies=[Depends(http_limit("train_async"))])
 async def train_optimizer_async(
     request: Request,
     body: OptimizeRequest,
