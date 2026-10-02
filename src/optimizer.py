@@ -25,9 +25,8 @@ import numpy as np
 import pandas as pd
 
 from .carbon_provider import load_diurnal_carbon_intensity
-from .digital_twin import OUTLET_TEMP_MAX, PUE_MAX_SAFE, SAFETY_ENVELOPE, CoolingMode, DigitalTwin
+from .digital_twin import OUTLET_TEMP_MAX, CoolingMode, DigitalTwin
 from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
-from .versions import LEGACY_PHYSICS_VERSION, active_physics_version, validate_physics_version
 
 logger = logging.getLogger(__name__)
 
@@ -67,16 +66,6 @@ OUTLET_MAX = OUTLET_TEMP_MAX  # re-exported from digital_twin, not a second copy
 EPISODE_STEPS = 288  # 24 hours at 5-min intervals
 DROUGHT_THRESHOLD = 0.7
 DROUGHT_OVERRIDE_MODE = "closed_loop"
-
-# Chilled-water setpoint range the agent can command, per physics version. legacy-0 keeps the
-# original 5-15 C, which (inlet = setpoint + 2 C) could never reach the 18-27 C inlet envelope.
-# v1 holds supply air at >= 18 C, so setpoints up to ~16 C are all equally "safe" and warmer
-# ones trade chiller efficiency against the inlet/outlet limits (about 22 C at full load):
-# 10-25 C spans that whole trade-off, including a region where the envelope is violated.
-CHILLED_WATER_ACTION_RANGE_C: dict[str, tuple[float, float]] = {
-    LEGACY_PHYSICS_VERSION: (5.0, 15.0),
-    "1": (10.0, 25.0),
-}
 
 # Observation normalisation ranges.
 # inlet_temp widened from the old (15, 30) -- that range was tuned for the
@@ -142,14 +131,9 @@ class DataCentreEnv(gym.Env):
         seed: int | None = None,
         pinn: Any = None,
         carbon_intensity_by_hour: np.ndarray | None = None,
-        physics_version: str | None = None,
     ) -> None:
         """
         Initialise environment with patent objective weights.
-
-        physics_version: "legacy-0" or "1"; None -> $PHYSICS_VERSION / the current default. It
-            selects the twin's physics, the chilled-water action range, the carbon normaliser
-            and the safety penalty (legacy-0: outlet only; v1: the full SAFETY_ENVELOPE).
 
         PATENT PARAMETERS:
           alpha: Weight for W (WUE) in J = α·W + β·E + γ·C
@@ -164,22 +148,15 @@ class DataCentreEnv(gym.Env):
         self._water_stress = water_stress
         self._max_steps = max_steps
         self._pinn = pinn
-        self._physics_version = validate_physics_version(
-            physics_version if physics_version is not None else active_physics_version()
-        )
-        self._legacy = self._physics_version == LEGACY_PHYSICS_VERSION
-        self._chilled_water_range_C = CHILLED_WATER_ACTION_RANGE_C[self._physics_version]
 
         if carbon_intensity_by_hour is None:
             carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
         self._carbon_intensity_by_hour = carbon_intensity_by_hour
-        # Normalisation ceiling for the carbon reward term, at the dirtiest hour in the real
-        # curve over one 5-min interval -- a data-derived bound rather than a guessed constant.
-        #   legacy-0: 150 kW (cooling power only, the old carbon_gco2 definition)
-        #   v1:       total facility power at the safety limit (MAX_IT_POWER_KW x PUE_MAX_SAFE),
-        #             because v1 carbon_gco2 counts total energy (src.digital_twin.carbon_emissions_gco2)
-        carbon_norm_power_kw = 150.0 if self._legacy else MAX_IT_POWER_KW * PUE_MAX_SAFE
-        self._carbon_norm_max = carbon_norm_power_kw * float(self._carbon_intensity_by_hour.max()) * (INTERVAL_MIN / 60)
+        # Normalisation ceiling for the carbon reward term: max possible
+        # cooling power (150 kW, matching the existing cooling_norm range)
+        # at the dirtiest hour in the real curve, over one 5-min interval --
+        # a real, data-derived bound rather than a guessed constant.
+        self._carbon_norm_max = 150.0 * float(self._carbon_intensity_by_hour.max()) * (INTERVAL_MIN / 60)
 
         # PATENT: Action = [chilled_water_temp 5–15°C, cooling_mode 0–3]
         # Normalised to [0,1] for continuous control
@@ -306,7 +283,7 @@ class DataCentreEnv(gym.Env):
         )
 
     def _action_to_control(self, action: np.ndarray) -> tuple[float, str]:
-        chilled = _denormalise(float(np.asarray(action).flat[0]), *self._chilled_water_range_C)
+        chilled = _denormalise(float(np.asarray(action).flat[0]), 5.0, 15.0)
         mode_idx = int(np.clip(round(np.asarray(action).flat[1] * 3), 0, 3))
         mode = COOLING_MODES[mode_idx]
 
@@ -336,7 +313,6 @@ class DataCentreEnv(gym.Env):
             initial_cooling_mode=CoolingMode.CLOSED_LOOP,
             initial_chilled_water_temp_C=10.0,
             start_time=datetime(2000, 1, 1) + timedelta(hours=hour),
-            physics_version=self._physics_version,
         )
         # Reuse this env's already-loaded carbon curve (same one passed to
         # JointOptimizer/DataCentreEnv at construction) rather than letting
@@ -373,14 +349,8 @@ class DataCentreEnv(gym.Env):
         J = self._alpha * wue_norm + self._beta * pue_norm + self._gamma * carbon_norm
         reward = -J
 
-        # PATENT: Safety penalty — leaving the safe envelope.
-        # legacy-0 penalised only outlet > 45 C (kept for replay). v1 uses the SAME envelope as
-        # DigitalTwin.is_safe(): inlet 18-27 C, outlet <= 45 C, PUE <= 2.0.
-        if self._legacy:
-            unsafe = self._state["outlet_temp"] > OUTLET_MAX
-        else:
-            unsafe = bool(self.safety_violations_of(self._state))
-        if unsafe:
+        # PATENT: Safety penalty — thermal constraint violation
+        if self._state["outlet_temp"] > OUTLET_MAX:
             reward -= 2.0
 
         self._step_count += 1
@@ -388,15 +358,6 @@ class DataCentreEnv(gym.Env):
         truncated = False
         info = {"state": self._state.copy()}
         return self._get_obs().astype(np.float32), reward, terminated, truncated, info
-
-    @staticmethod
-    def safety_violations_of(state: dict[str, float]) -> tuple[str, ...]:
-        """Violated limits of an env state dict, from the single SAFETY_ENVELOPE."""
-        return SAFETY_ENVELOPE.violations(state["inlet_temp"], state["outlet_temp"], state["pue"])
-
-    @property
-    def physics_version(self) -> str:
-        return self._physics_version
 
     def get_state_dict(self) -> dict[str, float]:
         return self._state.copy()
@@ -545,6 +506,18 @@ class JointOptimizer:
         logger.info("Episode: %d steps, total_reward=%.2f", len(df), df["reward"].sum())
         return df
 
+    def policy_action(self, obs: np.ndarray, *, deterministic: bool = True) -> np.ndarray:
+        """Normalised action [chilled_water, cooling_mode] in [0, 1]^2 for one observation (T8).
+
+        Evaluation hook for src/policy_evaluation.py: the same ``predict`` call ``run_episode``
+        makes, exposed so the harness does not reach into ``_model``. Changes no training or
+        physics behaviour.
+        """
+        if self._model is None:
+            raise RuntimeError("Model not trained. Call train() first.")
+        action, _ = self._model.predict(obs, deterministic=deterministic)
+        return np.asarray(action, dtype=np.float32)
+
     def compare_scenarios(
         self,
         normal_stress: float = 0.0,
@@ -559,8 +532,6 @@ class JointOptimizer:
         if self._model is None:
             raise RuntimeError("Model not trained. Call train() first.")
 
-        env_legacy = active_physics_version() == LEGACY_PHYSICS_VERSION
-
         def run_and_aggregate(stress: float) -> dict[str, float]:
             df = self.run_episode(water_stress=stress)
             return {
@@ -573,7 +544,7 @@ class JointOptimizer:
                 "total_carbon_gco2": float(df["carbon_gco2"].sum()),
                 "drought_override_active_pct": float(df["drought_override_active"].mean() * 100),
                 "total_reward": float(df["reward"].sum()),
-                "safety_violations": self._count_safety_violations(df, env_legacy),
+                "safety_violations": int((df["outlet_temp"] > OUTLET_MAX).sum()),
             }
 
         normal = run_and_aggregate(normal_stress)
@@ -596,19 +567,6 @@ class JointOptimizer:
                 else 0,
             },
         }
-
-    @staticmethod
-    def _count_safety_violations(df: pd.DataFrame, legacy: bool) -> int:
-        """Steps outside the safe envelope. legacy-0: outlet only (as before); v1: SAFETY_ENVELOPE."""
-        if legacy:
-            return int((df["outlet_temp"] > OUTLET_MAX).sum())
-        return int(
-            sum(
-                1
-                for inlet, outlet, pue in zip(df["inlet_temp"], df["outlet_temp"], df["pue"])
-                if SAFETY_ENVELOPE.violations(inlet, outlet, pue)
-            )
-        )
 
     def save(self, path: str | Path) -> None:
         """Save PPO model and patent config (alpha, beta, gamma, carbon curve)."""

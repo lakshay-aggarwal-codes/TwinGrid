@@ -5,7 +5,8 @@ Steps:
   1. Generate 90 days sensor data (data_generator.generate_sensor_data)
   2. Train LSTM ThermalForecaster via DataPipeline
   3. Train AnomalyDetector on normal data
-  4. Train JointOptimizer (PPO) for water+energy optimization
+  4. Train JointOptimizer (PPO) for water+energy optimization: >= 5 seeds, evaluated by
+     src/policy_evaluation.py (T8 decision harness; outcome A/B/C in reports/policy_evaluation/)
   5. Baseline PUE from rule-based DigitalTwin
   6. Compare normal vs drought scenarios
 
@@ -221,40 +222,71 @@ def main() -> None:
     print("5. TRAINING RL OPTIMIZER (PPO) -- multi-seed")
     print("=" * 60)
     pbar.set_postfix_str("RL optimizer")
-    PPO_SEEDS = [0, 1, 2]
-    pue_improvements: list[float] = []
-    optimizer: JointOptimizer | None = None
-    comparison = None
+    # T8: >= 5 training seeds, every one kept as a CANDIDATE. Which candidate is "deployed" is decided
+    # by validation scenarios inside the evaluation harness, not by seed order. The harness
+    # (src/policy_evaluation.py) is the only place PPO is compared with anything: identical scenarios,
+    # held-out seeds and families, paired t-based CIs, A/B/C outcome pre-registered in
+    # reports/policy_evaluation/PREREGISTRATION.json.
+    from src import policy_evaluation as pe
+
+    eval_out = _root("reports/policy_evaluation")
+    if not (eval_out / "PREREGISTRATION.json").exists():
+        print("   No pre-registration found -- writing the default one BEFORE evaluating.")
+        pe.write_preregistration(pe.EvalConfig(), eval_out)
+    eval_cfg = pe.load_preregistered_config(eval_out)
+    PPO_SEEDS = list(eval_cfg.training_seeds)
+    candidates: dict[int, JointOptimizer] = {}
+    candidate_dirs: dict[int, str] = {}
     for i, seed in enumerate(PPO_SEEDS):
         print(f"   Seed {seed} ({i + 1}/{len(PPO_SEEDS)})")
-        opt_i = JointOptimizer(alpha=0.5, beta=0.3, gamma=0.2, seed=seed)
+        opt_i = JointOptimizer(alpha=eval_cfg.alpha, beta=eval_cfg.beta, gamma=eval_cfg.gamma, seed=seed)
         opt_i.train(total_timesteps=50_000, n_envs=4, water_stress=0.0)
-        comparison_i = opt_i.compare_scenarios(normal_stress=0.0, drought_stress=0.8)
-        pue_opt_i = comparison_i["normal"]["mean_pue"]
-        improvement_i = (pue_baseline - pue_opt_i) / pue_baseline * 100 if pue_baseline > 0 else 0.0
-        pue_improvements.append(improvement_i)
-        print(f"      PUE improvement vs. baseline: {improvement_i:.2f}%")
-        if seed == PPO_SEEDS[0]:
-            optimizer = opt_i  # the deployed artifact is the first seed's run
-            comparison = comparison_i
+        cand_dir = _root(f"models/optimizer_candidates/seed_{seed}")
+        opt_i.save(cand_dir)
+        candidates[seed] = opt_i
+        candidate_dirs[seed] = str(cand_dir)
 
+    print(
+        "   Evaluating all candidates against the rule baseline and the best constant "
+        "(identical scenarios, held-out seeds/families) ..."
+    )
+    eval_result = pe.run_evaluation(eval_cfg, ppo_candidates=candidates, progress=lambda m: print(f"      {m}"))
+    run_dir = pe.write_results(eval_result, eval_out, f"full_{eval_result['scenario_set_id']}")
+    pe.register_candidates(eval_result, candidate_dirs)
+    decision = eval_result["decision"]
+    print(f"   EVIDENCE OUTCOME: {decision['outcome']} -- {decision['reason']}")
+    print(f"   Report: {run_dir}")
+
+    selected_seed = eval_result["selection"]["selected_ppo_seed"]
+    optimizer = candidates[selected_seed]  # chosen by validation reward, NOT seed order
+    comparison = optimizer.compare_scenarios(normal_stress=0.0, drought_stress=0.8)
+
+    # PUE change vs the rule baseline per seed, on the SAME held-out test scenarios (paired), with a
+    # t-based CI across seeds. (The earlier number compared PPO against a rule run on different
+    # workload/weather profiles and used 1.96; it was not a like-for-like comparison.)
+    rule_pue = eval_result["summary_test_mean_per_episode"]["rule"]["mean_pue"]
+    pue_improvements = [
+        (rule_pue - eval_result["summary_test_mean_per_episode"][f"ppo_seed_{sd}"]["mean_pue"]) / rule_pue * 100
+        for sd in PPO_SEEDS
+    ]
     pue_improvement_mean = float(np.mean(pue_improvements))
-    pue_improvement_std = float(np.std(pue_improvements, ddof=1)) if len(pue_improvements) > 1 else 0.0
+    pue_improvement_std = float(np.std(pue_improvements, ddof=1))
     pue_improvement_ci95 = (
-        1.96 * pue_improvement_std / np.sqrt(len(pue_improvements)) if len(pue_improvements) > 1 else 0.0
+        pe.t_critical(len(PPO_SEEDS) - 1, eval_cfg.confidence) * pue_improvement_std / np.sqrt(len(PPO_SEEDS))
     )
     metrics["pue_improvement_mean_pct"] = pue_improvement_mean
     metrics["pue_improvement_std_pct"] = pue_improvement_std
     metrics["pue_improvement_ci95_pct"] = pue_improvement_ci95
     print(
-        f"   PUE improvement across {len(PPO_SEEDS)} seeds: "
-        f"{pue_improvement_mean:.2f}% +/- {pue_improvement_ci95:.2f}% (95% CI)"
+        f"   PUE vs rule baseline (paired, held-out) across {len(PPO_SEEDS)} seeds: "
+        f"{pue_improvement_mean:.2f}% +/- {pue_improvement_ci95:.2f}% (t-based 95% CI)"
     )
 
     _root("models/optimizer").mkdir(parents=True, exist_ok=True)
-    assert optimizer is not None
     optimizer.save(_root("models/optimizer"))
-    print(f"   Saved to models/optimizer/ (deployed artifact: seed={PPO_SEEDS[0]})")
+    print(
+        f"   Saved to models/optimizer/ (selected by validation: seed={selected_seed}; outcome {decision['outcome']})"
+    )
     log_model(
         "ppo_optimizer",
         metrics={
@@ -262,15 +294,27 @@ def main() -> None:
             "pue_improvement_std_pct": pue_improvement_std,
             "pue_improvement_ci95_pct": pue_improvement_ci95,
             "pue_improvement_per_seed_pct": dict(zip(PPO_SEEDS, pue_improvements)),
+            "decision_outcome": decision["outcome"],
         },
         data_source="live DigitalTwin simulation (no historical dataset)",
         artifact_path=str(_root("models/optimizer")),
-        params={"alpha": 0.5, "beta": 0.3, "gamma": 0.2, "seeds": PPO_SEEDS, "total_timesteps": 50_000},
+        params={
+            "alpha": eval_cfg.alpha,
+            "beta": eval_cfg.beta,
+            "gamma": eval_cfg.gamma,
+            "seeds": PPO_SEEDS,
+            "selected_seed": selected_seed,
+            "selected_by": "validation reward",
+            "total_timesteps": 50_000,
+            "physics_version": eval_result["physics_version"],
+            "scenario_set_id": eval_result["scenario_set_id"],
+            "preregistration_sha256": eval_result["preregistration_sha256"],
+        },
     )
     pbar.update(1)
 
     # -------------------------------------------------------------------------
-    # 6. Compare scenarios (normal vs drought) -- for the deployed (seed 0)
+    # 6. Compare scenarios (normal vs drought) -- for the deployed (validation-selected)
     #    optimizer specifically.
     # -------------------------------------------------------------------------
     print("\n" + "=" * 60)
@@ -303,9 +347,9 @@ def main() -> None:
     | Anomaly Precision (held-out)         | {metrics.get("anomaly_precision", 0):.4f}   |
     | Anomaly Recall (held-out)            | {metrics.get("anomaly_recall", 0):.4f}   |
     | PUE (baseline, rule-based)           | {metrics.get("pue_baseline", 0):.4f}   |
-    | PUE improvement (mean, {len(PPO_SEEDS)} seeds)       | {metrics.get("pue_improvement_mean_pct", 0):.2f}% +/- {metrics.get("pue_improvement_ci95_pct", 0):.2f}% |
-    | PUE (optimized, normal, seed 0)      | {metrics.get("pue_optimized_normal", 0):.4f}   |
-    | PUE (optimized, drought, seed 0)     | {metrics.get("pue_optimized_drought", 0):.4f}   |
+    | PUE vs rule (paired, {len(PPO_SEEDS)} seeds)         | {metrics.get("pue_improvement_mean_pct", 0):.2f}% +/- {metrics.get("pue_improvement_ci95_pct", 0):.2f}% |
+    | PUE (optimized, normal, selected)    | {metrics.get("pue_optimized_normal", 0):.4f}   |
+    | PUE (optimized, drought, selected)   | {metrics.get("pue_optimized_drought", 0):.4f}   |
     """)
     print("   Registry: models/registry.json (full lineage/metrics history)")
     print("   All models saved to models/")

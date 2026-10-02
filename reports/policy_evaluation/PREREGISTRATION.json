@@ -1,0 +1,118 @@
+{
+  "config": {
+    "alpha": 0.5,
+    "beta": 0.3,
+    "confidence": 0.95,
+    "constant_chilled_C": [
+      5.0,
+      7.5,
+      10.0,
+      12.5,
+      15.0
+    ],
+    "episode_steps": 288,
+    "families": [
+      {
+        "name": "stress_0.0",
+        "seen_in_training": true,
+        "water_stress": 0.0
+      },
+      {
+        "name": "stress_0.4",
+        "seen_in_training": false,
+        "water_stress": 0.4
+      },
+      {
+        "name": "stress_0.8",
+        "seen_in_training": false,
+        "water_stress": 0.8
+      }
+    ],
+    "gamma": 0.2,
+    "min_training_seeds": 5,
+    "n_test_per_family": 20,
+    "n_validation_per_family": 10,
+    "physics_version": "legacy-0 (implicit)",
+    "primary_tolerance_rel": 0.01,
+    "rule_chilled_C": 12.0,
+    "scenario_inputs_label": "synthetic diurnal weather and workload from DataCentreEnv; simulated plant",
+    "secondary_tolerance_rel": 0.02,
+    "test_seed_start": 200000,
+    "training_seed_reserved": [
+      0,
+      99999
+    ],
+    "training_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "validation_seed_start": 100000
+  },
+  "metrics": {
+    "carbon_gco2": {
+      "better": "lower",
+      "definition": "Carbon emitted as accounted by the twin (cooling energy x intensity)"
+    },
+    "energy_kwh": {
+      "better": "lower",
+      "definition": "Facility energy, (IT + cooling power) x 5 min, summed"
+    },
+    "inlet_over_max_steps": {
+      "better": "lower",
+      "definition": "Steps with inlet temperature > 27.0 C"
+    },
+    "inlet_under_min_steps": {
+      "better": "lower",
+      "definition": "Steps with inlet temperature < 18.0 C"
+    },
+    "mean_pue": {
+      "better": "lower",
+      "definition": "Mean of per-step PUE"
+    },
+    "mean_wue": {
+      "better": "lower",
+      "definition": "Mean of per-step WUE"
+    },
+    "outlet_violation_steps": {
+      "better": "lower",
+      "definition": "Steps with outlet temperature > 45.0 C"
+    },
+    "total_reward": {
+      "better": "higher",
+      "definition": "Sum of env reward over the episode (-J minus the outlet penalty): the PPO objective"
+    },
+    "water_L": {
+      "better": "lower",
+      "definition": "Water consumed, summed over the episode"
+    }
+  },
+  "outcome_rules": {
+    "A": "Continue under governance: for BOTH the rule baseline and the best constant, (1) the t-based 95% CI of the paired primary-metric difference across TRAINING SEEDS excludes zero in PPO's favour, (2) the same holds across test scenarios for the validation-selected candidate, (3) PPO's mean advantage is positive in every test family, (4) the selected candidate has zero outlet-over-limit and inlet-over-max steps and no more inlet-under-min steps than the rule baseline, (5) no secondary metric is worse by more than the secondary tolerance. Only supports 'simulator-validated candidate'.",
+    "B": "Offline research module only: PPO is not shown to be better than simple controllers, and not shown to be equal.",
+    "C": "Replace with a simpler controller: the rule baseline or the best constant, if it has zero outlet-over-limit and inlet-over-max steps on the test set and PPO's mean primary-metric advantage over it is at most the primary tolerance (including the case where PPO is worse). Checked before B."
+  },
+  "preregistration_sha256": "25c4cc68464207f90980eee334f22032c982251afe69f11693f5320c8b1605ac",
+  "primary_metric": "total_reward",
+  "registered_at_utc": "2026-10-02T02:26:45+00:00",
+  "scenario_sets": {
+    "test": {
+      "id": "b8329f196c910981",
+      "n": 60
+    },
+    "validation": {
+      "id": "a290e92dcf0037b0",
+      "n": 30
+    }
+  },
+  "schema_version": 1,
+  "secondary_metrics": [
+    "energy_kwh",
+    "water_L",
+    "carbon_gco2",
+    "mean_pue",
+    "mean_wue"
+  ]
+}
