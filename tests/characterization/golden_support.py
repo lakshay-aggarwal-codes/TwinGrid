@@ -154,6 +154,7 @@ def live_tick_environment(seed: int = TICK_SEED) -> Iterator[FakeSession]:
             frozen_environment(),
             fresh_shared_twin(),
             mock.patch.object(lbs, "_water_stress_state", 0.2),
+            mock.patch.object(lbs, "_tick_seq", 0),  # T1a: first tick in a run is seq=1
             mock.patch.object(lbs, "get_session", lambda: session),
         ):
             yield session

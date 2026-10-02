@@ -2,7 +2,9 @@ import { RotateLink } from "@/components/transition/RotateLink";
 import { loadAnalyticsPage } from "@/pages/lazyPages.ts";
 import { Boxes, Radio, FlaskConical, Wrench, AlertTriangle, Search } from "lucide-react";
 import { ModeSwitcher } from "./ModeSwitcher";
-import type { StateResponse } from "@/api/apiClient";
+import type { LiveStatePayload } from "@/api/apiClient.ts";
+import { originBanner, type LivenessStatus } from "@/hooks/liveness.ts";
+import { useSharedSimulation } from "@/hooks/simulationContext";
 import type { VisualizationMode } from "@/three/visualizationModes";
 
 interface TwinHeaderProps {
@@ -12,7 +14,7 @@ interface TwinHeaderProps {
   /** Real live facility state from the WebSocket feed (see useSimulation's
    * `liveState`). Null until the first message arrives -- rendered as an
    * explicit "Connecting" state, never a guessed number (Stage 6). */
-  liveState: StateResponse | null;
+  liveState: LiveStatePayload | null;
   /** Active visualization mode (Stage 8) + its setter. */
   mode: VisualizationMode;
   onModeChange: (mode: VisualizationMode) => void;
@@ -25,6 +27,14 @@ interface TwinHeaderProps {
   incidentsOpen: boolean;
   onToggleIncidents: () => void;
 }
+
+/** Status text/colour per liveness state. "Live" is shown ONLY while the socket is open and payloads are fresh. */
+const LIVENESS_DISPLAY: Record<LivenessStatus, { label: string; text: string }> = {
+  live: { label: "Live", text: "text-success" },
+  stale: { label: "Stale", text: "text-warning" },
+  disconnected: { label: "Disconnected", text: "text-destructive" },
+  connecting: { label: "Connecting", text: "text-muted-foreground" },
+};
 
 function Reading({ label, value }: { label: string; value: string }) {
   return (
@@ -48,17 +58,16 @@ export function TwinHeader({
   incidentsOpen,
   onToggleIncidents,
 }: TwinHeaderProps) {
-  const isLive = liveState !== null;
+  // Liveness comes from the socket state + wall time of the last payload (see hooks/liveness.ts),
+  // not from "have we ever received a payload".
+  const { liveness } = useSharedSimulation();
+  const hasData = liveState !== null;
+  const status = LIVENESS_DISPLAY[liveness];
+  // Last values stay visible while stale/disconnected, but dimmed so they are not read as current.
+  const dimmed = liveness === "stale" || liveness === "disconnected";
+  const banner = hasData ? originBanner(liveState.origin) : null;
 
   return (
-    <>
-      <div
-        role="status"
-        data-testid="simulated-banner"
-        className="shrink-0 border-b border-warning/40 bg-warning/10 px-6 py-1 text-center text-[11px] font-medium uppercase tracking-wider text-warning"
-      >
-        SIMULATED — no measured telemetry
-      </div>
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm shrink-0">
       <div className="flex flex-wrap items-center gap-3">
         <div className="h-8 w-8 rounded-md bg-primary/20 flex items-center justify-center">
@@ -108,16 +117,29 @@ export function TwinHeader({
           only -- never implies anything about a specific rack (see RackInspectorContent
           for how the same distinction is kept in the inspector). */}
       <div className="flex items-center gap-4">
-        <Reading label="PUE" value={isLive ? liveState.pue.toFixed(2) : "—"} />
-        <Reading label="WUE" value={isLive ? liveState.wue.toFixed(3) : "—"} />
-        <div className="hidden min-[1600px]:block">
-          <Reading label="Mode" value={isLive ? liveState.cooling_mode : "—"} />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Radio className={`h-3 w-3 ${isLive ? "text-success" : "text-muted-foreground"}`} />
-          <span className={`text-[10px] uppercase tracking-wider ${isLive ? "text-success" : "text-muted-foreground"}`}>
-            {isLive ? "Live" : "Connecting"}
+        {banner && (
+          <span
+            role="status"
+            data-testid="origin-banner"
+            data-origin-tone={banner.tone}
+            title={banner.title}
+            className={`rounded border px-1.5 py-0.5 text-[10px] uppercase tracking-wider ${
+              banner.tone === "simulated" ? "border-warning/40 text-warning" : "border-destructive/40 text-destructive"
+            }`}
+          >
+            {banner.label}
           </span>
+        )}
+        <div className={`flex items-center gap-4 ${dimmed ? "opacity-50" : ""}`} data-testid="live-readings">
+          <Reading label="PUE" value={hasData ? liveState.pue.toFixed(2) : "—"} />
+          <Reading label="WUE" value={hasData ? liveState.wue.toFixed(3) : "—"} />
+          <div className="hidden min-[1600px]:block">
+            <Reading label="Mode" value={hasData ? liveState.cooling_mode : "—"} />
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5" data-testid="liveness" data-liveness={liveness}>
+          <Radio className={`h-3 w-3 ${status.text}`} />
+          <span className={`text-[10px] uppercase tracking-wider ${status.text}`}>{status.label}</span>
         </div>
       </div>
 
@@ -143,6 +165,5 @@ export function TwinHeader({
         </RotateLink>
       </div>
     </header>
-    </>
   );
 }

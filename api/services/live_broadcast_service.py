@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
-from datetime import datetime
+import time
+from datetime import datetime, timezone
 
 import numpy as np
 from fastapi import WebSocket
@@ -12,10 +13,27 @@ from api.serialization import to_jsonable
 from api.services.twin_service import get_twin
 from database import get_session
 from models.db_models import SensorReading
+from src.digital_twin import INTERVAL_MINUTES
 
 logger = logging.getLogger(__name__)
 
 BROADCAST_INTERVAL_SECONDS = 3
+
+# --- Live payload provenance (T1a, additive) --------------------------------
+# WS_SCHEMA_VERSION: version of the additive provenance fields below.
+# WS_ORIGIN: every value this loop emits comes from the physics simulator
+#   (sine-wave utilisation, random-walk weather); nothing is measured.
+# WS_SIM_TIME_SCALE: NOMINAL simulated seconds advanced per wall second --
+#   one twin step is INTERVAL_MINUTES of simulated time per tick, one tick per
+#   BROADCAST_INTERVAL_SECONDS of wall time (5*60/3 = 100). Derived from
+#   constants, not measured; the live driver is NOT corrected to real dt here
+#   (that is T7), so this documents the existing ~100x clock instead of fixing it.
+WS_SCHEMA_VERSION = 1
+WS_ORIGIN = "simulated"
+WS_SIM_TIME_SCALE = (INTERVAL_MINUTES * 60) / BROADCAST_INTERVAL_SECONDS
+
+# Strictly +1 per tick per process (first tick is 1). Resets on process restart.
+_tick_seq = 0
 
 # Slowly-drifting live water-stress reading. This feed is deliberately
 # independent of the sidebar's What-If sliders (it's the facility's own
@@ -66,7 +84,7 @@ manager = ConnectionManager()
 
 async def _tick() -> dict:
     """One shared simulation step, used by every connected client."""
-    global _water_stress_state
+    global _water_stress_state, _tick_seq
     twin = get_twin()
     hour = datetime.now().hour + datetime.now().minute / 60
     utilisation = float(np.clip(0.4 + 0.5 * np.sin((hour - 6) * np.pi / 12), 0, 1))
@@ -94,7 +112,25 @@ async def _tick() -> dict:
     except Exception:
         logger.exception("Could not persist live sensor reading -- broadcasting anyway")
 
-    return to_jsonable({**state_dict, "carbon_data_is_real": twin.carbon_data_is_real})
+    # T1a: additive provenance/time fields. Every pre-existing key and value is
+    # unchanged. They are added to the BROADCAST payload only -- not to
+    # state_dict above, so what is persisted is unchanged.
+    #   sim_time   = the twin's own clock (same value as the existing
+    #                "timestamp" key). It is SIMULATED time, not event time.
+    #   ts_ingest  = wall clock (aware UTC) when this tick was assembled; the
+    #                client derives staleness from its own receive time, not this.
+    #   interval_s = nominal WALL seconds between ticks.
+    _tick_seq += 1
+    provenance = {
+        "schema_version": WS_SCHEMA_VERSION,
+        "origin": WS_ORIGIN,
+        "seq": _tick_seq,
+        "ts_ingest": datetime.fromtimestamp(time.time(), tz=timezone.utc),
+        "sim_time": state_dict["timestamp"],
+        "sim_time_scale": WS_SIM_TIME_SCALE,
+        "interval_s": BROADCAST_INTERVAL_SECONDS,
+    }
+    return to_jsonable({**state_dict, "carbon_data_is_real": twin.carbon_data_is_real, **provenance})
 
 
 async def run_broadcast_loop() -> None:

@@ -91,7 +91,6 @@ async def _healthz_with_broken_db(client):
         app.dependency_overrides[get_db] = previous
 
 
-<<<<<<< HEAD
 @pytest.mark.legacy_behavior("T0b")
 async def test_healthz_today_echoes_the_raw_exception_text(client):
     r = await _healthz_with_broken_db(client)
@@ -100,18 +99,10 @@ async def test_healthz_today_echoes_the_raw_exception_text(client):
 
 
 @target("T0b")
-=======
-# T0b: the legacy-behaviour test (raw exception echoed) was removed and the strict xfail below
-# was promoted to a normal passing test, as the contract requires ("xfail flips to pass").
->>>>>>> 018fac7 (fix all the issues with tests)
 async def test_healthz_503_body_contains_no_raw_exception_text(client):
     r = await _healthz_with_broken_db(client)
     assert r.status_code == 503
     assert LEAK_MARKER not in r.text
-<<<<<<< HEAD
-=======
-    assert r.json() == {"detail": "Service unavailable"}
->>>>>>> 018fac7 (fix all the issues with tests)
 
 
 async def test_healthz_ok_shape_is_unchanged(client):
@@ -151,7 +142,6 @@ async def test_viewer_scoring_call_creates_no_alert(client, viewer_headers, coun
 
 
 # ----------------------------------------------------------------------------- WS payload provenance (T1a)
-@target("T1a")
-def test_ws_payload_contains_origin_and_seq():
+def test_ws_payload_contains_origin_and_seq():  # was strict-xfail "T1a"; flipped by T1a
     keys = set(gs.run_ws_ticks()["key_set"])
     assert {"origin", "seq"} <= keys

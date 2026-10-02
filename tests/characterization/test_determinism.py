@@ -109,6 +109,10 @@ def test_tick_is_reproducible_with_same_seed_and_differs_with_another():
 
         return asyncio.run(go())
 
-    assert run(7) == run(7)
+    def stable(payloads):
+        # ts_ingest is the real wall clock by design (T1a); everything else must be reproducible.
+        return [{k: v for k, v in p.items() if k != "ts_ingest"} for p in payloads]
+
+    assert stable(run(7)) == stable(run(7))
     a, b = run(7), run(8)
     assert [p["outside_temp_C"] for p in a] != [p["outside_temp_C"] for p in b]

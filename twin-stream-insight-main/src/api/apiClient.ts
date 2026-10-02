@@ -38,6 +38,29 @@ export interface StateResponse {
   carbon_data_is_real?: boolean;
 }
 
+/**
+ * One WebSocket /ws/live payload: the StateResponse fields plus the additive provenance/time fields
+ * the backend gained in T1a. All of them are OPTIONAL because an older backend does not send them
+ * (the UI then shows an "unverified source").
+ */
+export interface LiveStatePayload extends StateResponse {
+  schema_version?: number;
+  /** Where the values come from. Only "simulated" exists today. */
+  origin?: string;
+  /** Strictly +1 per broadcast tick per server process. */
+  seq?: number;
+  /** Server wall clock (aware UTC ISO-8601) when the tick was assembled. */
+  ts_ingest?: string;
+  /** The twin's OWN simulated clock (same value as `timestamp`). Never event time. */
+  sim_time?: string;
+  /** Nominal simulated seconds per wall second. */
+  sim_time_scale?: number;
+  /** Nominal WALL seconds between payloads. */
+  interval_s?: number;
+}
+
+export type SocketStatus = 'connecting' | 'open' | 'closed';
+
 export interface EquipmentHealthResponse {
   available: boolean;
   message?: string;
@@ -248,8 +271,14 @@ export async function fetchAnomalyScore(
   return handleResponse<AnomalyScoreResponse>(response);
 }
 
-/** WebSocket /ws/live — live state updates, auto-reconnect, auto re-auth. */
-export function connectWebSocket(onMessage: (state: StateResponse) => void): { disconnect: () => void } {
+/**
+ * WebSocket /ws/live — live state updates, auto-reconnect, auto re-auth.
+ * `onStatus` (optional) reports the socket state so the UI can tell "connected" from "dropped".
+ */
+export function connectWebSocket(
+  onMessage: (state: LiveStatePayload) => void,
+  onStatus?: (status: SocketStatus) => void
+): { disconnect: () => void } {
   let ws: WebSocket | null = null;
   let reconnectDelay = DEFAULT_RECONNECT_DELAY_MS;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -257,11 +286,13 @@ export function connectWebSocket(onMessage: (state: StateResponse) => void): { d
 
   async function connect() {
     if (closed) return;
+    onStatus?.('connecting');
     let token: string;
     try {
       token = await getToken();
     } catch (e) {
       reportError('apiClient.websocket.auth', e, 'warning');
+      onStatus?.('closed');
       scheduleReconnect();
       return;
     }
@@ -270,6 +301,7 @@ export function connectWebSocket(onMessage: (state: StateResponse) => void): { d
     try {
       ws = new WebSocket(`${WS_BASE_URL}?token=${encodeURIComponent(token)}`);
     } catch {
+      onStatus?.('closed');
       scheduleReconnect();
       return;
     }
@@ -277,7 +309,7 @@ export function connectWebSocket(onMessage: (state: StateResponse) => void): { d
     ws.onmessage = (event) => {
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        onMessage(data as StateResponse);
+        onMessage(data as LiveStatePayload);
       } catch (e) {
         reportError('apiClient.websocket.parse', e, 'warning');
       }
@@ -286,6 +318,7 @@ export function connectWebSocket(onMessage: (state: StateResponse) => void): { d
     ws.onclose = (event) => {
       ws = null;
       if (closed) return;
+      onStatus?.('closed');
       // Previously silent. The header's Live/Connecting indicator shows this to
       // an operator watching; this makes it visible to anyone who isn't.
       reportError('apiClient.websocket.closed', `WebSocket closed (code ${event.code}); reconnecting`, 'warning');
@@ -298,6 +331,7 @@ export function connectWebSocket(onMessage: (state: StateResponse) => void): { d
 
     ws.onopen = () => {
       reconnectDelay = DEFAULT_RECONNECT_DELAY_MS;
+      onStatus?.('open');
     };
   }
 

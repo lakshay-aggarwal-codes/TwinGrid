@@ -7,8 +7,16 @@ import {
   fetchEquipmentHealth,
   connectWebSocket,
   type EquipmentHealthResponse,
+  type LiveStatePayload,
+  type SocketStatus,
   type StateResponse,
 } from '@/api/apiClient';
+import {
+  LIVENESS_CHECK_INTERVAL_MS,
+  deriveLiveness,
+  staleAfterMs,
+  type LivenessStatus,
+} from '@/hooks/liveness';
 
 export type CoolingMode = 'Auto' | 'Evaporative' | 'Closed-Loop' | 'Free Air' | 'Hybrid';
 
@@ -151,7 +159,12 @@ export function useSimulation() {
   });
 
   const [kpi, setKpi] = useState<KpiData>(EMPTY_KPI);
-  const [liveState, setLiveState] = useState<StateResponse | null>(null);
+  const [liveState, setLiveState] = useState<LiveStatePayload | null>(null);
+  // Liveness (T1a): from socket state + wall time of the last payload, never from sim_time.
+  const [liveness, setLiveness] = useState<LivenessStatus>('connecting');
+  const socketStatusRef = useRef<SocketStatus>('connecting');
+  const lastMessageAtRef = useRef<number | null>(null);
+  const staleWindowMsRef = useRef<number>(staleAfterMs());
   const [equipmentHealth, setEquipmentHealth] = useState<EquipmentHealthResponse | null>(null);
   const [anomalyScore, setAnomalyScore] = useState(0);
   const [latestAnomaly, setLatestAnomaly] = useState<LatestAnomaly | null>(null);
@@ -207,38 +220,64 @@ export function useSimulation() {
     };
   }, [config]);
 
+  const refreshLiveness = useCallback(() => {
+    const next = deriveLiveness({
+      socket: socketStatusRef.current,
+      lastMessageAt: lastMessageAtRef.current,
+      now: Date.now(),
+      staleAfterMs: staleWindowMsRef.current,
+    });
+    // Same value -> same state -> no re-render of every consumer once a second.
+    setLiveness((prev) => (prev === next ? prev : next));
+  }, []);
+
+  // Between payloads nothing else triggers a render, so re-evaluate on a timer.
+  useEffect(() => {
+    const id = setInterval(refreshLiveness, LIVENESS_CHECK_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [refreshLiveness]);
+
   // Live ambient feed + anomaly detection: independent of the sliders --
   // this is the facility's actual live telemetry stream, not a
   // what-if preview. Feeds a rolling 12-reading buffer into the real
   // trained anomaly detector.
   useEffect(() => {
-    const { disconnect } = connectWebSocket(async (state) => {
-      setLiveState(state);
-      const buf = anomalyBufferRef.current;
-      buf.push(stateToAnomalyFeatures(state));
-      if (buf.length > 12) buf.shift();
-      anomalyBufferRef.current = buf;
+    const { disconnect } = connectWebSocket(
+      async (state) => {
+        lastMessageAtRef.current = Date.now();
+        staleWindowMsRef.current = staleAfterMs(state.interval_s);
+        setLiveState(state);
+        refreshLiveness();
+        const buf = anomalyBufferRef.current;
+        buf.push(stateToAnomalyFeatures(state));
+        if (buf.length > 12) buf.shift();
+        anomalyBufferRef.current = buf;
 
-      if (buf.length === 12) {
-        try {
-          const result = await fetchAnomalyScore(buf);
-          // Normalize against the model's OWN trained threshold (95th
-          // percentile of training error) rather than an invented scale --
-          // score === threshold lands at 50 on the gauge, i.e. right at
-          // the model's real alert boundary.
-          const normalized = clamp((result.score / (result.threshold || 1)) * 50, 0, 100);
-          setAnomalyScore(normalized);
-          if (result.alert) {
-            pushEvent(result.message, result.type === 'error' ? 'error' : 'warning');
-            setLatestAnomaly({ type: result.type, message: result.message });
+        if (buf.length === 12) {
+          try {
+            const result = await fetchAnomalyScore(buf);
+            // Normalize against the model's OWN trained threshold (95th
+            // percentile of training error) rather than an invented scale --
+            // score === threshold lands at 50 on the gauge, i.e. right at
+            // the model's real alert boundary.
+            const normalized = clamp((result.score / (result.threshold || 1)) * 50, 0, 100);
+            setAnomalyScore(normalized);
+            if (result.alert) {
+              pushEvent(result.message, result.type === 'error' ? 'error' : 'warning');
+              setLatestAnomaly({ type: result.type, message: result.message });
+            }
+          } catch (e) {
+            reportError('useSimulation.fetchAnomalyScore', e, 'warning');
           }
-        } catch (e) {
-          reportError('useSimulation.fetchAnomalyScore', e, 'warning');
         }
+      },
+      (status) => {
+        socketStatusRef.current = status;
+        refreshLiveness();
       }
-    });
+    );
     return disconnect;
-  }, []);
+  }, [refreshLiveness]);
 
   const runSimulation = useCallback(() => {
     setSimRunning(true);
@@ -266,6 +305,7 @@ export function useSimulation() {
     simRunning,
     runSimulation,
     liveState,
+    liveness,
     equipmentHealth,
   };
 }

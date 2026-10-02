@@ -33,22 +33,10 @@ def test_tick_payload_value_types_unchanged_for_frozen_keys():
         assert actual[key] == type_name, key
 
 
-@pytest.mark.legacy_behavior("T1a")
-def test_tick_payload_key_set_is_exactly_the_legacy_set():
-    """T1a adds keys (origin, seq, ...) so it rewrites this to the superset check above."""
-    assert gs.run_ws_ticks()["key_set"] == _golden()["key_set"]
-
-
 def test_tick_payload_is_plain_json_types():
     for payload in _golden()["payloads"]:
         for key, value in payload.items():
             assert value is None or isinstance(value, (str, int, float, bool)), key
-
-
-@pytest.mark.legacy_behavior("T1a")
-def test_tick_payload_has_no_origin_or_seq_today():
-    keys = set(_golden()["key_set"])
-    assert "origin" not in keys and "seq" not in keys
 
 
 def test_tick_persists_exactly_one_sensor_reading_per_tick_with_source_ws():
