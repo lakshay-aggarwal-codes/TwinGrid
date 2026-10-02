@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import { loadAnalyticsPage } from "./pages/lazyPages";
 import { SimulationProvider } from "@/hooks/SimulationProvider";
 import { RotateTransition } from "@/components/transition/RotateTransition";
+import { AuthGate } from "@/components/AuthGate";
 
 // The Analytics view (KPI cards, 24h simulation, what-if, sustainability --
 // and recharts with it) is only needed on /analytics,
@@ -23,6 +24,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthGate>
         <SimulationProvider>
         <RotateTransition>
         <Suspense
@@ -47,6 +49,7 @@ const App = () => (
         </Suspense>
         </RotateTransition>
         </SimulationProvider>
+        </AuthGate>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

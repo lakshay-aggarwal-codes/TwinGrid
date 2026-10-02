@@ -39,27 +39,40 @@ export interface StateResponse {
 }
 
 /**
- * One WebSocket /ws/live payload: the StateResponse fields plus the additive provenance/time fields
- * the backend gained in T1a. All of them are OPTIONAL because an older backend does not send them
- * (the UI then shows an "unverified source").
+ * One message on /ws/live. Today this is exactly a StateResponse; the optional
+ * fields are the additive T1a envelope (roadmap section 7) so the type does not
+ * have to change when the backend starts sending them. Until then they are
+ * simply absent -- consumers must not assume they are present.
  */
-export interface LiveStatePayload extends StateResponse {
+export type LiveStatePayload = StateResponse & {
   schema_version?: number;
-  /** Where the values come from. Only "simulated" exists today. */
+  /** Data provenance, e.g. "simulated". Missing => treat as "unverified source". */
   origin?: string;
-  /** Strictly +1 per broadcast tick per server process. */
+  /** Strictly +1 per server tick (per process). */
   seq?: number;
-  /** Server wall clock (aware UTC ISO-8601) when the tick was assembled. */
+  /** Server wall-clock time of the tick, ISO-8601 UTC. */
   ts_ingest?: string;
-  /** The twin's OWN simulated clock (same value as `timestamp`). Never event time. */
+  /** The twin's own clock (same value as `timestamp`). */
   sim_time?: string;
-  /** Nominal simulated seconds per wall second. */
   sim_time_scale?: number;
-  /** Nominal WALL seconds between payloads. */
   interval_s?: number;
-}
+};
 
+/**
+ * Connection state of the live socket. MUST stay identical to `SocketStatus` in
+ * hooks/liveness.ts (which deriveLiveness consumes); TypeScript's structural typing
+ * makes any drift a compile error in useSimulation.ts.
+ *   connecting - first attempt, nothing has happened yet
+ *   open       - socket is open
+ *   closed     - not open: dropped, failed attempt, rejected token, or disconnect().
+ *                A retry may already be scheduled; "closed" never means "gone for good".
+ * "open" only means the socket is open, NOT that data is fresh: staleness is judged
+ * from the wall-clock age of the last payload (see liveness.ts).
+ */
 export type SocketStatus = 'connecting' | 'open' | 'closed';
+
+/** Close code the backend already uses for an invalid token (api/routes/websocket_routes.py). */
+export const WS_CLOSE_UNAUTHORIZED = 4001;
 
 export interface EquipmentHealthResponse {
   available: boolean;
@@ -271,28 +284,36 @@ export async function fetchAnomalyScore(
   return handleResponse<AnomalyScoreResponse>(response);
 }
 
-/**
- * WebSocket /ws/live — live state updates, auto-reconnect, auto re-auth.
- * `onStatus` (optional) reports the socket state so the UI can tell "connected" from "dropped".
- */
+/** WebSocket /ws/live — live state updates, auto-reconnect, auto re-auth. */
 export function connectWebSocket(
   onMessage: (state: LiveStatePayload) => void,
-  onStatus?: (status: SocketStatus) => void
+  onStatus?: (status: SocketStatus) => void,
 ): { disconnect: () => void } {
   let ws: WebSocket | null = null;
+  let lastStatus: SocketStatus | null = null;
+  // Emits only on change, so a retry loop does not spam subscribers.
+  const setStatus = (status: SocketStatus) => {
+    if (status === lastStatus) return;
+    lastStatus = status;
+    try {
+      onStatus?.(status);
+    } catch (e) {
+      reportError('apiClient.websocket.status', e, 'warning');
+    }
+  };
   let reconnectDelay = DEFAULT_RECONNECT_DELAY_MS;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let closed = false;
 
+  setStatus('connecting');
+
   async function connect() {
     if (closed) return;
-    onStatus?.('connecting');
     let token: string;
     try {
       token = await getToken();
     } catch (e) {
       reportError('apiClient.websocket.auth', e, 'warning');
-      onStatus?.('closed');
       scheduleReconnect();
       return;
     }
@@ -301,7 +322,6 @@ export function connectWebSocket(
     try {
       ws = new WebSocket(`${WS_BASE_URL}?token=${encodeURIComponent(token)}`);
     } catch {
-      onStatus?.('closed');
       scheduleReconnect();
       return;
     }
@@ -318,7 +338,9 @@ export function connectWebSocket(
     ws.onclose = (event) => {
       ws = null;
       if (closed) return;
-      onStatus?.('closed');
+      // 4001 = server rejected the token (invalid/expired). getToken() refreshes
+      // before expiry, so the scheduled reconnect below fetches a fresh token.
+      setStatus('closed');
       // Previously silent. The header's Live/Connecting indicator shows this to
       // an operator watching; this makes it visible to anyone who isn't.
       reportError('apiClient.websocket.closed', `WebSocket closed (code ${event.code}); reconnecting`, 'warning');
@@ -331,12 +353,14 @@ export function connectWebSocket(
 
     ws.onopen = () => {
       reconnectDelay = DEFAULT_RECONNECT_DELAY_MS;
-      onStatus?.('open');
+      setStatus('open');
     };
   }
 
   function scheduleReconnect() {
     if (closed || reconnectTimer) return;
+    // Token fetch / construction failure, or a drop: not open until a retry succeeds.
+    setStatus('closed');
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
       connect();
@@ -349,6 +373,7 @@ export function connectWebSocket(
   return {
     disconnect() {
       closed = true;
+      setStatus('closed');
       if (reconnectTimer) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;

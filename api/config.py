@@ -4,7 +4,11 @@ Application configuration.
 
 from __future__ import annotations
 
+import logging
 import os
+from dataclasses import dataclass
+
+_logger = logging.getLogger(__name__)
 
 
 def _parse_origins(raw: str | None) -> list[str]:
@@ -41,68 +45,63 @@ settings = Settings()
 
 
 # -----------------------------------------------------------------------------
-# HTTP limits (T5). Read from the environment at call time (not import time) so
-# an override never needs a code change and tests can monkeypatch the env.
-# Rate strings look like "30/minute" (units: second|minute|hour|day, short forms
-# s/sec/m/min/h/d accepted). In-memory, per process -- see api/rate_limit.py.
+# WebSocket limits (T4a)
+#
+# Read from the environment on every call (not at import), so a deployment can
+# change them without a code change and tests can override them per test.
 # -----------------------------------------------------------------------------
 
-# scope -> (environment variable, default)
-RATE_LIMIT_DEFAULTS: dict[str, tuple[str, str]] = {
-    "state": ("RATE_LIMIT_STATE", "30/minute"),
-    "whatif": ("RATE_LIMIT_WHATIF", "30/minute"),
-    "benchmark": ("RATE_LIMIT_BENCHMARK", "30/minute"),
-    "simulate": ("RATE_LIMIT_SIMULATE", "6/minute"),
-    "anomaly_score": ("RATE_LIMIT_ANOMALY_SCORE", "30/minute"),
-    "esg_report": ("RATE_LIMIT_ESG_REPORT", "6/minute"),
-    "shadow_sample": ("RATE_LIMIT_SHADOW_SAMPLE", "10/minute"),
-    "alert_ack": ("RATE_LIMIT_ALERT_ACK", "30/minute"),
-    "webhook": ("RATE_LIMIT_WEBHOOK", "30/minute"),
-    "optimize": ("RATE_LIMIT_OPTIMIZE", "10/minute"),
-    "train_async": ("RATE_LIMIT_TRAIN_ASYNC", "5/minute"),
-}
+WS_DEFAULT_MAX_CONNECTIONS_PER_USER = 5
+WS_DEFAULT_MAX_CONNECTIONS_GLOBAL = 200
+WS_DEFAULT_MAX_MESSAGE_BYTES = 1024
+WS_DEFAULT_MAX_MESSAGES_PER_MINUTE = 30
 
 
-def _env_bool(name: str, default: bool = False) -> bool:
+def _env_positive_int(name: str, default: int) -> int:
+    """A positive integer from the environment. Unset -> default. A malformed or
+    non-positive value also falls back to the (strict) default rather than
+    disabling the limit, and says so in the log."""
     raw = os.getenv(name)
     if raw is None or not raw.strip():
         return default
-    return raw.strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _env_int(name: str, default: int, minimum: int = 1) -> int:
-    raw = os.getenv(name)
     try:
-        value = int(raw) if raw is not None and raw.strip() else default
+        value = int(raw.strip())
     except ValueError:
+        value = 0
+    if value <= 0:
+        _logger.warning("%s=%r is not a positive integer; using default %d", name, raw, default)
         return default
-    return max(minimum, value)
+    return value
 
 
-def rate_limit_setting(scope: str) -> str:
-    """Raw rate string for a limit scope (env override, else the default)."""
-    env_name, default = RATE_LIMIT_DEFAULTS[scope]
-    raw = os.getenv(env_name)
-    return raw.strip() if raw and raw.strip() else default
+def normalize_origin(origin: str) -> str:
+    """Canonical form for Origin comparison: trimmed, lower-case, no trailing slash."""
+    return origin.strip().rstrip("/").lower()
 
 
-def trust_proxy_headers() -> bool:
-    """TRUST_PROXY_HEADERS=true: derive the client IP from X-Forwarded-For.
-    Default false -- the header is ignored (it is trivially spoofable)."""
-    return _env_bool("TRUST_PROXY_HEADERS", False)
+@dataclass(frozen=True)
+class WebSocketLimits:
+    max_connections_per_user: int
+    max_connections_global: int
+    max_message_bytes: int
+    max_messages_per_minute: int
+    # Empty tuple = Origin is not enforced (development default).
+    allowed_origins: tuple[str, ...]
 
 
-def trusted_proxy_hops() -> int:
-    """Number of trusted proxies in front of the app. The client IP is the
-    X-Forwarded-For entry that many positions from the RIGHT (the one appended
-    by the nearest trusted proxy), never the client-controlled leftmost entry."""
-    return _env_int("TRUSTED_PROXY_HOPS", 1)
+def load_ws_limits() -> WebSocketLimits:
+    """WebSocket limits from the environment:
 
-
-def max_query_string_chars() -> int:
-    """Requests to limited routes with a longer raw query string get 413."""
-    return _env_int("MAX_QUERY_STRING_CHARS", 16384)
-
-
-# Static bound used in a Query(max_length=...) declaration (import time; 422).
-MAX_RECENT_DATA_CHARS: int = _env_int("MAX_RECENT_DATA_CHARS", 4096)
+    WS_MAX_CONNECTIONS_PER_USER (default 5), WS_MAX_CONNECTIONS_GLOBAL (200),
+    WS_MAX_MESSAGE_BYTES (1024), WS_MAX_MESSAGES_PER_MINUTE (30),
+    WS_ALLOWED_ORIGINS (comma-separated; unset/empty = not enforced).
+    """
+    raw_origins = os.getenv("WS_ALLOWED_ORIGINS", "")
+    origins = tuple(normalize_origin(o) for o in raw_origins.split(",") if o.strip())
+    return WebSocketLimits(
+        max_connections_per_user=_env_positive_int("WS_MAX_CONNECTIONS_PER_USER", WS_DEFAULT_MAX_CONNECTIONS_PER_USER),
+        max_connections_global=_env_positive_int("WS_MAX_CONNECTIONS_GLOBAL", WS_DEFAULT_MAX_CONNECTIONS_GLOBAL),
+        max_message_bytes=_env_positive_int("WS_MAX_MESSAGE_BYTES", WS_DEFAULT_MAX_MESSAGE_BYTES),
+        max_messages_per_minute=_env_positive_int("WS_MAX_MESSAGES_PER_MINUTE", WS_DEFAULT_MAX_MESSAGES_PER_MINUTE),
+        allowed_origins=origins,
+    )

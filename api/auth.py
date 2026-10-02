@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import os
 import secrets as secrets_module
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
@@ -96,6 +97,26 @@ def verify_password(plain: str, hashed: str) -> bool:
     except ValueError:
         # Malformed / non-bcrypt stored hash: treat as a failed login, not a 500.
         return False
+
+
+_TRUTHY = {"1", "true", "yes", "on"}
+
+
+def public_registration_enabled() -> bool:
+    """Whether anyone may self-register at POST /auth/register.
+
+    ALLOW_PUBLIC_REGISTRATION=true|false decides explicitly. If unset: OFF when
+    ENVIRONMENT=production, ON otherwise (development convenience). A value that
+    is set but not recognisable fails CLOSED (disabled). Read on every call, so
+    no restart/reload is needed to change it.
+    """
+    raw = os.getenv("ALLOW_PUBLIC_REGISTRATION")
+    if raw is None or not raw.strip():
+        return os.getenv("ENVIRONMENT", "development").strip().lower() != "production"
+    value = raw.strip().lower()
+    if value in _TRUTHY:
+        return True
+    return False  # explicit falsy, or unrecognised -> closed
 
 
 def operator_registration_allowed(provided_key: Optional[str]) -> bool:
@@ -340,7 +361,17 @@ async def register(
     Role "operator" requires header ``X-Admin-Key`` matching the
     OPERATOR_REGISTRATION_KEY env var (403 otherwise, and always 403 if the
     variable is unset -- operator self-registration is then disabled).
+
+    When public registration is disabled (ALLOW_PUBLIC_REGISTRATION, see
+    ``public_registration_enabled``; the default in production) this returns
+    403 unless a valid ``X-Admin-Key`` is supplied -- that is how an
+    administrator provisions accounts without opening sign-up to everyone.
     """
+    if not public_registration_enabled() and not operator_registration_allowed(x_admin_key):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Public registration is disabled",
+        )
     if body.role == USER_ROLE_OPERATOR and not operator_registration_allowed(x_admin_key):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

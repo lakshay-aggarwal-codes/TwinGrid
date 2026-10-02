@@ -1,38 +1,144 @@
+/**
+ * Real sign-in for the dashboard: login -> short-lived access token (kept in
+ * memory only) + rotating refresh token -> silent refresh -> logout.
+ *
+ * - The ACCESS token never touches storage. It lives in this module's memory and
+ *   is re-obtained from the refresh token after a page reload.
+ * - The REFRESH token is kept in sessionStorage (this tab only, gone when the tab
+ *   closes) so a reload does not force a new sign-in. That is a deliberate
+ *   trade-off: any script running on the page can read it. Set
+ *   PERSIST_REFRESH_TOKEN to false to make sign-in survive nothing but this
+ *   page's lifetime.
+ * - Refresh tokens are single-use on the server (rotation + reuse detection), so
+ *   concurrent refreshes MUST share one request: two requests with the same token
+ *   would look like token theft and revoke the whole session.
+ * - There are NO baked credentials. The only exception is a DEV-ONLY convenience:
+ *   `import.meta.env.DEV` is false in a production build, so the bundler removes
+ *   the whole branch (and the VITE_DEMO_* values with it); this is asserted by
+ *   src/test/bundleScan.test.ts, which builds for production and greps the output.
+ */
+
 import { API_BASE_URL, assertApiConfigured } from './config.ts';
 
-const DEMO_USERNAME = import.meta.env.VITE_DEMO_USERNAME as string | undefined;
-const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
+export type Role = 'viewer' | 'operator';
+export type AuthStatus = 'restoring' | 'signed-out' | 'signed-in';
 
-interface CachedToken {
-  token: string;
+export interface AuthSnapshot {
+  status: AuthStatus;
+  username: string | null;
+  role: Role | null;
+  /** Why the user is signed out, when it was not their own doing (e.g. server unreachable on reload). */
+  notice: string | null;
+}
+
+/** Thrown when there is no usable session. The UI reacts by showing the sign-in screen. */
+export class AuthRequiredError extends Error {
+  constructor(message = 'Sign-in required') {
+    super(message);
+    this.name = 'AuthRequiredError';
+  }
+}
+
+/** Sign-in failed. `message` is safe to show to the user. */
+export class LoginError extends Error {
+  readonly status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = 'LoginError';
+    this.status = status;
+  }
+}
+
+const PERSIST_REFRESH_TOKEN = true;
+const STORAGE_KEY = 'twingrid.session';
+/** Refresh the access token when less than this is left on it. */
+const REFRESH_MARGIN_MS = 60_000;
+
+// DEV-ONLY demo account. In a production build `import.meta.env.DEV` is the
+// literal `false`, this folds to `null`, and the VITE_DEMO_* reads are dropped.
+const DEV_DEMO: { username: string; password: string } | null =
+  import.meta.env.DEV && import.meta.env.VITE_DEMO_USERNAME && import.meta.env.VITE_DEMO_PASSWORD
+    ? {
+        username: import.meta.env.VITE_DEMO_USERNAME as string,
+        password: import.meta.env.VITE_DEMO_PASSWORD as string,
+      }
+    : null;
+
+interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  role: Role;
+}
+
+interface Internal {
+  accessToken: string | null;
   expiresAtMs: number;
+  refreshToken: string | null;
+  username: string | null;
+  role: Role | null;
 }
 
-let cached: CachedToken | null = null;
-let inFlight: Promise<string> | null = null;
+const EMPTY: Internal = { accessToken: null, expiresAtMs: 0, refreshToken: null, username: null, role: null };
 
-const REFRESH_MARGIN_MS = 5 * 60 * 1000;
+let internal: Internal = { ...EMPTY };
+let status: AuthStatus = 'signed-out';
+let notice: string | null = null;
+let snapshot: AuthSnapshot = { status, username: null, role: null, notice: null };
+/** Bumped by every sign-out so a response that arrives late cannot resurrect a dead session. */
+let generation = 0;
+let refreshInFlight: Promise<string> | null = null;
+let initPromise: Promise<void> | null = null;
+let devDemoDisabled = false;
+const listeners = new Set<() => void>();
 
-async function login(): Promise<string> {
-  if (!DEMO_USERNAME || !DEMO_PASSWORD) {
-    throw new Error(
-      'VITE_DEMO_USERNAME / VITE_DEMO_PASSWORD are not set. Copy .env.example to .env ' +
-        'and fill these in with the account created by scripts/create_demo_user.py.'
-    );
-  }
-  assertApiConfigured();
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: DEMO_USERNAME, password: DEMO_PASSWORD }),
-  });
-  if (!response.ok) {
-    throw new Error(`Login failed: ${response.status} ${response.statusText}`);
-  }
-  const data = (await response.json()) as { access_token: string };
-  return data.access_token;
+// ------------------------------------------------------------------ store plumbing (useSyncExternalStore)
+function publish(): void {
+  snapshot = { status, username: internal.username, role: internal.role, notice };
+  listeners.forEach((l) => l());
 }
 
+export function subscribeAuth(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function getAuthSnapshot(): AuthSnapshot {
+  return snapshot;
+}
+
+// ------------------------------------------------------------------ storage
+function readStored(): { refreshToken: string; username: string } | null {
+  if (!PERSIST_REFRESH_TOKEN) return null;
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { refreshToken?: unknown; username?: unknown };
+    if (typeof parsed.refreshToken === 'string' && typeof parsed.username === 'string') {
+      return { refreshToken: parsed.refreshToken, username: parsed.username };
+    }
+  } catch {
+    // unreadable storage or corrupt value: behave as signed out
+  }
+  return null;
+}
+
+function writeStored(): void {
+  if (!PERSIST_REFRESH_TOKEN) return;
+  try {
+    if (internal.refreshToken && internal.username) {
+      sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ refreshToken: internal.refreshToken, username: internal.username })
+      );
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
+  } catch {
+    // storage unavailable (private mode / quota): the session just won't survive a reload
+  }
+}
+
+// ------------------------------------------------------------------ session state transitions
 function decodeExpiryMs(token: string): number {
   try {
     // JWTs are base64url ("-" and "_"); atob() only understands plain base64.
@@ -42,27 +148,147 @@ function decodeExpiryMs(token: string): number {
   } catch {
     // fall through
   }
-  return Date.now() + 10 * 60 * 1000;
+  // Unreadable token: assume a short life so we refresh soon rather than trust it.
+  return Date.now() + 2 * REFRESH_MARGIN_MS;
 }
 
-export async function getToken(): Promise<string> {
-  const now = Date.now();
-  if (cached && cached.expiresAtMs - REFRESH_MARGIN_MS > now) {
-    return cached.token;
-  }
-  if (inFlight) return inFlight;
+function applyTokens(data: TokenResponse, username: string, forGeneration: number): void {
+  if (forGeneration !== generation) return; // signed out while the request was in flight
+  internal = {
+    accessToken: data.access_token,
+    expiresAtMs: decodeExpiryMs(data.access_token),
+    refreshToken: data.refresh_token,
+    username,
+    role: data.role,
+  };
+  status = 'signed-in';
+  notice = null;
+  writeStored();
+  publish();
+}
 
-  inFlight = (async () => {
+function clearSession(message: string | null = null, keepStored = false): void {
+  generation += 1;
+  internal = { ...EMPTY };
+  status = 'signed-out';
+  notice = message;
+  if (!keepStored) writeStored();
+  publish();
+}
+
+// ------------------------------------------------------------------ requests
+async function postJson(path: string, body: unknown): Promise<Response> {
+  assertApiConfigured();
+  return fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+/** Sign in with a username and password. Throws LoginError (message is user-safe). */
+export async function login(username: string, password: string): Promise<void> {
+  const name = username.trim();
+  let response: Response;
+  try {
+    response = await postJson('/auth/login', { username: name, password });
+  } catch {
+    throw new LoginError('Could not reach the server. Check your connection and try again.');
+  }
+  if (response.status === 401) throw new LoginError('Invalid username or password.', 401);
+  if (response.status === 429) throw new LoginError('Too many sign-in attempts. Wait a minute and try again.', 429);
+  if (!response.ok) throw new LoginError(`Sign-in failed (${response.status}).`, response.status);
+  const data = (await response.json()) as TokenResponse;
+  applyTokens(data, name, generation);
+}
+
+async function refreshAccessToken(): Promise<string> {
+  if (refreshInFlight) return refreshInFlight;
+  const startedIn = generation;
+  refreshInFlight = (async () => {
     try {
-      const token = await login();
-      cached = { token, expiresAtMs: decodeExpiryMs(token) };
-      return token;
+      const token = internal.refreshToken;
+      if (!token) throw new AuthRequiredError();
+      const response = await postJson('/auth/refresh', { refresh_token: token });
+      if (response.status === 401 || response.status === 400) {
+        clearSession('Your session has ended. Please sign in again.');
+        throw new AuthRequiredError();
+      }
+      if (!response.ok) throw new Error(`Token refresh failed: ${response.status}`);
+      const data = (await response.json()) as TokenResponse;
+      if (startedIn !== generation) throw new AuthRequiredError();
+      applyTokens(data, internal.username ?? '', startedIn);
+      return data.access_token;
     } finally {
-      // Always clear, success OR failure: otherwise one failed login leaves a
-      // rejected promise in `inFlight` and every later call returns it forever.
-      inFlight = null;
+      // Always clear, success OR failure: otherwise one failed refresh leaves a
+      // rejected promise here and every later call returns it forever.
+      refreshInFlight = null;
     }
   })();
+  return refreshInFlight;
+}
 
-  return inFlight;
+async function devDemoLogin(): Promise<boolean> {
+  if (!DEV_DEMO || devDemoDisabled) return false;
+  try {
+    await login(DEV_DEMO.username, DEV_DEMO.password);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Call once at startup. Restores a session from the stored refresh token (reload),
+ * or in development with VITE_DEMO_* set, signs in as the demo account.
+ */
+export function initAuth(): Promise<void> {
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    const stored = readStored();
+    if (stored) {
+      internal = { ...EMPTY, refreshToken: stored.refreshToken, username: stored.username };
+      status = 'restoring';
+      publish();
+      try {
+        await refreshAccessToken();
+      } catch (e) {
+        if (!(e instanceof AuthRequiredError)) {
+          // Server unreachable etc.: signed out for now, but keep the stored token for a later try.
+          clearSession('Could not reach the server to restore your session.', true);
+        }
+      }
+      return;
+    }
+    await devDemoLogin();
+  })();
+  return initPromise;
+}
+
+/** An access token that is valid right now, refreshing it first if it is close to expiry. */
+export async function getToken(): Promise<string> {
+  if (internal.accessToken && internal.expiresAtMs - REFRESH_MARGIN_MS > Date.now()) {
+    return internal.accessToken;
+  }
+  if (internal.refreshToken) return refreshAccessToken();
+  throw new AuthRequiredError();
+}
+
+/** Force a new access token (e.g. after the server answered 401). */
+export async function forceRefresh(): Promise<string> {
+  if (internal.refreshToken) return refreshAccessToken();
+  throw new AuthRequiredError();
+}
+
+/** Sign out: the UI is signed out immediately; the server-side revocation is best-effort. */
+export async function logout(): Promise<void> {
+  const token = internal.refreshToken;
+  devDemoDisabled = true; // an explicit sign-out must not be undone by the dev auto-login
+  clearSession();
+  if (!token) return;
+  try {
+    await postJson('/auth/logout', { refresh_token: token });
+  } catch {
+    // Offline: the token is still revoked server-side when it expires or is rotated.
+  }
 }

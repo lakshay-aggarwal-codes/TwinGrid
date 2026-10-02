@@ -10,7 +10,7 @@ import {
   type LiveStatePayload,
   type SocketStatus,
   type StateResponse,
-} from '@/api/apiClient';
+} from '@/api/apiClient.ts';
 import {
   LIVENESS_CHECK_INTERVAL_MS,
   deriveLiveness,

@@ -12,7 +12,6 @@ from api.serialization import to_jsonable
 from api.services.twin_service import get_twin
 from database import get_session
 from models.db_models import SensorReading
-from src.versions import ORIGIN_SIMULATED, PHYSICS_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -30,18 +29,61 @@ _water_stress_state = 0.2
 _WATER_STRESS_STEP = 0.02
 
 
+class ConnectionLimitExceeded(Exception):
+    """Raised by ConnectionManager.connect when a cap is hit.
+    ``scope`` is "user" (per-user cap) or "global" (server-wide cap)."""
+
+    def __init__(self, scope: str) -> None:
+        super().__init__(f"WebSocket connection limit exceeded ({scope})")
+        self.scope = scope
+
+
 class ConnectionManager:
     """Tracks active WebSocket connections and broadcasts to all of them."""
 
     def __init__(self) -> None:
         self._connections: set[WebSocket] = set()
+        # Accounting for the connection caps, kept separate from _connections:
+        # broadcast() discards a socket it failed to send to straight from
+        # _connections, but the cap must keep counting it until the endpoint
+        # handler has actually finished with it (disconnect()).
+        self._owners: dict[WebSocket, str | None] = {}
+        self._per_user: dict[str, int] = {}
 
-    def connect(self, websocket: WebSocket) -> None:
+    def connect(
+        self,
+        websocket: WebSocket,
+        user_id: str | None = None,
+        *,
+        max_per_user: int | None = None,
+        max_global: int | None = None,
+    ) -> None:
+        """Register ``websocket``. Raises ConnectionLimitExceeded (and registers
+        nothing) if a cap would be exceeded. Caps are optional: callers that pass
+        none behave exactly as before. There is no await in here, so the
+        check-then-add is atomic with respect to other connections."""
+        if max_global is not None and len(self._owners) >= max_global:
+            raise ConnectionLimitExceeded("global")
+        if user_id is not None and max_per_user is not None and self._per_user.get(user_id, 0) >= max_per_user:
+            raise ConnectionLimitExceeded("user")
         self._connections.add(websocket)
+        self._owners[websocket] = user_id
+        if user_id is not None:
+            self._per_user[user_id] = self._per_user.get(user_id, 0) + 1
         logger.info("WebSocket connected (%d active)", len(self._connections))
 
     def disconnect(self, websocket: WebSocket) -> None:
+        """Idempotent. Safe to call for a socket that was never registered
+        (e.g. one rejected by connect())."""
         self._connections.discard(websocket)
+        if websocket in self._owners:
+            user_id = self._owners.pop(websocket)
+            if user_id is not None:
+                remaining = self._per_user.get(user_id, 0) - 1
+                if remaining > 0:
+                    self._per_user[user_id] = remaining
+                else:
+                    self._per_user.pop(user_id, None)
         logger.info("WebSocket disconnected (%d active)", len(self._connections))
 
     def has_connections(self) -> bool:
@@ -90,11 +132,7 @@ async def _tick() -> dict:
     # best-effort: a database outage must never stop the live stream.
     try:
         async with get_session() as session:
-            session.add(
-                SensorReading.from_state_dict(
-                    state_dict, "ws", origin=ORIGIN_SIMULATED, physics_version=PHYSICS_VERSION
-                )
-            )
+            session.add(SensorReading.from_state_dict(state_dict, "ws"))
             await session.commit()
     except Exception:
         logger.exception("Could not persist live sensor reading -- broadcasting anyway")

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
-import type { LiveStatePayload } from "@/api/apiClient";
+import type { LiveStatePayload } from "@/api/apiClient.ts";
 import type { LivenessStatus } from "@/hooks/liveness.ts";
 
 // Navigation chrome is not under test here.
