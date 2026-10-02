@@ -14,12 +14,24 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.db_models import Alert, OptimizationResult, SensorReading, SimulationRun
+from src.versions import ORIGIN_SIMULATED, PHYSICS_VERSION
+
+# Every writer in this module persists simulator output, so each stamps
+# origin/physics_version explicitly (see src/versions.py).
 
 
 async def save_sensor_reading(
     session: AsyncSession, state_dict: dict[str, Any], source: str, simulation_run_id: int | None = None
 ) -> None:
-    session.add(SensorReading.from_state_dict(state_dict, source, simulation_run_id=simulation_run_id))
+    session.add(
+        SensorReading.from_state_dict(
+            state_dict,
+            source,
+            simulation_run_id=simulation_run_id,
+            origin=ORIGIN_SIMULATED,
+            physics_version=PHYSICS_VERSION,
+        )
+    )
     await session.flush()
 
 
@@ -27,21 +39,53 @@ async def save_sensor_readings_bulk(
     session: AsyncSession, records: list[dict[str, Any]], source: str, simulation_run_id: int | None = None
 ) -> None:
     for record in records:
-        session.add(SensorReading.from_state_dict(record, source, simulation_run_id=simulation_run_id))
+        session.add(
+            SensorReading.from_state_dict(
+                record,
+                source,
+                simulation_run_id=simulation_run_id,
+                origin=ORIGIN_SIMULATED,
+                physics_version=PHYSICS_VERSION,
+            )
+        )
     await session.flush()
 
 
 async def save_simulation_run(
     session: AsyncSession, hours: int, utilisation: float, stress: float, result_snapshot: list[dict[str, Any]]
 ) -> SimulationRun:
-    run = SimulationRun(hours=hours, utilisation=utilisation, stress=stress, result_snapshot=result_snapshot)
+    run = SimulationRun(
+        hours=hours,
+        utilisation=utilisation,
+        stress=stress,
+        result_snapshot=result_snapshot,
+        physics_version=PHYSICS_VERSION,
+    )
     session.add(run)
     await session.flush()
     return run
 
 
+def _optimizer_model_version() -> Optional[str]:
+    """Version of the newest ``ppo_optimizer`` registry entry, else None.
+
+    Note: this is the newest *logged* training run; the registry does not record
+    which artifact the running process actually loaded.
+    """
+    try:
+        from src.model_registry import latest
+
+        entry = latest("ppo_optimizer")
+        return str(entry["version"]) if entry and entry.get("version") else None
+    except Exception:
+        return None
+
+
 async def save_optimization_result(session: AsyncSession, **fields: Any) -> OptimizationResult:
-    opt = OptimizationResult(**fields)
+    data = {**fields, "physics_version": PHYSICS_VERSION}
+    if data.get("model_version") is None:
+        data["model_version"] = _optimizer_model_version()
+    opt = OptimizationResult(**data)
     session.add(opt)
     await session.flush()
     return opt
