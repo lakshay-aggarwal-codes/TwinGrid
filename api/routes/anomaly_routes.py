@@ -2,15 +2,14 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import get_current_user, require_operator
-from api.config import MAX_RECENT_DATA_CHARS
-from api.rate_limit import http_limit
 from api.repositories import data_repository
 from api.schemas.optimization import AnomalyScoreResponse
+from api.serialization import to_jsonable
 from api.services import anomaly_service, audit_service, webhook_service
 from api.services.webhook_security import WebhookURLError, validate_webhook_url
 from database import get_db
@@ -19,23 +18,27 @@ from models.db_models import User
 router = APIRouter(tags=["anomaly"])
 
 
-@router.get("/api/anomaly_score", dependencies=[Depends(http_limit("anomaly_score"))])
+@router.get(
+    "/api/anomaly_score",
+    deprecated=True,
+    summary="DEPRECATED: pure scoring of a caller-supplied window",
+)
 async def anomaly_score(
     _user: Annotated[User, Depends(get_current_user)],
+    response: Response,
     session: AsyncSession = Depends(get_db),
-    recent_data: str = Query(
-        ...,
-        max_length=MAX_RECENT_DATA_CHARS,
-        description="JSON array of recent sensor readings, shape (12, 5)",
-    ),
+    recent_data: str = Query(..., description="JSON array of recent sensor readings, shape (12, 5)"),
 ) -> AnomalyScoreResponse:
-    """Compute anomaly score from the last 12 timesteps of 5 sensor features."""
+    """DEPRECATED -- TEMPORARY COMPATIBILITY LAYER (T3). Scores the window the CALLER supplies and
+    returns the result. It is PURE: it never persists an Alert and never dispatches a webhook,
+    because a client-supplied window is not evidence of anything. Alerts are created only by the
+    server-owned pipeline (see GET /api/anomaly/status and the WebSocket ``anomaly_status``).
+    A missing detector is reported as type "unavailable" and a failure as "error", never "normal"."""
+    response.headers["Deprecation"] = "true"
+    response.headers["Link"] = '</api/anomaly/status>; rel="successor-version"'
     result = anomaly_service.score_recent_data(recent_data)
-    # Only genuine alerts are persisted. Previously EVERY scoring call (including
-    # "normal", "detector not available" and "error" results) wrote an Alert row,
-    # so /api/alerts was flooded with non-alerts -- and the frontend scores every
-    # 3 seconds.
-    if result["alert"]:
+    if result["alert"] and anomaly_service.legacy_route_persistence_enabled():
+        # Development-only rollback (ANOMALY_SERVER_SIDE=false). Re-enables client-driven alerts.
         await data_repository.save_alert(
             session,
             result["score"],
@@ -44,15 +47,20 @@ async def anomaly_score(
             result["message"],
             severity=anomaly_service.alert_severity(result["score"], result["threshold"]),
         )
-        # Webhook subscribers get pushed the same alert instead of having to
-        # poll GET /api/alerts. No-ops instantly if nobody's registered.
         await webhook_service.dispatch_alert(
             {"score": result["score"], "type": result["type"], "message": result["message"]}
         )
     return AnomalyScoreResponse(**result)
 
 
-@router.post("/api/webhooks", dependencies=[Depends(http_limit("webhook"))])
+@router.get("/api/anomaly/status")
+async def anomaly_status(_user: Annotated[User, Depends(get_current_user)]) -> dict:
+    """Current state of the server-owned anomaly pipeline (the same object the live WebSocket carries
+    as ``anomaly_status``): warming_up | ok | anomalous | unavailable | error."""
+    return to_jsonable(anomaly_service.get_pipeline().snapshot())
+
+
+@router.post("/api/webhooks")
 async def register_webhook(
     _user: Annotated[User, Depends(require_operator)],
     url: str = Query(..., max_length=2048),
@@ -74,7 +82,7 @@ async def register_webhook(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
-@router.delete("/api/webhooks", dependencies=[Depends(http_limit("webhook"))])
+@router.delete("/api/webhooks")
 async def unregister_webhook(
     _user: Annotated[User, Depends(require_operator)],
     url: str = Query(..., max_length=2048),
@@ -101,6 +109,9 @@ async def list_alerts(
             "severity": a.severity or "INFO",
             "score": a.score,
             "alert": a.alert,
+            "origin": a.origin,
+            "model_version": a.model_version,
+            "dedupe_key": a.dedupe_key,
             "acknowledged": a.acknowledged,
             "acknowledged_by": a.acknowledged_by,
             "acknowledged_at": a.acknowledged_at.isoformat() if a.acknowledged_at else None,
@@ -109,7 +120,7 @@ async def list_alerts(
     ]
 
 
-@router.post("/api/alerts/{alert_id}/acknowledge", dependencies=[Depends(http_limit("alert_ack"))])
+@router.post("/api/alerts/{alert_id}/acknowledge")
 async def acknowledge_alert(
     alert_id: int,
     request: Request,

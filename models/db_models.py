@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, text
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -105,7 +105,7 @@ class SensorReading(Base):
     source: Mapped[str] = mapped_column(String(32), nullable=False, index=True)  # api | ws | simulation | optimization
 
     # State fields (align with DataCentreState / API response)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     server_utilisation: Mapped[float] = mapped_column(Float, nullable=False)
     outside_temp_C: Mapped[float] = mapped_column(Float, nullable=False)
     server_inlet_temp_C: Mapped[float] = mapped_column(Float, nullable=False)
@@ -121,13 +121,6 @@ class SensorReading(Base):
     water_pressure_bar: Mapped[float] = mapped_column(Float, nullable=False)
     cooling_mode: Mapped[str] = mapped_column(String(32), nullable=False)
     anomaly: Mapped[int] = mapped_column(Integer, default=0)
-
-    # Provenance (M1). `origin` is set explicitly by every writer; the server
-    # default exists only so a pre-M1 writer's INSERT keeps working (it is
-    # dropped in M4b once every writer is proven to set it). `physics_version`
-    # is NULL for rows written by code that predates M1 and not backfilled.
-    origin: Mapped[str] = mapped_column(String(16), nullable=False, server_default=text("'simulated'"))
-    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     # Optional: link to simulation or optimization run
     simulation_run_id: Mapped[Optional[int]] = mapped_column(
@@ -150,15 +143,8 @@ class SensorReading(Base):
         *,
         simulation_run_id: int | None = None,
         optimization_result_id: int | None = None,
-        origin: str | None = None,
-        physics_version: str | None = None,
     ) -> "SensorReading":
-        """Build SensorReading from API/twin state dict (e.g. DataCentreState.to_dict()).
-
-        ``origin`` / ``physics_version`` are left unset when None so that the
-        column default applies (old-writer compatibility); every simulator
-        writer passes both explicitly.
-        """
+        """Build SensorReading from API/twin state dict (e.g. DataCentreState.to_dict())."""
         ts = d.get("timestamp")
         if isinstance(ts, str) and ts:
             try:
@@ -167,7 +153,7 @@ class SensorReading(Base):
                 ts = datetime.utcnow()
         elif ts is None or (isinstance(ts, str) and not ts):
             ts = datetime.utcnow()
-        reading = cls(
+        return cls(
             source=source,
             timestamp=ts,
             server_utilisation=float(d["server_utilisation"]),
@@ -188,11 +174,6 @@ class SensorReading(Base):
             simulation_run_id=simulation_run_id,
             optimization_result_id=optimization_result_id,
         )
-        if origin is not None:
-            reading.origin = origin
-        if physics_version is not None:
-            reading.physics_version = physics_version
-        return reading
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to API-style dict."""
@@ -232,9 +213,6 @@ class SimulationRun(Base):
     utilisation: Mapped[float] = mapped_column(Float, nullable=False)
     stress: Mapped[float] = mapped_column(Float, nullable=False)
 
-    # Provenance (M1): physics that produced the run; NULL = written before M1.
-    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-
     # Optional: store full result as JSON for quick retrieval
     result_snapshot: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(JSON, nullable=True)
 
@@ -268,11 +246,6 @@ class OptimizationResult(Base):
     total_reward: Mapped[float] = mapped_column(Float, nullable=False)
     safety_violations: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # Provenance (M1): physics the policy was evaluated in, and the registry
-    # version of the policy when one is recorded (NULL = unknown).
-    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    model_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-
     # Full results array as JSON (each element is a state dict)
     results_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
 
@@ -287,6 +260,7 @@ class Alert(Base):
     """
 
     __tablename__ = "alerts"
+    __table_args__ = (Index("ux_alerts_dedupe_key", "dedupe_key", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
@@ -301,6 +275,14 @@ class Alert(Base):
     sensor_reading_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("sensor_readings.id", ondelete="SET NULL"), nullable=True
     )
+
+    # M2 (T3): alert identity + provenance. All NULL for alerts created before M2
+    # ("unlabelled legacy"). dedupe_key = "<detector_id>:<model_version>:<episode_start_seq>"
+    # and is UNIQUE, so one anomaly episode can only ever own one row (NULLs are not
+    # considered equal, so many legacy rows are fine).
+    dedupe_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    model_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    origin: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
 
     # Acknowledgment (operator-only, see POST /api/alerts/{id}/acknowledge). Who
     # acknowledged is stored as a username, not a user_id FK, for the same reason

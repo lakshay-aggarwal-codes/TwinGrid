@@ -31,7 +31,7 @@ def _ticks(n: int = 5) -> list[dict]:
 def test_payload_gains_exactly_the_documented_keys():
     legacy = set(gs.load_golden("ws_tick_sequence")["data"]["key_set"])
     now = set(_ticks(1)[0])
-    assert now - legacy == NEW_KEYS
+    assert now - legacy == NEW_KEYS | {"anomaly_status"}  # anomaly_status added by T3
     assert legacy <= now
 
 

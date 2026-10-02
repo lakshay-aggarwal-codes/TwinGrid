@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from typing import Any
 
 import requests
@@ -18,6 +19,17 @@ from src.webhook_registry import list_subscribers
 logger = logging.getLogger(__name__)
 
 WEBHOOK_TIMEOUT_SECONDS = 5
+
+
+def webhook_on_simulated() -> bool:
+    """WEBHOOK_ON_SIMULATED=true opts in to webhooks for alerts whose origin is "simulated".
+    Default false (T3): nothing the simulator produces is a real incident."""
+    return os.getenv("WEBHOOK_ON_SIMULATED", "false").strip().lower() in ("1", "true", "yes")
+
+
+def webhook_allowed_for_origin(origin: str | None) -> bool:
+    """Webhooks fire only for non-simulated origin unless WEBHOOK_ON_SIMULATED=true."""
+    return origin != "simulated" or webhook_on_simulated()
 
 
 def _post_one(url: str, payload: dict[str, Any]) -> None:
@@ -38,6 +50,9 @@ async def dispatch_alert(alert: dict[str, Any]) -> None:
     """Fire-and-forget to every registered subscriber, in worker threads
     (requests is sync; this is called from an async route). Never raises --
     a webhook failure must not affect the alert that triggered it."""
+    if not webhook_allowed_for_origin(alert.get("origin")):
+        logger.info("Webhook suppressed: alert origin %r (set WEBHOOK_ON_SIMULATED=true to allow)", alert.get("origin"))
+        return
     urls = list_subscribers()
     if not urls:
         return

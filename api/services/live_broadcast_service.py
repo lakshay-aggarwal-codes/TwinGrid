@@ -2,23 +2,39 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import random
-from collections import deque
-from datetime import datetime
+import time
+from datetime import datetime, timezone
 
 import numpy as np
 from fastapi import WebSocket
 
 from api.serialization import to_jsonable
+from api.services import anomaly_service, telemetry_window
 from api.services.twin_service import get_twin
 from database import get_session
 from models.db_models import SensorReading
-from src.versions import ORIGIN_SIMULATED, PHYSICS_VERSION
+from src.digital_twin import INTERVAL_MINUTES
 
 logger = logging.getLogger(__name__)
 
 BROADCAST_INTERVAL_SECONDS = 3
+
+# --- Live payload provenance (T1a, additive) --------------------------------
+# WS_SCHEMA_VERSION: version of the additive provenance fields below.
+# WS_ORIGIN: every value this loop emits comes from the physics simulator
+#   (sine-wave utilisation, random-walk weather); nothing is measured.
+# WS_SIM_TIME_SCALE: NOMINAL simulated seconds advanced per wall second --
+#   one twin step is INTERVAL_MINUTES of simulated time per tick, one tick per
+#   BROADCAST_INTERVAL_SECONDS of wall time (5*60/3 = 100). Derived from
+#   constants, not measured; the live driver is NOT corrected to real dt here
+#   (that is T7), so this documents the existing ~100x clock instead of fixing it.
+WS_SCHEMA_VERSION = 1
+WS_ORIGIN = "simulated"
+WS_SIM_TIME_SCALE = (INTERVAL_MINUTES * 60) / BROADCAST_INTERVAL_SECONDS
+
+# Strictly +1 per tick per process (first tick is 1). Resets on process restart.
+_tick_seq = 0
 
 # Slowly-drifting live water-stress reading. This feed is deliberately
 # independent of the sidebar's What-If sliders (it's the facility's own
@@ -32,146 +48,26 @@ _water_stress_state = 0.2
 _WATER_STRESS_STEP = 0.02
 
 
-# ---------------------------------------------------------------------------
-# Fan-out (T4b). broadcast() only enqueues; one writer task per client does the
-# actual send, so a slow or dead client can never delay the tick or any other
-# client. Tunables (read when a ConnectionManager is created):
-#   BROADCAST_MODE=serial            old behaviour (await each client in turn) -- rollback switch
-#   BROADCAST_SEND_TIMEOUT_SECONDS   per-send timeout before a client is dropped (default 2.0)
-#   BROADCAST_QUEUE_DEPTH            frames kept per client, newest win (default 1, max 10)
-# ---------------------------------------------------------------------------
-
-_DEFAULT_SEND_TIMEOUT_SECONDS = 2.0
-_DEFAULT_QUEUE_DEPTH = 1
-_MAX_QUEUE_DEPTH = 10
-_CLOSE_TIMEOUT_SECONDS = 1.0
-_SLOW_CLIENT_CLOSE_CODE = 1013  # "try again later"
-
-
-def _env_float(name: str, default: float) -> float:
-    try:
-        value = float(os.getenv(name, ""))
-    except ValueError:
-        return default
-    return value if value > 0 else default
-
-
-def _env_depth() -> int:
-    try:
-        value = int(os.getenv("BROADCAST_QUEUE_DEPTH", ""))
-    except ValueError:
-        return _DEFAULT_QUEUE_DEPTH
-    return min(max(value, 1), _MAX_QUEUE_DEPTH)
-
-
-def _env_mode() -> str:
-    return "serial" if os.getenv("BROADCAST_MODE", "").strip().lower() == "serial" else "concurrent"
-
-
-class _ClientChannel:
-    """Bounded outbox for one client: at most ``depth`` frames, newest win."""
-
-    __slots__ = ("websocket", "pending", "wakeup", "task", "dropped_frames")
-
-    def __init__(self, websocket: WebSocket, depth: int) -> None:
-        self.websocket = websocket
-        self.pending: deque[dict] = deque(maxlen=depth)
-        self.wakeup = asyncio.Event()
-        self.task: asyncio.Task | None = None
-        self.dropped_frames = 0
-
-    def offer(self, payload: dict) -> None:
-        if len(self.pending) == self.pending.maxlen:
-            self.dropped_frames += 1  # deque discards the oldest frame
-        self.pending.append(payload)
-        self.wakeup.set()
-
-
 class ConnectionManager:
     """Tracks active WebSocket connections and broadcasts to all of them."""
 
-    def __init__(
-        self,
-        *,
-        send_timeout: float | None = None,
-        queue_depth: int | None = None,
-        mode: str | None = None,
-    ) -> None:
+    def __init__(self) -> None:
         self._connections: set[WebSocket] = set()
-        self._channels: dict[WebSocket, _ClientChannel] = {}
-        self._send_timeout = send_timeout or _env_float("BROADCAST_SEND_TIMEOUT_SECONDS", _DEFAULT_SEND_TIMEOUT_SECONDS)
-        self._queue_depth = queue_depth or _env_depth()
-        self._mode = mode or _env_mode()
 
     def connect(self, websocket: WebSocket) -> None:
         self._connections.add(websocket)
-        # The writer task is started lazily by the first broadcast(), which
-        # always runs inside the event loop (connect() itself may not).
-        self._channels.setdefault(websocket, _ClientChannel(websocket, self._queue_depth))
         logger.info("WebSocket connected (%d active)", len(self._connections))
 
     def disconnect(self, websocket: WebSocket) -> None:
         self._connections.discard(websocket)
-        channel = self._channels.pop(websocket, None)
-        if channel is not None and channel.task is not None and not channel.task.done():
-            try:
-                current = asyncio.current_task()
-            except RuntimeError:
-                current = None
-            if channel.task is not current:  # a writer evicting its own client must not cancel itself
-                channel.task.cancel()
         logger.info("WebSocket disconnected (%d active)", len(self._connections))
 
     def has_connections(self) -> bool:
         return bool(self._connections)
 
     async def broadcast(self, payload: dict) -> None:
-        """Hand ``payload`` to every client. Never awaits a client (unless
-        BROADCAST_MODE=serial) and never raises because of one."""
         if not self._connections:
             return
-        if self._mode == "serial":
-            await self._broadcast_serial(payload)
-            return
-        # Iterate a snapshot: connect()/disconnect() can run between iterations.
-        for ws in list(self._connections):
-            channel = self._channels.get(ws)
-            if channel is None:  # added to _connections without connect()
-                channel = self._channels.setdefault(ws, _ClientChannel(ws, self._queue_depth))
-            channel.offer(payload)
-            if channel.task is None or channel.task.done():
-                channel.task = asyncio.get_running_loop().create_task(self._run_writer(channel))
-
-    async def _run_writer(self, channel: _ClientChannel) -> None:
-        """Dedicated sender for one client. Exits (and evicts the client) on a
-        send failure or timeout; exits quietly when cancelled by disconnect()."""
-        ws = channel.websocket
-        while True:
-            await channel.wakeup.wait()
-            channel.wakeup.clear()
-            while channel.pending:
-                frame = channel.pending.popleft()
-                try:
-                    await asyncio.wait_for(ws.send_json(frame), self._send_timeout)
-                except TimeoutError:
-                    await self._evict(channel, f"no send progress within {self._send_timeout:g}s (slow client)")
-                    return
-                except Exception as exc:
-                    await self._evict(channel, f"send failed ({type(exc).__name__})")
-                    return
-
-    async def _evict(self, channel: _ClientChannel, reason: str) -> None:
-        ws = channel.websocket
-        logger.warning("Dropping WebSocket client: %s; %d frame(s) skipped", reason, channel.dropped_frames)
-        if self._channels.get(ws) is channel:
-            self.disconnect(ws)
-        try:
-            await asyncio.wait_for(ws.close(code=_SLOW_CLIENT_CLOSE_CODE), _CLOSE_TIMEOUT_SECONDS)
-        except Exception:
-            pass  # best effort: the peer may already be gone or unresponsive
-
-    async def _broadcast_serial(self, payload: dict) -> None:
-        """Pre-T4b behaviour, kept for rollback (BROADCAST_MODE=serial)."""
         dead: list[WebSocket] = []
         # Iterate a snapshot: connect()/disconnect() can run while we await a
         # send, and mutating a set during iteration raises RuntimeError.
@@ -181,7 +77,7 @@ class ConnectionManager:
             except Exception:
                 dead.append(ws)
         for ws in dead:
-            self.disconnect(ws)
+            self._connections.discard(ws)
 
 
 manager = ConnectionManager()
@@ -189,7 +85,7 @@ manager = ConnectionManager()
 
 async def _tick() -> dict:
     """One shared simulation step, used by every connected client."""
-    global _water_stress_state
+    global _water_stress_state, _tick_seq
     twin = get_twin()
     hour = datetime.now().hour + datetime.now().minute / 60
     utilisation = float(np.clip(0.4 + 0.5 * np.sin((hour - 6) * np.pi / 12), 0, 1))
@@ -210,18 +106,61 @@ async def _tick() -> dict:
     # ONE write per tick, regardless of how many clients are connected --
     # previously this was one write per tick PER CLIENT. Persistence is
     # best-effort: a database outage must never stop the live stream.
+    reading_id: int | None = None
     try:
         async with get_session() as session:
-            session.add(
-                SensorReading.from_state_dict(
-                    state_dict, "ws", origin=ORIGIN_SIMULATED, physics_version=PHYSICS_VERSION
-                )
-            )
+            reading = SensorReading.from_state_dict(state_dict, "ws")
+            session.add(reading)
+            await session.flush()  # assigns reading.id; the anomaly alert links to it (T3)
+            reading_id = reading.id
             await session.commit()
     except Exception:
         logger.exception("Could not persist live sensor reading -- broadcasting anyway")
 
-    return to_jsonable({**state_dict, "carbon_data_is_real": twin.carbon_data_is_real})
+    # T1a: additive provenance/time fields. Every pre-existing key and value is
+    # unchanged. They are added to the BROADCAST payload only -- not to
+    # state_dict above, so what is persisted is unchanged.
+    #   sim_time   = the twin's own clock (same value as the existing
+    #                "timestamp" key). It is SIMULATED time, not event time.
+    #   ts_ingest  = wall clock (aware UTC) when this tick was assembled; the
+    #                client derives staleness from its own receive time, not this.
+    #   interval_s = nominal WALL seconds between ticks.
+    _tick_seq += 1
+    provenance = {
+        "schema_version": WS_SCHEMA_VERSION,
+        "origin": WS_ORIGIN,
+        "seq": _tick_seq,
+        "ts_ingest": datetime.fromtimestamp(time.time(), tz=timezone.utc),
+        "sim_time": state_dict["timestamp"],
+        "sim_time_scale": WS_SIM_TIME_SCALE,
+        "interval_s": BROADCAST_INTERVAL_SECONDS,
+    }
+    ts_ingest_iso = provenance["ts_ingest"].isoformat()
+
+    # T3: server-owned anomaly scoring, ONCE per tick (not per client). The window is filled from
+    # what the server itself just produced; the pipeline scores it in a worker thread, fails closed,
+    # and owns alert creation. The result rides the payload as ``anomaly_status`` -- a NEW key,
+    # because the pre-existing ``anomaly`` key (the twin's own 0/1 flag) must stay unchanged.
+    anomaly_status: dict | None = None
+    try:
+        telemetry_window.get_window_provider().append(
+            telemetry_window.sample_from_state(state_dict, seq=_tick_seq, ts_ingest=ts_ingest_iso, origin=WS_ORIGIN)
+        )
+        anomaly_status = await anomaly_service.get_pipeline().process(
+            session_factory=get_session, sensor_reading_id=reading_id
+        )
+    except Exception:
+        logger.exception("Anomaly pipeline failed -- reporting status=error, broadcasting anyway")
+        anomaly_service.ANOMALY_SCORING_ERRORS.inc()
+        anomaly_status = {
+            "status": anomaly_service.STATUS_ERROR,
+            "message": "Anomaly pipeline failure",
+            "detector_id": anomaly_service.DETECTOR_ID,
+            "trained_on": anomaly_service.TRAINED_ON,
+        }
+    return to_jsonable(
+        {**state_dict, "carbon_data_is_real": twin.carbon_data_is_real, **provenance, "anomaly_status": anomaly_status}
+    )
 
 
 async def run_broadcast_loop() -> None:

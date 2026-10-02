@@ -3,14 +3,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   fetchState,
   fetchSimulation,
-  fetchAnomalyScore,
   fetchEquipmentHealth,
   connectWebSocket,
+  type AnomalyStatusPayload,
   type EquipmentHealthResponse,
   type LiveStatePayload,
   type SocketStatus,
   type StateResponse,
-} from '@/api/apiClient.ts';
+} from '@/api/apiClient';
 import {
   LIVENESS_CHECK_INTERVAL_MS,
   deriveLiveness,
@@ -133,21 +133,6 @@ const EMPTY_KPI: KpiData = {
   waterPerHour: 0,
 };
 
-// A tuple of the 5 features the anomaly detector expects, in the exact
-// order api/main.py's docstring specifies:
-// [water_flow_lpm, water_pressure_bar, server_outlet_temp_C, it_power_kw, humidity_pct]
-type AnomalyFeatureTuple = [number, number, number, number, number];
-
-function stateToAnomalyFeatures(state: StateResponse): AnomalyFeatureTuple {
-  return [
-    state.water_flow_lpm,
-    state.water_pressure_bar,
-    state.server_outlet_temp_C,
-    state.it_power_kw,
-    state.humidity_pct,
-  ];
-}
-
 export function useSimulation() {
   const [config, setConfig] = useState<SimConfig>({
     serverUtil: 65,
@@ -173,7 +158,10 @@ export function useSimulation() {
   const [simRunning, setSimRunning] = useState(false);
 
   const prevPueRef = useRef<number | undefined>(undefined);
-  const anomalyBufferRef = useRef<AnomalyFeatureTuple[]>([]);
+  // Server-owned anomaly pipeline result (backend T3). The browser no longer scores anything.
+  const [anomalyStatus, setAnomalyStatus] = useState<AnomalyStatusPayload | null>(null);
+  const lastEpisodeKeyRef = useRef<string | null>(null);
+  const lastAnomalyStatusRef = useRef<string | null>(null);
 
   function pushEvent(message: string, type: EventItem['type']) {
     setEvents((prev) =>
@@ -237,39 +225,40 @@ export function useSimulation() {
     return () => clearInterval(id);
   }, [refreshLiveness]);
 
-  // Live ambient feed + anomaly detection: independent of the sliders --
-  // this is the facility's actual live telemetry stream, not a
-  // what-if preview. Feeds a rolling 12-reading buffer into the real
-  // trained anomaly detector.
+  // Live ambient feed: independent of the sliders -- this is the facility's live telemetry stream,
+  // not a what-if preview. Anomaly detection is SERVER-owned (backend T3): each payload carries
+  // `anomaly_status`, computed once per tick from the server-held 12-sample window. The browser
+  // sends nothing and scores nothing.
   useEffect(() => {
     const { disconnect } = connectWebSocket(
-      async (state) => {
+      (state) => {
         lastMessageAtRef.current = Date.now();
         staleWindowMsRef.current = staleAfterMs(state.interval_s);
         setLiveState(state);
         refreshLiveness();
-        const buf = anomalyBufferRef.current;
-        buf.push(stateToAnomalyFeatures(state));
-        if (buf.length > 12) buf.shift();
-        anomalyBufferRef.current = buf;
 
-        if (buf.length === 12) {
-          try {
-            const result = await fetchAnomalyScore(buf);
-            // Normalize against the model's OWN trained threshold (95th
-            // percentile of training error) rather than an invented scale --
-            // score === threshold lands at 50 on the gauge, i.e. right at
-            // the model's real alert boundary.
-            const normalized = clamp((result.score / (result.threshold || 1)) * 50, 0, 100);
-            setAnomalyScore(normalized);
-            if (result.alert) {
-              pushEvent(result.message, result.type === 'error' ? 'error' : 'warning');
-              setLatestAnomaly({ type: result.type, message: result.message });
-            }
-          } catch (e) {
-            reportError('useSimulation.fetchAnomalyScore', e, 'warning');
-          }
+        const a = state.anomaly_status;
+        if (!a) return; // older backend: no anomaly information, never invent a "normal"
+        setAnomalyStatus(a);
+        const scored = a.status === 'ok' || a.status === 'anomalous';
+        // Normalize against the model's OWN trained threshold: score === threshold lands at 50.
+        // Not scored (warming up / unavailable / error) shows 0 on the gauge -- the status itself,
+        // not this number, says why.
+        setAnomalyScore(
+          scored && a.score !== null && a.threshold !== null ? clamp((a.score / (a.threshold || 1)) * 50, 0, 100) : 0
+        );
+        // One event per anomaly EPISODE (the server's dedupe key), not per tick.
+        const key = a.episode?.dedupe_key ?? null;
+        if (a.status === 'anomalous' && key && key !== lastEpisodeKeyRef.current) {
+          lastEpisodeKeyRef.current = key;
+          pushEvent(a.message, 'warning');
+          setLatestAnomaly({ type: a.type ?? 'unknown', message: a.message });
         }
+        // Fail-closed states are surfaced once per transition, not every tick.
+        if ((a.status === 'unavailable' || a.status === 'error') && lastAnomalyStatusRef.current !== a.status) {
+          pushEvent(a.message, 'error');
+        }
+        lastAnomalyStatusRef.current = a.status;
       },
       (status) => {
         socketStatusRef.current = status;
@@ -300,6 +289,7 @@ export function useSimulation() {
     kpi,
     anomalyScore,
     latestAnomaly,
+    anomalyStatus,
     events,
     hourlyData,
     simRunning,

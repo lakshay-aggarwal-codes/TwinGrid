@@ -125,15 +125,6 @@ def _alerting(monkeypatch):
     monkeypatch.setattr(anomaly_service, "score_recent_data", lambda _raw: result)
 
 
-@pytest.mark.legacy_behavior("T3")
-async def test_viewer_scoring_call_today_persists_an_alert(client, viewer_headers, count_rows, monkeypatch):
-    _alerting(monkeypatch)
-    r = await client.get("/api/anomaly_score", params={"recent_data": WINDOW}, headers=viewer_headers)
-    assert r.status_code == 200 and r.json()["alert"] is True
-    assert await count_rows(Alert) == 1
-
-
-@target("T3")
 async def test_viewer_scoring_call_creates_no_alert(client, viewer_headers, count_rows, monkeypatch):
     _alerting(monkeypatch)
     r = await client.get("/api/anomaly_score", params={"recent_data": WINDOW}, headers=viewer_headers)

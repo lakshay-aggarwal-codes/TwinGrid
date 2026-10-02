@@ -130,6 +130,9 @@ class FakeSession:
     def add(self, obj: Any) -> None:
         self.added.append(obj)
 
+    async def flush(self) -> None:  # T3: _tick flushes to obtain the reading id
+        return None
+
     async def commit(self) -> None:
         self.commits += 1
 
@@ -144,7 +147,9 @@ class FakeSession:
 def live_tick_environment(seed: int = TICK_SEED) -> Iterator[FakeSession]:
     """Everything ``_tick()`` needs to be reproducible: frozen clock, seeded
     ``random``, fresh shared twin, fresh water-stress walk, stubbed session."""
+    import api.services.anomaly_service as anomaly_service
     import api.services.live_broadcast_service as lbs
+    import api.services.telemetry_window as telemetry_window
 
     session = FakeSession()
     saved_state = random.getstate()
@@ -153,6 +158,9 @@ def live_tick_environment(seed: int = TICK_SEED) -> Iterator[FakeSession]:
         with (
             frozen_environment(),
             fresh_shared_twin(),
+            # T3: fresh window + pipeline so a run never inherits samples/episodes from another test
+            mock.patch.object(telemetry_window, "_provider", telemetry_window.InMemoryTelemetryWindow()),
+            mock.patch.object(anomaly_service, "_pipeline", anomaly_service.AnomalyPipeline()),
             mock.patch.object(lbs, "_water_stress_state", 0.2),
             mock.patch.object(lbs, "_tick_seq", 0),  # T1a: first tick in a run is seq=1
             mock.patch.object(lbs, "get_session", lambda: session),

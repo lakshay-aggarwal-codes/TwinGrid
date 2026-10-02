@@ -68,7 +68,8 @@ async def test_normal_score_is_not_persisted_and_no_webhook(client, viewer_heade
     assert sent == []
 
 
-async def test_real_alert_is_persisted_with_severity_and_dispatched(client, viewer_headers, monkeypatch, count_rows):
+async def test_real_alert_score_is_pure_no_persistence_no_webhook(client, viewer_headers, monkeypatch, count_rows):
+    """T3: the deprecated route only scores. It must never persist an Alert or dispatch a webhook."""
     sent = []
 
     async def fake_dispatch(payload):
@@ -90,12 +91,10 @@ async def test_real_alert_is_persisted_with_severity_and_dispatched(client, view
 
     r = await client.get("/api/anomaly_score", params={"recent_data": WINDOW}, headers=viewer_headers)
     assert r.status_code == 200
-    assert r.json()["explanation"]["top_feature"] == "server_outlet_temp_C"
-    assert await count_rows(Alert) == 1
-    assert len(sent) == 1 and sent[0]["type"] == "thermal_spike"
-
-    alerts = (await client.get("/api/alerts", headers=viewer_headers)).json()
-    assert alerts[0]["severity"] == "CRITICAL"  # score 3.0 > 2 x threshold 1.0
+    assert r.json()["alert"] is True and r.json()["explanation"]["top_feature"] == "server_outlet_temp_C"
+    assert r.headers["deprecation"] == "true"
+    assert await count_rows(Alert) == 0
+    assert sent == []
 
 
 def test_alert_severity_boundary():

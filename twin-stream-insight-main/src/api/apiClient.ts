@@ -39,40 +39,60 @@ export interface StateResponse {
 }
 
 /**
- * One message on /ws/live. Today this is exactly a StateResponse; the optional
- * fields are the additive T1a envelope (roadmap section 7) so the type does not
- * have to change when the backend starts sending them. Until then they are
- * simply absent -- consumers must not assume they are present.
+ * One WebSocket /ws/live payload: the StateResponse fields plus the additive provenance/time fields
+ * the backend gained in T1a. All of them are OPTIONAL because an older backend does not send them
+ * (the UI then shows an "unverified source").
  */
-export type LiveStatePayload = StateResponse & {
+/** Server-owned anomaly pipeline state (backend T3). The browser never scores anything itself. */
+export type AnomalyPipelineStatus = 'warming_up' | 'ok' | 'anomalous' | 'unavailable' | 'error';
+
+export interface AnomalyStatusPayload {
+  status: AnomalyPipelineStatus;
+  message: string;
+  /** Reconstruction error of the last scored window; null unless status is ok/anomalous. */
+  score: number | null;
+  /** The detector's own trained threshold (unchanged by the pipeline). */
+  threshold: number | null;
+  type: string | null;
+  window_size?: number;
+  window_filled?: number;
+  /** Tick seq of the newest sample in the scored window. */
+  seq?: number | null;
+  /** Lowest-evidence origin in the window. */
+  origin?: string | null;
+  detector_id?: string;
+  model_version?: string | null;
+  /** "synthetic" while the shipped detector has no real training data (roadmap D-4). */
+  trained_on?: string;
+  episode?: {
+    open: boolean;
+    dedupe_key: string | null;
+    alert_id: number | null;
+    start_seq: number | null;
+    severity: string | null;
+  };
+  scored_at?: string;
+}
+
+export interface LiveStatePayload extends StateResponse {
   schema_version?: number;
-  /** Data provenance, e.g. "simulated". Missing => treat as "unverified source". */
+  /** Where the values come from. Only "simulated" exists today. */
   origin?: string;
-  /** Strictly +1 per server tick (per process). */
+  /** Strictly +1 per broadcast tick per server process. */
   seq?: number;
-  /** Server wall-clock time of the tick, ISO-8601 UTC. */
+  /** Server wall clock (aware UTC ISO-8601) when the tick was assembled. */
   ts_ingest?: string;
-  /** The twin's own clock (same value as `timestamp`). */
+  /** The twin's OWN simulated clock (same value as `timestamp`). Never event time. */
   sim_time?: string;
+  /** Nominal simulated seconds per wall second. */
   sim_time_scale?: number;
+  /** Nominal WALL seconds between payloads. */
   interval_s?: number;
-};
+  /** Server-side anomaly detection result. (The pre-existing `anomaly` number is the twin's own flag.) */
+  anomaly_status?: AnomalyStatusPayload;
+}
 
-/**
- * Connection state of the live socket. MUST stay identical to `SocketStatus` in
- * hooks/liveness.ts (which deriveLiveness consumes); TypeScript's structural typing
- * makes any drift a compile error in useSimulation.ts.
- *   connecting - first attempt, nothing has happened yet
- *   open       - socket is open
- *   closed     - not open: dropped, failed attempt, rejected token, or disconnect().
- *                A retry may already be scheduled; "closed" never means "gone for good".
- * "open" only means the socket is open, NOT that data is fresh: staleness is judged
- * from the wall-clock age of the last payload (see liveness.ts).
- */
 export type SocketStatus = 'connecting' | 'open' | 'closed';
-
-/** Close code the backend already uses for an invalid token (api/routes/websocket_routes.py). */
-export const WS_CLOSE_UNAUTHORIZED = 4001;
 
 export interface EquipmentHealthResponse {
   available: boolean;
@@ -123,6 +143,10 @@ export interface AlertRecord {
   acknowledged: boolean;
   acknowledged_by: string | null;
   acknowledged_at: string | null;
+  /** Alert identity/provenance (backend M2). null on alerts created before it. */
+  origin?: string | null;
+  model_version?: string | null;
+  dedupe_key?: string | null;
 }
 
 /** GET /api/alerts — recent persisted alerts, newest first. */
@@ -271,10 +295,13 @@ export async function fetchOptimized(weights: FetchOptimizedParams = {}): Promis
 }
 
 /**
- * GET /api/anomaly_score — score the last 12 readings.
+ * @deprecated Anomaly scoring is server-owned (backend T3). Read `anomaly_status` from the live
+ * WebSocket payload instead. This calls a pure, deprecated compatibility endpoint that scores a
+ * caller-supplied window and creates no alerts; the app no longer calls it.
+ *
  * recentReadings must be exactly 12 tuples of
  * [water_flow_lpm, water_pressure_bar, server_outlet_temp_C, it_power_kw, humidity_pct],
- * oldest first, matching the shape the trained LSTM autoencoder expects.
+ * oldest first.
  */
 export async function fetchAnomalyScore(
   recentReadings: [number, number, number, number, number][]
@@ -284,36 +311,28 @@ export async function fetchAnomalyScore(
   return handleResponse<AnomalyScoreResponse>(response);
 }
 
-/** WebSocket /ws/live — live state updates, auto-reconnect, auto re-auth. */
+/**
+ * WebSocket /ws/live — live state updates, auto-reconnect, auto re-auth.
+ * `onStatus` (optional) reports the socket state so the UI can tell "connected" from "dropped".
+ */
 export function connectWebSocket(
   onMessage: (state: LiveStatePayload) => void,
-  onStatus?: (status: SocketStatus) => void,
+  onStatus?: (status: SocketStatus) => void
 ): { disconnect: () => void } {
   let ws: WebSocket | null = null;
-  let lastStatus: SocketStatus | null = null;
-  // Emits only on change, so a retry loop does not spam subscribers.
-  const setStatus = (status: SocketStatus) => {
-    if (status === lastStatus) return;
-    lastStatus = status;
-    try {
-      onStatus?.(status);
-    } catch (e) {
-      reportError('apiClient.websocket.status', e, 'warning');
-    }
-  };
   let reconnectDelay = DEFAULT_RECONNECT_DELAY_MS;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let closed = false;
 
-  setStatus('connecting');
-
   async function connect() {
     if (closed) return;
+    onStatus?.('connecting');
     let token: string;
     try {
       token = await getToken();
     } catch (e) {
       reportError('apiClient.websocket.auth', e, 'warning');
+      onStatus?.('closed');
       scheduleReconnect();
       return;
     }
@@ -322,6 +341,7 @@ export function connectWebSocket(
     try {
       ws = new WebSocket(`${WS_BASE_URL}?token=${encodeURIComponent(token)}`);
     } catch {
+      onStatus?.('closed');
       scheduleReconnect();
       return;
     }
@@ -338,9 +358,7 @@ export function connectWebSocket(
     ws.onclose = (event) => {
       ws = null;
       if (closed) return;
-      // 4001 = server rejected the token (invalid/expired). getToken() refreshes
-      // before expiry, so the scheduled reconnect below fetches a fresh token.
-      setStatus('closed');
+      onStatus?.('closed');
       // Previously silent. The header's Live/Connecting indicator shows this to
       // an operator watching; this makes it visible to anyone who isn't.
       reportError('apiClient.websocket.closed', `WebSocket closed (code ${event.code}); reconnecting`, 'warning');
@@ -353,14 +371,12 @@ export function connectWebSocket(
 
     ws.onopen = () => {
       reconnectDelay = DEFAULT_RECONNECT_DELAY_MS;
-      setStatus('open');
+      onStatus?.('open');
     };
   }
 
   function scheduleReconnect() {
     if (closed || reconnectTimer) return;
-    // Token fetch / construction failure, or a drop: not open until a retry succeeds.
-    setStatus('closed');
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
       connect();
@@ -373,7 +389,6 @@ export function connectWebSocket(
   return {
     disconnect() {
       closed = true;
-      setStatus('closed');
       if (reconnectTimer) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
