@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import random
+from collections import deque
 from datetime import datetime
 
 import numpy as np
@@ -12,6 +14,7 @@ from api.serialization import to_jsonable
 from api.services.twin_service import get_twin
 from database import get_session
 from models.db_models import SensorReading
+from src.versions import ORIGIN_SIMULATED, PHYSICS_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -29,69 +32,146 @@ _water_stress_state = 0.2
 _WATER_STRESS_STEP = 0.02
 
 
-class ConnectionLimitExceeded(Exception):
-    """Raised by ConnectionManager.connect when a cap is hit.
-    ``scope`` is "user" (per-user cap) or "global" (server-wide cap)."""
+# ---------------------------------------------------------------------------
+# Fan-out (T4b). broadcast() only enqueues; one writer task per client does the
+# actual send, so a slow or dead client can never delay the tick or any other
+# client. Tunables (read when a ConnectionManager is created):
+#   BROADCAST_MODE=serial            old behaviour (await each client in turn) -- rollback switch
+#   BROADCAST_SEND_TIMEOUT_SECONDS   per-send timeout before a client is dropped (default 2.0)
+#   BROADCAST_QUEUE_DEPTH            frames kept per client, newest win (default 1, max 10)
+# ---------------------------------------------------------------------------
 
-    def __init__(self, scope: str) -> None:
-        super().__init__(f"WebSocket connection limit exceeded ({scope})")
-        self.scope = scope
+_DEFAULT_SEND_TIMEOUT_SECONDS = 2.0
+_DEFAULT_QUEUE_DEPTH = 1
+_MAX_QUEUE_DEPTH = 10
+_CLOSE_TIMEOUT_SECONDS = 1.0
+_SLOW_CLIENT_CLOSE_CODE = 1013  # "try again later"
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        value = float(os.getenv(name, ""))
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
+def _env_depth() -> int:
+    try:
+        value = int(os.getenv("BROADCAST_QUEUE_DEPTH", ""))
+    except ValueError:
+        return _DEFAULT_QUEUE_DEPTH
+    return min(max(value, 1), _MAX_QUEUE_DEPTH)
+
+
+def _env_mode() -> str:
+    return "serial" if os.getenv("BROADCAST_MODE", "").strip().lower() == "serial" else "concurrent"
+
+
+class _ClientChannel:
+    """Bounded outbox for one client: at most ``depth`` frames, newest win."""
+
+    __slots__ = ("websocket", "pending", "wakeup", "task", "dropped_frames")
+
+    def __init__(self, websocket: WebSocket, depth: int) -> None:
+        self.websocket = websocket
+        self.pending: deque[dict] = deque(maxlen=depth)
+        self.wakeup = asyncio.Event()
+        self.task: asyncio.Task | None = None
+        self.dropped_frames = 0
+
+    def offer(self, payload: dict) -> None:
+        if len(self.pending) == self.pending.maxlen:
+            self.dropped_frames += 1  # deque discards the oldest frame
+        self.pending.append(payload)
+        self.wakeup.set()
 
 
 class ConnectionManager:
     """Tracks active WebSocket connections and broadcasts to all of them."""
 
-    def __init__(self) -> None:
-        self._connections: set[WebSocket] = set()
-        # Accounting for the connection caps, kept separate from _connections:
-        # broadcast() discards a socket it failed to send to straight from
-        # _connections, but the cap must keep counting it until the endpoint
-        # handler has actually finished with it (disconnect()).
-        self._owners: dict[WebSocket, str | None] = {}
-        self._per_user: dict[str, int] = {}
-
-    def connect(
+    def __init__(
         self,
-        websocket: WebSocket,
-        user_id: str | None = None,
         *,
-        max_per_user: int | None = None,
-        max_global: int | None = None,
+        send_timeout: float | None = None,
+        queue_depth: int | None = None,
+        mode: str | None = None,
     ) -> None:
-        """Register ``websocket``. Raises ConnectionLimitExceeded (and registers
-        nothing) if a cap would be exceeded. Caps are optional: callers that pass
-        none behave exactly as before. There is no await in here, so the
-        check-then-add is atomic with respect to other connections."""
-        if max_global is not None and len(self._owners) >= max_global:
-            raise ConnectionLimitExceeded("global")
-        if user_id is not None and max_per_user is not None and self._per_user.get(user_id, 0) >= max_per_user:
-            raise ConnectionLimitExceeded("user")
+        self._connections: set[WebSocket] = set()
+        self._channels: dict[WebSocket, _ClientChannel] = {}
+        self._send_timeout = send_timeout or _env_float("BROADCAST_SEND_TIMEOUT_SECONDS", _DEFAULT_SEND_TIMEOUT_SECONDS)
+        self._queue_depth = queue_depth or _env_depth()
+        self._mode = mode or _env_mode()
+
+    def connect(self, websocket: WebSocket) -> None:
         self._connections.add(websocket)
-        self._owners[websocket] = user_id
-        if user_id is not None:
-            self._per_user[user_id] = self._per_user.get(user_id, 0) + 1
+        # The writer task is started lazily by the first broadcast(), which
+        # always runs inside the event loop (connect() itself may not).
+        self._channels.setdefault(websocket, _ClientChannel(websocket, self._queue_depth))
         logger.info("WebSocket connected (%d active)", len(self._connections))
 
     def disconnect(self, websocket: WebSocket) -> None:
-        """Idempotent. Safe to call for a socket that was never registered
-        (e.g. one rejected by connect())."""
         self._connections.discard(websocket)
-        if websocket in self._owners:
-            user_id = self._owners.pop(websocket)
-            if user_id is not None:
-                remaining = self._per_user.get(user_id, 0) - 1
-                if remaining > 0:
-                    self._per_user[user_id] = remaining
-                else:
-                    self._per_user.pop(user_id, None)
+        channel = self._channels.pop(websocket, None)
+        if channel is not None and channel.task is not None and not channel.task.done():
+            try:
+                current = asyncio.current_task()
+            except RuntimeError:
+                current = None
+            if channel.task is not current:  # a writer evicting its own client must not cancel itself
+                channel.task.cancel()
         logger.info("WebSocket disconnected (%d active)", len(self._connections))
 
     def has_connections(self) -> bool:
         return bool(self._connections)
 
     async def broadcast(self, payload: dict) -> None:
+        """Hand ``payload`` to every client. Never awaits a client (unless
+        BROADCAST_MODE=serial) and never raises because of one."""
         if not self._connections:
             return
+        if self._mode == "serial":
+            await self._broadcast_serial(payload)
+            return
+        # Iterate a snapshot: connect()/disconnect() can run between iterations.
+        for ws in list(self._connections):
+            channel = self._channels.get(ws)
+            if channel is None:  # added to _connections without connect()
+                channel = self._channels.setdefault(ws, _ClientChannel(ws, self._queue_depth))
+            channel.offer(payload)
+            if channel.task is None or channel.task.done():
+                channel.task = asyncio.get_running_loop().create_task(self._run_writer(channel))
+
+    async def _run_writer(self, channel: _ClientChannel) -> None:
+        """Dedicated sender for one client. Exits (and evicts the client) on a
+        send failure or timeout; exits quietly when cancelled by disconnect()."""
+        ws = channel.websocket
+        while True:
+            await channel.wakeup.wait()
+            channel.wakeup.clear()
+            while channel.pending:
+                frame = channel.pending.popleft()
+                try:
+                    await asyncio.wait_for(ws.send_json(frame), self._send_timeout)
+                except TimeoutError:
+                    await self._evict(channel, f"no send progress within {self._send_timeout:g}s (slow client)")
+                    return
+                except Exception as exc:
+                    await self._evict(channel, f"send failed ({type(exc).__name__})")
+                    return
+
+    async def _evict(self, channel: _ClientChannel, reason: str) -> None:
+        ws = channel.websocket
+        logger.warning("Dropping WebSocket client: %s; %d frame(s) skipped", reason, channel.dropped_frames)
+        if self._channels.get(ws) is channel:
+            self.disconnect(ws)
+        try:
+            await asyncio.wait_for(ws.close(code=_SLOW_CLIENT_CLOSE_CODE), _CLOSE_TIMEOUT_SECONDS)
+        except Exception:
+            pass  # best effort: the peer may already be gone or unresponsive
+
+    async def _broadcast_serial(self, payload: dict) -> None:
+        """Pre-T4b behaviour, kept for rollback (BROADCAST_MODE=serial)."""
         dead: list[WebSocket] = []
         # Iterate a snapshot: connect()/disconnect() can run while we await a
         # send, and mutating a set during iteration raises RuntimeError.
@@ -101,7 +181,7 @@ class ConnectionManager:
             except Exception:
                 dead.append(ws)
         for ws in dead:
-            self._connections.discard(ws)
+            self.disconnect(ws)
 
 
 manager = ConnectionManager()
@@ -132,7 +212,11 @@ async def _tick() -> dict:
     # best-effort: a database outage must never stop the live stream.
     try:
         async with get_session() as session:
-            session.add(SensorReading.from_state_dict(state_dict, "ws"))
+            session.add(
+                SensorReading.from_state_dict(
+                    state_dict, "ws", origin=ORIGIN_SIMULATED, physics_version=PHYSICS_VERSION
+                )
+            )
             await session.commit()
     except Exception:
         logger.exception("Could not persist live sensor reading -- broadcasting anyway")

@@ -13,6 +13,14 @@ from api.services import live_broadcast_service
 from api.services.live_broadcast_service import ConnectionManager
 
 
+async def _until(predicate, timeout: float = 1.0) -> None:
+    """broadcast() only enqueues (T4b); wait for the per-client writers to deliver."""
+    deadline = asyncio.get_running_loop().time() + timeout
+    while not predicate():
+        assert asyncio.get_running_loop().time() < deadline, "condition not met in time"
+        await asyncio.sleep(0.005)
+
+
 class FakeWebSocket:
     def __init__(self, fail: bool = False):
         self.fail = fail
@@ -41,6 +49,7 @@ class TestConnectionManager:
         manager.connect(ws2)
         payload = {"pue": 1.3}
         await manager.broadcast(payload)
+        await _until(lambda: ws1.received and ws2.received)
         assert ws1.received == [payload]
         assert ws2.received == [payload]
 
@@ -56,6 +65,7 @@ class TestConnectionManager:
         manager.connect(dead_ws)
 
         await manager.broadcast({"pue": 1.4})  # must not raise
+        await _until(lambda: good_ws.received and dead_ws not in manager._connections)
 
         assert good_ws.received == [{"pue": 1.4}]
         assert dead_ws not in manager._connections  # pruned automatically
