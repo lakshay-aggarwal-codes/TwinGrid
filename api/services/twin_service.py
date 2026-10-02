@@ -6,9 +6,28 @@ import math
 from datetime import datetime, timedelta
 from typing import Any, Optional
 
-from src.digital_twin import INTERVAL_MINUTES, CoolingMode, DigitalTwin
+from fastapi import HTTPException
+
+from src.digital_twin import INTERVAL_MINUTES, CoolingMode, DigitalTwin, InvalidInputError
+from src.versions import LEGACY_PHYSICS_VERSION
 
 _twin: Optional[DigitalTwin] = None
+
+
+class TwinInputError(InvalidInputError, HTTPException):
+    """An InvalidInputError that FastAPI renders as HTTP 422.
+
+    It is still a ValueError (and an InvalidInputError), so non-HTTP callers that catch those
+    keep working; routes need no change because FastAPI's HTTPException handler picks it up.
+    """
+
+    def __init__(self, source: InvalidInputError) -> None:
+        InvalidInputError.__init__(self, str(source), field=source.field)
+        HTTPException.__init__(self, status_code=422, detail=str(source))
+
+    def __str__(self) -> str:  # both bases define __str__; show the plain message
+        return str(self.detail)
+
 
 STEPS_PER_HOUR = 60 // INTERVAL_MINUTES
 WHATIF_HOURS = 24
@@ -67,6 +86,17 @@ def compute_state(
     one the WebSocket stream shows); ``live=False`` uses a throwaway twin so
     read-only callers (benchmark, ESG report) never disturb the live feed.
     Raises ValueError for an unknown cooling mode."""
+    try:
+        return _compute_state(utilisation, outside_temp, water_stress, mode, live=live)
+    except InvalidInputError as e:
+        if isinstance(e, TwinInputError):
+            raise
+        raise TwinInputError(e) from e
+
+
+def _compute_state(
+    utilisation: float, outside_temp: float, water_stress: float, mode: str, *, live: bool
+) -> dict[str, Any]:
     twin = get_twin() if live else DigitalTwin()
     action: dict[str, Any] = {
         "utilisation": utilisation,
@@ -105,6 +135,13 @@ def compute_simulation(hours: int, utilisation: float, outside_temp: float, stre
     """
     if hours < 1 or hours > 168:
         raise ValueError("hours must be between 1 and 168")
+    try:
+        return _compute_simulation(hours, utilisation, outside_temp, stress)
+    except InvalidInputError as e:
+        raise TwinInputError(e) from e
+
+
+def _compute_simulation(hours: int, utilisation: float, outside_temp: float, stress: float) -> list[dict[str, Any]]:
     twin = DigitalTwin()
     n_steps = hours * STEPS_PER_HOUR
     start_time = twin.state.timestamp
@@ -134,9 +171,30 @@ def compute_whatif(
     24 h of 5-minute steps, starting from a settled state at the requested
     chilled-water setpoint.
 
+    Carbon (physics v1): the CO2 total is the sum of the twin's own per-step ``carbon_gco2``,
+    i.e. the SAME definition /api/state reports -- total facility energy x grid intensity
+    (src.digital_twin.carbon_emissions_gco2). legacy-0 keeps its original formula, which is
+    numerically the same quantity, so replayed results do not move.
+
     Blocking and CPU-bound: call via ``run_in_threadpool``.
     """
+    try:
+        return _compute_whatif(utilisation, outside_temp, water_stress, mode, chilled_water_temp)
+    except InvalidInputError as e:
+        if isinstance(e, TwinInputError):
+            raise
+        raise TwinInputError(e) from e
+
+
+def _compute_whatif(
+    utilisation: float,
+    outside_temp: float,
+    water_stress: float,
+    mode: str,
+    chilled_water_temp: float,
+) -> dict[str, Any]:
     twin = DigitalTwin(initial_chilled_water_temp_C=chilled_water_temp)
+    legacy = twin.physics_version == LEGACY_PHYSICS_VERSION
     n_steps = WHATIF_HOURS * STEPS_PER_HOUR
     interval_h = INTERVAL_MINUTES / 60
 
@@ -159,7 +217,10 @@ def compute_whatif(
         )
         total_energy_kwh += last.total_power_kw * interval_h
         it_energy_kwh += last.it_power_kw * interval_h
-        co2_g += last.carbon_intensity_gco2_per_kwh * last.total_power_kw * interval_h
+        if legacy:
+            co2_g += last.carbon_intensity_gco2_per_kwh * last.total_power_kw * interval_h
+        else:
+            co2_g += last.carbon_gco2  # one carbon definition: see src.digital_twin.carbon_emissions_gco2
         pue_sum += last.pue
         max_outlet_c = max(max_outlet_c, last.server_outlet_temp_C)
 

@@ -27,14 +27,15 @@ class TestDynamicPhysics:
 
     def test_initial_state_is_at_steady_state(self):
         """At t=0 the twin starts already settled: inlet == chilled-water
-        setpoint + approach temperature for the default closed-loop mode."""
-        twin = DigitalTwin()
+        setpoint + approach temperature for the default closed-loop mode.
+        (legacy-0 equation; the v1 equivalent is in tests/test_physics_v1_invariants.py.)"""
+        twin = DigitalTwin(physics_version="legacy-0")
         assert abs(twin._state.server_inlet_temp_C - (12.0 + 2.0)) < 1e-9
 
     def test_thermal_lag_is_partial_not_instant(self):
         """A step change in the chilled-water setpoint does not teleport
         the inlet temperature to its new steady-state value in one step."""
-        twin = DigitalTwin(thermal_time_constant_min=10.0)
+        twin = DigitalTwin(thermal_time_constant_min=10.0, physics_version="legacy-0")
         twin.step({"utilisation": 0.2, "outside_temp_C": 25.0, "cooling_mode": "closed_loop"})
         inlet_before = twin._inlet_temp_C
 

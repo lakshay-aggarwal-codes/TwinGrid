@@ -11,6 +11,18 @@ steady-state target using a thermal time constant), and the chilled-water
 actuator is rate-limited. There is a deterministic requested->applied
 control pipeline that runs BEFORE physics, so the mode/temperature actually
 used for computation is always the same one reported back in the state.
+
+PHYSICS VERSIONS (src/versions.py). ``legacy-0`` is the original model, kept
+verbatim and bit-identical for replay (tests/golden). ``1`` is Physics v1:
+  * energy closure   total = IT + cooling (fans and pumps are inside the plant COP)
+  * water            tied to HEAT REJECTED by evaporation, capped at the latent-heat bound
+  * capacity         finite; unremoved heat raises the inlet temperature
+  * inputs           validated atomically -> InvalidInputError (the API maps it to 422)
+  * carbon           ONE definition: total facility energy x grid intensity
+  * safety           ONE envelope (SAFETY_ENVELOPE) for is_safe(), the RL penalty and the API
+  * time             step() integrates a real, caller-supplied dt
+All v1 constants below are PROPOSED engineering values, not calibrated to a real
+facility.
 """
 
 from __future__ import annotations
@@ -28,6 +40,7 @@ import pandas as pd
 
 from .carbon_provider import load_diurnal_carbon_intensity
 from .logging_config import log_error, log_function_entry, log_function_exit, log_simulation_step
+from .versions import PHYSICS_V1, active_physics_version, validate_physics_version
 
 # Matches DataCentreEnv.DROUGHT_THRESHOLD (src/optimizer.py) exactly --
 # both files enforce the same patent Claim 3 rule.
@@ -40,11 +53,54 @@ SPECIFIC_HEAT_AIR_J_KG_K: float = 1005.0  # J/(kg·K)
 AIR_DENSITY_KG_M3: float = 1.2  # kg/m³
 INTERVAL_MINUTES: int = 5
 
-# ASHRAE operating limits (°C)
-INLET_TEMP_MIN: float = 18.0
-INLET_TEMP_MAX: float = 27.0
-OUTLET_TEMP_MAX: float = 45.0
-PUE_MAX_SAFE: float = 2.0
+
+class InvalidInputError(ValueError):
+    """An input to the twin is of the wrong type, non-finite or out of range.
+
+    Subclasses ValueError so existing ``except ValueError`` callers keep working;
+    the API layer maps it to HTTP 422. ``field`` names the offending input.
+    """
+
+    def __init__(self, message: str, field: str | None = None) -> None:
+        super().__init__(message)
+        self.field = field
+
+
+@dataclass(frozen=True)
+class SafetyEnvelope:
+    """THE safe operating envelope (ASHRAE-style). One definition: DigitalTwin.is_safe(),
+    the RL environment's safety penalty and the optimizer's violation count all use it."""
+
+    inlet_min_C: float = 18.0
+    inlet_max_C: float = 27.0
+    outlet_max_C: float = 45.0
+    pue_max: float = 2.0
+
+    def violations(self, inlet_C: float, outlet_C: float, pue: float) -> tuple[str, ...]:
+        """Names of the violated limits. Written with negated comparisons so a NaN
+        reading counts as a violation instead of passing every check."""
+        found: list[str] = []
+        if not inlet_C >= self.inlet_min_C:
+            found.append("inlet_below_min")
+        elif inlet_C > self.inlet_max_C:
+            found.append("inlet_above_max")
+        if not outlet_C <= self.outlet_max_C:
+            found.append("outlet_above_max")
+        if not pue <= self.pue_max:
+            found.append("pue_above_max")
+        return tuple(found)
+
+    def is_safe(self, inlet_C: float, outlet_C: float, pue: float) -> bool:
+        return not self.violations(inlet_C, outlet_C, pue)
+
+
+SAFETY_ENVELOPE = SafetyEnvelope()
+
+# ASHRAE operating limits (°C) -- aliases of the single envelope above
+INLET_TEMP_MIN: float = SAFETY_ENVELOPE.inlet_min_C
+INLET_TEMP_MAX: float = SAFETY_ENVELOPE.inlet_max_C
+OUTLET_TEMP_MAX: float = SAFETY_ENVELOPE.outlet_max_C
+PUE_MAX_SAFE: float = SAFETY_ENVELOPE.pue_max
 
 # CRAC/CRAH fan speed (hence delivered airflow) ramps with IT heat load on
 # real hardware. Previously airflow was a fixed constant (self._air_flow_m3_s)
@@ -92,6 +148,39 @@ WATER_HUMIDITY_FACTOR_PER_PCT: float = 0.01
 EVAPORATIVE_HUMIDITY_REFERENCE_PCT: float = 40.0
 
 
+# -----------------------------------------------------------------------------
+# Physics v1 constants (PROPOSED values -- not calibrated to a real facility)
+# -----------------------------------------------------------------------------
+JOULES_PER_KWH: float = 3.6e6
+LATENT_HEAT_VAPORISATION_J_PER_KG: float = 2.26e6  # water at ~100 °C; ~2.4e6 at 25 °C, so this is conservative
+WATER_DENSITY_KG_PER_L: float = 1.0
+# Hard physical ceiling: litres of water that can be evaporated per kWh of heat. ~1.593 L/kWh.
+LATENT_WATER_BOUND_L_PER_KWH: float = JOULES_PER_KWH / (LATENT_HEAT_VAPORISATION_J_PER_KG * WATER_DENSITY_KG_PER_L)
+
+# Cooling-plant capacity (thermal kW removed): margin over the IT maximum, derated in hot weather.
+COOLING_CAPACITY_MARGIN: float = 1.10
+CAPACITY_DERATE_START_OUTSIDE_C: float = 35.0
+CAPACITY_DERATE_PER_C: float = 0.01
+CAPACITY_MIN_FRACTION: float = 0.2
+
+# Supply-air temperature control: the CRAH/economiser holds supply air at or above the envelope's
+# lower bound (valve modulation / recirculation) instead of following a colder water or outside
+# temperature down. Economiser fans add a little heat to outside air.
+INLET_SUPPLY_FLOOR_C: float = SAFETY_ENVELOPE.inlet_min_C
+FREE_AIR_FAN_HEAT_C: float = 1.0
+
+# Valid ranges for physical inputs, checked in v1 (inclusive).
+INPUT_RANGES: dict[str, tuple[float, float]] = {
+    "utilisation": (0.0, 1.0),
+    "outside_temp_C": (-60.0, 60.0),
+    "humidity_pct": (0.0, 100.0),
+    "water_pressure_bar": (0.0, 20.0),
+    "water_stress": (0.0, 1.0),
+    "chilled_water_temp_C": (0.0, 40.0),
+}
+MAX_STEP_SECONDS: float = 3600.0
+
+
 class CoolingMode(str, Enum):
     """Supported cooling modes with distinct COP and water characteristics."""
 
@@ -114,6 +203,22 @@ _EVAPORATION_RATE: dict[CoolingMode, float] = {
     CoolingMode.EVAPORATIVE: 0.03,
     CoolingMode.HYBRID: 0.015,
 }
+# v1: share of the heat a mode rejects that leaves as latent heat (evaporated water). The
+# legacy 1 : 30 : 15 : 0 ratios between modes are kept; the LEVEL is set by the physics
+# (~80% latent for a wet cooling tower) instead of an unbounded litres-per-kW coefficient.
+_EVAPORATIVE_HEAT_FRACTION: dict[CoolingMode, float] = {
+    CoolingMode.FREE_AIR: 0.0,
+    CoolingMode.CLOSED_LOOP: 0.8 / 30.0,
+    CoolingMode.EVAPORATIVE: 0.8,
+    CoolingMode.HYBRID: 0.4,
+}
+
+
+def carbon_emissions_gco2(power_kw: float, intensity_gco2_per_kwh: float, dt_hours: float) -> float:
+    """THE carbon definition (physics v1): operational emissions of ``power_kw`` over ``dt_hours``
+    at a grid intensity. Callers pass TOTAL facility power (IT + cooling). The twin's state, the
+    24 h what-if, the ESG report (via the state) and the RL reward's carbon term all come from this."""
+    return power_kw * intensity_gco2_per_kwh * dt_hours
 
 
 @dataclass
@@ -196,6 +301,8 @@ class DigitalTwin:
         thermal_time_constant_min: float = DEFAULT_THERMAL_TIME_CONSTANT_MIN,
         max_chilled_water_rate_C_per_step: float = DEFAULT_MAX_CHILLED_WATER_RATE_C_PER_STEP,
         initial_chilled_water_temp_C: float = DEFAULT_CHILLED_WATER_TEMP_C,
+        physics_version: str | None = None,
+        cooling_capacity_kw: float | None = None,
     ) -> None:
         """
         Initialise the digital twin.
@@ -209,6 +316,10 @@ class DigitalTwin:
             thermal_time_constant_min: First-order thermal lag time constant (minutes).
             max_chilled_water_rate_C_per_step: Max chilled-water setpoint change per step (°C).
             initial_chilled_water_temp_C: Starting chilled-water supply temperature (°C).
+            physics_version: "legacy-0" or "1". None -> $PHYSICS_VERSION, else the current
+                default (src/versions.py). Unknown values raise.
+            cooling_capacity_kw: v1 only. Design heat-removal capacity of the cooling plant (kW).
+                None -> COOLING_CAPACITY_MARGIN x max_it_power_kw. Ignored (unlimited) in legacy-0.
         """
         log_function_entry(
             "DigitalTwin.__init__",
@@ -220,6 +331,25 @@ class DigitalTwin:
         )
 
         try:
+            self._physics_version = validate_physics_version(
+                physics_version if physics_version is not None else active_physics_version()
+            )
+            self._v1 = self._physics_version == PHYSICS_V1
+            if self._v1:
+                self._validate_constructor_args_v1(
+                    max_it_power_kw=max_it_power_kw,
+                    idle_power_fraction=idle_power_fraction,
+                    air_flow_m3_s=air_flow_m3_s,
+                    thermal_time_constant_min=thermal_time_constant_min,
+                    max_chilled_water_rate_C_per_step=max_chilled_water_rate_C_per_step,
+                    initial_chilled_water_temp_C=initial_chilled_water_temp_C,
+                    cooling_capacity_kw=cooling_capacity_kw,
+                )
+            self._cooling_capacity_design_kw: float = (
+                cooling_capacity_kw if cooling_capacity_kw is not None else COOLING_CAPACITY_MARGIN * max_it_power_kw
+            )
+            self._last_dt_s: float = INTERVAL_MINUTES * 60.0
+            self._last_balance: dict[str, float] = {}
             self._max_it_power_kw = max_it_power_kw
             self._idle_power_fraction = idle_power_fraction
             self._air_flow_m3_s = air_flow_m3_s
@@ -253,6 +383,97 @@ class DigitalTwin:
             raise
 
     # -------------------------------------------------------------------------
+    # Version, validation, capacity (physics v1)
+    # -------------------------------------------------------------------------
+
+    @property
+    def physics_version(self) -> str:
+        """The physics version this twin runs ("legacy-0" or "1")."""
+        return self._physics_version
+
+    @property
+    def last_step_dt_seconds(self) -> float:
+        """Simulated seconds advanced by the most recent step (a live driver that passes its real
+        elapsed wall time as ``dt_seconds`` therefore runs at sim_time_scale == 1.0)."""
+        return self._last_dt_s
+
+    @property
+    def last_balance(self) -> dict[str, float]:
+        """v1: heat/water/power balance of the most recent transition (kW, L). Empty in legacy-0."""
+        return dict(self._last_balance)
+
+    @staticmethod
+    def _check_number(name: str, value: Any) -> float:
+        if isinstance(value, bool) or not isinstance(value, (int, float, np.integer, np.floating)):
+            raise InvalidInputError(f"{name} must be a number, got {value!r}", field=name)
+        number = float(value)
+        if not math.isfinite(number):
+            raise InvalidInputError(f"{name} must be finite, got {value!r}", field=name)
+        return number
+
+    @classmethod
+    def _check_range(cls, name: str, value: Any) -> float:
+        number = cls._check_number(name, value)
+        lo, hi = INPUT_RANGES[name]
+        if not lo <= number <= hi:
+            if name == "utilisation":
+                raise InvalidInputError(f"utilisation must be in [0, 1], got {number}", field=name)
+            raise InvalidInputError(f"{name} must be in [{lo}, {hi}], got {number}", field=name)
+        return number
+
+    def _validate_constructor_args_v1(self, **kw: Any) -> None:
+        positive = ("max_it_power_kw", "air_flow_m3_s", "thermal_time_constant_min")
+        for name in positive:
+            if self._check_number(name, kw[name]) <= 0:
+                raise InvalidInputError(f"{name} must be > 0, got {kw[name]!r}", field=name)
+        frac = self._check_number("idle_power_fraction", kw["idle_power_fraction"])
+        if not 0.0 <= frac <= 1.0:
+            raise InvalidInputError(f"idle_power_fraction must be in [0, 1], got {frac}", field="idle_power_fraction")
+        if self._check_number("max_chilled_water_rate_C_per_step", kw["max_chilled_water_rate_C_per_step"]) < 0:
+            raise InvalidInputError(
+                "max_chilled_water_rate_C_per_step must be >= 0", field="max_chilled_water_rate_C_per_step"
+            )
+        self._check_range("chilled_water_temp_C", kw["initial_chilled_water_temp_C"])
+        if (
+            kw["cooling_capacity_kw"] is not None
+            and self._check_number("cooling_capacity_kw", kw["cooling_capacity_kw"]) <= 0
+        ):
+            raise InvalidInputError("cooling_capacity_kw must be > 0", field="cooling_capacity_kw")
+
+    def _validate_step_inputs_v1(self, action_dict: dict[str, Any], dt_seconds: float | None) -> dict[str, Any]:
+        """Validate EVERY input before any of them is applied, so a rejected step leaves the twin
+        untouched. Returns the cleaned values (floats; cooling_mode as CoolingMode)."""
+        clean: dict[str, Any] = {}
+        for name in INPUT_RANGES:
+            if name in action_dict:
+                clean[name] = self._check_range(name, action_dict[name])
+        if "cooling_mode" in action_dict:
+            m = action_dict["cooling_mode"]
+            try:
+                clean["cooling_mode"] = CoolingMode(m) if isinstance(m, str) else CoolingMode(m.value)
+            except (ValueError, AttributeError):
+                raise InvalidInputError(f"Unknown cooling mode: {m!r}", field="cooling_mode") from None
+        if dt_seconds is not None:
+            dt = self._check_number("dt_seconds", dt_seconds)
+            if not 0 < dt <= MAX_STEP_SECONDS:
+                raise InvalidInputError(
+                    f"dt_seconds must be in (0, {MAX_STEP_SECONDS:g}], got {dt}", field="dt_seconds"
+                )
+            clean["dt_seconds"] = dt
+        return clean
+
+    def cooling_capacity_kw(self, mode: CoolingMode, outside_temp_C: float) -> float:
+        """Heat the cooling plant can remove right now (thermal kW). Unlimited in legacy-0.
+
+        Design capacity, derated above CAPACITY_DERATE_START_OUTSIDE_C (hot ambient weakens heat
+        rejection). The economiser is only ever applied below 12 °C, so the derate does not touch it.
+        """
+        if not self._v1:
+            return math.inf
+        derate = 1.0 - CAPACITY_DERATE_PER_C * max(0.0, outside_temp_C - CAPACITY_DERATE_START_OUTSIDE_C)
+        return self._cooling_capacity_design_kw * max(CAPACITY_MIN_FRACTION, derate)
+
+    # -------------------------------------------------------------------------
     # Requested -> applied control pipeline (runs BEFORE physics)
     # -------------------------------------------------------------------------
 
@@ -276,10 +497,13 @@ class DigitalTwin:
             return CoolingMode.HYBRID
         return requested_mode
 
-    def _determine_applied_chilled_water_temp_C(self, requested_C: float) -> float:
-        """Rate-limit the chilled-water setpoint toward the requested value."""
+    def _determine_applied_chilled_water_temp_C(self, requested_C: float, dt_s: float | None = None) -> float:
+        """Rate-limit the chilled-water setpoint toward the requested value. The limit is defined
+        per 5-minute interval; in v1 it scales with the real step length."""
         delta = requested_C - self._applied_chilled_water_temp_C
         max_step = self._max_chilled_water_rate_C_per_step
+        if self._v1 and dt_s is not None:
+            max_step = max_step * dt_s / (INTERVAL_MINUTES * 60.0)
         bounded_delta = max(-max_step, min(max_step, delta))
         return self._applied_chilled_water_temp_C + bounded_delta
 
@@ -441,9 +665,14 @@ class DigitalTwin:
         cooling_power_kw: float,
         mode: CoolingMode,
         outside_temp_C: float,
+        heat_removed_kw: float | None = None,
+        dt_s: float | None = None,
     ) -> tuple[float, float]:
         """
         Compute water flow and consumption for the cooling mode.
+
+        v1: water is evaporated heat -- see ``_water_consumption_v1``. ``heat_removed_kw`` and
+        ``dt_s`` are optional and only used there (legacy-0 ignores them).
 
         `flow_lpm` is computed FIRST as a function of cooling load, mode,
         outside temperature and (for evaporative mode) current humidity;
@@ -459,6 +688,9 @@ class DigitalTwin:
         Returns:
             Tuple of (flow_lpm, consumed_L_per_interval).
         """
+        if self._v1:
+            return self._water_consumption_v1(cooling_power_kw, mode, outside_temp_C, heat_removed_kw, dt_s)
+
         if mode == CoolingMode.FREE_AIR:
             return 0.0, 0.0
 
@@ -481,6 +713,40 @@ class DigitalTwin:
         flow_lpm = max(0.0, flow_lpm)
         consumed_L = flow_lpm * INTERVAL_MINUTES
 
+        return flow_lpm, consumed_L
+
+    def _water_consumption_v1(
+        self,
+        cooling_power_kw: float,
+        mode: CoolingMode,
+        outside_temp_C: float,
+        heat_removed_kw: float | None,
+        dt_s: float | None,
+    ) -> tuple[float, float]:
+        """Physics v1 water: evaporated heat, capped by the latent-heat bound.
+
+            heat_rejected  = heat removed from the room + the plant's own electrical work
+            evaporated     = min(1, mode_fraction x warm-weather factor) x heat_rejected
+            water (L)      = evaporated (kWh) x LATENT_WATER_BOUND_L_PER_KWH
+
+        Because the evaporated fraction is capped at 1, water can never exceed the physical
+        bound of ~1.59 L per kWh of heat rejected. Humidity is deliberately NOT a water
+        multiplier here: humid air lowers the evaporative share, it never raises it.
+
+        Direct callers that only know the cooling power (no ``heat_removed_kw``) get the heat
+        removed estimated as cooling power x the mode's nominal COP.
+        """
+        if self._v1 and heat_removed_kw is None:
+            heat_removed_kw = cooling_power_kw * _BASE_COP[mode]
+        step_s = dt_s if dt_s is not None else INTERVAL_MINUTES * 60.0
+        fraction = _EVAPORATIVE_HEAT_FRACTION[mode]
+        if fraction <= 0.0:
+            return 0.0, 0.0
+        warm_factor = 1.0 + WATER_TEMP_FACTOR_PER_C * max(0.0, outside_temp_C - 15.0)
+        evaporated_share = min(1.0, fraction * warm_factor)
+        heat_rejected_kw = max(0.0, heat_removed_kw) + max(0.0, cooling_power_kw)  # type: ignore[arg-type]
+        consumed_L = evaporated_share * heat_rejected_kw * (step_s / 3600.0) * LATENT_WATER_BOUND_L_PER_KWH
+        flow_lpm = consumed_L / (step_s / 60.0)
         return flow_lpm, consumed_L
 
     # -------------------------------------------------------------------------
@@ -542,9 +808,14 @@ class DigitalTwin:
     # Shared transition logic (used by both _build_initial_state and step)
     # -------------------------------------------------------------------------
 
-    def _compute_transition(self, *, persist_cumulative_water: bool = True) -> DataCentreState:
+    def _compute_transition(
+        self, *, persist_cumulative_water: bool = True, dt_s: float | None = None
+    ) -> DataCentreState:
         """
         Compute the next DataCentreState from current internal parameters.
+
+        v1 runs ``_compute_transition_v1``; legacy-0 runs the original body below, unchanged
+        (it always advances a fixed 5-minute interval).
 
         This is the SOLE place physics/thermal-lag/actuator math happens —
         `_build_initial_state()` (t=0) and `step()` (t>0) both call this,
@@ -557,6 +828,12 @@ class DigitalTwin:
         though the initial state's own `water_consumed_L` field reflects
         that first instant's consumption.
         """
+        if self._v1:
+            return self._compute_transition_v1(
+                dt_s=dt_s if dt_s is not None else INTERVAL_MINUTES * 60.0,
+                persist_cumulative_water=persist_cumulative_water,
+            )
+
         # 1. Requested -> applied pipeline (before physics).
         applied_mode = self._determine_applied_cooling_mode(self._cooling_mode, self._outside_temp_C)
         applied_chilled_water_C = self._determine_applied_chilled_water_temp_C(self._requested_chilled_water_temp_C)
@@ -631,13 +908,111 @@ class DigitalTwin:
             drought_override_active=self._water_stress > DROUGHT_THRESHOLD,
         )
 
+    def _compute_transition_v1(self, *, dt_s: float, persist_cumulative_water: bool) -> DataCentreState:
+        """Physics v1 transition over a real step of ``dt_s`` seconds. Invariants (tests/test_physics_v1_invariants.py):
+
+        * energy      total = IT + cooling; heat removed + unremoved = IT heat
+        * water       <= LATENT_WATER_BOUND_L_PER_KWH x heat rejected
+        * capacity    heat removed <= capacity; the excess raises the inlet by excess / (m_dot cp)
+        * carbon      carbon_emissions_gco2(total power, intensity, dt)
+        """
+        dt_min = dt_s / 60.0
+        dt_h = dt_s / 3600.0
+
+        applied_mode = self._determine_applied_cooling_mode(self._cooling_mode, self._outside_temp_C)
+        applied_cw_C = self._determine_applied_chilled_water_temp_C(self._requested_chilled_water_temp_C, dt_s)
+        self._applied_chilled_water_temp_C = applied_cw_C
+
+        it_power = self.compute_it_power(self._utilisation)
+        airflow = self.effective_air_flow_m3_s(it_power)
+        m_cp_w_per_k = AIR_DENSITY_KG_M3 * airflow * SPECIFIC_HEAT_AIR_J_KG_K
+
+        # Finite plant: it removes at most `capacity`; whatever it cannot remove stays in the room air.
+        capacity_kw = self.cooling_capacity_kw(applied_mode, self._outside_temp_C)
+        heat_removed_kw = min(it_power, capacity_kw)
+        unremoved_kw = it_power - heat_removed_kw
+
+        if applied_mode == CoolingMode.FREE_AIR:
+            supply_C = max(INLET_SUPPLY_FLOOR_C, self._outside_temp_C + FREE_AIR_FAN_HEAT_C)
+        else:
+            supply_C = max(INLET_SUPPLY_FLOOR_C, applied_cw_C + CHILLED_WATER_APPROACH_C)
+        target_inlet_C = supply_C + (unremoved_kw * 1000.0 / m_cp_w_per_k if m_cp_w_per_k > 0 else 0.0)
+        target_outlet_C = self.compute_outlet_temp(target_inlet_C, it_power, airflow)
+
+        response_factor = 1.0 - math.exp(-dt_min / self._thermal_time_constant_min)
+        prev_inlet_C = self._inlet_temp_C if self._inlet_temp_C is not None else target_inlet_C
+        prev_outlet_C = self._outlet_temp_C if self._outlet_temp_C is not None else target_outlet_C
+        new_inlet_C = prev_inlet_C + response_factor * (target_inlet_C - prev_inlet_C)
+        new_outlet_C = prev_outlet_C + response_factor * (target_outlet_C - prev_outlet_C)
+        self._inlet_temp_C = new_inlet_C
+        self._outlet_temp_C = new_outlet_C
+
+        cop = self._effective_cop(applied_mode, it_power, self._outside_temp_C, applied_cw_C)
+        cooling = heat_removed_kw / cop if cop > 0 else 0.0
+
+        flow_lpm, consumed_L = self._water_consumption_v1(
+            cooling, applied_mode, self._outside_temp_C, heat_removed_kw, dt_s
+        )
+        if persist_cumulative_water:
+            self._water_consumed_cumulative_L += consumed_L
+            cumulative_water_L = self._water_consumed_cumulative_L
+        else:
+            cumulative_water_L = self._water_consumed_cumulative_L + consumed_L
+
+        total = it_power + cooling
+        pue = total / it_power if it_power > 0.1 else 1.0
+        it_energy_kwh = it_power * dt_h
+        wue = consumed_L / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
+        intensity = float(self._carbon_intensity_by_hour[self._time.hour])
+        carbon_gco2 = carbon_emissions_gco2(total, intensity, dt_h)
+
+        self._last_dt_s = dt_s
+        self._last_balance = {
+            "it_heat_kw": it_power,
+            "capacity_kw": capacity_kw,
+            "heat_removed_kw": heat_removed_kw,
+            "heat_unremoved_kw": unremoved_kw,
+            "cooling_electrical_kw": cooling,
+            "heat_rejected_kw": heat_removed_kw + cooling,
+            "water_evaporated_L": consumed_L,
+            "dt_s": dt_s,
+        }
+
+        return DataCentreState(
+            timestamp=self._time,
+            server_utilisation=self._utilisation,
+            outside_temp_C=self._outside_temp_C,
+            server_inlet_temp_C=new_inlet_C,
+            server_outlet_temp_C=new_outlet_C,
+            it_power_kw=it_power,
+            cooling_power_kw=cooling,
+            total_power_kw=total,
+            pue=pue,
+            water_flow_lpm=flow_lpm,
+            water_consumed_L=cumulative_water_L,
+            wue=wue,
+            humidity_pct=self._humidity_pct,
+            water_pressure_bar=self._water_pressure_bar,
+            cooling_mode=applied_mode,
+            anomaly=0,
+            water_stress=self._water_stress,
+            carbon_intensity_gco2_per_kwh=intensity,
+            carbon_gco2=carbon_gco2,
+            drought_override_active=self._water_stress > DROUGHT_THRESHOLD,
+        )
+
     def _build_initial_state(self) -> DataCentreState:
         """Build initial state (t=0) via the shared transition function."""
         return self._compute_transition(persist_cumulative_water=False)
 
-    def step(self, action_dict: dict[str, Any]) -> DataCentreState:
+    def step(self, action_dict: dict[str, Any], *, dt_seconds: float | None = None) -> DataCentreState:
         """
-        Advance simulation by 5 minutes.
+        Advance the simulation by ``dt_seconds`` (default 5 minutes).
+
+        ``dt_seconds`` (v1 only, 0 < dt <= 3600) is the REAL elapsed time the caller wants
+        integrated: the clock, thermal lag, actuator rate limit, water, energy and carbon all
+        use it. legacy-0 only supports its fixed 5-minute step and rejects any other value.
+        In v1 all inputs are validated before any is applied (InvalidInputError, field named).
 
         Expected keys: utilisation, outside_temp_C, cooling_mode (optional),
         humidity_pct (optional), water_pressure_bar (optional), water_stress
@@ -653,6 +1028,12 @@ class DigitalTwin:
         log_function_entry("DigitalTwin.step", action_dict=action_dict)
 
         try:
+            if self._v1:
+                return self._step_v1(action_dict, dt_seconds)
+            if dt_seconds is not None and dt_seconds != INTERVAL_MINUTES * 60.0:
+                raise InvalidInputError(
+                    f"legacy-0 physics only supports the fixed {INTERVAL_MINUTES}-minute step", field="dt_seconds"
+                )
             if "utilisation" in action_dict:
                 u = float(action_dict["utilisation"])
                 if not 0 <= u <= 1:
@@ -702,23 +1083,44 @@ class DigitalTwin:
 
             log_function_exit("DigitalTwin.step", result=f"State updated at {self._time}")
             return self._state
+        except InvalidInputError:
+            raise  # caller error, already descriptive; not a twin fault, so no error-level stack trace
         except Exception as e:
             log_error("DigitalTwin.step", e)
             raise
 
+    def _step_v1(self, action_dict: dict[str, Any], dt_seconds: float | None) -> DataCentreState:
+        clean = self._validate_step_inputs_v1(action_dict, dt_seconds)  # raises before ANY state changes
+        dt_s = clean.pop("dt_seconds", INTERVAL_MINUTES * 60.0)
+        if "utilisation" in clean:
+            self._utilisation = clean["utilisation"]
+        if "outside_temp_C" in clean:
+            self._outside_temp_C = clean["outside_temp_C"]
+        if "cooling_mode" in clean:
+            self._cooling_mode = clean["cooling_mode"]
+        if "humidity_pct" in clean:
+            self._humidity_pct = clean["humidity_pct"]
+        if "water_pressure_bar" in clean:
+            self._water_pressure_bar = clean["water_pressure_bar"]
+        if "water_stress" in clean:
+            self._water_stress = clean["water_stress"]
+        if "chilled_water_temp_C" in clean:
+            self._requested_chilled_water_temp_C = clean["chilled_water_temp_C"]
+
+        self._time += timedelta(seconds=dt_s)
+        self._state = self._compute_transition(dt_s=dt_s)
+        log_function_exit("DigitalTwin.step", result=f"State updated at {self._time}")
+        return self._state
+
     def is_safe(self) -> bool:
         """
-        Check temperature and PUE constraints.
+        Check temperature and PUE constraints against the single SAFETY_ENVELOPE.
 
         Returns:
             True if inlet 18–27°C, outlet ≤ 45°C, and PUE ≤ 2.0.
         """
         s = self._state
-        ok_temp = (
-            INLET_TEMP_MIN <= s.server_inlet_temp_C <= INLET_TEMP_MAX and s.server_outlet_temp_C <= OUTLET_TEMP_MAX
-        )
-        ok_pue = s.pue <= PUE_MAX_SAFE
-        return bool(ok_temp and ok_pue)
+        return SAFETY_ENVELOPE.is_safe(s.server_inlet_temp_C, s.server_outlet_temp_C, s.pue)
 
     # -------------------------------------------------------------------------
     # Simulation
