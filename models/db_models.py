@@ -1,9 +1,22 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -122,6 +135,10 @@ class SensorReading(Base):
     cooling_mode: Mapped[str] = mapped_column(String(32), nullable=False)
     anomaly: Mapped[int] = mapped_column(Integer, default=0)
 
+    # T9 / M3: facility ownership reference. Nullable and additive: existing writers
+    # do not set it yet (backfilled to the default facility by migration M3).
+    facility_id: Mapped[Optional[int]] = mapped_column(ForeignKey("facility.id", ondelete="RESTRICT"), nullable=True)
+
     # Optional: link to simulation or optimization run
     simulation_run_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("simulation_runs.id", ondelete="SET NULL"), nullable=True, index=True
@@ -213,6 +230,10 @@ class SimulationRun(Base):
     utilisation: Mapped[float] = mapped_column(Float, nullable=False)
     stress: Mapped[float] = mapped_column(Float, nullable=False)
 
+    # T9 / M3: facility ownership reference. Nullable and additive: existing writers
+    # do not set it yet (backfilled to the default facility by migration M3).
+    facility_id: Mapped[Optional[int]] = mapped_column(ForeignKey("facility.id", ondelete="RESTRICT"), nullable=True)
+
     # Optional: store full result as JSON for quick retrieval
     result_snapshot: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(JSON, nullable=True)
 
@@ -260,7 +281,6 @@ class Alert(Base):
     """
 
     __tablename__ = "alerts"
-    __table_args__ = (Index("ux_alerts_dedupe_key", "dedupe_key", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
@@ -276,13 +296,9 @@ class Alert(Base):
         ForeignKey("sensor_readings.id", ondelete="SET NULL"), nullable=True
     )
 
-    # M2 (T3): alert identity + provenance. All NULL for alerts created before M2
-    # ("unlabelled legacy"). dedupe_key = "<detector_id>:<model_version>:<episode_start_seq>"
-    # and is UNIQUE, so one anomaly episode can only ever own one row (NULLs are not
-    # considered equal, so many legacy rows are fine).
-    dedupe_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    model_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    origin: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    # T9 / M3: facility ownership reference. Nullable and additive: existing writers
+    # do not set it yet (backfilled to the default facility by migration M3).
+    facility_id: Mapped[Optional[int]] = mapped_column(ForeignKey("facility.id", ondelete="RESTRICT"), nullable=True)
 
     # Acknowledgment (operator-only, see POST /api/alerts/{id}/acknowledge). Who
     # acknowledged is stored as a username, not a user_id FK, for the same reason
@@ -290,3 +306,150 @@ class Alert(Base):
     acknowledged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     acknowledged_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# =============================================================================
+# T9 -- Facility / asset model (migration M3)
+#
+# Conventions (see also facility.frame_note, written by M3 / scripts/seed_facility.py):
+#   * One facility frame, metres. Right-handed, Y-up. Pose (x, y, z) is the
+#     geometric centre of the asset; rotation_deg is about +Y (right-hand rule).
+#   * Time-bounded rows (asset_edge, asset_pose) use HALF-OPEN intervals:
+#     a row is in force at instant t iff valid_from <= t AND (valid_to IS NULL OR t < valid_to).
+#   * An edge reads "child <relation> parent": rack located_in zone,
+#     crac serves zone, rack powered_by pdu. The subject is always the child.
+#   * asset_type / relation are validated TEXT (api/services/facility_service.py),
+#     not DB enums, so new types need no migration.
+#   * All timestamps are timezone-aware UTC (debt D-2: new code does not use utcnow).
+# =============================================================================
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class Facility(Base):
+    """A site with one metre-based coordinate frame."""
+
+    __tablename__ = "facility"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    frame_unit: Mapped[str] = mapped_column(String(8), nullable=False, default="m", server_default="m")
+    # Documents origin, axes, pose convention and the scene-unit -> metre factor.
+    frame_note: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+    __table_args__ = (CheckConstraint("frame_unit = 'm'", name="ck_facility_frame_unit_metre"),)
+
+
+class Asset(Base):
+    """A typed physical thing (zone, rack, CRAC, PDU, ...). Identity never changes on a move."""
+
+    __tablename__ = "asset"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    facility_id: Mapped[int] = mapped_column(ForeignKey("facility.id", ondelete="RESTRICT"), nullable=False)
+    asset_type: Mapped[str] = mapped_column(String(32), nullable=False)  # validated text, not an enum
+    external_id: Mapped[str] = mapped_column(String(128), nullable=False)  # e.g. "zone-1-row-1-rack-1"
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    retired_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("facility_id", "external_id", name="uq_asset_facility_external_id"),
+        Index("ix_asset_facility_type", "facility_id", "asset_type"),
+    )
+
+
+class AssetEdge(Base):
+    """Time-bounded relationship. Reads: child <relation> parent. relation in located_in|serves|powered_by."""
+
+    __tablename__ = "asset_edge"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    parent_asset_id: Mapped[int] = mapped_column(ForeignKey("asset.id", ondelete="RESTRICT"), nullable=False)
+    child_asset_id: Mapped[int] = mapped_column(ForeignKey("asset.id", ondelete="RESTRICT"), nullable=False)
+    relation: Mapped[str] = mapped_column(String(16), nullable=False)  # validated text, not an enum
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_to: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("valid_to IS NULL OR valid_to > valid_from", name="ck_asset_edge_interval"),
+        CheckConstraint("parent_asset_id <> child_asset_id", name="ck_asset_edge_no_self"),
+        # At most ONE open located_in edge per child (a rack is in one place at a time).
+        Index(
+            "uq_asset_edge_open_located_in",
+            "child_asset_id",
+            unique=True,
+            postgresql_where=text("relation = 'located_in' AND valid_to IS NULL"),
+            sqlite_where=text("relation = 'located_in' AND valid_to IS NULL"),
+        ),
+        # No two identical open edges (same child, parent, relation).
+        Index(
+            "uq_asset_edge_open_triple",
+            "child_asset_id",
+            "parent_asset_id",
+            "relation",
+            unique=True,
+            postgresql_where=text("valid_to IS NULL"),
+            sqlite_where=text("valid_to IS NULL"),
+        ),
+        Index("ix_asset_edge_child_rel_from", "child_asset_id", "relation", "valid_from"),
+        Index("ix_asset_edge_parent", "parent_asset_id"),
+    )
+
+
+class AssetPose(Base):
+    """Time-bounded pose in the facility frame (metres). Pose point = centre of the asset."""
+
+    __tablename__ = "asset_pose"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    asset_id: Mapped[int] = mapped_column(ForeignKey("asset.id", ondelete="RESTRICT"), nullable=False)
+    x: Mapped[float] = mapped_column(Float, nullable=False)
+    y: Mapped[float] = mapped_column(Float, nullable=False)
+    z: Mapped[float] = mapped_column(Float, nullable=False)
+    rotation_deg: Mapped[float] = mapped_column(Float, nullable=False, default=0.0, server_default="0")
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_to: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("valid_to IS NULL OR valid_to > valid_from", name="ck_asset_pose_interval"),
+        # Idempotency key for moves: (asset_id, valid_from).
+        UniqueConstraint("asset_id", "valid_from", name="uq_asset_pose_asset_from"),
+        # At most one open pose per asset.
+        Index(
+            "uq_asset_pose_open",
+            "asset_id",
+            unique=True,
+            postgresql_where=text("valid_to IS NULL"),
+            sqlite_where=text("valid_to IS NULL"),
+        ),
+    )
+
+
+class Sensor(Base):
+    """Sensor registry entry attached to an asset. Registry only in T9: no samples (T10)."""
+
+    __tablename__ = "sensor"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    asset_id: Mapped[int] = mapped_column(ForeignKey("asset.id", ondelete="RESTRICT"), nullable=False, index=True)
+    measurand: Mapped[str] = mapped_column(String(64), nullable=False)  # e.g. "inlet_temperature"
+    unit: Mapped[str] = mapped_column(String(16), nullable=False)  # canonical SI / degC
+    sampling_interval_s: Mapped[float] = mapped_column(Float, nullable=False)
+    # Globally unique (a facility is reachable only through asset_id; see report deviation D3).
+    external_id: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    min_valid: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    max_valid: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    retired_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("sampling_interval_s > 0", name="ck_sensor_sampling_positive"),
+        CheckConstraint(
+            "min_valid IS NULL OR max_valid IS NULL OR min_valid <= max_valid",
+            name="ck_sensor_valid_range",
+        ),
+    )

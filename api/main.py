@@ -38,6 +38,7 @@ from api.routes import (
     digital_twin_routes,
     equipment_health_routes,
     esg_report_routes,
+    facility_routes,
     health_routes,
     metrics_routes,
     optimization_routes,
@@ -105,6 +106,7 @@ app.include_router(equipment_health_routes.router)
 app.include_router(shadow_mode_routes.router)
 app.include_router(esg_report_routes.router)
 app.include_router(metrics_routes.router)
+app.include_router(facility_routes.router)
 
 # CORS origins come from CORS_ALLOWED_ORIGINS (comma-separated) -- see api/config.py.
 app.add_middleware(
