@@ -145,7 +145,10 @@ def test_train_job_never_writes_to_live_model_path(tmp_path, monkeypatch):
 
     assert (live / "ppo_model.zip").read_bytes() == b"precious"
     assert saved_to and saved_to[0] != live and (tmp_path / "candidates") in saved_to[0].parents
-    assert result["promoted"] is False and result["saved_to"] == str(saved_to[0])
+    assert result["promoted"] is False
+    # T6: the job result is returned to API callers, so it carries an id, never a server path.
+    assert "saved_to" not in result and result["candidate_id"] == saved_to[0].name
+    assert str(tmp_path) not in str(result)
 
 
 # ----------------------------------------------------------------------------- ESG report

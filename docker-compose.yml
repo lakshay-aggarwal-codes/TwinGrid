@@ -17,12 +17,16 @@ services:
       retries: 10
 
   redis:
+    # Not published on a host port: only the backend and worker reach it, over
+    # the compose network, and it requires a password. Use a URL-safe
+    # REDIS_PASSWORD (letters/digits) since it is embedded in REDIS_URL.
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD must be set (in .env or the shell)}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set (in .env or the shell)}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -35,13 +39,23 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    command: rq worker twingrid --url redis://redis:6379/0
+    # --serializer must match src/task_queue.py (JSON, so Redis never feeds the
+    # worker pickles). NOT VERIFIED here: run a train_async job end-to-end.
+    command:
+      - rq
+      - worker
+      - twingrid
+      - --url
+      - redis://:${REDIS_PASSWORD}@redis:6379/0
+      - --serializer
+      - rq.serializers.JSONSerializer
     env_file:
       - path: .env
         required: false
     environment:
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       OPTIMIZER_MODEL_PATH: /app/models/optimizer
+      ARTIFACT_VERIFY: ${ARTIFACT_VERIFY:-enforce}
     depends_on:
       redis:
         condition: service_healthy
@@ -61,7 +75,8 @@ services:
       OPERATOR_REGISTRATION_KEY: ${OPERATOR_REGISTRATION_KEY:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/digital_twin
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      ARTIFACT_VERIFY: ${ARTIFACT_VERIFY:-enforce}
     ports:
       - "8000:8000"
     depends_on:
@@ -70,10 +85,10 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      # Mount models/ read-write so a model trained locally (outside
-      # Docker, via notebooks/train_all.py) is visible to the
-      # containerized API without a rebuild.
-      - ./models:/app/models
+      # Read-only: the API only loads artifacts; only the worker / local
+      # training (notebooks/train_all.py, scripts/artifact_manifest.py) write
+      # models/. A model trained locally is still visible without a rebuild.
+      - ./models:/app/models:ro
 
 volumes:
   db_data:

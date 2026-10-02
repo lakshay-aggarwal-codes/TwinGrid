@@ -7,8 +7,8 @@
       "rmse": 0.5231534242630005,
       "mae": 0.4206322729587555
     },
-    "data_source": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\data\\raw\\sensor_data.csv",
-    "artifact_path": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\models\\forecaster\\thermal.keras",
+    "data_source": "data/raw/sensor_data.csv",
+    "artifact_path": "models/forecaster/thermal.keras",
     "params": {
       "seq_len": 12,
       "horizon": 6,
@@ -16,7 +16,26 @@
       "epochs": 30,
       "patience": 8
     },
-    "python": "3.12.10"
+    "python": "3.12.10",
+    "manifest_version": 1,
+    "relative_path": "models/forecaster/thermal.keras",
+    "sha256": "621d99d9b314986dd64e60459b381b692bcf7c06034414210581d59ecf55ca5d",
+    "size": 428865,
+    "files": {
+      "models/forecaster/thermal.keras": {
+        "sha256": "0ef2bf573e29da05298e6fe9446fc79719c8413ede03edee977815fbc82ac95c",
+        "size": 427986
+      },
+      "models/forecaster/scaler.joblib": {
+        "sha256": "d23c975ffce434e4d58680de567a144b28d028cb8389826ebd7b584b3a6101d1",
+        "size": 879
+      }
+    },
+    "git_sha": "unknown",
+    "physics_version": "legacy-0",
+    "dataset_id": "sensor_data.csv",
+    "dataset_sha256": "11f3d473cd9eedd7db7f3a23de56cc72f88f5794f6e0c2a78543b623d06f07d5",
+    "key_package_versions": null
   },
   {
     "name": "anomaly_detector",
@@ -27,13 +46,36 @@
       "precision": 0.9230769230769231,
       "recall": 1.0
     },
-    "data_source": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\data\\raw\\sensor_data.csv (rows 0:20736 train, 20736:25920 held out)",
-    "artifact_path": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\models\\anomaly",
+    "data_source": "data/raw/sensor_data.csv (rows 0:20736 train, 20736:25920 held out)",
+    "artifact_path": "models/anomaly",
     "params": {
       "threshold_percentile": 99.5,
       "seq_len": 12
     },
-    "python": "3.12.10"
+    "python": "3.12.10",
+    "manifest_version": 1,
+    "relative_path": "models/anomaly",
+    "sha256": "884192487602c370b3231ab024c692396ae5eb180ee410a640dd59cab034225b",
+    "size": 203580,
+    "files": {
+      "models/anomaly/config.json": {
+        "sha256": "586ee92895adf37a3e479323c1f3713c99e63f14188340653dad14d53f52e2a5",
+        "size": 220
+      },
+      "models/anomaly/model.keras": {
+        "sha256": "1aaa1cad56998d605f9ee4d4175142c311183aa94d468f1126a903868026b989",
+        "size": 202613
+      },
+      "models/anomaly/scaler.joblib": {
+        "sha256": "fda0785b30d5cd233dca757fd9ac34a393f339acd93580bca11971f9f9911684",
+        "size": 747
+      }
+    },
+    "git_sha": "unknown",
+    "physics_version": "legacy-0",
+    "dataset_id": "sensor_data.csv",
+    "dataset_sha256": "11f3d473cd9eedd7db7f3a23de56cc72f88f5794f6e0c2a78543b623d06f07d5",
+    "key_package_versions": null
   },
   {
     "name": "ppo_optimizer",
@@ -50,7 +92,7 @@
       }
     },
     "data_source": "live DigitalTwin simulation (no historical dataset)",
-    "artifact_path": "C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\models\\optimizer",
+    "artifact_path": "models/optimizer",
     "params": {
       "alpha": 0.5,
       "beta": 0.3,
@@ -62,6 +104,25 @@
       ],
       "total_timesteps": 50000
     },
-    "python": "3.12.10"
+    "python": "3.12.10",
+    "manifest_version": 1,
+    "relative_path": "models/optimizer",
+    "sha256": "a09313644630bba2c04c513fb5444e8540a88de120070f02b8677fa64495bfc4",
+    "size": 146528,
+    "files": {
+      "models/optimizer/config.json": {
+        "sha256": "d467f2f0a13c12e242dfbf1211cd5e5f6adde515d8c02487c41393597eb8065c",
+        "size": 504
+      },
+      "models/optimizer/ppo_model.zip": {
+        "sha256": "cf2b16e907b03d192a89fcbbf70c7be1fd128e300b8840b05f23ba149e2b7c7b",
+        "size": 146024
+      }
+    },
+    "git_sha": "unknown",
+    "physics_version": "legacy-0",
+    "dataset_id": null,
+    "dataset_sha256": null,
+    "key_package_versions": null
   }
 ]

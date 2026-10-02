@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
+from .model_registry import ensure_verified
 
 logger = logging.getLogger(__name__)
 
@@ -434,6 +435,10 @@ class AnomalyDetector:
         if not path.exists():
             raise FileNotFoundError(f"Path not found: {path}")
 
+        # Verify BEFORE reading: joblib.load unpickles the scaler, keras loads the model.
+        ensure_verified(
+            [path / "config.json", path / "model.keras", path / "scaler.joblib"], artifact="anomaly_detector"
+        )
         keras = _get_keras()
         joblib = _get_joblib()
 

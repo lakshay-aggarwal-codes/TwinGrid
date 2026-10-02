@@ -24,6 +24,10 @@ def train_optimizer_job(alpha: float, beta: float, gamma: float, water_stress: f
     restart. It is saved to its own directory under OPTIMIZER_CANDIDATE_DIR
     (default models/optimizer_candidates/<timestamp>_<id>) and only promoted to
     the live path by a deliberate, evaluated step (roadmap Stage 3).
+
+    The returned dict is exposed through GET /api/optimize/jobs/{id}, so it
+    carries ``candidate_id`` only -- the directory is models/optimizer_candidates/<candidate_id>
+    (or OPTIMIZER_CANDIDATE_DIR) on the worker, and is not integrity-manifested until promoted.
     """
     import os
     import uuid
@@ -47,6 +51,7 @@ def train_optimizer_job(alpha: float, beta: float, gamma: float, water_stress: f
         "gamma": gamma,
         "water_stress": water_stress,
         "total_timesteps": fallback_timesteps,
-        "saved_to": str(candidate_path),
+        # An opaque id, never a filesystem path: job results are returned to API callers.
+        "candidate_id": run_id,
         "promoted": False,
     }

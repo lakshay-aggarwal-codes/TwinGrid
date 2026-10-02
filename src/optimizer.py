@@ -27,6 +27,7 @@ import pandas as pd
 from .carbon_provider import load_diurnal_carbon_intensity
 from .digital_twin import OUTLET_TEMP_MAX, CoolingMode, DigitalTwin
 from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
+from .model_registry import ensure_verified
 
 logger = logging.getLogger(__name__)
 
@@ -580,6 +581,8 @@ class JointOptimizer:
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Path not found: {path}")
+        # Verify BEFORE reading: PPO.load unpickles the zip, so an unverified file must never reach it.
+        ensure_verified([path / "config.json", path / "ppo_model.zip"], artifact="ppo_optimizer")
         sb3 = _get_sb3()
         PPO = sb3["PPO"]
         config = json.loads((path / "config.json").read_text())

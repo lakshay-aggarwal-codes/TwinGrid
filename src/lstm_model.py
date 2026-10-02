@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
+from .model_registry import ensure_verified
 
 logger = logging.getLogger(__name__)
 
@@ -283,7 +284,8 @@ class DataPipeline:
         logger.info("Scaler saved to %s", path)
 
     def load_scaler(self, path: str | Path) -> None:
-        """Load scaler from joblib."""
+        """Load scaler from joblib (verified against the artifact manifest first)."""
+        ensure_verified([path], artifact="forecaster scaler")
         joblib = _get_joblib()
         self._scaler = joblib.load(path)
         logger.info("Scaler loaded from %s", path)
@@ -546,6 +548,7 @@ class ThermalForecaster:
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Model not found: {path}")
+        ensure_verified([path], artifact="forecaster")
         keras = _get_keras()
         forecaster = cls()
         forecaster._model = keras.models.load_model(str(path))
