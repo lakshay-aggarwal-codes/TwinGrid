@@ -48,18 +48,62 @@ _water_stress_state = 0.2
 _WATER_STRESS_STEP = 0.02
 
 
+class ConnectionLimitExceeded(Exception):
+    """A WebSocket connection cap was hit. ``scope`` is ``"user"`` or ``"global"``."""
+
+    def __init__(self, scope: str) -> None:
+        if scope not in ("user", "global"):
+            raise ValueError(f"invalid connection-limit scope {scope!r}")
+        super().__init__(f"{scope} connection limit reached")
+        self.scope = scope
+
+
 class ConnectionManager:
     """Tracks active WebSocket connections and broadcasts to all of them."""
 
     def __init__(self) -> None:
         self._connections: set[WebSocket] = set()
+        # Cap bookkeeping (T4a). ``_owners`` maps each registered socket to its user;
+        # ``_per_user`` counts them. Deliberately separate from ``_connections``:
+        # broadcast() drops a socket whose send failed from ``_connections`` only, and
+        # that socket keeps counting against the caps until disconnect() runs.
+        self._owners: dict[WebSocket, str] = {}
+        self._per_user: dict[str, int] = {}
 
-    def connect(self, websocket: WebSocket) -> None:
+    def connect(
+        self,
+        websocket: WebSocket,
+        user_id: str | None = None,
+        *,
+        max_per_user: int | None = None,
+        max_global: int | None = None,
+    ) -> None:
+        """Register ``websocket``. With a ``user_id`` and caps, raise
+        ``ConnectionLimitExceeded`` (and register nothing) if a cap would be exceeded.
+        There is no ``await`` here, so check-and-register is atomic on the event loop.
+        Called without ``user_id``/caps it behaves as it did before T4a."""
+        if user_id is not None:
+            if websocket in self._owners:
+                return
+            if max_per_user is not None and self._per_user.get(user_id, 0) >= max_per_user:
+                raise ConnectionLimitExceeded("user")
+            if max_global is not None and len(self._owners) >= max_global:
+                raise ConnectionLimitExceeded("global")
+            self._owners[websocket] = user_id
+            self._per_user[user_id] = self._per_user.get(user_id, 0) + 1
         self._connections.add(websocket)
         logger.info("WebSocket connected (%d active)", len(self._connections))
 
     def disconnect(self, websocket: WebSocket) -> None:
+        """Idempotent; a socket that was never registered is a no-op."""
         self._connections.discard(websocket)
+        user_id = self._owners.pop(websocket, None)
+        if user_id is not None:
+            remaining = self._per_user.get(user_id, 0) - 1
+            if remaining > 0:
+                self._per_user[user_id] = remaining
+            else:
+                self._per_user.pop(user_id, None)
         logger.info("WebSocket disconnected (%d active)", len(self._connections))
 
     def has_connections(self) -> bool:

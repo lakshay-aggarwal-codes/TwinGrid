@@ -24,6 +24,12 @@ LEGACY_PHYSICS_VERSION = "legacy-0"
 PHYSICS_V1 = "1"
 KNOWN_PHYSICS_VERSIONS: tuple[str, ...] = (LEGACY_PHYSICS_VERSION, PHYSICS_V1)
 
+# Data origin of a stored row (``origin`` columns, migrations M1/M2). Every writer states one.
+ORIGIN_SIMULATED = "simulated"
+ORIGIN_MEASURED = "measured"
+ORIGIN_REPLAY = "replay"
+KNOWN_ORIGINS: tuple[str, ...] = (ORIGIN_SIMULATED, ORIGIN_MEASURED, ORIGIN_REPLAY)
+
 # The version new work is done under.
 PHYSICS_VERSION = PHYSICS_V1
 

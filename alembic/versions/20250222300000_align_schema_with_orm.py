@@ -26,18 +26,29 @@ depends_on = None
 _CREATED_AT_TABLES = ("users", "simulation_runs", "optimization_results", "sensor_readings", "alerts")
 
 
+# T10 portability note: this revision used ``now()`` and bare ``ALTER COLUMN``, which
+# SQLite cannot run, so a full ``upgrade head`` from base was impossible on SQLite.
+# CURRENT_TIMESTAMP is the SQL-standard spelling of the same value and
+# ``batch_alter_table`` emits the identical plain ``ALTER TABLE ... ALTER COLUMN`` on
+# PostgreSQL (table rebuild only on SQLite). Resulting PostgreSQL schema is unchanged.
+
+
 def upgrade() -> None:
     # Backfill first: SET NOT NULL fails if any NULL rows exist.
     for table in _CREATED_AT_TABLES:
-        op.execute(sa.text(f"UPDATE {table} SET created_at = now() WHERE created_at IS NULL"))
+        op.execute(sa.text(f"UPDATE {table} SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"))
     op.execute(sa.text("UPDATE sensor_readings SET anomaly = 0 WHERE anomaly IS NULL"))
 
     for table in _CREATED_AT_TABLES:
-        op.alter_column(table, "created_at", existing_type=sa.DateTime(timezone=True), nullable=False)
-    op.alter_column("sensor_readings", "anomaly", existing_type=sa.Integer(), nullable=False)
+        with op.batch_alter_table(table) as batch:
+            batch.alter_column("created_at", existing_type=sa.DateTime(timezone=True), nullable=False)
+    with op.batch_alter_table("sensor_readings") as batch:
+        batch.alter_column("anomaly", existing_type=sa.Integer(), nullable=False)
 
 
 def downgrade() -> None:
-    op.alter_column("sensor_readings", "anomaly", existing_type=sa.Integer(), nullable=True)
+    with op.batch_alter_table("sensor_readings") as batch:
+        batch.alter_column("anomaly", existing_type=sa.Integer(), nullable=True)
     for table in reversed(_CREATED_AT_TABLES):
-        op.alter_column(table, "created_at", existing_type=sa.DateTime(timezone=True), nullable=True)
+        with op.batch_alter_table(table) as batch:
+            batch.alter_column("created_at", existing_type=sa.DateTime(timezone=True), nullable=True)

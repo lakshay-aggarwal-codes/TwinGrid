@@ -118,7 +118,7 @@ class SensorReading(Base):
     source: Mapped[str] = mapped_column(String(32), nullable=False, index=True)  # api | ws | simulation | optimization
 
     # State fields (align with DataCentreState / API response)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     server_utilisation: Mapped[float] = mapped_column(Float, nullable=False)
     outside_temp_C: Mapped[float] = mapped_column(Float, nullable=False)
     server_inlet_temp_C: Mapped[float] = mapped_column(Float, nullable=False)
@@ -134,6 +134,13 @@ class SensorReading(Base):
     water_pressure_bar: Mapped[float] = mapped_column(Float, nullable=False)
     cooling_mode: Mapped[str] = mapped_column(String(32), nullable=False)
     anomaly: Mapped[int] = mapped_column(Integer, default=0)
+
+    # M1 provenance. ``origin`` in {simulated, measured, replay} (src/versions.py). NOT NULL
+    # with NO Python default, so a new writer must say where its data came from; rows that
+    # pre-date M1 were backfilled 'simulated' by the migration's server default, which is a
+    # migration artefact and is intentionally not declared here.
+    origin: Mapped[str] = mapped_column(String(16), nullable=False)
+    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     # T9 / M3: facility ownership reference. Nullable and additive: existing writers
     # do not set it yet (backfilled to the default facility by migration M3).
@@ -160,8 +167,13 @@ class SensorReading(Base):
         *,
         simulation_run_id: int | None = None,
         optimization_result_id: int | None = None,
+        origin: str | None = None,
+        physics_version: str | None = None,
     ) -> "SensorReading":
-        """Build SensorReading from API/twin state dict (e.g. DataCentreState.to_dict())."""
+        """Build SensorReading from API/twin state dict (e.g. DataCentreState.to_dict()).
+
+        ``origin`` / ``physics_version`` are left unset (None) when not given; the
+        database then applies its own column default (see migration M1)."""
         ts = d.get("timestamp")
         if isinstance(ts, str) and ts:
             try:
@@ -190,6 +202,8 @@ class SensorReading(Base):
             anomaly=int(d.get("anomaly", 0)),
             simulation_run_id=simulation_run_id,
             optimization_result_id=optimization_result_id,
+            origin=origin,
+            physics_version=physics_version,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -230,6 +244,9 @@ class SimulationRun(Base):
     utilisation: Mapped[float] = mapped_column(Float, nullable=False)
     stress: Mapped[float] = mapped_column(Float, nullable=False)
 
+    # M1 provenance (nullable: unknown for rows written before the column existed).
+    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+
     # T9 / M3: facility ownership reference. Nullable and additive: existing writers
     # do not set it yet (backfilled to the default facility by migration M3).
     facility_id: Mapped[Optional[int]] = mapped_column(ForeignKey("facility.id", ondelete="RESTRICT"), nullable=True)
@@ -267,6 +284,10 @@ class OptimizationResult(Base):
     total_reward: Mapped[float] = mapped_column(Float, nullable=False)
     safety_violations: Mapped[int] = mapped_column(Integer, nullable=False)
 
+    # M1 provenance (nullable).
+    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    model_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
     # Full results array as JSON (each element is a state dict)
     results_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
 
@@ -296,6 +317,13 @@ class Alert(Base):
         ForeignKey("sensor_readings.id", ondelete="SET NULL"), nullable=True
     )
 
+    # M2 (T3): alert identity and provenance. All nullable: pre-M2 alerts are "unlabelled
+    # legacy". ``dedupe_key`` carries a UNIQUE index (NULLs do not collide), exactly as
+    # migration M2 creates it.
+    dedupe_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    model_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    origin: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+
     # T9 / M3: facility ownership reference. Nullable and additive: existing writers
     # do not set it yet (backfilled to the default facility by migration M3).
     facility_id: Mapped[Optional[int]] = mapped_column(ForeignKey("facility.id", ondelete="RESTRICT"), nullable=True)
@@ -306,6 +334,8 @@ class Alert(Base):
     acknowledged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     acknowledged_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (Index("ux_alerts_dedupe_key", "dedupe_key", unique=True),)
 
 
 # =============================================================================
