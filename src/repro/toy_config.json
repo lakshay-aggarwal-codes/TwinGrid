@@ -1,0 +1,9 @@
+{
+  "experiment": "toy",
+  "description": "Deterministic dummy-policy experiment used to exercise the reproducibility framework",
+  "seeds": [11, 22, 33],
+  "episodes_per_seed": 6,
+  "steps_per_episode": 48,
+  "constant_setpoint_C": 10.0,
+  "rule_setpoints_C": {"cool_below_C": 12.0, "cool_setpoint_C": 14.0, "warm_setpoint_C": 8.0}
+}
