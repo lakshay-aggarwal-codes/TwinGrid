@@ -101,7 +101,7 @@ class TestPhysicsVersion:
         monkeypatch.setenv("PHYSICS_VERSION", "legacy-0")
         assert DigitalTwin(physics_version="1", start_time=START).physics_version == "1"
 
-    @pytest.mark.parametrize("bad", ["2", "legacy", "v1", "LEGACY-0"])
+    @pytest.mark.parametrize("bad", ["3", "legacy", "v1", "LEGACY-0"])  # "2" became a known version in T21
     def test_unknown_version_raises_never_falls_back(self, monkeypatch, bad):
         with pytest.raises(PhysicsVersionError):
             DigitalTwin(physics_version=bad)

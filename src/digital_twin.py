@@ -23,6 +23,12 @@ verbatim and bit-identical for replay (tests/golden). ``1`` is Physics v1:
   * time             step() integrates a real, caller-supplied dt
 All v1 constants below are PROPOSED engineering values, not calibrated to a real
 facility.
+
+``2`` is Physics v2 (T21): a dynamic, lumped-capacitance model with explicit thermal
+(T_room) and actuator (T_chw_applied) state and a frozen, hashable ``PhysicsParams``
+(src/physics/params.py, src/physics/v2.py, docs/PHYSICS_V2.md). It is opt-in
+(``physics_version="2"`` or ``PHYSICS_VERSION=2``); this module only dispatches to it
+and builds the same DataCentreState. UNCALIBRATED; not validated against any facility.
 """
 
 from __future__ import annotations
@@ -40,8 +46,9 @@ import pandas as pd
 
 from .carbon_provider import load_diurnal_carbon_intensity
 from .logging_config import log_error, log_function_entry, log_function_exit, log_simulation_step
-from .timeutil import utc_now
-from .versions import PHYSICS_V1, active_physics_version, validate_physics_version
+from .physics import v2 as physics_v2
+from .physics.params import PhysicsParams, PhysicsParamsError
+from .versions import PHYSICS_V1, PHYSICS_V2, active_physics_version, physics_identity, validate_physics_version
 
 # Matches DataCentreEnv.DROUGHT_THRESHOLD (src/optimizer.py) exactly --
 # both files enforce the same patent Claim 3 rule.
@@ -304,6 +311,7 @@ class DigitalTwin:
         initial_chilled_water_temp_C: float = DEFAULT_CHILLED_WATER_TEMP_C,
         physics_version: str | None = None,
         cooling_capacity_kw: float | None = None,
+        physics_params: PhysicsParams | None = None,
     ) -> None:
         """
         Initialise the digital twin.
@@ -321,6 +329,11 @@ class DigitalTwin:
                 default (src/versions.py). Unknown values raise.
             cooling_capacity_kw: v1 only. Design heat-removal capacity of the cooling plant (kW).
                 None -> COOLING_CAPACITY_MARGIN x max_it_power_kw. Ignored (unlimited) in legacy-0.
+            physics_params: physics "2" only. The frozen parameter surface. None -> the defaults, with
+                the legacy arguments above (max_it_power_kw, idle_power_fraction, air_flow_m3_s,
+                thermal_time_constant_min, max_chilled_water_rate_C_per_step, cooling_capacity_kw)
+                mapped onto it. Passing it together with a non-default legacy argument is an error;
+                passing it for another physics version is an error.
         """
         log_function_entry(
             "DigitalTwin.__init__",
@@ -336,7 +349,13 @@ class DigitalTwin:
                 physics_version if physics_version is not None else active_physics_version()
             )
             self._v1 = self._physics_version == PHYSICS_V1
-            if self._v1:
+            self._v2 = self._physics_version == PHYSICS_V2
+            if physics_params is not None and not self._v2:
+                raise InvalidInputError(
+                    f"physics_params is only used by physics version {PHYSICS_V2!r}, not {self._physics_version!r}",
+                    field="physics_params",
+                )
+            if self._v1 or self._v2:
                 self._validate_constructor_args_v1(
                     max_it_power_kw=max_it_power_kw,
                     idle_power_fraction=idle_power_fraction,
@@ -355,7 +374,7 @@ class DigitalTwin:
             self._idle_power_fraction = idle_power_fraction
             self._air_flow_m3_s = air_flow_m3_s
             self._cooling_mode = initial_cooling_mode
-            self._time = start_time if start_time is not None else utc_now()
+            self._time = start_time or datetime.now()
             self._utilisation: float = 0.0
             self._outside_temp_C: float = 25.0
             self._water_consumed_cumulative_L: float = 0.0
@@ -375,6 +394,19 @@ class DigitalTwin:
             self._inlet_temp_C: float | None = None
             self._outlet_temp_C: float | None = None
 
+            self._params: PhysicsParams | None = None
+            self._dyn: physics_v2.DynamicState | None = None
+            if self._v2:
+                self._init_v2(
+                    physics_params,
+                    max_it_power_kw=max_it_power_kw,
+                    idle_power_fraction=idle_power_fraction,
+                    air_flow_m3_s=air_flow_m3_s,
+                    thermal_time_constant_min=thermal_time_constant_min,
+                    max_chilled_water_rate_C_per_step=max_chilled_water_rate_C_per_step,
+                    cooling_capacity_kw=cooling_capacity_kw,
+                )
+
             self._state: DataCentreState = self._build_initial_state()
             self._pinn: Any = None
 
@@ -391,6 +423,94 @@ class DigitalTwin:
     def physics_version(self) -> str:
         """The physics version this twin runs ("legacy-0" or "1")."""
         return self._physics_version
+
+    @property
+    def physics_params(self) -> PhysicsParams | None:
+        """The frozen PhysicsParams (physics "2" only; None otherwise)."""
+        return self._params
+
+    @property
+    def physics_identity(self) -> dict[str, str | None]:
+        """{"physics_version", "physics_params_hash"}: what a result or manifest from this twin must carry."""
+        return physics_identity(self._physics_version, self._params)
+
+    @property
+    def dynamic_state(self) -> physics_v2.DynamicState | None:
+        """Physics "2" explicit state (T_room, T_in, T_out, T_chw_applied, mode_applied, water_cum); else None."""
+        return self._dyn
+
+    def _init_v2(
+        self,
+        physics_params: PhysicsParams | None,
+        *,
+        max_it_power_kw: float,
+        idle_power_fraction: float,
+        air_flow_m3_s: float,
+        thermal_time_constant_min: float,
+        max_chilled_water_rate_C_per_step: float,
+        cooling_capacity_kw: float | None,
+    ) -> None:
+        legacy_defaults = {
+            "max_it_power_kw": (max_it_power_kw, 500.0),
+            "idle_power_fraction": (idle_power_fraction, 0.4),
+            "air_flow_m3_s": (air_flow_m3_s, 8.0),
+            "thermal_time_constant_min": (thermal_time_constant_min, DEFAULT_THERMAL_TIME_CONSTANT_MIN),
+            "max_chilled_water_rate_C_per_step": (
+                max_chilled_water_rate_C_per_step,
+                DEFAULT_MAX_CHILLED_WATER_RATE_C_PER_STEP,
+            ),
+            "cooling_capacity_kw": (cooling_capacity_kw, None),
+        }
+        try:
+            if physics_params is None:
+                params = PhysicsParams(
+                    max_it_power_kw=max_it_power_kw,
+                    idle_power_fraction=idle_power_fraction,
+                    air_flow_base_m3_s=air_flow_m3_s,
+                    tau_air_min=thermal_time_constant_min,
+                    chw_rate_limit_c_per_5min=max_chilled_water_rate_C_per_step,
+                    capacity_design_kw=cooling_capacity_kw,
+                )
+            else:
+                if not isinstance(physics_params, PhysicsParams):
+                    raise InvalidInputError("physics_params must be a PhysicsParams", field="physics_params")
+                clashes = [name for name, (value, default) in legacy_defaults.items() if value != default]
+                if clashes:
+                    raise InvalidInputError(
+                        f"physics_params conflicts with constructor argument(s) {clashes}; set them in PhysicsParams",
+                        field=clashes[0],
+                    )
+                params = physics_params
+            physics_v2.check_step_stability(params, physics_v2.sim_step_seconds())
+        except PhysicsParamsError as exc:
+            raise InvalidInputError(str(exc), field="physics_params") from None
+        except physics_v2.PhysicsStabilityError as exc:
+            raise InvalidInputError(str(exc), field="SIM_STEP_SECONDS") from None
+
+        self._params = params
+        self._max_it_power_kw = params.max_it_power_kw
+        self._idle_power_fraction = params.idle_power_fraction
+        self._air_flow_m3_s = params.air_flow_base_m3_s
+        self._thermal_time_constant_min = params.tau_air_min
+        self._max_chilled_water_rate_C_per_step = params.chw_rate_limit_c_per_5min
+        self._cooling_capacity_design_kw = params.design_capacity_kw
+        self._dyn = physics_v2.initial_state(
+            physics_v2.StepInputs(
+                utilisation=self._utilisation,
+                outside_temp_c=self._outside_temp_C,
+                humidity_pct=self._humidity_pct,
+                cooling_mode=CoolingMode(self._cooling_mode).value,
+                chw_requested_c=self._requested_chilled_water_temp_C,
+            ),
+            params,
+            self._applied_chilled_water_temp_C,
+        )
+
+    def _check_step_v2(self, dt_s: float) -> None:
+        try:
+            physics_v2.check_step_stability(self._params, dt_s)  # type: ignore[arg-type]
+        except physics_v2.PhysicsStabilityError as exc:
+            raise InvalidInputError(str(exc), field="dt_seconds") from None
 
     @property
     def last_step_dt_seconds(self) -> float:
@@ -469,6 +589,8 @@ class DigitalTwin:
         Design capacity, derated above CAPACITY_DERATE_START_OUTSIDE_C (hot ambient weakens heat
         rejection). The economiser is only ever applied below 12 °C, so the derate does not touch it.
         """
+        if self._v2:
+            return physics_v2.capacity_kw(mode.value, outside_temp_C, self._humidity_pct, self._params)  # type: ignore[arg-type]
         if not self._v1:
             return math.inf
         derate = 1.0 - CAPACITY_DERATE_PER_C * max(0.0, outside_temp_C - CAPACITY_DERATE_START_OUTSIDE_C)
@@ -549,6 +671,8 @@ class DigitalTwin:
         (self._air_flow_m3_s, unchanged meaning/default) up to
         AIR_FLOW_FULL_LOAD_M3_S at 100% utilisation -- fan-speed modulation
         with load, matching a real CRAC/CRAH."""
+        if self._v2:
+            return physics_v2.air_flow_m3_s(it_power_kw, self._params)  # type: ignore[arg-type]
         load_fraction = 0.0
         if self._max_it_power_kw > 0:
             load_fraction = max(0.0, min(1.0, it_power_kw / self._max_it_power_kw))
@@ -594,6 +718,15 @@ class DigitalTwin:
         water setpoint's compressor lift. Never substitutes modes — mode
         substitution happens once, earlier, in `_determine_applied_cooling_mode`.
         """
+        if self._v2:
+            return physics_v2.cop(
+                mode.value,
+                it_power_kw,
+                outside_temp_C,
+                self._humidity_pct,
+                chilled_water_temp_C if chilled_water_temp_C is not None else self._params.cop_chw_reference_c,  # type: ignore[union-attr]
+                self._params,  # type: ignore[arg-type]
+            )
         base_cop = _BASE_COP[mode]
 
         load_fraction = 0.0
@@ -689,6 +822,18 @@ class DigitalTwin:
         Returns:
             Tuple of (flow_lpm, consumed_L_per_interval).
         """
+        if self._v2:
+            if heat_removed_kw is None:
+                heat_removed_kw = cooling_power_kw * self._params.base_cop(mode.value)  # type: ignore[union-attr]
+            return physics_v2.water_step(
+                mode.value,
+                outside_temp_C,
+                self._humidity_pct,
+                heat_removed_kw,
+                cooling_power_kw,
+                dt_s if dt_s is not None else INTERVAL_MINUTES * 60.0,
+                self._params,  # type: ignore[arg-type]
+            )
         if self._v1:
             return self._water_consumption_v1(cooling_power_kw, mode, outside_temp_C, heat_removed_kw, dt_s)
 
@@ -829,6 +974,11 @@ class DigitalTwin:
         though the initial state's own `water_consumed_L` field reflects
         that first instant's consumption.
         """
+        if self._v2:
+            return self._compute_transition_v2(
+                dt_s=dt_s if dt_s is not None else INTERVAL_MINUTES * 60.0,
+                persist_cumulative_water=persist_cumulative_water,
+            )
         if self._v1:
             return self._compute_transition_v1(
                 dt_s=dt_s if dt_s is not None else INTERVAL_MINUTES * 60.0,
@@ -1002,6 +1152,80 @@ class DigitalTwin:
             drought_override_active=self._water_stress > DROUGHT_THRESHOLD,
         )
 
+    def _compute_transition_v2(self, *, dt_s: float, persist_cumulative_water: bool) -> DataCentreState:
+        """Physics v2 transition: one semi-implicit step of the lumped-capacitance model
+        (src/physics/v2.py), reported in the same DataCentreState as v1. Invariants: per-step thermal
+        closure C_th dT_room = (Q_it - Q_cool) dt; total = IT + cooling; water <= latent-heat bound;
+        Q_cool <= capacity; actuator slew-rate limit."""
+        assert self._dyn is not None and self._params is not None
+        dt_h = dt_s / 3600.0
+        res = physics_v2.step(
+            self._dyn,
+            physics_v2.StepInputs(
+                utilisation=self._utilisation,
+                outside_temp_c=self._outside_temp_C,
+                humidity_pct=self._humidity_pct,
+                cooling_mode=CoolingMode(self._cooling_mode).value,
+                chw_requested_c=self._requested_chilled_water_temp_C,
+            ),
+            dt_s,
+            self._params,
+        )
+        base_cum = self._dyn.water_cum_l
+        cumulative_water_L = base_cum + res.water_step_l
+        self._dyn = res.state if persist_cumulative_water else physics_v2.with_water_cum(res.state, base_cum)
+        self._water_consumed_cumulative_L = self._dyn.water_cum_l
+        self._applied_chilled_water_temp_C = res.state.t_chw_applied_c
+        self._inlet_temp_C = res.state.t_in_c
+        self._outlet_temp_C = res.state.t_out_c
+
+        it_power = res.it_power_kw
+        cooling = res.cooling_electrical_kw
+        total = it_power + cooling
+        pue = total / it_power if it_power > 0.1 else 1.0
+        it_energy_kwh = it_power * dt_h
+        wue = res.water_step_l / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
+        intensity = float(self._carbon_intensity_by_hour[self._time.hour])
+        carbon_gco2 = carbon_emissions_gco2(total, intensity, dt_h)
+
+        self._last_dt_s = dt_s
+        self._last_balance = {
+            "it_heat_kw": it_power,
+            "capacity_kw": res.capacity_kw,
+            "heat_removed_kw": res.q_cool_kw,
+            "heat_unremoved_kw": res.q_stored_kw,  # v2: heat stored in T_room this step (can be < 0)
+            "cooling_electrical_kw": cooling,
+            "heat_rejected_kw": res.heat_rejected_kw,
+            "water_evaporated_L": res.water_step_l,
+            "dt_s": dt_s,
+            "t_room_C": res.state.t_room_c,
+            "room_energy_change_kj": res.room_energy_change_kj,
+            "closure_residual_kj": res.closure_residual_kj,
+        }
+
+        return DataCentreState(
+            timestamp=self._time,
+            server_utilisation=self._utilisation,
+            outside_temp_C=self._outside_temp_C,
+            server_inlet_temp_C=res.state.t_in_c,
+            server_outlet_temp_C=res.state.t_out_c,
+            it_power_kw=it_power,
+            cooling_power_kw=cooling,
+            total_power_kw=total,
+            pue=pue,
+            water_flow_lpm=res.water_flow_lpm,
+            water_consumed_L=cumulative_water_L,
+            wue=wue,
+            humidity_pct=self._humidity_pct,
+            water_pressure_bar=self._water_pressure_bar,
+            cooling_mode=CoolingMode(res.state.mode_applied),
+            anomaly=0,
+            water_stress=self._water_stress,
+            carbon_intensity_gco2_per_kwh=intensity,
+            carbon_gco2=carbon_gco2,
+            drought_override_active=self._water_stress > DROUGHT_THRESHOLD,
+        )
+
     def _build_initial_state(self) -> DataCentreState:
         """Build initial state (t=0) via the shared transition function."""
         return self._compute_transition(persist_cumulative_water=False)
@@ -1029,7 +1253,7 @@ class DigitalTwin:
         log_function_entry("DigitalTwin.step", action_dict=action_dict)
 
         try:
-            if self._v1:
+            if self._v1 or self._v2:
                 return self._step_v1(action_dict, dt_seconds)
             if dt_seconds is not None and dt_seconds != INTERVAL_MINUTES * 60.0:
                 raise InvalidInputError(
@@ -1092,7 +1316,9 @@ class DigitalTwin:
 
     def _step_v1(self, action_dict: dict[str, Any], dt_seconds: float | None) -> DataCentreState:
         clean = self._validate_step_inputs_v1(action_dict, dt_seconds)  # raises before ANY state changes
-        dt_s = clean.pop("dt_seconds", INTERVAL_MINUTES * 60.0)
+        dt_s = clean.pop("dt_seconds", physics_v2.sim_step_seconds() if self._v2 else INTERVAL_MINUTES * 60.0)
+        if self._v2:
+            self._check_step_v2(dt_s)  # still before ANY state change
         if "utilisation" in clean:
             self._utilisation = clean["utilisation"]
         if "outside_temp_C" in clean:
