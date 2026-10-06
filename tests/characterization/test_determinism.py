@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -47,9 +47,11 @@ def test_twin_sources_use_no_randomness(relative):
 
 
 def test_twin_wall_clock_read_is_only_the_default_start_time():
+    """T12: the only wall-clock read is the default start time, and it goes through the one clock."""
     text = (REPO / "src/digital_twin.py").read_text(encoding="utf-8")
-    assert text.count("datetime.now()") == 1
-    assert "self._time = start_time or datetime.now()" in text
+    assert "datetime.now(" not in text and "utcnow(" not in text
+    assert text.count("utc_now()") == 1
+    assert "self._time = start_time if start_time is not None else utc_now()" in text
 
 
 def test_twin_is_deterministic_given_explicit_start_time():
@@ -85,9 +87,10 @@ def test_compute_whatif_is_deterministic_under_frozen_clock():
 
 def test_unfrozen_twin_timestamp_follows_the_wall_clock():
     """Why freezing is needed: without it the state timestamp is 'now' (+5 min)."""
-    before = datetime.now()
+    before = datetime.now(timezone.utc)
     ts = DigitalTwin().step({"utilisation": 0.5, "outside_temp_C": 20.0}).timestamp
-    after = datetime.now()
+    after = datetime.now(timezone.utc)
+    assert ts.tzinfo is not None and ts.utcoffset() == timedelta(0)  # T12: default clock is aware UTC
     assert before + timedelta(minutes=5) <= ts <= after + timedelta(minutes=5)
 
 

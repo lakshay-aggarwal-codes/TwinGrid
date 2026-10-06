@@ -20,10 +20,12 @@ import os
 import random
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 from dotenv import load_dotenv
+
+from src.timeutil import TimeContractError, parse_timestamp, utc_now
 
 load_dotenv()
 
@@ -81,16 +83,18 @@ RANGES: dict[str, tuple[float, float] | None] = {
 
 
 def _parse_timestamp(ts: Any) -> datetime | None:
+    """Payload timestamp -> aware UTC, or None if absent/invalid.
+
+    T12: an offset-less (naive) timestamp is NOT assumed to be UTC; it is rejected by
+    ``validate_sensor_payload`` ("Missing or invalid timestamp"). Sensor clocks/zones are
+    not verified here (see docs/TIME_POLICY.md).
+    """
     if ts is None:
         return None
-    if isinstance(ts, datetime):
-        return ts
-    if isinstance(ts, str) and ts:
-        try:
-            return datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        except ValueError:
-            pass
-    return None
+    try:
+        return parse_timestamp(ts)
+    except TimeContractError:
+        return None
 
 
 def validate_sensor_payload(payload: dict[str, Any]) -> tuple[bool, str | None]:
@@ -116,9 +120,7 @@ def validate_sensor_payload(payload: dict[str, Any]) -> tuple[bool, str | None]:
     ts = _parse_timestamp(payload.get("timestamp"))
     if ts is None:
         return False, "Missing or invalid timestamp"
-    now = datetime.now(timezone.utc)
-    if ts.tzinfo is None:
-        ts = ts.replace(tzinfo=timezone.utc)
+    now = utc_now()
     age = (now - ts).total_seconds()
     if age < -60:
         return False, "Timestamp too far in the future"
@@ -137,10 +139,8 @@ def validate_sensor_payload(payload: dict[str, Any]) -> tuple[bool, str | None]:
 def payload_to_state_dict(payload: dict[str, Any]) -> dict[str, Any]:
     """Ensure payload has correct types and keys for SensorReading.from_state_dict."""
     d = dict(payload)
-    ts = _parse_timestamp(d.get("timestamp")) or datetime.now(timezone.utc)
-    if ts.tzinfo is None:
-        ts = ts.replace(tzinfo=timezone.utc)
-    d["timestamp"] = ts
+    # T12: a missing/naive/unparseable timestamp raises TimeContractError (no substitution of "now").
+    d["timestamp"] = parse_timestamp(d.get("timestamp"))
     d["server_utilisation"] = float(d["server_utilisation"])
     d["outside_temp_C"] = float(d["outside_temp_C"])
     d["server_inlet_temp_C"] = float(d["server_inlet_temp_C"])
@@ -184,7 +184,7 @@ async def store_reading(state_dict: dict[str, Any], source: str = "mqtt") -> Non
 
 def generate_synthetic_payload() -> dict[str, Any]:
     """Generate one synthetic sensor payload within valid ranges."""
-    now = datetime.now(timezone.utc)
+    now = utc_now()
     utilisation = random.uniform(0.3, 0.95)
     outside = random.uniform(18.0, 32.0)
     inlet = random.uniform(18.0, 26.0)

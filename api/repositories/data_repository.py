@@ -7,7 +7,6 @@ single, trivial persistence call.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import select
@@ -15,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.db_models import Alert, OptimizationResult, SensorReading, SimulationRun
+from src.timeutil import utc_now
 
 
 async def save_sensor_reading(
@@ -135,6 +135,6 @@ async def acknowledge_alert(session: AsyncSession, alert_id: int, acknowledged_b
         return None
     alert.acknowledged = True
     alert.acknowledged_by = acknowledged_by
-    alert.acknowledged_at = datetime.now(timezone.utc)
+    alert.acknowledged_at = utc_now()
     await session.flush()
     return alert

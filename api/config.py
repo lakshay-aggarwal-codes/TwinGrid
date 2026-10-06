@@ -45,6 +45,22 @@ settings = Settings()
 
 
 # -----------------------------------------------------------------------------
+# Time contract (T12, roadmap §9.2) -- see docs/TIME_POLICY.md
+#
+# SITE_TIMEZONE: IANA zone used for wall-clock/diurnal logic (hour-of-day) via
+#   src.timeutil.to_site_local. Persisted instants are always aware UTC.
+# SIM_STEP_SECONDS: nominal simulated seconds per twin step (A-1). Declared
+#   here as the single configured value; the physics step itself is not driven
+#   by it in T12 (physics numerics are out of scope) -- a test pins it to
+#   src.digital_twin.INTERVAL_MINUTES * 60.
+# -----------------------------------------------------------------------------
+from src.timeutil import DEFAULT_SITE_TIMEZONE, site_timezone_name  # noqa: E402, F401  (re-exported)
+
+DEFAULT_SIM_STEP_SECONDS = 300
+SITE_TIMEZONE: str = site_timezone_name()  # import-time snapshot; timeutil re-reads the env per call
+
+
+# -----------------------------------------------------------------------------
 # WebSocket limits (T4a)
 #
 # Read from the environment on every call (not at import), so a deployment can
@@ -107,58 +123,9 @@ def load_ws_limits() -> WebSocketLimits:
     )
 
 
-# -----------------------------------------------------------------------------
-# HTTP limits (T5)
-#
-# scope -> (environment variable, default "<count>/<window>"). Read from the
-# environment on every call so a deployment can retune without a code change
-# and tests can override per test. api/rate_limit.py validates the value and
-# falls back to the default here if it is malformed.
-# -----------------------------------------------------------------------------
-
-RATE_LIMIT_DEFAULTS: dict[str, tuple[str, str]] = {
-    "state": ("RATE_LIMIT_STATE", "30/minute"),
-    "whatif": ("RATE_LIMIT_WHATIF", "30/minute"),
-    "benchmark": ("RATE_LIMIT_BENCHMARK", "30/minute"),
-    "simulate": ("RATE_LIMIT_SIMULATE", "6/minute"),
-    "anomaly_score": ("RATE_LIMIT_ANOMALY_SCORE", "30/minute"),
-    "esg_report": ("RATE_LIMIT_ESG_REPORT", "6/minute"),
-    "shadow_sample": ("RATE_LIMIT_SHADOW_SAMPLE", "10/minute"),
-    "alert_ack": ("RATE_LIMIT_ALERT_ACK", "30/minute"),
-    "webhook": ("RATE_LIMIT_WEBHOOK", "30/minute"),
-    "optimize": ("RATE_LIMIT_OPTIMIZE", "10/minute"),
-    "train_async": ("RATE_LIMIT_TRAIN_ASYNC", "5/minute"),
-}
-
-DEFAULT_MAX_QUERY_STRING_CHARS = 8192
-DEFAULT_TRUSTED_PROXY_HOPS = 1
-# Upper bound on the ``recent_data`` query parameter of /api/anomaly_score: a (12, 5)
-# window of floats is well under 1 KB, so 8000 characters is generous.
-MAX_RECENT_DATA_CHARS = 8000
+def sim_step_seconds() -> int:
+    """Configured simulated seconds per step (env ``SIM_STEP_SECONDS``, default 300)."""
+    return _env_positive_int("SIM_STEP_SECONDS", DEFAULT_SIM_STEP_SECONDS)
 
 
-def rate_limit_setting(scope: str) -> str:
-    """The raw rate-limit string (e.g. ``"30/minute"``) for ``scope``: the scope's
-    environment variable if set and non-blank, else its default. Unknown scope -> KeyError.
-    The value is NOT validated here (see api/rate_limit.parse_rate)."""
-    env_name, default = RATE_LIMIT_DEFAULTS[scope]
-    raw = os.getenv(env_name)
-    if raw is None or not raw.strip():
-        return default
-    return raw.strip()
-
-
-def trust_proxy_headers() -> bool:
-    """True only when TRUST_PROXY_HEADERS is explicitly truthy (1/true/yes/on).
-    Default False: X-Forwarded-For is client-controlled unless a trusted proxy sets it."""
-    return os.getenv("TRUST_PROXY_HEADERS", "").strip().lower() in {"1", "true", "yes", "on"}
-
-
-def trusted_proxy_hops() -> int:
-    """Number of trusted proxies in front of the app (TRUSTED_PROXY_HOPS, default 1)."""
-    return _env_positive_int("TRUSTED_PROXY_HOPS", DEFAULT_TRUSTED_PROXY_HOPS)
-
-
-def max_query_string_chars() -> int:
-    """Longest accepted raw query string (MAX_QUERY_STRING_CHARS, default 8192)."""
-    return _env_positive_int("MAX_QUERY_STRING_CHARS", DEFAULT_MAX_QUERY_STRING_CHARS)
+SIM_STEP_SECONDS: int = sim_step_seconds()

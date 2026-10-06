@@ -8,7 +8,7 @@ within 5 s of wall time and non-decreasing.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from unittest import mock
 
 import pytest
@@ -66,23 +66,25 @@ def test_seq_continues_across_calls_within_a_process():
     assert b == a + 1
 
 
-def test_ts_ingest_is_aware_utc_near_wall_time_and_non_decreasing():
-    before = datetime.now(timezone.utc)
+def test_ts_ingest_is_aware_utc_from_the_single_clock_and_non_decreasing():
+    """T12: ts_ingest is one read of src.timeutil.utc_now() per tick (frozen by the harness)."""
     payloads = _ticks(5)
-    after = datetime.now(timezone.utc)
     stamps = [datetime.fromisoformat(p["ts_ingest"]) for p in payloads]
     for ts in stamps:
         assert ts.tzinfo is not None and ts.utcoffset() == timedelta(0)
-        assert before - timedelta(seconds=5) <= ts <= after + timedelta(seconds=5)
+        assert ts == gs.FIXED_NOW_UTC
     assert stamps == sorted(stamps)
 
 
-def test_ts_ingest_is_wall_clock_even_when_the_twin_clock_is_frozen():
-    """The suite freezes datetime.now() inside the twin; ts_ingest must not follow the simulated clock."""
-    p = _ticks(1)[0]
-    ts = datetime.fromisoformat(p["ts_ingest"])
-    assert abs((ts - datetime.now(timezone.utc)).total_seconds()) < 5
-    assert p["sim_time"].startswith(gs.FIXED_NOW.strftime("%Y-%m-%d"))
+def test_ts_ingest_is_the_wall_clock_and_does_not_follow_the_simulated_clock():
+    """T12: ts_ingest and the twin's default start come from the same clock (frozen here); sim_time
+    then advances on its own by the step, so the two diverge after the first tick."""
+    ps = _ticks(2)
+    ts = [datetime.fromisoformat(p["ts_ingest"]) for p in ps]
+    sim = [datetime.fromisoformat(p["sim_time"]) for p in ps]
+    assert ts[0] == ts[1] == gs.FIXED_NOW_UTC
+    assert sim[0] == gs.FIXED_NOW_UTC + timedelta(minutes=5)
+    assert sim[1] > sim[0] and sim[1] != ts[1]
 
 
 def test_sim_time_is_the_twins_own_timestamp_and_not_the_wall_clock():

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.auth import get_current_user
 from database import get_db
 from models.db_models import User
+from src.timeutil import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +37,10 @@ async def liveness_check(session: AsyncSession = Depends(get_db)) -> dict[str, s
         # Raw exception text (driver/DSN/host details) stays server-side only.
         logger.exception("Health check: database unreachable")
         raise HTTPException(status_code=503, detail="Service unavailable") from None
-    return {"status": "ok", "database": "ok", "timestamp": datetime.now().isoformat()}
+    return {"status": "ok", "database": "ok", "timestamp": utc_now().isoformat()}
 
 
 @router.get("/api/health")
 async def health_check(_user: Annotated[User, Depends(get_current_user)]) -> dict[str, str]:
     """Health check endpoint. Requires valid JWT."""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    return {"status": "healthy", "timestamp": utc_now().isoformat()}

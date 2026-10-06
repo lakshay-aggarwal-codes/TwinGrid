@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional
 
 from sqlalchemy import (
@@ -18,6 +18,8 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from src.timeutil import parse_timestamp, utc_now
 
 
 class Base(DeclarativeBase):
@@ -39,7 +41,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -63,7 +65,7 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
@@ -87,7 +89,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
 
     # Denormalized username: the row still reads sensibly if the user is later deleted.
     user_id: Mapped[Optional[int]] = mapped_column(
@@ -112,13 +114,13 @@ class SensorReading(Base):
     __tablename__ = "sensor_readings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     # Source of this reading
     source: Mapped[str] = mapped_column(String(32), nullable=False, index=True)  # api | ws | simulation | optimization
 
     # State fields (align with DataCentreState / API response)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     server_utilisation: Mapped[float] = mapped_column(Float, nullable=False)
     outside_temp_C: Mapped[float] = mapped_column(Float, nullable=False)
     server_inlet_temp_C: Mapped[float] = mapped_column(Float, nullable=False)
@@ -134,13 +136,6 @@ class SensorReading(Base):
     water_pressure_bar: Mapped[float] = mapped_column(Float, nullable=False)
     cooling_mode: Mapped[str] = mapped_column(String(32), nullable=False)
     anomaly: Mapped[int] = mapped_column(Integer, default=0)
-
-    # M1 provenance. ``origin`` in {simulated, measured, replay} (src/versions.py). NOT NULL
-    # with NO Python default, so a new writer must say where its data came from; rows that
-    # pre-date M1 were backfilled 'simulated' by the migration's server default, which is a
-    # migration artefact and is intentionally not declared here.
-    origin: Mapped[str] = mapped_column(String(16), nullable=False)
-    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     # T9 / M3: facility ownership reference. Nullable and additive: existing writers
     # do not set it yet (backfilled to the default facility by migration M3).
@@ -167,21 +162,11 @@ class SensorReading(Base):
         *,
         simulation_run_id: int | None = None,
         optimization_result_id: int | None = None,
-        origin: str | None = None,
-        physics_version: str | None = None,
     ) -> "SensorReading":
-        """Build SensorReading from API/twin state dict (e.g. DataCentreState.to_dict()).
-
-        ``origin`` / ``physics_version`` are left unset (None) when not given; the
-        database then applies its own column default (see migration M1)."""
-        ts = d.get("timestamp")
-        if isinstance(ts, str) and ts:
-            try:
-                ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            except ValueError:
-                ts = datetime.utcnow()
-        elif ts is None or (isinstance(ts, str) and not ts):
-            ts = datetime.utcnow()
+        """Build SensorReading from API/twin state dict (e.g. DataCentreState.to_dict())."""
+        # T12: no substitution of "now" for a missing/unparseable timestamp, and no naive values.
+        # Raises src.timeutil.TimeContractError (a ValueError) instead.
+        ts = parse_timestamp(d.get("timestamp"))
         return cls(
             source=source,
             timestamp=ts,
@@ -202,8 +187,6 @@ class SensorReading(Base):
             anomaly=int(d.get("anomaly", 0)),
             simulation_run_id=simulation_run_id,
             optimization_result_id=optimization_result_id,
-            origin=origin,
-            physics_version=physics_version,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -238,14 +221,11 @@ class SimulationRun(Base):
     __tablename__ = "simulation_runs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     hours: Mapped[int] = mapped_column(Integer, nullable=False)
     utilisation: Mapped[float] = mapped_column(Float, nullable=False)
     stress: Mapped[float] = mapped_column(Float, nullable=False)
-
-    # M1 provenance (nullable: unknown for rows written before the column existed).
-    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     # T9 / M3: facility ownership reference. Nullable and additive: existing writers
     # do not set it yet (backfilled to the default facility by migration M3).
@@ -269,7 +249,7 @@ class OptimizationResult(Base):
     __tablename__ = "optimization_results"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     alpha: Mapped[float] = mapped_column(Float, nullable=False)
     beta: Mapped[float] = mapped_column(Float, nullable=False)
@@ -283,10 +263,6 @@ class OptimizationResult(Base):
     total_water_consumed_L: Mapped[float] = mapped_column(Float, nullable=False)
     total_reward: Mapped[float] = mapped_column(Float, nullable=False)
     safety_violations: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    # M1 provenance (nullable).
-    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    model_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     # Full results array as JSON (each element is a state dict)
     results_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
@@ -304,7 +280,7 @@ class Alert(Base):
     __tablename__ = "alerts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     score: Mapped[float] = mapped_column(Float, nullable=False)
     alert: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -317,13 +293,6 @@ class Alert(Base):
         ForeignKey("sensor_readings.id", ondelete="SET NULL"), nullable=True
     )
 
-    # M2 (T3): alert identity and provenance. All nullable: pre-M2 alerts are "unlabelled
-    # legacy". ``dedupe_key`` carries a UNIQUE index (NULLs do not collide), exactly as
-    # migration M2 creates it.
-    dedupe_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    model_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    origin: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
-
     # T9 / M3: facility ownership reference. Nullable and additive: existing writers
     # do not set it yet (backfilled to the default facility by migration M3).
     facility_id: Mapped[Optional[int]] = mapped_column(ForeignKey("facility.id", ondelete="RESTRICT"), nullable=True)
@@ -334,8 +303,6 @@ class Alert(Base):
     acknowledged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     acknowledged_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-
-    __table_args__ = (Index("ux_alerts_dedupe_key", "dedupe_key", unique=True),)
 
 
 # =============================================================================
@@ -354,8 +321,7 @@ class Alert(Base):
 # =============================================================================
 
 
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+_utcnow = utc_now  # backwards-compatible alias; the single clock is src.timeutil.utc_now
 
 
 class Facility(Base):
@@ -368,7 +334,7 @@ class Facility(Base):
     frame_unit: Mapped[str] = mapped_column(String(8), nullable=False, default="m", server_default="m")
     # Documents origin, axes, pose convention and the scene-unit -> metre factor.
     frame_note: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     __table_args__ = (CheckConstraint("frame_unit = 'm'", name="ck_facility_frame_unit_metre"),)
 
@@ -383,7 +349,7 @@ class Asset(Base):
     asset_type: Mapped[str] = mapped_column(String(32), nullable=False)  # validated text, not an enum
     external_id: Mapped[str] = mapped_column(String(128), nullable=False)  # e.g. "zone-1-row-1-rack-1"
     name: Mapped[str] = mapped_column(String(128), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
     retired_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
@@ -473,7 +439,7 @@ class Sensor(Base):
     external_id: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
     min_valid: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     max_valid: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
     retired_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (

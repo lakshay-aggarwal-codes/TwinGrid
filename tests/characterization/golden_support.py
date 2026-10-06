@@ -17,6 +17,7 @@ import contextlib
 import hashlib
 import itertools
 import json
+import os
 import platform
 import random
 import sys
@@ -34,6 +35,11 @@ REL_TOL = 1e-9  # roadmap T0 constraint 5: relative 1e-9 unless a value is docum
 ABS_TOL = 1e-12  # guards comparisons against exact zeros only
 
 FIXED_NOW = datetime(2026, 1, 1, 12, 30, 0)
+# T12: the production clock is src.timeutil.utc_now() (aware UTC). The same wall reading, frozen as an
+# aware UTC instant, with SITE_TIMEZONE=UTC during goldens, keeps every hour-of-day (and therefore every
+# numeric) identical to the pre-T12 goldens; only timestamp *fields* gain an explicit "+00:00".
+FIXED_NOW_UTC = datetime(2026, 1, 1, 12, 30, 0, tzinfo=timezone.utc)
+GOLDEN_SITE_TIMEZONE = "UTC"
 TICK_SEED = 20260101
 PHYSICS_VERSION_LABEL = "legacy-0 (implicit)"
 COMMIT_LABEL = "unknown \u2014 no .git in snapshot"
@@ -82,29 +88,25 @@ def _frozen_datetime_class() -> type:
     class _FrozenDateTime(datetime):
         @classmethod
         def now(cls, tz=None):  # noqa: D401 - mimic datetime.now
-            return FIXED_NOW
+            return FIXED_NOW_UTC if tz is None else FIXED_NOW_UTC.astimezone(tz)
 
     return _FrozenDateTime
 
 
 @contextlib.contextmanager
 def frozen_environment() -> Iterator[None]:
-    """Freeze the clock in the two production modules that call ``datetime.now()``
-    and force the carbon provider's flat-fallback branch. Restores everything on exit."""
+    """Freeze the single production clock (``src.timeutil``) at ``FIXED_NOW_UTC``, pin
+    ``SITE_TIMEZONE`` to UTC, and force the carbon provider's flat-fallback branch.
+    Restores everything on exit."""
     import src.carbon_provider as carbon_provider
-    import src.digital_twin as digital_twin
+    import src.timeutil as timeutil
 
     frozen = _frozen_datetime_class()
     patches = [
-        mock.patch.object(digital_twin, "datetime", frozen),
+        mock.patch.object(timeutil, "datetime", frozen),
+        mock.patch.dict(os.environ, {"SITE_TIMEZONE": GOLDEN_SITE_TIMEZONE}),
         mock.patch.object(carbon_provider, "CLEANED_CARBON_PATH", REPO_ROOT / "data" / "cleaned" / "__t0_absent__.csv"),
     ]
-    try:
-        import api.services.live_broadcast_service as live_broadcast_service
-
-        patches.append(mock.patch.object(live_broadcast_service, "datetime", frozen))
-    except Exception:  # pragma: no cover - API deps unavailable; twin-only goldens still work
-        pass
     with contextlib.ExitStack() as stack:
         for p in patches:
             stack.enter_context(p)
@@ -316,7 +318,7 @@ def metadata(scenario_id: str) -> dict[str, Any]:
         "python": platform.python_version(),
         "numpy": numpy.__version__,
         "generated_on": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "frozen_now": FIXED_NOW.isoformat(),
+        "frozen_now": FIXED_NOW_UTC.isoformat(),
         "tolerance": {"relative": REL_TOL, "absolute": ABS_TOL},
         "note": (
             "Informational metadata only: comparisons use the 'data' block. Hash mismatches are expected "

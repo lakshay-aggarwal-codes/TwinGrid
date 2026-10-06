@@ -3,8 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
-import time
-from datetime import datetime, timezone
 
 import numpy as np
 from fastapi import WebSocket
@@ -15,6 +13,7 @@ from api.services.twin_service import get_twin
 from database import get_session
 from models.db_models import SensorReading
 from src.digital_twin import INTERVAL_MINUTES
+from src.timeutil import to_site_local, utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -48,62 +47,18 @@ _water_stress_state = 0.2
 _WATER_STRESS_STEP = 0.02
 
 
-class ConnectionLimitExceeded(Exception):
-    """A WebSocket connection cap was hit. ``scope`` is ``"user"`` or ``"global"``."""
-
-    def __init__(self, scope: str) -> None:
-        if scope not in ("user", "global"):
-            raise ValueError(f"invalid connection-limit scope {scope!r}")
-        super().__init__(f"{scope} connection limit reached")
-        self.scope = scope
-
-
 class ConnectionManager:
     """Tracks active WebSocket connections and broadcasts to all of them."""
 
     def __init__(self) -> None:
         self._connections: set[WebSocket] = set()
-        # Cap bookkeeping (T4a). ``_owners`` maps each registered socket to its user;
-        # ``_per_user`` counts them. Deliberately separate from ``_connections``:
-        # broadcast() drops a socket whose send failed from ``_connections`` only, and
-        # that socket keeps counting against the caps until disconnect() runs.
-        self._owners: dict[WebSocket, str] = {}
-        self._per_user: dict[str, int] = {}
 
-    def connect(
-        self,
-        websocket: WebSocket,
-        user_id: str | None = None,
-        *,
-        max_per_user: int | None = None,
-        max_global: int | None = None,
-    ) -> None:
-        """Register ``websocket``. With a ``user_id`` and caps, raise
-        ``ConnectionLimitExceeded`` (and register nothing) if a cap would be exceeded.
-        There is no ``await`` here, so check-and-register is atomic on the event loop.
-        Called without ``user_id``/caps it behaves as it did before T4a."""
-        if user_id is not None:
-            if websocket in self._owners:
-                return
-            if max_per_user is not None and self._per_user.get(user_id, 0) >= max_per_user:
-                raise ConnectionLimitExceeded("user")
-            if max_global is not None and len(self._owners) >= max_global:
-                raise ConnectionLimitExceeded("global")
-            self._owners[websocket] = user_id
-            self._per_user[user_id] = self._per_user.get(user_id, 0) + 1
+    def connect(self, websocket: WebSocket) -> None:
         self._connections.add(websocket)
         logger.info("WebSocket connected (%d active)", len(self._connections))
 
     def disconnect(self, websocket: WebSocket) -> None:
-        """Idempotent; a socket that was never registered is a no-op."""
         self._connections.discard(websocket)
-        user_id = self._owners.pop(websocket, None)
-        if user_id is not None:
-            remaining = self._per_user.get(user_id, 0) - 1
-            if remaining > 0:
-                self._per_user[user_id] = remaining
-            else:
-                self._per_user.pop(user_id, None)
         logger.info("WebSocket disconnected (%d active)", len(self._connections))
 
     def has_connections(self) -> bool:
@@ -131,7 +86,11 @@ async def _tick() -> dict:
     """One shared simulation step, used by every connected client."""
     global _water_stress_state, _tick_seq
     twin = get_twin()
-    hour = datetime.now().hour + datetime.now().minute / 60
+    # T12: ONE clock read per tick; the diurnal hour is the SITE-local hour of that instant
+    # (SITE_TIMEZONE), and ts_ingest below is that same instant in aware UTC.
+    tick_now = utc_now()
+    site_now = to_site_local(tick_now)
+    hour = site_now.hour + site_now.minute / 60
     utilisation = float(np.clip(0.4 + 0.5 * np.sin((hour - 6) * np.pi / 12), 0, 1))
     outside_temp = 22 + 5 * np.sin(2 * np.pi * (hour - 14) / 24) + random.uniform(-1, 1)
     _water_stress_state = float(
@@ -174,7 +133,7 @@ async def _tick() -> dict:
         "schema_version": WS_SCHEMA_VERSION,
         "origin": WS_ORIGIN,
         "seq": _tick_seq,
-        "ts_ingest": datetime.fromtimestamp(time.time(), tz=timezone.utc),
+        "ts_ingest": tick_now,
         "sim_time": state_dict["timestamp"],
         "sim_time_scale": WS_SIM_TIME_SCALE,
         "interval_s": BROADCAST_INTERVAL_SECONDS,
