@@ -13,8 +13,11 @@ for seamless integration with Digital Twin cooling-mode arbitration.
 
 from __future__ import annotations
 
+import json
+import os
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Mapping, Optional
 
 import numpy as np
 import pandas as pd
@@ -77,6 +80,160 @@ SELECTED_COLUMNS = [
 
 # WRI Aqueduct sentinel values that denote missing / uncalculated values
 SENTINEL_VALUES = [-9999.0, 9999.0]
+
+
+# ---------------------------------------------------------------------------
+# T23 (roadmap §13.7): what the Aqueduct number is, and is not.
+#
+# It is WRI Aqueduct 4.0 (download Y2023M07D05) field ``bws_score``, an ANNUAL, COUNTRY-level index:
+# the mean of the country's sub-national rows, then min-max scaled over the whole table. It is an index, not
+# a physical quantity, and not availability, supply, consumption or a regulatory limit. The simulator's own
+# time variation is a SYNTHETIC scenario; the drought shield is triggered by that scenario, never by this
+# baseline. ``bws_raw == 9999`` means "arid / low water use" and is NOT read as high stress.
+# ---------------------------------------------------------------------------
+AQUEDUCT_DATASET = "WRI Aqueduct 4.0 baseline annual"
+AQUEDUCT_RELEASE = "Y2023M07D05"
+AQUEDUCT_FIELD = "bws_score"
+AQUEDUCT_GEOGRAPHY = "country"
+AQUEDUCT_AGGREGATION = "mean of the country's sub-national rows"
+AQUEDUCT_NORMALISATION = "min-max over all non-sentinel rows of the table"
+AQUEDUCT_TEMPORAL_ANNUAL = "annual"
+AQUEDUCT_TEMPORAL_MONTHLY = "monthly_climatology"
+AQUEDUCT_META_FILENAME = "water_stress_aqueduct.meta.json"
+WATER_STRESS_KIND_SCENARIO = "scenario"
+
+
+def baseline_meta(temporal: str = AQUEDUCT_TEMPORAL_ANNUAL, **extra: Any) -> dict[str, Any]:
+    """The ``water_stress_baseline_meta`` block (JSON-safe). Never claims more than country-level, annual."""
+    meta = {
+        "dataset": AQUEDUCT_DATASET,
+        "release": AQUEDUCT_RELEASE,
+        "field": AQUEDUCT_FIELD,
+        "geography": AQUEDUCT_GEOGRAPHY,
+        "aggregation": AQUEDUCT_AGGREGATION,
+        "normalisation": AQUEDUCT_NORMALISATION,
+        "temporal": temporal,
+        "meaning": "relative index (0-1 after scaling); not water availability, supply, consumption or a regulatory limit",
+    }
+    meta.update(extra)
+    return meta
+
+
+def sentinel_counts(df: pd.DataFrame) -> dict[str, int]:
+    """Counts of Aqueduct sentinels in a RAW (or cleaned) table: -9999 (missing), +9999 (arid / low use)."""
+    out: dict[str, int] = {"rows": int(len(df))}
+    for col in ("bws_score", "bws_raw"):
+        if col in df.columns:
+            num = pd.to_numeric(df[col], errors="coerce")
+            out[f"{col}_minus9999"] = int((num == -9999.0).sum())
+            out[f"{col}_plus9999"] = int((num == 9999.0).sum())
+            out[f"{col}_nan"] = int(num.isna().sum())
+    return out
+
+
+@dataclass(frozen=True)
+class AqueductBaseline:
+    """Country-level baseline context. ``value`` is None when it cannot be computed (reason in ``meta``)."""
+
+    value: Optional[float]
+    meta: dict[str, Any] = field(default_factory=dict)
+
+
+def _normalised_country_value(df: pd.DataFrame, country: str, column: str) -> tuple[Optional[float], dict[str, int]]:
+    num = pd.to_numeric(df[column], errors="coerce")
+    num = num.where(~num.isin(SENTINEL_VALUES))  # sentinels -> NaN, excluded from every mean and from min/max
+    counts = {
+        "table_rows": int(len(df)),
+        "sentinel_rows_excluded": int(pd.to_numeric(df[column], errors="coerce").isin(SENTINEL_VALUES).sum()),
+        "nan_rows": int(num.isna().sum()),
+    }
+    valid = num.dropna()
+    if valid.empty:
+        return None, counts
+    lo, hi = float(valid.min()), float(valid.max())
+    rows = df["name_0"].astype(str).str.strip().str.lower() == country.strip().lower()
+    counts["country_rows"] = int(rows.sum())
+    raw = num[rows].dropna()
+    counts["country_rows_used"] = int(len(raw))
+    if raw.empty:
+        return None, counts
+    if hi <= lo:
+        return 0.5, counts  # degenerate: constant table, cannot normalise
+    return float((raw.mean() - lo) / (hi - lo)), counts
+
+
+def country_baseline(df: pd.DataFrame, country: str, *, column: str = AQUEDUCT_FIELD) -> AqueductBaseline:
+    """Annual country baseline from a cleaned/raw Aqueduct table. Sentinel rows are excluded from all means."""
+    required = {"name_0", column}
+    if not required.issubset(df.columns):
+        return AqueductBaseline(
+            None,
+            baseline_meta(
+                country=country, available=False, reason=f"missing columns {sorted(required - set(df.columns))}"
+            ),
+        )
+    value, counts = _normalised_country_value(df, country, column)
+    if value is None:
+        return AqueductBaseline(
+            None,
+            baseline_meta(
+                country=country, available=False, reason="country absent or all rows sentinel/NaN", counts=counts
+            ),
+        )
+    return AqueductBaseline(value, baseline_meta(country=country, available=True, counts=counts))
+
+
+def monthly_climatology(df: pd.DataFrame, country: str, month_map: Mapping[int, str]) -> dict[int, Optional[float]]:
+    """Monthly climatological baseline: ``month_map`` {1..12: column name} is REQUIRED and must be explicit.
+
+    Each month is normalised exactly like the annual value (own table min-max). The result is a "monthly
+    climatological baseline" (typical month, not a forecast or a measurement of any specific year).
+    """
+    if sorted(month_map) != list(range(1, 13)):
+        raise ValueError("month_map must name a column for each month 1..12 explicitly")
+    missing = [c for c in month_map.values() if c not in df.columns]
+    if missing:
+        raise ValueError(f"month_map columns not in table: {missing}")
+    return {m: _normalised_country_value(df, country, col)[0] for m, col in month_map.items()}
+
+
+def load_country_baseline(
+    country: str,
+    *,
+    path: Optional[Path] = None,
+    temporal: Optional[str] = None,
+    month_map: Optional[Mapping[int, str]] = None,
+    month: Optional[int] = None,
+) -> AqueductBaseline:
+    """Baseline for ``country`` from the cleaned file. ``AQUEDUCT_TEMPORAL`` (env) selects ``annual`` (default)
+    or ``monthly_climatology``; the latter needs an explicit ``month_map`` and ``month`` (no implicit mapping).
+    """
+    from .base import get_cleaned_data_dir  # local: keeps import cost off the module-level path
+
+    temporal = (temporal or os.getenv("AQUEDUCT_TEMPORAL") or AQUEDUCT_TEMPORAL_ANNUAL).strip()
+    if temporal not in (AQUEDUCT_TEMPORAL_ANNUAL, AQUEDUCT_TEMPORAL_MONTHLY):
+        raise ValueError(f"AQUEDUCT_TEMPORAL must be 'annual' or 'monthly_climatology', got {temporal!r}")
+    src = Path(path) if path is not None else get_cleaned_data_dir() / "water_stress_aqueduct.csv"
+    if not src.exists():
+        return AqueductBaseline(
+            None, baseline_meta(temporal, country=country, available=False, reason=f"{src.name} not found")
+        )
+    df = pd.read_csv(src, low_memory=False)
+    if temporal == AQUEDUCT_TEMPORAL_ANNUAL:
+        return country_baseline(df, country)
+    if month_map is None or month is None or not 1 <= int(month) <= 12:
+        raise ValueError("monthly_climatology requires an explicit month_map and a month in 1..12")
+    value = monthly_climatology(df, country, month_map)[int(month)]
+    return AqueductBaseline(
+        value,
+        baseline_meta(
+            AQUEDUCT_TEMPORAL_MONTHLY,
+            country=country,
+            available=value is not None,
+            month=int(month),
+            month_map={int(k): v for k, v in month_map.items()},
+        ),
+    )
 
 
 def resolve_aqueduct_source(source_path: Optional[Path] = None) -> Path:
@@ -218,6 +375,13 @@ def ingest_aqueduct(
         overwrite=overwrite,
         logger=logger,
     )
+
+    # T23: record sentinel counts of the RAW table next to the cleaned file (the cleaned file has them as NaN).
+    counts = sentinel_counts(df_raw)
+    Path(output_path).with_name(AQUEDUCT_META_FILENAME).write_text(
+        json.dumps(baseline_meta(sentinel_counts=counts), indent=2, sort_keys=True), encoding="utf-8"
+    )
+    logger.info(f"Aqueduct sentinel counts (raw): {counts}")
 
     countries_count = sorted_df[sorted_df["name_0"] != ""]["name_0"].nunique()
     logger.info(

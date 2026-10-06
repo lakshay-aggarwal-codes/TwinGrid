@@ -102,52 +102,32 @@ def _load_real_weather(
 
 
 def _load_water_stress_baseline(country: str) -> float | None:
+    """Country-level Aqueduct baseline INDEX for `country` (annual, min-max normalised over the whole table),
+    or None if the cleaned file/country/score is unavailable. T23: delegates to
+    ``src.ingestion.water_stress_aqueduct.load_country_baseline`` (sentinels excluded and counted); the
+    value is context for the synthetic scenario, not site-level or real-time water availability.
     """
-    Load the real Aqueduct baseline water-stress score for `country`,
-    min-max normalized to [0, 1] across the whole Aqueduct table (so the
-    result is comparable regardless of Aqueduct's raw scoring scale).
-    Returns None if the cleaned file or country isn't available.
-    """
-    if not CLEANED_WATER_STRESS_PATH.exists():
+    from .ingestion.water_stress_aqueduct import load_country_baseline
+
+    result = load_country_baseline(country, path=CLEANED_WATER_STRESS_PATH, temporal="annual")
+    if result.value is None:
         logger.warning(
-            "%s not found -- run `python scripts/run_ingestion.py --only water_stress_aqueduct` "
-            "to use the real Aqueduct baseline. Falling back to a fully synthetic water_stress curve.",
+            "Aqueduct baseline unavailable for '%s' (%s); falling back to a fully synthetic water_stress curve. "
+            "Run `python scripts/run_ingestion.py --only water_stress_aqueduct` to (re)build %s.",
+            country,
+            result.meta.get("reason", "see meta"),
             CLEANED_WATER_STRESS_PATH,
         )
+        _LAST_BASELINE_META.clear()
+        _LAST_BASELINE_META.update(result.meta)
         return None
-    aqueduct = pd.read_csv(CLEANED_WATER_STRESS_PATH)
-    # water_stress_aqueduct.py's normalize_aqueduct_dataframe() writes the
-    # WRI Aqueduct 4.0 column names directly: "name_0" is the country name,
-    # "bws_score" is the baseline water-stress score (0-5). This function
-    # previously looked for "country"/"water_stress_score", which the
-    # ingestion module never produces -- that mismatch is what raised
-    # KeyError: 'country' here.
-    required = {"name_0", "bws_score"}
-    if not required.issubset(aqueduct.columns):
-        logger.warning(
-            "%s is missing expected columns %s (has %s); falling back to synthetic water_stress. "
-            "Re-run `python scripts/run_ingestion.py --only water_stress_aqueduct` to regenerate it.",
-            CLEANED_WATER_STRESS_PATH,
-            sorted(required - set(aqueduct.columns)),
-            list(aqueduct.columns),
-        )
-        return None
+    _LAST_BASELINE_META.clear()
+    _LAST_BASELINE_META.update(result.meta)
+    return result.value
 
-    country_rows = aqueduct[aqueduct["name_0"].str.lower() == country.lower()]
-    if country_rows.empty:
-        logger.warning(
-            "Country '%s' not found in %s; falling back to synthetic water_stress.", country, CLEANED_WATER_STRESS_PATH
-        )
-        return None
 
-    scores = aqueduct["bws_score"].dropna()
-    score_min, score_max = scores.min(), scores.max()
-    if pd.isna(score_min) or score_max <= score_min:
-        return 0.5  # degenerate case -- can't normalize a constant/all-NaN column
-    raw = country_rows["bws_score"].dropna().mean()
-    if pd.isna(raw):
-        return None  # this country's own score is missing (WRI sentinel / no data)
-    return float((raw - score_min) / (score_max - score_min))
+# Provenance of the last baseline lookup (T23); attached to the generated frame as ``df.attrs``.
+_LAST_BASELINE_META: dict = {}
 
 
 def _compute_water_stress(
@@ -248,6 +228,16 @@ def generate_sensor_data(
             water_stress_baseline,
         )
     water_stress = _compute_water_stress(n_intervals, timestamps, water_stress_baseline)
+    # T23 field provenance: the ``water_stress`` COLUMN is the synthetic SCENARIO (baseline level + seasonal
+    # cycle + injected drought episodes + noise). The Aqueduct baseline only sets its mean level.
+    water_stress_provenance = {
+        "water_stress": "scenario (synthetic; legacy name)",
+        "water_stress_kind": "scenario",
+        "water_stress_baseline": water_stress_baseline,
+        "water_stress_baseline_meta": dict(_LAST_BASELINE_META) if water_stress_baseline is not None else None,
+        "baseline_used_as": "mean level of the synthetic scenario" if water_stress_baseline is not None else "unused",
+        "synthetic_default_mean": None if water_stress_baseline is not None else 0.35,
+    }
 
     # 4. Inlet temp: cooled below outside, target ~22C with variation
     inlet_temp = 22 + 0.15 * (outside_temp - 25) + np.random.normal(0, 0.5, n_intervals)
@@ -351,6 +341,7 @@ def generate_sensor_data(
         spike = np.random.uniform(8, 15)
         df.loc[start:end, "server_outlet_temp_C"] += spike
 
+    df.attrs["water_stress_provenance"] = water_stress_provenance
     return df
 
 

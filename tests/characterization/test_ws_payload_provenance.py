@@ -20,6 +20,18 @@ from tests.characterization import golden_support as gs
 NEW_KEYS = {"schema_version", "origin", "seq", "ts_ingest", "sim_time", "sim_time_scale", "interval_s"}
 
 
+# T23 (roadmap 13.6/13.7): labels that say what the carbon and water-stress numbers are. Additive; no legacy key changes.
+T23_KEYS = {
+    "carbon_semantic",
+    "carbon_is_fallback",
+    "carbon_aggregation",
+    "water_stress_scenario",
+    "water_stress_kind",
+    "water_stress_baseline",
+    "water_stress_baseline_meta",
+}
+
+
 def _ticks(n: int = 5) -> list[dict]:
     async def go():
         with gs.live_tick_environment():
@@ -31,7 +43,7 @@ def _ticks(n: int = 5) -> list[dict]:
 def test_payload_gains_exactly_the_documented_keys():
     legacy = set(gs.load_golden("ws_tick_sequence")["data"]["key_set"])
     now = set(_ticks(1)[0])
-    assert now - legacy == NEW_KEYS | {"anomaly_status"}  # anomaly_status added by T3
+    assert now - legacy == NEW_KEYS | {"anomaly_status"} | T23_KEYS  # anomaly_status: T3; carbon/water labels: T23
     assert legacy <= now
 
 

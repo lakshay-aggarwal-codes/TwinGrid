@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import random
 
 import numpy as np
@@ -13,7 +14,9 @@ from api.services import anomaly_service, telemetry_window
 from api.services.twin_service import get_twin
 from database import get_session
 from models.db_models import SensorReading
+from src.carbon_provider import load_carbon_signal
 from src.digital_twin import INTERVAL_MINUTES
+from src.ingestion.water_stress_aqueduct import WATER_STRESS_KIND_SCENARIO, baseline_meta, load_country_baseline
 from src.timeutil import to_site_local, utc_now
 from src.versions import PHYSICS_V1
 
@@ -33,6 +36,36 @@ BROADCAST_INTERVAL_SECONDS = 3
 WS_SCHEMA_VERSION = 1
 WS_ORIGIN = "simulated"
 WS_SIM_TIME_SCALE = (INTERVAL_MINUTES * 60) / BROADCAST_INTERVAL_SECONDS
+
+# --- T23 labels (roadmap sections 13.6, 13.7) ----------------------------------
+# AQUEDUCT_COUNTRY: the country whose ANNUAL Aqueduct baseline index is shown as context. Country-level only.
+AQUEDUCT_COUNTRY_ENV = "AQUEDUCT_COUNTRY"
+DEFAULT_AQUEDUCT_COUNTRY = "India"
+_label_cache: dict | None = None
+
+
+def _labels() -> dict:
+    """Carbon and water-stress labels, computed once per process (files do not change while serving)."""
+    global _label_cache
+    if _label_cache is None:
+        sig = load_carbon_signal()
+        country = os.getenv(AQUEDUCT_COUNTRY_ENV, DEFAULT_AQUEDUCT_COUNTRY)
+        try:
+            base = load_country_baseline(country, temporal="annual")
+            value, meta = base.value, base.meta
+        except Exception:  # a broken optional file must not stop the live stream
+            logger.exception("Aqueduct baseline unavailable")
+            value, meta = None, baseline_meta(country=country, available=False, reason="load error")
+        _label_cache = {
+            "carbon_semantic": sig.semantic,
+            "carbon_is_fallback": sig.is_fallback,
+            "carbon_aggregation": sig.aggregation,
+            "carbon_signal": sig.basis(),
+            "water_stress_baseline": value,
+            "water_stress_baseline_meta": meta,
+        }
+    return _label_cache
+
 
 # Strictly +1 per tick per process (first tick is 1). Resets on process restart.
 _tick_seq = 0
@@ -170,8 +203,25 @@ async def _tick() -> dict:
             "detector_id": anomaly_service.DETECTOR_ID,
             "trained_on": anomaly_service.TRAINED_ON,
         }
+    labels = _labels()
+    water_labels = {
+        # ``water_stress`` (legacy key, unchanged value) IS the scenario: the loop's synthetic random walk.
+        "water_stress_scenario": state_dict.get("water_stress", water_stress),
+        "water_stress_kind": WATER_STRESS_KIND_SCENARIO,
+        "water_stress_baseline": labels["water_stress_baseline"],
+        "water_stress_baseline_meta": labels["water_stress_baseline_meta"],
+    }
     return to_jsonable(
-        {**state_dict, "carbon_data_is_real": twin.carbon_data_is_real, **provenance, "anomaly_status": anomaly_status}
+        {
+            **state_dict,
+            "carbon_data_is_real": twin.carbon_data_is_real,
+            "carbon_semantic": labels["carbon_semantic"],
+            "carbon_is_fallback": labels["carbon_is_fallback"],
+            "carbon_aggregation": labels["carbon_aggregation"],
+            **water_labels,
+            **provenance,
+            "anomaly_status": anomaly_status,
+        }
     )
 
 

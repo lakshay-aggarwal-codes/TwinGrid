@@ -29,5 +29,17 @@
     475.0,
     475.0
   ],
-  "patent_objective": "J = alpha*W + beta*E + gamma*C (C = carbon emissions; flat 475 gCO2/kWh fallback unless real carbon data is loaded)"
+  "patent_objective": "J = alpha*W + beta*E + gamma*C (C = carbon term under an ASSUMED intensity [semantic=constant_assumption, is_fallback=true]; not measured grid data)",
+  "carbon_signal": {
+    "semantic": "constant_assumption",
+    "is_fallback": true,
+    "aggregation": "constant",
+    "zone": null,
+    "source_version": "world-average assumption (IEA/Ember), not retrieved",
+    "license_ref": null,
+    "retrieved_at": null,
+    "site_timezone": "Asia/Kolkata",
+    "time_varying_signal": false,
+    "statement": "Carbon term present; the signal is an assumption (a flat assumed intensity), not measured grid data."
+  }
 }

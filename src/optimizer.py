@@ -24,7 +24,8 @@ import gymnasium as gym
 import numpy as np
 import pandas as pd
 
-from .carbon_provider import load_diurnal_carbon_intensity
+from .carbon_provider import _a, load_carbon_signal, signal_for_curve
+from .carbon_provider import carbon_basis as _carbon_basis_of
 from .digital_twin import (
     CHILLED_WATER_APPROACH_C,
     OUTLET_TEMP_MAX,
@@ -164,9 +165,14 @@ class DataCentreEnv(gym.Env):
         carbon_intensity_by_hour: np.ndarray | None = None,
         physics_version: str | None = None,
         sim_step_seconds: float | None = None,
+        carbon_basis: dict | None = None,
     ) -> None:
         """
         Initialise environment with patent objective weights.
+
+          carbon_basis: label of ``carbon_intensity_by_hour`` (``CarbonSignal.basis()``). A curve loaded here is
+                        labelled by the loader; a caller-supplied curve without a label is recorded as
+                        ``semantic="unknown", is_fallback=True`` (provenance not established).
 
           physics_version: twin physics the env runs on (default: the active version). Selects the action
                            range, the safety penalty (v1: whole SafetyEnvelope; legacy-0: outlet only) and
@@ -200,8 +206,13 @@ class DataCentreEnv(gym.Env):
         self._dt_h = step_s / 3600.0
 
         if carbon_intensity_by_hour is None:
-            carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
+            _sig = load_carbon_signal()
+            carbon_intensity_by_hour = _sig.curve_by_site_local_hour
+            carbon_basis = carbon_basis or _carbon_basis_of(_sig)
         self._carbon_intensity_by_hour = carbon_intensity_by_hour
+        self._carbon_basis = (
+            dict(carbon_basis) if carbon_basis else _carbon_basis_of(signal_for_curve(carbon_intensity_by_hour))
+        )
         # Normalisation ceiling for the carbon reward term: max possible
         # cooling power (150 kW, matching the existing cooling_norm range)
         # at the dirtiest hour in the real curve, over one 5-min interval --
@@ -372,6 +383,11 @@ class DataCentreEnv(gym.Env):
     def physics_version(self) -> str:
         return self._physics_version
 
+    @property
+    def carbon_basis(self) -> dict:
+        """Label of the carbon curve this env's reward uses (semantic, is_fallback, aggregation, ...)."""
+        return dict(self._carbon_basis)
+
     def reset(
         self,
         *,
@@ -472,6 +488,7 @@ class JointOptimizer:
         carbon_intensity_by_hour: np.ndarray | None = None,
         physics_version: str | None = None,
         sim_step_seconds: float | None = None,
+        carbon_basis: dict | None = None,
     ) -> None:
         self._alpha = alpha
         self._beta = beta
@@ -483,9 +500,19 @@ class JointOptimizer:
         )
         self._sim_step_seconds = sim_step_seconds
         if carbon_intensity_by_hour is None:
-            carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
+            _sig = load_carbon_signal()
+            carbon_intensity_by_hour = _sig.curve_by_site_local_hour
+            carbon_basis = carbon_basis or _carbon_basis_of(_sig)
         self._carbon_intensity_by_hour = carbon_intensity_by_hour
+        self._carbon_basis = (
+            dict(carbon_basis) if carbon_basis else _carbon_basis_of(signal_for_curve(carbon_intensity_by_hour))
+        )
         self._model = None
+
+    @property
+    def carbon_basis(self) -> dict:
+        """Label of the carbon curve used for training/evaluation (semantic, is_fallback, aggregation, ...)."""
+        return dict(self._carbon_basis)
 
     def _make_env(self, water_stress: float = 0.0) -> DataCentreEnv:
         return DataCentreEnv(
@@ -498,6 +525,20 @@ class JointOptimizer:
             carbon_intensity_by_hour=self._carbon_intensity_by_hour,
             physics_version=self._physics_version,
             sim_step_seconds=self._sim_step_seconds,
+            carbon_basis=self._carbon_basis,
+        )
+
+    def _objective_label(self) -> str:
+        """Writer label for config.json. Says "real grid carbon" ONLY if the signal is not a fallback."""
+        b = self._carbon_basis
+        if b.get("is_fallback", True):
+            return (
+                "J = alpha*W + beta*E + gamma*C (C = carbon term under an ASSUMED intensity "
+                f"[semantic={b.get('semantic', 'unknown')}, is_fallback=true]; not measured grid data)"
+            )
+        return (
+            f"J = alpha*W + beta*E + gamma*C (C = carbon term from a {b.get('aggregation')} of "
+            f"{_a(str(b.get('semantic')))}-intensity series [is_fallback=false]; modelled, not measured)"
         )
 
     @staticmethod
@@ -654,6 +695,7 @@ class JointOptimizer:
         drought = run_and_aggregate(drought_stress)
 
         return {
+            "carbon_signal": self.carbon_basis,  # T23: what the carbon numbers below are (semantic, is_fallback)
             "normal": normal,
             "drought": drought,
             "comparison": {
@@ -684,7 +726,8 @@ class JointOptimizer:
             "gamma": self._gamma,
             "seed": self._seed,
             "carbon_intensity_by_hour": self._carbon_intensity_by_hour.tolist(),
-            "patent_objective": "J = alpha*W + beta*E + gamma*C (C = real grid carbon emissions)",
+            "patent_objective": self._objective_label(),
+            "carbon_signal": self.carbon_basis,
             # T20: what this policy was trained under. A loader rejects an older/missing envelope version.
             "physics_version": self._physics_version,
             "sim_step_seconds": self._sim_step_seconds,
@@ -711,6 +754,7 @@ class JointOptimizer:
             gamma=config.get("gamma", 0.2),
             seed=config.get("seed"),
             carbon_intensity_by_hour=np.array(carbon_curve) if carbon_curve is not None else None,
+            carbon_basis=config.get("carbon_signal"),  # absent in pre-T23 artifacts -> labelled unknown/fallback
             physics_version=config.get("physics_version"),
             sim_step_seconds=config.get("sim_step_seconds"),
         )
