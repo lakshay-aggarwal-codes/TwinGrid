@@ -52,28 +52,33 @@ class TestDigitalTwinDroughtOverride:
 
 
 class TestDataCentreEnvDroughtOverride:
+    """T27: the drought rule lives in the shield (src/rl/safety_filter.py); the env applies it inside step()
+    and reports the executed action. The trigger is the water-stress SCENARIO variable."""
+
     @pytest.fixture
     def env(self):
         return DataCentreEnv(water_stress=0.9)
 
     def test_action_override_regardless_of_agents_choice(self, env):
-        """The agent's chosen mode must NOT matter once water_stress
-        exceeds the threshold -- this is the actual bug: previously the
-        agent's action always won, with no override at all."""
+        """The agent's chosen mode must NOT matter once the scenario exceeds the threshold."""
         env.reset()
         for mode_action in [0.0, 0.33, 0.66, 1.0]:  # sweeps all 4 discrete modes
             action = np.array([0.5, mode_action], dtype=np.float32)
-            _, mode = env._action_to_control(action)
-            assert (
-                mode == DROUGHT_OVERRIDE_MODE
-            ), f"Expected override to {DROUGHT_OVERRIDE_MODE} regardless of agent action {mode_action}, got {mode}"
+            _, _, _, _, info = env.step(action)
+            assert info["requested_mode"] == DROUGHT_OVERRIDE_MODE, (
+                f"Expected override to {DROUGHT_OVERRIDE_MODE} regardless of agent action {mode_action}, "
+                f"got {info['requested_mode']}"
+            )
+            assert info["shield_active"] is True and info["shield_flags"]["drought_triggered"] is True
+            _, mode = env._action_to_control(info["executed_action"])
+            assert mode == DROUGHT_OVERRIDE_MODE
 
     def test_no_override_below_threshold(self):
         env = DataCentreEnv(water_stress=0.1)
         env.reset()
         action = np.array([0.5, 1.0], dtype=np.float32)  # agent explicitly picks mode index 3
-        _, mode = env._action_to_control(action)
-        assert mode != DROUGHT_OVERRIDE_MODE or mode == "closed_loop"  # allow if agent happened to pick it anyway
+        _, _, _, _, info = env.step(action)
+        assert info["requested_mode"] == "hybrid" and info["shield_active"] is False
 
 
 class TestWaterStressObservability:
@@ -83,14 +88,14 @@ class TestWaterStressObservability:
         stress-conditioned behaviour if water_stress wasn't observable."""
         env = DataCentreEnv(water_stress=0.5)
         obs, _ = env.reset()
-        assert env.observation_space.shape == (9,)
-        assert obs.shape == (9,)
-        # Last observation index is water_stress (see _get_obs) -- normalised [0,1] range.
-        assert 0.0 <= obs[-1] <= 1.0
+        i = env.observation_names.index("water_stress_scenario")
+        assert env.observation_space.shape == obs.shape == (len(env.observation_names),)
+        assert 0.0 <= obs[i] <= 1.0  # normalised [0,1] range
 
     def test_water_stress_value_reflected_in_observation(self):
         low_env = DataCentreEnv(water_stress=0.0)
         high_env = DataCentreEnv(water_stress=1.0)
         low_obs, _ = low_env.reset()
         high_obs, _ = high_env.reset()
-        assert high_obs[-1] > low_obs[-1]
+        i = low_env.observation_names.index("water_stress_scenario")
+        assert high_obs[i] > low_obs[i]

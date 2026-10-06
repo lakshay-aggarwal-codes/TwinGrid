@@ -1,9 +1,7 @@
-"""Optimizer service (T19): admission through the ArtifactGate, never block the event loop, never train
-in a request.
+"""Optimizer service: load-first, never block the event loop, one-time fallback training.
 
-The PPO model is replaced by a small fake so these run without loading a real policy;
-DataCentreEnv, the service logic and the threading are real. With no admitted optimizer the
-service answers HTTP 503 ``model_unavailable`` -- that is the expected, documented state.
+The PPO model is replaced by a small fake so these run without training/loading a
+real policy; DataCentreEnv, the service logic and the threading are real.
 """
 
 import asyncio
@@ -11,11 +9,9 @@ import time
 
 import numpy as np
 import pytest
-from fastapi import HTTPException
 
 from api.services import optimization_service as svc
-from src import model_registry as mr
-from src.optimizer import JointOptimizer
+from src.optimizer import JointOptimizer, observation_schema
 
 
 class _Space:
@@ -26,7 +22,8 @@ class _Space:
 class FakeModel:
     """Stands in for a stable-baselines3 PPO model."""
 
-    def __init__(self, obs_shape=(9,), act_shape=(2,), delay=0.0):
+    def __init__(self, obs_shape=None, act_shape=(2,), delay=0.0):
+        obs_shape = obs_shape if obs_shape is not None else (len(observation_schema()),)  # env v2 (T27)
         self.observation_space = _Space(obs_shape)
         self.action_space = _Space(act_shape)
         self.delay = delay
@@ -50,7 +47,6 @@ def _optimizer_with(model) -> JointOptimizer:
 def _fresh_service_state(monkeypatch):
     monkeypatch.setattr(svc, "_optimizer", None)
     monkeypatch.setattr(svc, "_train_lock", asyncio.Lock())
-    monkeypatch.setattr(svc, "_last_unavailable_at", None)
 
 
 async def _max_loop_stall(coro):
@@ -79,36 +75,32 @@ class TestLoadSavedOptimizer:
         monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", tmp_path / "does-not-exist")
         assert svc._load_saved_optimizer() is None
 
-    def test_an_unlisted_zip_is_refused_by_the_gate_and_never_opened(self, tmp_path, monkeypatch):
+    def test_corrupt_model_returns_none_instead_of_raising(self, tmp_path, monkeypatch):
         (tmp_path / "ppo_model.zip").write_bytes(b"not a zip")
         monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", tmp_path)
-        opened = []
-        monkeypatch.setattr(JointOptimizer, "load", classmethod(lambda cls, path: opened.append(path)))
-        assert svc._load_saved_optimizer() is None
-        assert opened == []  # the service has no path that reads a PPO file
 
-    def test_the_shipped_quarantined_ppo_artifact_is_not_loadable(self, monkeypatch):
-        monkeypatch.delenv("ARTIFACT_VERIFY", raising=False)
-        monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", mr.PROJECT_ROOT / "models" / "optimizer")
+        def boom(cls, path):
+            raise ValueError("corrupt")
+
+        monkeypatch.setattr(JointOptimizer, "load", classmethod(boom))
         assert svc._load_saved_optimizer() is None
 
-    def test_the_gate_is_what_refuses_the_shipped_ppo_artifact(self, monkeypatch):
-        from src.artifacts import loaders
-
-        seen = []
-        real = loaders.authorize
-
-        def spy(paths, *, artifact):
-            try:
-                return real(paths, artifact=artifact)
-            except mr.ModelUnavailableError as exc:
-                seen.append(exc)
-                raise
-
-        monkeypatch.setattr(loaders, "authorize", spy)
-        monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", mr.PROJECT_ROOT / "models" / "optimizer")
+    def test_stale_8_dim_policy_is_rejected(self, tmp_path, monkeypatch):
+        """models/optimizer/ppo_model.zip in the repo was trained with 8-dim
+        observations; DataCentreEnv now emits 9. PPO.load() succeeds but predict()
+        would fail on the first request, so it must be treated as not loadable."""
+        (tmp_path / "ppo_model.zip").write_bytes(b"x")
+        monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", tmp_path)
+        stale = _optimizer_with(FakeModel(obs_shape=(8,)))
+        monkeypatch.setattr(JointOptimizer, "load", classmethod(lambda cls, path: stale))
         assert svc._load_saved_optimizer() is None
-        assert seen and isinstance(seen[0], mr.ArtifactNotPromoted | mr.ArtifactFormatNotAllowed)
+
+    def test_compatible_policy_is_accepted(self, tmp_path, monkeypatch):
+        (tmp_path / "ppo_model.zip").write_bytes(b"x")
+        monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", tmp_path)
+        good = _optimizer_with(FakeModel())
+        monkeypatch.setattr(JointOptimizer, "load", classmethod(lambda cls, path: good))
+        assert svc._load_saved_optimizer() is good
 
 
 class TestRunOptimization:
@@ -140,25 +132,25 @@ class TestRunOptimization:
         assert worst_stall < 0.25, f"event loop was blocked for {worst_stall:.3f}s"
 
     @pytest.mark.asyncio
-    async def test_no_admitted_optimizer_is_http_503_model_unavailable_and_nothing_is_trained(self, monkeypatch):
-        monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", mr.PROJECT_ROOT / "models" / "optimizer")
+    async def test_fallback_training_happens_once_in_a_thread(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", tmp_path / "missing")
+        trained = []
 
-        def must_not_train(self, *a, **k):
-            raise AssertionError("the API must never train in a request")
+        def fake_train(self, total_timesteps=0, **kwargs):
+            time.sleep(0.5)  # BLOCKING, like PPO.learn()
+            trained.append(total_timesteps)
+            self._model = FakeModel()
 
-        monkeypatch.setattr(JointOptimizer, "train", must_not_train)
-        with pytest.raises(HTTPException) as exc:
-            await svc.run_optimization(0.5, 0.3, 0.2, 0.0, 1)
-        assert exc.value.status_code == 503 and exc.value.detail == "model_unavailable"
+        monkeypatch.setattr(JointOptimizer, "train", fake_train)
+        monkeypatch.setattr(JointOptimizer, "__init__", lambda self, **kw: None)
 
-    @pytest.mark.asyncio
-    async def test_repeated_requests_do_not_re_evaluate_the_gate_every_time(self, monkeypatch):
-        calls = []
-        monkeypatch.setattr(svc, "_load_saved_optimizer", lambda: calls.append(1))
-        for _ in range(5):
-            with pytest.raises(HTTPException):
-                await svc._ensure_optimizer(0.5, 0.3, 0.2, 0.0)
-        assert len(calls) == 1  # rate-limited by MODEL_RETRY_INTERVAL_S: no log / counter flood
+        async def five_concurrent_first_requests():
+            return await asyncio.gather(*[svc.run_optimization(0.5, 0.3, 0.2, 0.0, 1) for _ in range(5)])
+
+        results, worst_stall = await _max_loop_stall(five_concurrent_first_requests())
+        assert trained == [svc.FALLBACK_TRAIN_TIMESTEPS]  # exactly once, despite 5 racing requests
+        assert all(len(rows) == svc.STEPS_PER_HOUR for rows, _ in results)
+        assert worst_stall < 0.25, f"training blocked the event loop for {worst_stall:.3f}s"
 
     @pytest.mark.asyncio
     async def test_warm_up_never_trains_and_never_raises(self, tmp_path, monkeypatch):
