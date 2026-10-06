@@ -46,6 +46,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.rate_limit import limiter
 from api.secrets import read_secret
+from api.startup_checks import check_jwt_secret
 from database import get_db
 from models.db_models import USER_ROLE_OPERATOR, USER_ROLE_VIEWER, RefreshToken, User
 
@@ -53,16 +54,9 @@ from models.db_models import USER_ROLE_OPERATOR, USER_ROLE_VIEWER, RefreshToken,
 # Config
 # -----------------------------------------------------------------------------
 
-SECRET_KEY = read_secret("JWT_SECRET_KEY")
-if not SECRET_KEY:
-    raise RuntimeError(
-        "JWT_SECRET_KEY (or JWT_SECRET_KEY_FILE) is not set. This app will not start "
-        'without it -- generate one with: python -c "import secrets; print(secrets.token_hex(32))" '
-        "and set it in your .env / deployment environment, or point JWT_SECRET_KEY_FILE at a "
-        "secrets-manager-mounted file. There is no default: a hardcoded fallback here would mean "
-        "every deployment that forgets to set this variable shares the same, publicly-visible "
-        "signing key."
-    )
+# Missing is fatal in every environment; a repo placeholder / short value is fatal in production
+# (rules in api/startup_checks.py -- this module only delegates).
+SECRET_KEY = check_jwt_secret(read_secret("JWT_SECRET_KEY"))
 ALGORITHM = "HS256"
 # Short-lived on purpose -- see module docstring. Was 60 minutes with no
 # refresh mechanism; now a stolen access token is only useful for 15 minutes.

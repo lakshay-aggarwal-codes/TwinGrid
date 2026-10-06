@@ -46,7 +46,8 @@ COPY --from=builder /venv /venv
 ENV PATH="/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000
+    PORT=8000 \
+    ENVIRONMENT=production
 
 # .dockerignore excludes realData/ (~3GB, no reason to ship inside an
 # image), the local venv, tests, docs, and the two abandoned frontends.
@@ -62,8 +63,9 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/healthz || exit 1
 
-# Release step + server. `alembic upgrade head` owns the schema (create_all is
-# dev-only, see database.init_db); set RUN_MIGRATIONS=0 to skip it, e.g. when
-# migrations run as a separate job. `sh -c` so $PORT (Railway/Render/Heroku) is
-# honoured; `exec` keeps uvicorn as PID 1 so it receives SIGTERM directly.
-CMD ["sh", "-c", "if [ \"${RUN_MIGRATIONS:-1}\" = \"1\" ]; then alembic upgrade head; fi && exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Startup validation FIRST (api/startup_checks.py): an unsafe production configuration exits non-zero here,
+# before migrations touch the database. Then the release step + server. `alembic upgrade head` owns the schema
+# (create_all is dev-only, see database.init_db); set RUN_MIGRATIONS=0 to skip it, e.g. when migrations run as a
+# separate job. `sh -c` so $PORT (Railway/Render/Heroku) is honoured; `exec` keeps uvicorn as PID 1 so it
+# receives SIGTERM directly.
+CMD ["sh", "-c", "python -m api.startup_checks && if [ \"${RUN_MIGRATIONS:-1}\" = \"1\" ]; then alembic upgrade head; fi && exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

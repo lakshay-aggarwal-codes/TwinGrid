@@ -4,17 +4,30 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      # Required, no default. Use a URL-safe value (letters/digits): it is embedded in DATABASE_URL below.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (in .env or the shell)}
       POSTGRES_DB: digital_twin
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Deliberately NOT published on a host port: only services on the compose network reach it.
+    # To inspect it from the host, run with the `debug-db` profile (see below).
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  debug-db:
+    # Opt-in: `docker compose --profile debug-db up -d debug-db` forwards 127.0.0.1:5432 (loopback ONLY) to
+    # the db service. Not started by default, so a plain `docker compose up` publishes no database port.
+    image: alpine/socat:1.8.0.0
+    profiles: ["debug-db"]
+    command: ["TCP-LISTEN:5432,fork,reuseaddr", "TCP:db:5432"]
+    ports:
+      - "127.0.0.1:5432:5432"
+    depends_on:
+      db:
+        condition: service_healthy
 
   redis:
     # Not published on a host port: only the backend and worker reach it, over
@@ -74,7 +87,11 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set (in .env or the shell)}
       OPERATOR_REGISTRATION_KEY: ${OPERATOR_REGISTRATION_KEY:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/digital_twin
+      # Safe by default: production unless explicitly overridden. In production the app refuses to start
+      # without a strong METRICS_TOKEN (see api/startup_checks.py); for local dev set ENVIRONMENT=development.
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (in .env or the shell)}@db:5432/digital_twin
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       ARTIFACT_VERIFY: ${ARTIFACT_VERIFY:-enforce}
     ports:

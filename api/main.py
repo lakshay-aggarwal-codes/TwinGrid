@@ -47,6 +47,7 @@ from api.routes import (
 )
 from api.services import optimization_service
 from api.services.live_broadcast_service import run_broadcast_loop
+from api.startup_checks import validate_startup_config
 from database import init_db
 
 
@@ -58,6 +59,7 @@ async def lifespan(app: FastAPI):
     The optimizer warm-up runs as a background task (loading PPO imports torch,
     which takes seconds) so it never delays the server becoming healthy.
     """
+    validate_startup_config()  # re-checked here: the environment may differ from import time
     setup_api_logging()
     await init_db()
     background_tasks = [
@@ -69,6 +71,8 @@ async def lifespan(app: FastAPI):
         task.cancel()
     await asyncio.gather(*background_tasks, return_exceptions=True)
 
+
+validate_startup_config()  # T13: refuse to build the app with unsafe production settings
 
 app = FastAPI(
     title=settings.APP_TITLE,
