@@ -19,6 +19,7 @@ Endpoints (unchanged from before the refactor):
 """
 
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -26,10 +27,11 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 
+from api import config
 from api.auth import router as auth_router
 from api.config import settings
 from api.errors import ErrorBoundaryMiddleware, rate_limit_exceeded_handler, register_exception_handlers
-from api.logging_config import setup_api_logging
+from api.logging_config import bind_log_context, setup_api_logging
 from api.middleware.body_limit import BodyLimitMiddleware
 from api.middleware.metrics import MetricsMiddleware
 from api.middleware.request_id import RequestIDMiddleware
@@ -44,37 +46,36 @@ from api.routes import (
     metrics_routes,
     optimization_routes,
     shadow_mode_routes,
-    telemetry_routes,
     websocket_routes,
 )
 from api.services import optimization_service
-from api.services.live_broadcast_service import run_broadcast_loop
-from api.startup_checks import validate_startup_config
+from api.services.live_broadcast_service import BROADCAST_INTERVAL_SECONDS, BROADCAST_LOOP_NAME, broadcast_once
+from api.supervisor import supervisor
 from database import init_db
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create DB tables, set up structured logging, and start the shared
-    live-broadcast loop on startup; cancel background tasks cleanly on shutdown.
+    """Create DB tables, set up structured logging, and start the supervised live-broadcast loop on startup;
+    on shutdown cancel everything and wait for it under a deadline (SHUTDOWN_DEADLINE_S, default 10 s).
 
     The optimizer warm-up runs as a background task (loading PPO imports torch,
     which takes seconds) so it never delays the server becoming healthy.
     """
-    validate_startup_config()  # re-checked here: the environment may differ from import time
     setup_api_logging()
     await init_db()
-    background_tasks = [
-        asyncio.create_task(run_broadcast_loop()),
-        asyncio.create_task(optimization_service.warm_up()),
-    ]
+    supervisor.start(BROADCAST_LOOP_NAME, broadcast_once, interval_s=BROADCAST_INTERVAL_SECONDS)
+    warm_up = asyncio.create_task(optimization_service.warm_up(), name="optimizer-warm-up")
     yield
-    for task in background_tasks:
-        task.cancel()
-    await asyncio.gather(*background_tasks, return_exceptions=True)
+    deadline = config.shutdown_deadline_s()
+    logger.info("Shutting down: cancelling background tasks (deadline %.0fs)", deadline)
+    warm_up.cancel()
+    await asyncio.wait({warm_up}, timeout=deadline)
+    await supervisor.shutdown(deadline)
+    logger.info("Shutdown complete")
 
-
-validate_startup_config()  # T13: refuse to build the app with unsafe production settings
 
 app = FastAPI(
     title=settings.APP_TITLE,
@@ -104,10 +105,11 @@ app.state.limiter = limiter
 register_exception_handlers(app)
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
-# T14: every HTTP route gets a request-rate window: the "general" scope here (routes with their own scope also
-# have that one), except the infrastructure probes in config.HTTP_LIMIT_EXEMPT_PATHS. The WebSocket router is
-# not included: its connection caps are enforced in websocket_routes / ConnectionManager.
-_GENERAL_LIMIT = [Depends(http_limit("general"))]
+# T14/T18: every HTTP route gets a request-rate window (the "general" scope; routes with their own scope also have
+# that one), except the probes in config.HTTP_LIMIT_EXEMPT_PATHS, and its log context (matched route, verified
+# user id). The WebSocket router is not included: its connection caps are enforced in websocket_routes /
+# ConnectionManager.
+_GENERAL_LIMIT = [Depends(http_limit("general")), Depends(bind_log_context)]
 app.include_router(auth_router, dependencies=_GENERAL_LIMIT)
 app.include_router(health_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(digital_twin_routes.router, dependencies=_GENERAL_LIMIT)
@@ -119,7 +121,6 @@ app.include_router(shadow_mode_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(esg_report_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(metrics_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(facility_routes.router, dependencies=_GENERAL_LIMIT)
-app.include_router(telemetry_routes.router, dependencies=_GENERAL_LIMIT)  # T17
 
 # Middleware: the LAST one added is the outermost. Request flow:
 # Metrics -> RequestID -> CORS -> ErrorBoundary -> BodyLimit -> routes.

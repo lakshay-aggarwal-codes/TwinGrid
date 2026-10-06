@@ -8,8 +8,6 @@ import logging
 import os
 from dataclasses import dataclass
 
-from api.startup_checks import StartupConfigError
-
 _logger = logging.getLogger(__name__)
 
 
@@ -22,10 +20,10 @@ def _parse_origins(raw: str | None) -> list[str]:
             # different frontend, and requests from it will be silently
             # rejected by the browser with a confusing CORS error) or, worse,
             # masks someone forgetting to set CORS_ALLOWED_ORIGINS at all.
-            raise StartupConfigError(
-                ["CORS_ALLOWED_ORIGINS"],
-                "CORS_ALLOWED_ORIGINS is not set and ENVIRONMENT=production. Set it explicitly to a "
-                "comma-separated list of allowed frontend origins, e.g. https://your-frontend.example.com",
+            raise RuntimeError(
+                "CORS_ALLOWED_ORIGINS is not set and ENVIRONMENT=production. Set it "
+                "explicitly to a comma-separated list of allowed frontend origins, e.g.: "
+                "CORS_ALLOWED_ORIGINS=https://your-frontend.example.com"
             )
         # Fallback to the one known deployed frontend rather than "*" --
         # still a single hardcoded default, but a scoped one, not a
@@ -44,22 +42,6 @@ class Settings:
 
 
 settings = Settings()
-
-
-# -----------------------------------------------------------------------------
-# Time contract (T12, roadmap §9.2) -- see docs/TIME_POLICY.md
-#
-# SITE_TIMEZONE: IANA zone used for wall-clock/diurnal logic (hour-of-day) via
-#   src.timeutil.to_site_local. Persisted instants are always aware UTC.
-# SIM_STEP_SECONDS: nominal simulated seconds per twin step (A-1). Declared
-#   here as the single configured value; the physics step itself is not driven
-#   by it in T12 (physics numerics are out of scope) -- a test pins it to
-#   src.digital_twin.INTERVAL_MINUTES * 60.
-# -----------------------------------------------------------------------------
-from src.timeutil import DEFAULT_SITE_TIMEZONE, site_timezone_name  # noqa: E402, F401  (re-exported)
-
-DEFAULT_SIM_STEP_SECONDS = 300
-SITE_TIMEZONE: str = site_timezone_name()  # import-time snapshot; timeutil re-reads the env per call
 
 
 # -----------------------------------------------------------------------------
@@ -147,12 +129,10 @@ RATE_LIMIT_DEFAULTS: dict[str, tuple[str, str]] = {
     "train_async": ("RATE_LIMIT_TRAIN_ASYNC", "5/minute"),
     # T14: applied (at include_router level, see api/main.py) to every route that has no scope of its own.
     "general": ("RATE_LIMIT_GENERAL", "120/minute"),
-    # T17: GET /api/telemetry/... (samples and gaps share one bucket per client).
-    "telemetry_read": ("RATE_LIMIT_TELEMETRY_READ", "60/minute"),
 }
 
-# Paths never rate limited (infrastructure probes). /healthz is today's liveness route; /livez is its planned name.
-HTTP_LIMIT_EXEMPT_PATHS: frozenset[str] = frozenset({"/livez", "/healthz"})
+# Paths never rate limited (infrastructure probes): /livez, /readyz and the deprecated /healthz alias.
+HTTP_LIMIT_EXEMPT_PATHS: frozenset[str] = frozenset({"/livez", "/readyz", "/healthz"})
 
 DEFAULT_TRUSTED_PROXY_HOPS = 1
 DEFAULT_MAX_QUERY_STRING_CHARS = 8192
@@ -186,14 +166,6 @@ def trusted_proxy_hops() -> int:
 def max_query_string_chars() -> int:
     """MAX_QUERY_STRING_CHARS (default 8192): longest query string accepted before 413."""
     return _env_positive_int("MAX_QUERY_STRING_CHARS", DEFAULT_MAX_QUERY_STRING_CHARS)
-
-
-def sim_step_seconds() -> int:
-    """Configured simulated seconds per step (env ``SIM_STEP_SECONDS``, default 300)."""
-    return _env_positive_int("SIM_STEP_SECONDS", DEFAULT_SIM_STEP_SECONDS)
-
-
-SIM_STEP_SECONDS: int = sim_step_seconds()
 
 
 # -----------------------------------------------------------------------------
@@ -246,96 +218,114 @@ def max_concurrent_compute() -> int:
 
 
 # -----------------------------------------------------------------------------
-# Telemetry (T17). Read on every call so a deployment or a test can change them without a reload.
+# Runtime reliability (T18): fan-out, supervision, readiness. Read on every call.
 # -----------------------------------------------------------------------------
 
-# The anomaly model's input cadence. A constant until T19 moves it into the model manifest (``input_cadence_s``).
-ANOMALY_INPUT_CADENCE_S = 300
+DEFAULT_WS_SEND_TIMEOUT_S = 2.0
+DEFAULT_WS_CLIENT_QUEUE_MAX = 1
+MAX_WS_CLIENT_QUEUE_MAX = 10
+# Backstop only: a client that has had this many frames dropped in a row without ONE completed send is closed
+# with 1013. tests/test_ws_fanout.py (memory test) drops 2000 frames on a stalled client and expects it to still be
+# registered, so the default sits well above that; a truly stalled client is evicted by the send timeout long before.
+DEFAULT_WS_MAX_CONSECUTIVE_DROPS = 5000
+DEFAULT_TICK_TIMEOUT_S = 10.0
+DEFAULT_SUPERVISOR_MAX_RESTARTS = 10
+DEFAULT_SUPERVISOR_RESTART_WINDOW_S = 600.0
+DEFAULT_SHUTDOWN_DEADLINE_S = 10.0
 
-DEFAULT_MQTT_QUEUE_MAX = 10_000
-DEFAULT_TELEMETRY_MAX_SPAN_H = 168
-TELEMETRY_WINDOW_SOURCES = ("store", "memory")
-
-# The five anomaly features (api.services.telemetry_window.FEATURE_ORDER) -- all direct measurands.
-TELEMETRY_FEATURES: tuple[str, ...] = (
-    "water_flow_lpm",
-    "water_pressure_bar",
-    "server_outlet_temp_C",
-    "it_power_kw",
-    "humidity_pct",
-)
-
-
-def telemetry_store_enabled() -> bool:
-    """TELEMETRY_STORE_ENABLED (default true). ``false`` is the rollback switch: producers write the legacy
-    ``sensor_readings`` table only and nothing is written to ``telemetry_sample``."""
-    return os.getenv("TELEMETRY_STORE_ENABLED", "true").strip().lower() not in {"0", "false", "no", "off"}
+# Contract names (isolated / sequential) and the names tests/test_ws_fanout.py already uses (concurrent / serial).
+_BROADCAST_MODES = {
+    "isolated": "concurrent",
+    "concurrent": "concurrent",
+    "sequential": "serial",
+    "serial": "serial",
+}
 
 
-def telemetry_window_source() -> str:
-    """TELEMETRY_WINDOW_SOURCE: ``store`` (default; window built from stored samples) or ``memory`` (rollback: the
-    in-process ring buffer). Anything else falls back to ``store`` with a warning, never to the weaker source."""
-    raw = os.getenv("TELEMETRY_WINDOW_SOURCE", "store").strip().lower()
-    if raw in TELEMETRY_WINDOW_SOURCES:
-        return raw
-    _logger.warning("TELEMETRY_WINDOW_SOURCE=%r is not one of %s; using 'store'", raw, TELEMETRY_WINDOW_SOURCES)
-    return "store"
+def _first_env(*names: str) -> tuple[str, str] | None:
+    for name in names:
+        raw = os.getenv(name)
+        if raw is not None and raw.strip():
+            return name, raw.strip()
+    return None
 
 
-def telemetry_max_span_h() -> int:
-    """TELEMETRY_MAX_SPAN_H (default 168): longest ``to - from`` the read API accepts."""
-    return _env_positive_int("TELEMETRY_MAX_SPAN_H", DEFAULT_TELEMETRY_MAX_SPAN_H)
-
-
-def telemetry_facility_id() -> int:
-    """TELEMETRY_FACILITY_ID (default 1): the facility whose facility-level sensors feed the anomaly window
-    (``fac<id>.<measurand>``, see scripts/seed_facility.py)."""
-    return _env_positive_int("TELEMETRY_FACILITY_ID", 1)
-
-
-def telemetry_feature_sensors() -> dict[str, str]:
-    """feature name -> sensor ``external_id`` for the five anomaly features.
-
-    Default ``fac<TELEMETRY_FACILITY_ID>.<feature>``. Override with TELEMETRY_FEATURE_SENSORS, a JSON object
-    mapping feature -> external_id (must cover exactly the five features, else the default is used and a warning
-    is logged; a partial mapping must never silently score a different sensor).
-    """
-    default = {f: f"fac{telemetry_facility_id()}.{f}" for f in TELEMETRY_FEATURES}
-    raw = os.getenv("TELEMETRY_FEATURE_SENSORS")
-    if raw is None or not raw.strip():
+def _positive_float_from(names: tuple[str, ...], default: float) -> float:
+    found = _first_env(*names)
+    if found is None:
         return default
+    name, raw = found
     try:
-        import json
-
-        mapping = json.loads(raw)
-        if (
-            isinstance(mapping, dict)
-            and set(mapping) == set(TELEMETRY_FEATURES)
-            and all(isinstance(v, str) and v for v in mapping.values())
-        ):
-            return {f: mapping[f] for f in TELEMETRY_FEATURES}
+        value = float(raw)
     except ValueError:
-        pass
-    _logger.warning(
-        "TELEMETRY_FEATURE_SENSORS is not a JSON object covering exactly %s; using the default", TELEMETRY_FEATURES
+        value = 0.0
+    if not 0 < value < float("inf"):
+        _logger.warning("%s=%r is not a positive number; using default %s", name, raw, default)
+        return default
+    return value
+
+
+def _positive_int_from(names: tuple[str, ...], default: int, *, maximum: int | None = None) -> int:
+    found = _first_env(*names)
+    if found is None:
+        return default
+    name, raw = found
+    try:
+        value = int(raw)
+    except ValueError:
+        value = 0
+    if value <= 0:
+        _logger.warning("%s=%r is not a positive integer; using default %d", name, raw, default)
+        return default
+    if maximum is not None and value > maximum:
+        _logger.warning("%s=%d is above the maximum %d; using %d", name, value, maximum, maximum)
+        return maximum
+    return value
+
+
+def broadcast_mode() -> str:
+    """BROADCAST_MODE: ``isolated`` (default; also ``concurrent``) or ``sequential`` (also ``serial``, the rollback).
+    Returns the internal name, ``concurrent`` or ``serial``; anything unknown means ``concurrent``."""
+    raw = os.getenv("BROADCAST_MODE", "").strip().lower()
+    return _BROADCAST_MODES.get(raw, "concurrent")
+
+
+def ws_send_timeout_s() -> float:
+    """WS_SEND_TIMEOUT_S (alias BROADCAST_SEND_TIMEOUT_SECONDS), default 2.0: one frame must be sent within it."""
+    return _positive_float_from(("WS_SEND_TIMEOUT_S", "BROADCAST_SEND_TIMEOUT_SECONDS"), DEFAULT_WS_SEND_TIMEOUT_S)
+
+
+def ws_client_queue_max() -> int:
+    """WS_CLIENT_QUEUE_MAX (alias BROADCAST_QUEUE_DEPTH), default 1, at most 10: frames waiting per client."""
+    return _positive_int_from(
+        ("WS_CLIENT_QUEUE_MAX", "BROADCAST_QUEUE_DEPTH"), DEFAULT_WS_CLIENT_QUEUE_MAX, maximum=MAX_WS_CLIENT_QUEUE_MAX
     )
-    return default
 
 
-def mqtt_queue_max() -> int:
-    """MQTT_QUEUE_MAX (default 10000): bound of the in-process MQTT queue; overflow drops the OLDEST message."""
-    return _env_positive_int("MQTT_QUEUE_MAX", DEFAULT_MQTT_QUEUE_MAX)
+def ws_max_consecutive_drops() -> int:
+    """WS_MAX_CONSECUTIVE_DROPS (default 5000): consecutive dropped frames before a client is closed with 1013."""
+    return _positive_int_from(("WS_MAX_CONSECUTIVE_DROPS",), DEFAULT_WS_MAX_CONSECUTIVE_DROPS)
 
 
-def mqtt_tls_enabled() -> bool:
-    """MQTT_TLS (default false): connect to the broker over TLS (system CA bundle)."""
-    return os.getenv("MQTT_TLS", "false").strip().lower() in _TRUE_VALUES
+def tick_timeout_s() -> float:
+    """TICK_TIMEOUT_S (default 10): wall-clock budget of one supervised tick (a hung tick is cancelled)."""
+    return _positive_float_from(("TICK_TIMEOUT_S",), DEFAULT_TICK_TIMEOUT_S)
 
 
-def mqtt_credentials() -> tuple[str | None, str | None]:
-    """(MQTT_USERNAME, MQTT_PASSWORD); the password may come from MQTT_PASSWORD_FILE. Blank -> None."""
-    from api.secrets import read_secret
+def supervisor_max_restarts() -> int:
+    """SUPERVISOR_MAX_RESTARTS (default 10) per SUPERVISOR_RESTART_WINDOW_S (default 600): more means give up."""
+    return _positive_int_from(("SUPERVISOR_MAX_RESTARTS",), DEFAULT_SUPERVISOR_MAX_RESTARTS)
 
-    user = (os.getenv("MQTT_USERNAME") or "").strip() or None
-    password = (read_secret("MQTT_PASSWORD") or "").strip() or None
-    return user, password
+
+def supervisor_restart_window_s() -> float:
+    return _positive_float_from(("SUPERVISOR_RESTART_WINDOW_S",), DEFAULT_SUPERVISOR_RESTART_WINDOW_S)
+
+
+def shutdown_deadline_s() -> float:
+    """SHUTDOWN_DEADLINE_S (default 10): background tasks get this long to finish after cancel."""
+    return _positive_float_from(("SHUTDOWN_DEADLINE_S",), DEFAULT_SHUTDOWN_DEADLINE_S)
+
+
+def readyz_check_schema() -> bool:
+    """READYZ_CHECK_SCHEMA (default true). ``false`` skips the Alembic-head check (create_all-built dev databases)."""
+    return os.getenv("READYZ_CHECK_SCHEMA", "true").strip().lower() not in {"0", "false", "no", "off"}
