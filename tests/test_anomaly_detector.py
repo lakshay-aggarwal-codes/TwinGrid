@@ -8,7 +8,7 @@ DataFrame passed to it needs all five, plus an 'anomaly' column for training
 
 Real API, for reference: detect() returns a TUPLE (error_scores, alerts);
 evaluate() returns precision/recall/f1/confusion_matrix; save()/load() work on
-a DIRECTORY (model.keras + scaler.joblib + config.json) and load() is a
+a DIRECTORY (model.keras + scaler.json + config.json) and load() is a
 classmethod. Most internal state is private (_seq_len, _percentile, ...);
 only `threshold` is a public property.
 """
@@ -277,14 +277,16 @@ class TestAnomalyDetector:
         with pytest.raises(FileNotFoundError):
             AnomalyDetector.load(temp_data_dir / "does_not_exist")
 
-    def test_save_load_roundtrip(self, trained, temp_data_dir):
+    def test_save_load_roundtrip(self, trained, temp_data_dir, monkeypatch):
         """save() writes a directory; load() is a classmethod returning a
         ready-to-use detector that scores identically."""
+        monkeypatch.setenv("ARTIFACT_VERIFY", "off")  # a scratch dir has no registry entry; the gate has its own tests
         model_dir = temp_data_dir / "anomaly_detector"
         trained.save(model_dir)
 
         assert (model_dir / "model.keras").exists()
-        assert (model_dir / "scaler.joblib").exists()
+        assert (model_dir / "scaler.json").exists()
+        assert not (model_dir / "scaler.joblib").exists()
         config = json.loads((model_dir / "config.json").read_text())
         assert config["threshold"] == trained.threshold
         assert config["seq_len"] == 12

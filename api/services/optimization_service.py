@@ -1,11 +1,18 @@
 """Optimizer singleton + business logic for POST /api/optimize.
 
-Nothing in here may block the event loop: PPO loading, PPO training and the
-per-step ``predict()`` rollout are all synchronous, CPU-bound work, so each one
-runs in a worker thread (``asyncio.to_thread``). Otherwise a single
-``/api/optimize`` call would freeze every other request -- including
-``/healthz``, which would make an orchestrator's health check restart the
-container mid-request.
+Nothing in here may block the event loop: model admission and the per-step ``predict()`` rollout
+are synchronous, CPU-bound work, so each one runs in a worker thread (``asyncio.to_thread``).
+Otherwise a single ``/api/optimize`` call would freeze every other request -- including
+``/healthz``, which would make an orchestrator's health check restart the container mid-request.
+
+T19: this module no longer loads a PPO file and no longer trains anything in a request. The API
+process is locked to the ``api`` artifact profile, whose format allow-list is json / npz / keras;
+an SB3 ``.zip`` (a pickle container) is not loadable here, and the shipped PPO artifact is
+``quarantined`` in the registry anyway. So ``/api/optimize`` answers ``503 model_unavailable``
+until a policy exists in a safe format AND is ``promoted``. That is the expected, documented
+state -- not a bug. The 503 is rate-limited internally (one gate evaluation per
+``MODEL_RETRY_INTERVAL_S``) so a client hammering the endpoint cannot flood the logs or the
+``model_load_failures_total`` counter.
 """
 
 from __future__ import annotations
@@ -13,29 +20,34 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
+from fastapi import HTTPException, status
 
-from api.middleware.metrics import MODEL_INFERENCE_COUNT
-from src.model_registry import ModelUnavailableError, ensure_verified
+from api.middleware.metrics import MODEL_INFERENCE_COUNT, registry
+from src.artifacts import loaders
 from src.optimizer import DataCentreEnv, JointOptimizer
 
 logger = logging.getLogger(__name__)
 
+# The API process may never load a pickle container. Lock the artifact profile for the life of the
+# process (ARTIFACT_PROFILE can no longer change it) and publish the artifact metrics.
+loaders.lock_profile("api")
+loaders.bind_prometheus(registry)
+
+MODEL_UNAVAILABLE_DETAIL = "model_unavailable"
+MODEL_RETRY_INTERVAL_S = 30.0
+
 OPTIMIZER_MODEL_PATH = Path(os.getenv("OPTIMIZER_MODEL_PATH", "models/optimizer"))
 
 STEPS_PER_HOUR = 12
-# T14: nothing in this module trains. Real training is `python notebooks/train_all.py`, or the
-# POST /api/optimize/train_async RQ job (src/task_jobs.py).
 
 _optimizer: Optional[JointOptimizer] = None
-_train_lock = asyncio.Lock()  # name kept: serialises the one-time load
-
-
-class OptimizerUnavailableError(RuntimeError):
-    """No loadable, verified PPO model exists. The API maps this to 503 ``model_unavailable``."""
+_train_lock = asyncio.Lock()  # name kept for compatibility: serialises the one-time admission check
+_last_unavailable_at: Optional[float] = None
 
 
 def get_optimizer() -> Optional[JointOptimizer]:
@@ -44,82 +56,71 @@ def get_optimizer() -> Optional[JointOptimizer]:
 
 
 def _load_saved_optimizer() -> Optional[JointOptimizer]:
-    """BLOCKING. Load OPTIMIZER_MODEL_PATH; return None if it is missing, fails artifact verification
-    (src/model_registry.ensure_verified, ARTIFACT_VERIFY mode), unloadable, or was trained for a different
-    observation/action space.
+    """BLOCKING. Admit the saved optimizer, or return None.
 
-    The shape check matters: PPO.load() succeeds for any well-formed zip, and
-    a policy trained against an older env (e.g. 8-dim observations, while
-    DataCentreEnv now emits 9) only fails later, inside predict(), on the
-    first request. Treating it as "not loadable" makes us retrain instead.
+    The PPO artifact is run through the ArtifactGate (status, integrity, compatibility, format).
+    In the ``api`` profile an SB3 ``.zip`` is refused at the format check even if every other
+    check passes, so no PPO file is ever opened by this process; the failure is counted in
+    ``model_load_failures_total{reason}`` by the gate. Returns None (never raises) so startup
+    continues and the feature reports itself unavailable.
     """
-    if not (OPTIMIZER_MODEL_PATH / "ppo_model.zip").exists():
+    config, weights = OPTIMIZER_MODEL_PATH / "config.json", OPTIMIZER_MODEL_PATH / "ppo_model.zip"
+    if not weights.exists():
         logger.info("No saved optimizer at %s", OPTIMIZER_MODEL_PATH)
         return None
     try:
-        ensure_verified(
-            [OPTIMIZER_MODEL_PATH / "ppo_model.zip", OPTIMIZER_MODEL_PATH / "config.json"], artifact="PPO optimizer"
-        )
-    except ModelUnavailableError as exc:
-        logger.error("PPO optimizer not loaded: %s", exc.reason)
+        loaders.authorize([config, weights], artifact="ppo_optimizer")
+    except loaders.ModelUnavailableError as exc:
+        logger.warning("Optimizer unavailable: %s", exc.reason)
         return None
-    try:
-        loaded = JointOptimizer.load(OPTIMIZER_MODEL_PATH)
     except Exception:
-        logger.warning("Could not load saved optimizer from %s", OPTIMIZER_MODEL_PATH, exc_info=True)
+        logger.warning("Optimizer admission check failed", exc_info=True)
         return None
+    # Reached only if a future task registers a promoted policy in an API-loadable format AND adds
+    # the loader for it. Until then the API has no way to construct a JointOptimizer from disk.
+    logger.error("Optimizer artifact passed the gate but this service has no safe loader for it; ignoring it")
+    loaders.record_load_failure("ppo_optimizer", "load_error")
+    return None
 
-    env = DataCentreEnv()
-    try:
-        expected_obs, expected_act = env.observation_space.shape, env.action_space.shape
-    finally:
-        env.close()
-    model = loaded._model
-    if model.observation_space.shape != expected_obs or model.action_space.shape != expected_act:
-        logger.warning(
-            "Saved optimizer at %s is incompatible with the current DataCentreEnv "
-            "(model obs/action %s/%s, env %s/%s) -- ignoring it. Re-run "
-            "`python notebooks/train_all.py` to regenerate models/optimizer.",
-            OPTIMIZER_MODEL_PATH,
-            model.observation_space.shape,
-            model.action_space.shape,
-            expected_obs,
-            expected_act,
-        )
-        return None
-    logger.info("Loaded optimizer from %s", OPTIMIZER_MODEL_PATH)
-    return loaded
+
+def _raise_model_unavailable() -> None:
+    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=MODEL_UNAVAILABLE_DETAIL)
 
 
 async def warm_up() -> None:
-    """Best-effort load of the saved model at startup so the first
-    /api/optimize call doesn't pay for importing torch + loading weights.
-    Never trains, and never raises."""
-    global _optimizer
+    """Best-effort admission check at startup. Never trains, never raises."""
+    global _optimizer, _last_unavailable_at
     try:
         async with _train_lock:
             if _optimizer is None:
                 _optimizer = await asyncio.to_thread(_load_saved_optimizer)
+                if _optimizer is None:
+                    _last_unavailable_at = time.monotonic()
     except asyncio.CancelledError:
         raise
     except Exception:
-        logger.exception("Optimizer warm-up failed -- it will be loaded on first use")
+        logger.exception("Optimizer warm-up failed -- /api/optimize will report model_unavailable")
 
 
-async def _ensure_optimizer(
-    alpha: float = 0.5, beta: float = 0.3, gamma: float = 0.2, water_stress: float = 0.0
-) -> Optional[JointOptimizer]:
-    """The loaded optimizer, loading the saved model once (under the lock, in a thread) if needed.
+async def _ensure_optimizer(alpha: float, beta: float, gamma: float, water_stress: float) -> JointOptimizer:
+    """The admitted optimizer, else HTTP 503 ``model_unavailable``. Never trains in a request.
 
-    Returns None when no verified, compatible model exists. NEVER trains (T14): training inside a request let
-    one call occupy a worker for minutes. The arguments are accepted only for call-site compatibility.
+    ``alpha``/``beta``/``gamma``/``water_stress`` are unused now (they fed the removed fallback
+    training) and kept so existing callers keep working.
     """
-    global _optimizer
+    global _optimizer, _last_unavailable_at
     if _optimizer is not None:
         return _optimizer
     async with _train_lock:
+        if _optimizer is not None:
+            return _optimizer
+        now = time.monotonic()
+        if _last_unavailable_at is not None and now - _last_unavailable_at < MODEL_RETRY_INTERVAL_S:
+            _raise_model_unavailable()
+        _optimizer = await asyncio.to_thread(_load_saved_optimizer)
         if _optimizer is None:
-            _optimizer = await asyncio.to_thread(_load_saved_optimizer)
+            _last_unavailable_at = time.monotonic()
+            _raise_model_unavailable()
         return _optimizer
 
 
@@ -163,17 +164,16 @@ async def run_optimization(
     """
     Run RL optimization, returning (raw_results, summary).
 
+    Raises HTTP 503 ``model_unavailable`` when no admitted optimizer exists (see module docstring).
+
     Concurrency note: the rollout always uses a FRESH DataCentreEnv built from
     this call's own alpha/beta/gamma -- so per-request results are correctly
     isolated even under concurrent requests. The only shared mutable state is
-    whether the optimizer's model has been loaded yet; ``_train_lock`` makes
-    sure only one concurrent request ever does that one-time work.
-    Raises OptimizerUnavailableError if there is no verified model (never trains).
+    whether the optimizer has been admitted yet; ``_train_lock`` makes sure
+    only one concurrent request ever evaluates that.
     Results still need api.serialization.to_jsonable before being stored or
     returned.
     """
     optimizer = await _ensure_optimizer(alpha, beta, gamma, water_stress)
-    if optimizer is None:
-        raise OptimizerUnavailableError("no loadable verified optimizer model")
     MODEL_INFERENCE_COUNT.labels(model="ppo_optimizer").inc()
     return await asyncio.to_thread(_rollout, optimizer, alpha, beta, gamma, water_stress, hours)

@@ -14,8 +14,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from .artifacts import loaders, scaler_io
 from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
-from .model_registry import ensure_verified
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 _tf = None
 _keras = None
 _sklearn = None
-_joblib = None
 
 
 def _get_tf():
@@ -59,18 +58,6 @@ def _get_sklearn():
         except ImportError as e:
             raise ImportError("scikit-learn required. pip install scikit-learn") from e
     return _sklearn
-
-
-def _get_joblib():
-    global _joblib
-    if _joblib is None:
-        try:
-            import joblib
-
-            _joblib = joblib
-        except ImportError as e:
-            raise ImportError("joblib required. pip install joblib") from e
-    return _joblib
 
 
 # Feature columns for anomaly detection (5 features)
@@ -400,7 +387,7 @@ class AnomalyDetector:
         Save model, scaler, and threshold to directory.
 
         Args:
-            path: Directory path (creates model.keras, scaler.joblib, config.json).
+            path: Directory path (creates model.keras, scaler.json, config.json).
         """
         if not self._is_trained:
             raise NotTrainedError("Detector must be trained before saving.")
@@ -409,7 +396,7 @@ class AnomalyDetector:
         path.mkdir(parents=True, exist_ok=True)
 
         self._model.save(str(path / "model.keras"))
-        _get_joblib().dump(self._scaler, path / "scaler.joblib")
+        scaler_io.dump_scaler_json(self._scaler, path / "scaler.json")
         (path / "config.json").write_text(
             json.dumps(
                 {
@@ -429,27 +416,26 @@ class AnomalyDetector:
         Load model, scaler, and threshold from directory.
 
         Args:
-            path: Directory containing model.keras, scaler.joblib, config.json.
+            path: Directory containing model.keras, scaler.json, config.json.
         """
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Path not found: {path}")
 
-        # Verify BEFORE reading: joblib.load unpickles the scaler, keras loads the model.
-        ensure_verified(
-            [path / "config.json", path / "model.keras", path / "scaler.joblib"], artifact="anomaly_detector"
-        )
-        keras = _get_keras()
-        joblib = _get_joblib()
+        # One gate for all three files, BEFORE any of them is read (status, integrity, compatibility,
+        # format). Every read below goes through src/artifacts/loaders.py: JSON config, JSON scaler,
+        # Keras with safe_mode=True and compile=False. No pickle anywhere.
+        name = "anomaly_detector"
+        grant = loaders.authorize([path / "config.json", path / "model.keras", path / "scaler.json"], artifact=name)
 
-        config = json.loads((path / "config.json").read_text())
+        config = loaders.load_json(path / "config.json", artifact=name, grant=grant)
         detector = cls(
             seq_len=config.get("seq_len", SEQ_LEN),
             feature_columns=config.get("feature_columns", FEATURE_COLUMNS),
             percentile=config.get("percentile", 95.0),
         )
-        detector._model = keras.models.load_model(str(path / "model.keras"))
-        detector._scaler = joblib.load(path / "scaler.joblib")
+        detector._model = loaders.load_keras_model(path / "model.keras", artifact=name, grant=grant)
+        detector._scaler = loaders.load_scaler(path / "scaler.json", artifact=name, grant=grant)
         detector._threshold = config["threshold"]
         detector._is_trained = True
 

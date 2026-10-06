@@ -1,128 +1,312 @@
-[
-  {
-    "name": "forecaster",
-    "version": "20260927T142935Z",
-    "trained_at": "2026-09-27T14:29:35.613866+00:00",
-    "metrics": {
-      "rmse": 0.5231534242630005,
-      "mae": 0.4206322729587555
-    },
-    "data_source": "data/raw/sensor_data.csv",
-    "artifact_path": "models/forecaster/thermal.keras",
-    "params": {
-      "seq_len": 12,
-      "horizon": 6,
-      "train_ratio": 0.8,
-      "epochs": 30,
-      "patience": 8
-    },
-    "python": "3.12.10",
-    "manifest_version": 1,
-    "relative_path": "models/forecaster/thermal.keras",
-    "sha256": "621d99d9b314986dd64e60459b381b692bcf7c06034414210581d59ecf55ca5d",
-    "size": 428865,
-    "files": {
-      "models/forecaster/thermal.keras": {
-        "sha256": "0ef2bf573e29da05298e6fe9446fc79719c8413ede03edee977815fbc82ac95c",
-        "size": 427986
+{
+  "registry_version": 2,
+  "artifacts": [
+    {
+      "model_id": "forecaster-20260927T142935Z",
+      "name": "forecaster",
+      "kind": "forecaster",
+      "status": "promoted",
+      "status_reason": "migrated from manifest v1 under a named compatibility waiver",
+      "created_at_utc": "2026-09-27T14:29:35.613866+00:00",
+      "code_revision": null,
+      "physics_version": "legacy-0",
+      "physics_params_hash": null,
+      "environment_version": null,
+      "observation_schema_hash": null,
+      "action_schema_hash": null,
+      "action_semantics_version": null,
+      "reward_version": null,
+      "safety_envelope_version": null,
+      "input_cadence_s": 300,
+      "training_config": {
+        "json": {
+          "seq_len": 12,
+          "horizon": 6,
+          "train_ratio": 0.8,
+          "epochs": 30,
+          "patience": 8
+        },
+        "sha256": "c65894ab719b8f3d49068fd8ebd32f34bf8a767859c562dd6026c1918ea2c3b1"
       },
-      "models/forecaster/scaler.joblib": {
-        "sha256": "d23c975ffce434e4d58680de567a144b28d028cb8389826ebd7b584b3a6101d1",
-        "size": 879
-      }
-    },
-    "git_sha": "unknown",
-    "physics_version": "legacy-0",
-    "dataset_id": "sensor_data.csv",
-    "dataset_sha256": "11f3d473cd9eedd7db7f3a23de56cc72f88f5794f6e0c2a78543b623d06f07d5",
-    "key_package_versions": null
-  },
-  {
-    "name": "anomaly_detector",
-    "version": "20260927T143100Z",
-    "trained_at": "2026-09-27T14:31:00.514952+00:00",
-    "metrics": {
-      "f1": 0.96,
-      "precision": 0.9230769230769231,
-      "recall": 1.0
-    },
-    "data_source": "data/raw/sensor_data.csv (rows 0:20736 train, 20736:25920 held out)",
-    "artifact_path": "models/anomaly",
-    "params": {
-      "threshold_percentile": 99.5,
-      "seq_len": 12
-    },
-    "python": "3.12.10",
-    "manifest_version": 1,
-    "relative_path": "models/anomaly",
-    "sha256": "884192487602c370b3231ab024c692396ae5eb180ee410a640dd59cab034225b",
-    "size": 203580,
-    "files": {
-      "models/anomaly/config.json": {
-        "sha256": "586ee92895adf37a3e479323c1f3713c99e63f14188340653dad14d53f52e2a5",
-        "size": 220
+      "seeds": null,
+      "dataset_id": "sensor_data.csv",
+      "dataset_manifest_sha256": null,
+      "scenario_set_id": null,
+      "split_id": "chronological:train_ratio=0.8",
+      "package_versions": null,
+      "files": {
+        "models/forecaster/thermal.keras": {
+          "sha256": "0ef2bf573e29da05298e6fe9446fc79719c8413ede03edee977815fbc82ac95c",
+          "size": 427986,
+          "format": "keras"
+        },
+        "models/forecaster/scaler.json": {
+          "sha256": "8526421bc24aa2b9d789c4b04fc7f6f5aa5ad19264d9f78241f5346c7ef23d1e",
+          "size": 1876,
+          "format": "json"
+        }
       },
-      "models/anomaly/model.keras": {
-        "sha256": "1aaa1cad56998d605f9ee4d4175142c311183aa94d468f1126a903868026b989",
-        "size": 202613
+      "evaluation_ref": null,
+      "compat_waiver": {
+        "name": "legacy-0-physics-until-T26",
+        "fields": [
+          "physics_version",
+          "physics_params_hash"
+        ],
+        "reason": "forecaster was trained on data produced under physics legacy-0 and its physics parameters were not recorded; it is re-validated or retrained under the current physics in T26",
+        "expires_after_task": "T26"
       },
-      "models/anomaly/scaler.joblib": {
-        "sha256": "fda0785b30d5cd233dca757fd9ac34a393f339acd93580bca11971f9f9911684",
-        "size": 747
-      }
+      "history": [
+        {
+          "seq": 0,
+          "at_utc": "2026-09-27T14:29:35.613866+00:00",
+          "action": "logged",
+          "from": null,
+          "to": "candidate",
+          "actor": "legacy-training",
+          "reason": "recorded by the training run (manifest v1)"
+        },
+        {
+          "seq": 1,
+          "at_utc": "2026-10-04T12:59:43.160002+00:00",
+          "action": "migrate",
+          "from": "candidate",
+          "to": "promoted",
+          "actor": "T19-migration",
+          "reason": "migrated from manifest v1 under a named compatibility waiver"
+        }
+      ],
+      "version": "20260927T142935Z",
+      "trained_at": "2026-09-27T14:29:35.613866+00:00",
+      "metrics": {
+        "rmse": 0.5231534242630005,
+        "mae": 0.4206322729587555
+      },
+      "data_source": "data/raw/sensor_data.csv",
+      "params": {
+        "seq_len": 12,
+        "horizon": 6,
+        "train_ratio": 0.8,
+        "epochs": 30,
+        "patience": 8
+      },
+      "python": "3.12.10",
+      "manifest_version": 2,
+      "migrated_from_manifest_version": 1,
+      "relative_path": "models/forecaster/thermal.keras",
+      "artifact_path": "models/forecaster/thermal.keras",
+      "sha256": "79b26cda1e9491f0429cf4639f074f2c1b40a56c607d5908ce56e77e443e0773",
+      "size": 429862,
+      "git_sha": "unknown",
+      "dataset_sha256": "11f3d473cd9eedd7db7f3a23de56cc72f88f5794f6e0c2a78543b623d06f07d5"
     },
-    "git_sha": "unknown",
-    "physics_version": "legacy-0",
-    "dataset_id": "sensor_data.csv",
-    "dataset_sha256": "11f3d473cd9eedd7db7f3a23de56cc72f88f5794f6e0c2a78543b623d06f07d5",
-    "key_package_versions": null
-  },
-  {
-    "name": "ppo_optimizer",
-    "version": "20260927T143232Z",
-    "trained_at": "2026-09-27T14:32:32.917913+00:00",
-    "metrics": {
-      "pue_improvement_mean_pct": -2.267707427967431,
-      "pue_improvement_std_pct": 0.09835029269020382,
-      "pue_improvement_ci95_pct": 0.11129383320075262,
-      "pue_improvement_per_seed_pct": {
-        "0": -2.366168399559505,
-        "1": -2.1694681891051575,
-        "2": -2.2674856952376308
-      }
+    {
+      "model_id": "anomaly_detector-20260927T143100Z",
+      "name": "anomaly_detector",
+      "kind": "anomaly",
+      "status": "promoted",
+      "status_reason": "migrated from manifest v1 under a named compatibility waiver",
+      "created_at_utc": "2026-09-27T14:31:00.514952+00:00",
+      "code_revision": null,
+      "physics_version": "legacy-0",
+      "physics_params_hash": null,
+      "environment_version": null,
+      "observation_schema_hash": null,
+      "action_schema_hash": null,
+      "action_semantics_version": null,
+      "reward_version": null,
+      "safety_envelope_version": null,
+      "input_cadence_s": 300,
+      "training_config": {
+        "json": {
+          "threshold_percentile": 99.5,
+          "seq_len": 12
+        },
+        "sha256": "80e3899f2911bb0efecac389fd50c85579a666a3b6363801219601bb72c58575"
+      },
+      "seeds": null,
+      "dataset_id": "sensor_data.csv",
+      "dataset_manifest_sha256": null,
+      "scenario_set_id": null,
+      "split_id": "chronological:train=rows[0:20736],heldout=rows[20736:25920]",
+      "package_versions": null,
+      "files": {
+        "models/anomaly/config.json": {
+          "sha256": "586ee92895adf37a3e479323c1f3713c99e63f14188340653dad14d53f52e2a5",
+          "size": 220,
+          "format": "json"
+        },
+        "models/anomaly/model.keras": {
+          "sha256": "1aaa1cad56998d605f9ee4d4175142c311183aa94d468f1126a903868026b989",
+          "size": 202613,
+          "format": "keras"
+        },
+        "models/anomaly/scaler.json": {
+          "sha256": "ef6f079ae0362b893e27c9e83f7d0d27c31d553e82afb2c959be8bf35433f5f1",
+          "size": 1210,
+          "format": "json"
+        }
+      },
+      "evaluation_ref": null,
+      "compat_waiver": {
+        "name": "legacy-0-physics-until-T26",
+        "fields": [
+          "physics_version",
+          "physics_params_hash"
+        ],
+        "reason": "anomaly_detector was trained on data produced under physics legacy-0 and its physics parameters were not recorded; it is re-validated or retrained under the current physics in T26",
+        "expires_after_task": "T26"
+      },
+      "history": [
+        {
+          "seq": 0,
+          "at_utc": "2026-09-27T14:31:00.514952+00:00",
+          "action": "logged",
+          "from": null,
+          "to": "candidate",
+          "actor": "legacy-training",
+          "reason": "recorded by the training run (manifest v1)"
+        },
+        {
+          "seq": 1,
+          "at_utc": "2026-10-04T12:59:43.161785+00:00",
+          "action": "migrate",
+          "from": "candidate",
+          "to": "promoted",
+          "actor": "T19-migration",
+          "reason": "migrated from manifest v1 under a named compatibility waiver"
+        }
+      ],
+      "version": "20260927T143100Z",
+      "trained_at": "2026-09-27T14:31:00.514952+00:00",
+      "metrics": {
+        "f1": 0.96,
+        "precision": 0.9230769230769231,
+        "recall": 1.0
+      },
+      "data_source": "data/raw/sensor_data.csv (rows 0:20736 train, 20736:25920 held out)",
+      "params": {
+        "threshold_percentile": 99.5,
+        "seq_len": 12
+      },
+      "python": "3.12.10",
+      "manifest_version": 2,
+      "migrated_from_manifest_version": 1,
+      "relative_path": "models/anomaly",
+      "artifact_path": "models/anomaly",
+      "sha256": "51c7f05928ce95287f2b336cb165825481aca7e77e16ed3622434667cf13d65a",
+      "size": 204043,
+      "git_sha": "unknown",
+      "dataset_sha256": "11f3d473cd9eedd7db7f3a23de56cc72f88f5794f6e0c2a78543b623d06f07d5"
     },
-    "data_source": "live DigitalTwin simulation (no historical dataset)",
-    "artifact_path": "models/optimizer",
-    "params": {
-      "alpha": 0.5,
-      "beta": 0.3,
-      "gamma": 0.2,
+    {
+      "model_id": "ppo_optimizer-20260927T143232Z",
+      "name": "ppo_optimizer",
+      "kind": "ppo",
+      "status": "quarantined",
+      "status_reason": "physics legacy-0; environment, reward and safety-envelope versions were never recorded (unversioned); mean PUE improvement -2.27% vs the rule baseline (worse, not better); never evaluated under the T8 decision gate; SB3 zip is not loadable by the API process",
+      "created_at_utc": "2026-09-27T14:32:32.917913+00:00",
+      "code_revision": null,
+      "physics_version": "legacy-0",
+      "physics_params_hash": null,
+      "environment_version": null,
+      "observation_schema_hash": null,
+      "action_schema_hash": null,
+      "action_semantics_version": null,
+      "reward_version": null,
+      "safety_envelope_version": null,
+      "input_cadence_s": 300,
+      "training_config": {
+        "json": {
+          "alpha": 0.5,
+          "beta": 0.3,
+          "gamma": 0.2,
+          "seeds": [
+            0,
+            1,
+            2
+          ],
+          "total_timesteps": 50000
+        },
+        "sha256": "2ca0f0e06fc1dd8105a88ce1c6685fc06860ea34eb3f17e17702b4aed5efc664"
+      },
       "seeds": [
         0,
         1,
         2
       ],
-      "total_timesteps": 50000
-    },
-    "python": "3.12.10",
-    "manifest_version": 1,
-    "relative_path": "models/optimizer",
-    "sha256": "a09313644630bba2c04c513fb5444e8540a88de120070f02b8677fa64495bfc4",
-    "size": 146528,
-    "files": {
-      "models/optimizer/config.json": {
-        "sha256": "d467f2f0a13c12e242dfbf1211cd5e5f6adde515d8c02487c41393597eb8065c",
-        "size": 504
+      "dataset_id": null,
+      "dataset_manifest_sha256": null,
+      "scenario_set_id": null,
+      "split_id": null,
+      "package_versions": null,
+      "files": {
+        "models/optimizer/config.json": {
+          "sha256": "d467f2f0a13c12e242dfbf1211cd5e5f6adde515d8c02487c41393597eb8065c",
+          "size": 504,
+          "format": "json"
+        },
+        "models/optimizer/ppo_model.zip": {
+          "sha256": "cf2b16e907b03d192a89fcbbf70c7be1fd128e300b8840b05f23ba149e2b7c7b",
+          "size": 146024,
+          "format": "sb3_zip"
+        }
       },
-      "models/optimizer/ppo_model.zip": {
-        "sha256": "cf2b16e907b03d192a89fcbbf70c7be1fd128e300b8840b05f23ba149e2b7c7b",
-        "size": 146024
-      }
-    },
-    "git_sha": "unknown",
-    "physics_version": "legacy-0",
-    "dataset_id": null,
-    "dataset_sha256": null,
-    "key_package_versions": null
-  }
-]
+      "evaluation_ref": null,
+      "compat_waiver": null,
+      "history": [
+        {
+          "seq": 0,
+          "at_utc": "2026-09-27T14:32:32.917913+00:00",
+          "action": "logged",
+          "from": null,
+          "to": "candidate",
+          "actor": "legacy-training",
+          "reason": "recorded by the training run (manifest v1)"
+        },
+        {
+          "seq": 1,
+          "at_utc": "2026-10-04T12:59:43.162788+00:00",
+          "action": "migrate",
+          "from": "candidate",
+          "to": "quarantined",
+          "actor": "T19-migration",
+          "reason": "physics legacy-0; environment, reward and safety-envelope versions were never recorded (unversioned); mean PUE improvement -2.27% vs the rule baseline (worse, not better); never evaluated under the T8 decision gate; SB3 zip is not loadable by the API process"
+        }
+      ],
+      "version": "20260927T143232Z",
+      "trained_at": "2026-09-27T14:32:32.917913+00:00",
+      "metrics": {
+        "pue_improvement_mean_pct": -2.267707427967431,
+        "pue_improvement_std_pct": 0.09835029269020382,
+        "pue_improvement_ci95_pct": 0.11129383320075262,
+        "pue_improvement_per_seed_pct": {
+          "0": -2.366168399559505,
+          "1": -2.1694681891051575,
+          "2": -2.2674856952376308
+        }
+      },
+      "data_source": "live DigitalTwin simulation (no historical dataset)",
+      "params": {
+        "alpha": 0.5,
+        "beta": 0.3,
+        "gamma": 0.2,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "total_timesteps": 50000
+      },
+      "python": "3.12.10",
+      "manifest_version": 2,
+      "migrated_from_manifest_version": 1,
+      "relative_path": "models/optimizer",
+      "artifact_path": "models/optimizer",
+      "sha256": "a09313644630bba2c04c513fb5444e8540a88de120070f02b8677fa64495bfc4",
+      "size": 146528,
+      "git_sha": "unknown",
+      "dataset_sha256": null
+    }
+  ]
+}

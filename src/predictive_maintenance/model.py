@@ -118,10 +118,10 @@ class RULPredictor:
 
     @classmethod
     def load(cls, path: str | Path, n_features: int, window: int = 30) -> "RULPredictor":
-        from tensorflow import keras as K
+        from src.artifacts import loaders  # T19: the only place models are read (ArtifactGate + safe_mode)
 
         instance = cls(n_features=n_features, window=window)
-        instance._model = K.models.load_model(Path(path))
+        instance._model = loaders.load_keras_model(path, artifact="rul_predictor")
         return instance
 
 

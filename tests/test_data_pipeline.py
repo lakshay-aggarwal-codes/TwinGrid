@@ -182,7 +182,7 @@ class TestPrepare:
 class TestScalerHelpers:
     def test_save_scaler_before_prepare_raises(self, data_pipeline, temp_data_dir):
         with pytest.raises(ValueError, match="Scaler not fitted"):
-            data_pipeline.save_scaler(temp_data_dir / "scaler.joblib")
+            data_pipeline.save_scaler(temp_data_dir / "scaler.json")
 
     def test_transform_sequence_before_prepare_raises(self, data_pipeline):
         with pytest.raises(ValueError, match="Scaler not fitted"):
@@ -198,9 +198,12 @@ class TestScalerHelpers:
         assert scaled_3d.shape == (1, 12, 10)
         np.testing.assert_allclose(scaled_2d, scaled_3d[0], rtol=1e-6)
 
-    def test_scaler_save_load_roundtrip(self, data_pipeline, sample_sensor_data, temp_data_dir):
+    def test_scaler_save_load_roundtrip(self, data_pipeline, sample_sensor_data, temp_data_dir, monkeypatch):
+        monkeypatch.setenv(
+            "ARTIFACT_VERIFY", "off"
+        )  # scratch dir: no registry entry (gate tested in test_artifact_gate)
         data_pipeline.prepare(sample_sensor_data)
-        path = temp_data_dir / "scaler.joblib"
+        path = temp_data_dir / "scaler.json"
         data_pipeline.save_scaler(path)
         assert path.exists()
 

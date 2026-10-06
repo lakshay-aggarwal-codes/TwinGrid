@@ -24,6 +24,7 @@ import gymnasium as gym
 import numpy as np
 import pandas as pd
 
+from .artifacts import loaders
 from .carbon_provider import load_diurnal_carbon_intensity
 from .digital_twin import OUTLET_TEMP_MAX, CoolingMode, DigitalTwin
 from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
@@ -588,13 +589,18 @@ class JointOptimizer:
 
     @classmethod
     def load(cls, path: str | Path) -> JointOptimizer:
-        """Load PPO model and patent config."""
+        """Load PPO model and patent config -- TRAINING PROCESSES ONLY.
+
+        Goes through the ArtifactGate (status, integrity, compatibility, format) before anything is
+        read. An SB3 zip is a pickle container, so in the API process (profile ``api``) the gate
+        refuses it and this raises; a training / evaluation process sets ARTIFACT_PROFILE=training.
+        """
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Path not found: {path}")
-        sb3 = _get_sb3()
-        PPO = sb3["PPO"]
-        config = json.loads((path / "config.json").read_text())
+        name = "ppo_optimizer"
+        grant = loaders.authorize([path / "config.json", path / "ppo_model.zip"], artifact=name)
+        config = loaders.load_json(path / "config.json", artifact=name, grant=grant)
         carbon_curve = config.get("carbon_intensity_by_hour")
         optimizer = cls(
             alpha=config.get("alpha", 0.5),
@@ -603,6 +609,6 @@ class JointOptimizer:
             seed=config.get("seed"),
             carbon_intensity_by_hour=np.array(carbon_curve) if carbon_curve is not None else None,
         )
-        optimizer._model = PPO.load(str(path / "ppo_model"))
+        optimizer._model = loaders.load_sb3_zip_training_only(path / "ppo_model.zip", artifact=name, grant=grant)
         logger.info("Loaded from %s", path)
         return optimizer

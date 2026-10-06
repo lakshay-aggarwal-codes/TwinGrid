@@ -13,8 +13,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from .artifacts import loaders, scaler_io
 from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
-from .model_registry import ensure_verified
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,6 @@ _tf = None
 _keras = None
 _plt = None
 _sklearn = None
-_joblib = None
 
 
 def _get_tf():
@@ -68,19 +67,6 @@ def _get_sklearn():
         except ImportError as e:
             raise ImportError("scikit-learn is required. Install with: pip install scikit-learn") from e
     return _sklearn
-
-
-def _get_joblib():
-    """Lazy import joblib."""
-    global _joblib
-    if _joblib is None:
-        try:
-            import joblib
-
-            _joblib = joblib
-        except ImportError as e:
-            raise ImportError("joblib is required. Install with: pip install joblib") from e
-    return _joblib
 
 
 # Dimensions
@@ -274,20 +260,22 @@ class DataPipeline:
         return X_train, y_train, X_test, y_test
 
     def save_scaler(self, path: str | Path) -> None:
-        """Save fitted scaler with joblib."""
+        """Save the fitted scaler as JSON (no pickle).
+
+        A ``.joblib`` name is accepted for backwards compatibility with training scripts written
+        before T19 and is written as the sibling ``.json`` file.
+        """
         if self._scaler is None:
             raise ValueError("Scaler not fitted. Call prepare() first.")
         path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        joblib = _get_joblib()
-        joblib.dump(self._scaler, path)
+        if path.suffix.lower() == ".joblib":
+            path = path.with_suffix(".json")
+        scaler_io.dump_scaler_json(self._scaler, path)
         logger.info("Scaler saved to %s", path)
 
     def load_scaler(self, path: str | Path) -> None:
-        """Load scaler from joblib (verified against the artifact manifest first)."""
-        ensure_verified([path], artifact="forecaster scaler")
-        joblib = _get_joblib()
-        self._scaler = joblib.load(path)
+        """Load a ``scaler.json`` through the ArtifactGate (status, integrity, compatibility, format)."""
+        self._scaler = loaders.load_scaler(path, artifact="forecaster scaler")
         logger.info("Scaler loaded from %s", path)
 
     def transform_sequence(self, sequence: np.ndarray) -> np.ndarray:
@@ -548,10 +536,8 @@ class ThermalForecaster:
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Model not found: {path}")
-        ensure_verified([path], artifact="forecaster")
-        keras = _get_keras()
         forecaster = cls()
-        forecaster._model = keras.models.load_model(str(path))
+        forecaster._model = loaders.load_keras_model(path, artifact="forecaster")
         forecaster._is_trained = True
         forecaster._input_shape = forecaster._model.input_shape[1:]
         logger.info("Model loaded from %s", path)
