@@ -44,10 +44,12 @@ from api.routes import (
     metrics_routes,
     optimization_routes,
     shadow_mode_routes,
+    telemetry_routes,
     websocket_routes,
 )
 from api.services import optimization_service
 from api.services.live_broadcast_service import run_broadcast_loop
+from api.startup_checks import validate_startup_config
 from database import init_db
 
 
@@ -59,6 +61,7 @@ async def lifespan(app: FastAPI):
     The optimizer warm-up runs as a background task (loading PPO imports torch,
     which takes seconds) so it never delays the server becoming healthy.
     """
+    validate_startup_config()  # re-checked here: the environment may differ from import time
     setup_api_logging()
     await init_db()
     background_tasks = [
@@ -70,6 +73,8 @@ async def lifespan(app: FastAPI):
         task.cancel()
     await asyncio.gather(*background_tasks, return_exceptions=True)
 
+
+validate_startup_config()  # T13: refuse to build the app with unsafe production settings
 
 app = FastAPI(
     title=settings.APP_TITLE,
@@ -114,6 +119,7 @@ app.include_router(shadow_mode_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(esg_report_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(metrics_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(facility_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(telemetry_routes.router, dependencies=_GENERAL_LIMIT)  # T17
 
 # Middleware: the LAST one added is the outermost. Request flow:
 # Metrics -> RequestID -> CORS -> ErrorBoundary -> BodyLimit -> routes.

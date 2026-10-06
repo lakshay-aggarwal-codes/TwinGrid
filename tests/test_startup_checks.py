@@ -37,6 +37,11 @@ MANAGED = (
     "OPERATOR_REGISTRATION_KEY",
     "OPERATOR_REGISTRATION_KEY_FILE",
     "MOCK_SENSORS",
+    "MQTT_BROKER",
+    "MQTT_USERNAME",
+    "MQTT_USERNAME_FILE",
+    "MQTT_PASSWORD",
+    "MQTT_PASSWORD_FILE",
 )
 
 
@@ -73,6 +78,8 @@ BAD = {
     "R09-database-url": _set("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@db:5432/digital_twin"),
     "R10-operator-key": _set("OPERATOR_REGISTRATION_KEY", "change-me-to-a-long-random-string"),
     "R11-mock-sensors": _set("MOCK_SENSORS", "true"),
+    # T17: a configured broker without credentials (valid_env sets neither a broker nor credentials)
+    "R12-mqtt-credentials": _set("MQTT_BROKER", "broker.internal"),
 }
 ALL_ENVIRONMENT_RULES = {"R01-env-name", "R02-jwt-missing"}
 PRODUCTION_ONLY = sorted(set(BAD) - ALL_ENVIRONMENT_RULES)

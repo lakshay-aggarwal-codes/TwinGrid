@@ -48,6 +48,9 @@ ENV_VARS_READ = (
     "DATABASE_URL",
     "OPERATOR_REGISTRATION_KEY",
     "MOCK_SENSORS",
+    "MQTT_BROKER",
+    "MQTT_USERNAME",
+    "MQTT_PASSWORD",
 )
 
 
@@ -156,6 +159,15 @@ def _mock_sensors_on() -> bool:
     return os.getenv("MOCK_SENSORS", "").strip().lower() in _TRUTHY
 
 
+def _mqtt_in_use() -> bool:
+    """The MQTT consumer is configured for real use: a broker is named and mock mode is off."""
+    return bool(os.getenv("MQTT_BROKER", "").strip()) and not _mock_sensors_on()
+
+
+def _mqtt_credentials_missing() -> bool:
+    return _mqtt_in_use() and not (_secret("MQTT_USERNAME") and _secret("MQTT_PASSWORD"))
+
+
 RULES: tuple[Rule, ...] = (
     Rule(
         "R01-env-name",
@@ -228,6 +240,13 @@ RULES: tuple[Rule, ...] = (
         _mock_sensors_on,
         "MOCK_SENSORS generates synthetic data and is dev/demo only.",
     ),
+    Rule(
+        "R12-mqtt-credentials",
+        ("MQTT_USERNAME", "MQTT_PASSWORD"),
+        True,
+        _mqtt_credentials_missing,
+        "MQTT_BROKER is set, so MQTT_USERNAME and MQTT_PASSWORD (or _FILE) are required.",
+    ),
 )
 
 
@@ -246,6 +265,20 @@ def validate_startup_config() -> None:
         for rule in violated:
             names.extend(rule.variables)
         raise StartupConfigError(names, "Rules: " + ", ".join(rule.id for rule in violated) + ".")
+
+
+def validate_mqtt_config(*, consumer_running: bool = False) -> None:
+    """Only the MQTT rule (R12). Called by the standalone ingestion process (``python -m src.sensor_ingestion``),
+    which should not need the API's JWT/CORS settings just to consume a broker.
+
+    ``consumer_running=True`` means this process IS the MQTT consumer (not mock mode), so credentials are required
+    in production even when MQTT_BROKER is left at its default (``localhost``)."""
+    rule = next(r for r in RULES if r.id == "R12-mqtt-credentials")
+    if not requires_strict_checks():
+        return
+    missing = not (_secret("MQTT_USERNAME") and _secret("MQTT_PASSWORD"))
+    if rule.violated() or (consumer_running and missing):
+        raise StartupConfigError(list(rule.variables), "Rules: " + rule.id + ".")
 
 
 def check_jwt_secret(value: str | None) -> str:

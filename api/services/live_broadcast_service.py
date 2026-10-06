@@ -1,185 +1,349 @@
+"""Server-held telemetry window for the anomaly pipeline (T3).
+
+``TelemetryWindowProvider`` is the INTERFACE the anomaly pipeline depends on:
+``window(n)`` returns the last ``n`` server-held samples, oldest first, each carrying
+``{seq, ts_ingest, origin, features}``. T3's implementation is an in-memory ring buffer
+that ``_tick`` fills; a later task (T10) replaces the implementation, not this interface.
+
+``features`` are the five model inputs in the model's own order (``FEATURE_ORDER``, which
+matches ``models/anomaly/config.json`` ``feature_columns``). A sample is whatever the server
+itself produced for that tick -- a client can never put data into this window.
+"""
+
 from __future__ import annotations
 
-import asyncio
 import logging
-import random
-
-import numpy as np
-from fastapi import WebSocket
-
-from api.serialization import to_jsonable
-from api.services import anomaly_service, telemetry_window
-from api.services.twin_service import get_twin
-from database import get_session
-from models.db_models import SensorReading
-from src.digital_twin import INTERVAL_MINUTES
-from src.timeutil import to_site_local, utc_now
+import threading
+from collections import deque
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Callable, Mapping, Optional, Protocol, Sequence
 
 logger = logging.getLogger(__name__)
 
-BROADCAST_INTERVAL_SECONDS = 3
+# Order the anomaly model was trained with (models/anomaly/config.json: feature_columns).
+FEATURE_ORDER: tuple[str, ...] = (
+    "water_flow_lpm",
+    "water_pressure_bar",
+    "server_outlet_temp_C",
+    "it_power_kw",
+    "humidity_pct",
+)
+WINDOW_SIZE = 12  # the detector's seq_len
+DEFAULT_CAPACITY = 64
 
-# --- Live payload provenance (T1a, additive) --------------------------------
-# WS_SCHEMA_VERSION: version of the additive provenance fields below.
-# WS_ORIGIN: every value this loop emits comes from the physics simulator
-#   (sine-wave utilisation, random-walk weather); nothing is measured.
-# WS_SIM_TIME_SCALE: NOMINAL simulated seconds advanced per wall second --
-#   one twin step is INTERVAL_MINUTES of simulated time per tick, one tick per
-#   BROADCAST_INTERVAL_SECONDS of wall time (5*60/3 = 100). Derived from
-#   constants, not measured; the live driver is NOT corrected to real dt here
-#   (that is T7), so this documents the existing ~100x clock instead of fixing it.
-WS_SCHEMA_VERSION = 1
-WS_ORIGIN = "simulated"
-WS_SIM_TIME_SCALE = (INTERVAL_MINUTES * 60) / BROADCAST_INTERVAL_SECONDS
-
-# Strictly +1 per tick per process (first tick is 1). Resets on process restart.
-_tick_seq = 0
-
-# Slowly-drifting live water-stress reading. This feed is deliberately
-# independent of the sidebar's What-If sliders (it's the facility's own
-# live telemetry, not a preview -- see the WS effect in useSimulation.ts).
-# Previously `random.uniform(0, 0.5)` picked a brand-new value every 3s with
-# no memory, i.e. real white noise -- not how any live sensor behaves, and
-# why the Sustainability tab's number looked broken/nonsensical rather than
-# just "a different metric than the slider". Mean-reverting random walk
-# instead: moves a little each tick, stays in [0, 0.5].
-_water_stress_state = 0.2
-_WATER_STRESS_STEP = 0.02
+# Evidence ranking for "lowest-evidence origin in the window". Only "simulated" exists today;
+# unknown origins rank above it so a window containing any simulated sample is labelled simulated.
+_ORIGIN_RANK = {"simulated": 0}
 
 
-class ConnectionManager:
-    """Tracks active WebSocket connections and broadcasts to all of them."""
-
-    def __init__(self) -> None:
-        self._connections: set[WebSocket] = set()
-
-    def connect(self, websocket: WebSocket) -> None:
-        self._connections.add(websocket)
-        logger.info("WebSocket connected (%d active)", len(self._connections))
-
-    def disconnect(self, websocket: WebSocket) -> None:
-        self._connections.discard(websocket)
-        logger.info("WebSocket disconnected (%d active)", len(self._connections))
-
-    def has_connections(self) -> bool:
-        return bool(self._connections)
-
-    async def broadcast(self, payload: dict) -> None:
-        if not self._connections:
-            return
-        dead: list[WebSocket] = []
-        # Iterate a snapshot: connect()/disconnect() can run while we await a
-        # send, and mutating a set during iteration raises RuntimeError.
-        for ws in list(self._connections):
-            try:
-                await ws.send_json(payload)
-            except Exception:
-                dead.append(ws)
-        for ws in dead:
-            self._connections.discard(ws)
+@dataclass(frozen=True)
+class TelemetrySample:
+    seq: int
+    ts_ingest: str  # aware-UTC ISO-8601, wall clock at ingest
+    origin: str
+    features: tuple[float, float, float, float, float]
 
 
-manager = ConnectionManager()
+class TelemetryWindowProvider(Protocol):
+    def append(self, sample: TelemetrySample) -> None: ...
+
+    def window(self, n: int = WINDOW_SIZE) -> list[TelemetrySample]:
+        """The last ``n`` samples, oldest first. Fewer than ``n`` if not enough exist yet."""
+        ...
+
+    def clear(self) -> None: ...
 
 
-async def _tick() -> dict:
-    """One shared simulation step, used by every connected client."""
-    global _water_stress_state, _tick_seq
-    twin = get_twin()
-    # T12: ONE clock read per tick; the diurnal hour is the SITE-local hour of that instant
-    # (SITE_TIMEZONE), and ts_ingest below is that same instant in aware UTC.
-    tick_now = utc_now()
-    site_now = to_site_local(tick_now)
-    hour = site_now.hour + site_now.minute / 60
-    utilisation = float(np.clip(0.4 + 0.5 * np.sin((hour - 6) * np.pi / 12), 0, 1))
-    outside_temp = 22 + 5 * np.sin(2 * np.pi * (hour - 14) / 24) + random.uniform(-1, 1)
-    _water_stress_state = float(
-        np.clip(_water_stress_state + random.uniform(-_WATER_STRESS_STEP, _WATER_STRESS_STEP), 0, 0.5)
-    )
-    water_stress = _water_stress_state
-    action = {
-        "utilisation": utilisation,
-        "outside_temp_C": outside_temp,
-        "water_stress": water_stress,
-        "cooling_mode": twin.select_cooling_mode(outside_temp, water_stress),
-    }
-    state = twin.step(action)
-    state_dict = state.to_dict()
-
-    # ONE write per tick, regardless of how many clients are connected --
-    # previously this was one write per tick PER CLIENT. Persistence is
-    # best-effort: a database outage must never stop the live stream.
-    reading_id: int | None = None
-    try:
-        async with get_session() as session:
-            reading = SensorReading.from_state_dict(state_dict, "ws")
-            session.add(reading)
-            await session.flush()  # assigns reading.id; the anomaly alert links to it (T3)
-            reading_id = reading.id
-            await session.commit()
-    except Exception:
-        logger.exception("Could not persist live sensor reading -- broadcasting anyway")
-
-    # T1a: additive provenance/time fields. Every pre-existing key and value is
-    # unchanged. They are added to the BROADCAST payload only -- not to
-    # state_dict above, so what is persisted is unchanged.
-    #   sim_time   = the twin's own clock (same value as the existing
-    #                "timestamp" key). It is SIMULATED time, not event time.
-    #   ts_ingest  = wall clock (aware UTC) when this tick was assembled; the
-    #                client derives staleness from its own receive time, not this.
-    #   interval_s = nominal WALL seconds between ticks.
-    _tick_seq += 1
-    provenance = {
-        "schema_version": WS_SCHEMA_VERSION,
-        "origin": WS_ORIGIN,
-        "seq": _tick_seq,
-        "ts_ingest": tick_now,
-        "sim_time": state_dict["timestamp"],
-        "sim_time_scale": WS_SIM_TIME_SCALE,
-        "interval_s": BROADCAST_INTERVAL_SECONDS,
-    }
-    ts_ingest_iso = provenance["ts_ingest"].isoformat()
-
-    # T3: server-owned anomaly scoring, ONCE per tick (not per client). The window is filled from
-    # what the server itself just produced; the pipeline scores it in a worker thread, fails closed,
-    # and owns alert creation. The result rides the payload as ``anomaly_status`` -- a NEW key,
-    # because the pre-existing ``anomaly`` key (the twin's own 0/1 flag) must stay unchanged.
-    anomaly_status: dict | None = None
-    try:
-        telemetry_window.get_window_provider().append(
-            telemetry_window.sample_from_state(state_dict, seq=_tick_seq, ts_ingest=ts_ingest_iso, origin=WS_ORIGIN)
-        )
-        anomaly_status = await anomaly_service.get_pipeline().process(
-            session_factory=get_session, sensor_reading_id=reading_id
-        )
-    except Exception:
-        logger.exception("Anomaly pipeline failed -- reporting status=error, broadcasting anyway")
-        anomaly_service.ANOMALY_SCORING_ERRORS.inc()
-        anomaly_status = {
-            "status": anomaly_service.STATUS_ERROR,
-            "message": "Anomaly pipeline failure",
-            "detector_id": anomaly_service.DETECTOR_ID,
-            "trained_on": anomaly_service.TRAINED_ON,
-        }
-    return to_jsonable(
-        {**state_dict, "carbon_data_is_real": twin.carbon_data_is_real, **provenance, "anomaly_status": anomaly_status}
+def sample_from_state(state: Mapping[str, Any], *, seq: int, ts_ingest: str, origin: str) -> TelemetrySample:
+    """Build a sample from a twin state dict; raises KeyError if a model feature is missing."""
+    return TelemetrySample(
+        seq=seq,
+        ts_ingest=ts_ingest,
+        origin=origin,
+        features=tuple(float(state[k]) for k in FEATURE_ORDER),  # type: ignore[arg-type]
     )
 
 
-async def run_broadcast_loop() -> None:
-    """Runs forever (until cancelled at app shutdown). Started once in
-    api/main.py's lifespan, not per-connection."""
-    logger.info("Starting live broadcast loop (interval=%ds)", BROADCAST_INTERVAL_SECONDS)
-    while True:
-        try:
-            # No clients -> nobody to stream to, so don't advance the twin or
-            # write to the database at all (previously: a row every 3 s, 24/7).
-            if manager.has_connections():
-                payload = await _tick()
-                await manager.broadcast(payload)
-        except asyncio.CancelledError:
-            logger.info("Broadcast loop cancelled")
-            raise
-        except Exception:
-            logger.exception("Error in broadcast tick -- continuing")
-        await asyncio.sleep(BROADCAST_INTERVAL_SECONDS)
+def lowest_evidence_origin(origins: Sequence[str]) -> str:
+    """The weakest-evidence origin present ("simulated" beats everything). Empty -> "unknown"."""
+    if not origins:
+        return "unknown"
+    return min(set(origins), key=lambda o: (_ORIGIN_RANK.get(o, 1), o))
+
+
+class InMemoryTelemetryWindow:
+    """Bounded ring buffer. Appended from the event loop, read from the event loop; ``window``
+    returns an immutable copy that is safe to hand to a worker thread."""
+
+    def __init__(self, capacity: int = DEFAULT_CAPACITY) -> None:
+        if capacity < WINDOW_SIZE:
+            raise ValueError(f"capacity must be >= {WINDOW_SIZE}")
+        self._buf: deque[TelemetrySample] = deque(maxlen=capacity)
+        self._lock = threading.Lock()
+
+    def append(self, sample: TelemetrySample) -> None:
+        with self._lock:
+            self._buf.append(sample)
+
+    def window(self, n: int = WINDOW_SIZE) -> list[TelemetrySample]:
+        if n <= 0:
+            return []
+        with self._lock:
+            return list(self._buf)[-n:]
+
+    def clear(self) -> None:
+        with self._lock:
+            self._buf.clear()
+
+    def __len__(self) -> int:
+        return len(self._buf)
+
+
+_provider: TelemetryWindowProvider = InMemoryTelemetryWindow()
+
+
+def get_window_provider() -> TelemetryWindowProvider:
+    return _provider
+
+
+# -----------------------------------------------------------------------------
+# Store-backed window (T17, roadmap 9.5)
+#
+# The window is built from STORED samples (``telemetry_sample``, stream ``live``) and is scorable only when it is
+# contiguous, valid, single-origin and at the model's cadence. Otherwise the result is ``warming_up`` with a
+# ``reason`` and NO score. ``evaluate_window`` is pure (no I/O) so every rule is unit-testable; ``load_store_window``
+# does the reads; ``current_window`` picks the source (TELEMETRY_WINDOW_SOURCE).
+# -----------------------------------------------------------------------------
+
+LIVE_STREAM = "live"
+GAP_FACTOR = 1.5  # a gap is a consecutive difference > GAP_FACTOR * sampling_interval_s
+ALIGN_FACTOR = 0.5  # samples of different sensors align when their ts_event differ by <= ALIGN_FACTOR * interval
+LOAD_MARGIN = 4  # extra rows read per sensor beyond WINDOW_SIZE so a lagging sensor can still be aligned
+
+REASON_INSUFFICIENT = "insufficient"
+REASON_GAP = "gap"
+REASON_INVALID_SAMPLE = "invalid_sample"
+REASON_MIXED_ORIGIN = "mixed_origin"
+REASON_CADENCE_MISMATCH = "cadence_mismatch"
+REASONS = (REASON_INSUFFICIENT, REASON_GAP, REASON_INVALID_SAMPLE, REASON_MIXED_ORIGIN, REASON_CADENCE_MISMATCH)
+
+
+@dataclass(frozen=True)
+class StoredPoint:
+    """One stored sample of one sensor (any quality)."""
+
+    id: int
+    ts_event: datetime
+    ts_ingest: datetime
+    value: float
+    quality: str
+    origin: str
+
+
+@dataclass(frozen=True)
+class SensorSeries:
+    """The latest stored points of one feature sensor, oldest first."""
+
+    external_id: str
+    sampling_interval_s: float
+    points: Sequence[StoredPoint]
+
+
+@dataclass(frozen=True)
+class WindowEvaluation:
+    """``samples`` is the full window (oldest first) iff ``reason is None``; otherwise it is empty.
+
+    ``filled`` is how many of the latest aligned samples are usable (trailing run that is aligned, valid and
+    gap-free); it equals ``WINDOW_SIZE`` exactly when the window is scorable.
+    """
+
+    samples: list[TelemetrySample]
+    reason: Optional[str]
+    filled: int
+
+    @property
+    def scorable(self) -> bool:
+        return self.reason is None
+
+
+def _not_scorable(reason: str, filled: int = 0) -> WindowEvaluation:
+    return WindowEvaluation([], reason, max(0, min(filled, WINDOW_SIZE - 1)))
+
+
+def _nearest(points: Sequence[StoredPoint], ts: datetime, tolerance_s: float) -> Optional[StoredPoint]:
+    best: Optional[StoredPoint] = None
+    best_d = tolerance_s
+    for pt in points:
+        d = abs((pt.ts_event - ts).total_seconds())
+        if d <= best_d:
+            best, best_d = pt, d
+    return best
+
+
+def evaluate_window(
+    series_by_feature: Mapping[str, Optional[SensorSeries]],
+    *,
+    cadence_s: float,
+    size: int = WINDOW_SIZE,
+) -> WindowEvaluation:
+    """Apply roadmap 9.5 to the latest stored points of the five feature sensors. Pure.
+
+    Checks run in this order and the first failure decides ``reason``:
+    ``insufficient`` (a sensor is unknown or has fewer than ``size`` points, or has no point aligned with a slot
+    and too little history), ``cadence_mismatch`` (a sensor's ``sampling_interval_s`` is not ``cadence_s``),
+    ``invalid_sample`` (any quality != ok in the window), ``gap`` (a consecutive difference > 1.5 x interval or no
+    aligned sample for a slot), ``mixed_origin`` (more than one origin across the window).
+    """
+    series: dict[str, SensorSeries] = {}
+    for feature in FEATURE_ORDER:
+        item = series_by_feature.get(feature)
+        if item is None or not item.points:
+            return _not_scorable(REASON_INSUFFICIENT)
+        series[feature] = item
+
+    ref = series[FEATURE_ORDER[0]]
+    if len(ref.points) < size:
+        return _not_scorable(REASON_INSUFFICIENT, len(ref.points))
+    for item in series.values():
+        if abs(item.sampling_interval_s - cadence_s) > 1e-9:
+            return _not_scorable(REASON_CADENCE_MISMATCH)
+
+    ref_points = list(ref.points)[-size:]
+    # Align every sensor to the reference timestamps (oldest first).
+    columns: dict[str, list[Optional[StoredPoint]]] = {}
+    for feature, item in series.items():
+        tolerance = ALIGN_FACTOR * item.sampling_interval_s
+        columns[feature] = [
+            rp if feature == FEATURE_ORDER[0] else _nearest(item.points, rp.ts_event, tolerance) for rp in ref_points
+        ]
+
+    # Trailing usable run (for ``filled``): slot i is usable if every sensor has an ok point there and the step from
+    # slot i-1 is not a gap. Counted from the newest slot backwards.
+    def slot_ok(i: int) -> bool:
+        return all(columns[f][i] is not None and columns[f][i].quality == "ok" for f in FEATURE_ORDER)  # type: ignore[union-attr]
+
+    gap_limit = GAP_FACTOR * ref.sampling_interval_s
+    run = 0
+    for i in range(size - 1, -1, -1):
+        if not slot_ok(i):
+            break
+        run += 1
+        if i > 0 and (ref_points[i].ts_event - ref_points[i - 1].ts_event).total_seconds() > gap_limit:
+            break
+
+    # 1. Invalid sample inside the window.
+    for f in FEATURE_ORDER:
+        for pt in columns[f]:
+            if pt is not None and pt.quality != "ok":
+                return _not_scorable(REASON_INVALID_SAMPLE, run)
+    # 2. Gap: a missing aligned sample, or a consecutive difference > 1.5 x interval in any sensor's own run.
+    for f in FEATURE_ORDER:
+        col = columns[f]
+        if any(pt is None for pt in col):
+            return _not_scorable(REASON_GAP, run)
+        limit = GAP_FACTOR * series[f].sampling_interval_s
+        for a, b in zip(col, col[1:]):
+            if (b.ts_event - a.ts_event).total_seconds() > limit:  # type: ignore[union-attr]
+                return _not_scorable(REASON_GAP, run)
+    # 3. One origin across all 5 x size samples.
+    origins = {pt.origin for f in FEATURE_ORDER for pt in columns[f]}  # type: ignore[union-attr]
+    if len(origins) != 1:
+        return _not_scorable(REASON_MIXED_ORIGIN, run)
+
+    origin = next(iter(origins))
+    out: list[TelemetrySample] = []
+    for i, rp in enumerate(ref_points):
+        row = [columns[f][i] for f in FEATURE_ORDER]
+        ingest = max(pt.ts_ingest for pt in row)  # type: ignore[union-attr]
+        out.append(
+            TelemetrySample(
+                seq=rp.id,  # the reference sensor's telemetry_sample.id: strictly increasing per ingest order
+                ts_ingest=ingest.isoformat(),
+                origin=origin,
+                features=tuple(float(pt.value) for pt in row),  # type: ignore[union-attr,arg-type]
+            )
+        )
+    return WindowEvaluation(out, None, size)
+
+
+def memory_evaluation(provider: Optional[TelemetryWindowProvider] = None, n: int = WINDOW_SIZE) -> WindowEvaluation:
+    """The in-process ring buffer as a ``WindowEvaluation`` (rollback source, and what T3 shipped)."""
+    samples = (provider or get_window_provider()).window(n)
+    if len(samples) < n:
+        return WindowEvaluation([], REASON_INSUFFICIENT, len(samples))
+    return WindowEvaluation(list(samples), None, n)
+
+
+async def load_store_series(
+    session: Any, *, rows_per_sensor: int = WINDOW_SIZE + LOAD_MARGIN
+) -> dict[str, Optional[SensorSeries]]:
+    """Read the latest ``rows_per_sensor`` stored ``live`` points (any quality) of each feature sensor."""
+    from sqlalchemy import select
+
+    from api import config
+    from models.db_models import Sensor
+    from models.db_models import TelemetrySample as StoredSample
+
+    mapping = config.telemetry_feature_sensors()
+    sensors = {
+        s.external_id: s
+        for s in (await session.execute(select(Sensor).where(Sensor.external_id.in_(set(mapping.values()))))).scalars()
+    }
+    out: dict[str, Optional[SensorSeries]] = {}
+    for feature in FEATURE_ORDER:
+        sensor = sensors.get(mapping[feature])
+        if sensor is None:
+            out[feature] = None
+            continue
+        rows = (
+            (
+                await session.execute(
+                    select(StoredSample)
+                    .where(StoredSample.sensor_id == sensor.id, StoredSample.stream_id == LIVE_STREAM)
+                    .order_by(StoredSample.ts_event.desc(), StoredSample.id.desc())
+                    .limit(rows_per_sensor)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        points = [
+            StoredPoint(r.id, _aware(r.ts_event), _aware(r.ts_ingest), r.value, r.quality, r.origin)
+            for r in reversed(rows)
+        ]
+        out[feature] = SensorSeries(sensor.external_id, float(sensor.sampling_interval_s), points)
+    return out
+
+
+def _aware(value: datetime) -> datetime:
+    """SQLite returns naive datetimes for timezone-aware columns; everything stored here is UTC."""
+    from datetime import timezone
+
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+
+
+async def load_store_window(session: Any, *, cadence_s: Optional[float] = None) -> WindowEvaluation:
+    from api import config
+
+    series = await load_store_series(session)
+    return evaluate_window(series, cadence_s=config.ANOMALY_INPUT_CADENCE_S if cadence_s is None else cadence_s)
+
+
+def effective_window_source() -> str:
+    """``store`` or ``memory``. With the store switched off nothing is written to it, so the window falls back to
+    ``memory`` instead of waiting forever on an empty store."""
+    from api import config
+
+    if not config.telemetry_store_enabled():
+        return "memory"
+    return config.telemetry_window_source()
+
+
+async def current_window(session_factory: Callable[[], Any]) -> WindowEvaluation:
+    """The window the anomaly pipeline should score, from the configured source. A store read failure propagates
+    (the caller fails closed to ``status=error``); it is never replaced by the in-memory window."""
+    if effective_window_source() == "memory":
+        return memory_evaluation()
+    async with session_factory() as session:
+        return await load_store_window(session)

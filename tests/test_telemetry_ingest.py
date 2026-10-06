@@ -640,12 +640,16 @@ def test_ingest_samples_is_the_only_writer_of_telemetry_sample():
                 continue
             if "TelemetrySample" not in src and "telemetry_sample" not in src:
                 continue
-            for node in ast.walk(ast.parse(src)):
+            tree = ast.parse(src)
+            # A class of the same name DEFINED in this file (the in-memory dataclass in telemetry_window.py) is not the
+            # ORM model, so constructing it is not a write to the table.
+            local_classes = {n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)}
+            for node in ast.walk(tree):
                 if isinstance(node, ast.Call):
                     fn = node.func
                     name = fn.id if isinstance(fn, ast.Name) else fn.attr if isinstance(fn, ast.Attribute) else ""
                     arg_names = {getattr(a, "id", getattr(a, "attr", "")) for a in node.args}
-                    if name == "TelemetrySample" or (
+                    if (name == "TelemetrySample" and name not in local_classes) or (
                         name in {"insert", "delete", "update"} and "TelemetrySample" in arg_names
                     ):
                         offenders.append(f"{rel}:{node.lineno}")

@@ -255,29 +255,45 @@ class AnomalyPipeline:
         self._latest: Optional[dict[str, Any]] = None
         self._inflight: Optional[asyncio.Future] = None
         self.pending: set[asyncio.Task] = set()  # fire-and-forget webhook deliveries
+        self.last_window: Optional[telemetry_window.WindowEvaluation] = (
+            None  # T17: why the last tick was/was not scored
+        )
 
     # -- public ---------------------------------------------------------------------------
     def snapshot(self) -> dict[str, Any]:
         """Latest status object (warming_up with the current fill before the first score)."""
         if self._latest is not None:
             return dict(self._latest)
-        n = len(telemetry_window.get_window_provider().window(telemetry_window.WINDOW_SIZE))
+        n = (
+            len(telemetry_window.get_window_provider().window(telemetry_window.WINDOW_SIZE))
+            if telemetry_window.effective_window_source() == "memory"
+            else 0  # store source: the fill is only known after a tick has read the store
+        )
         return self._status(STATUS_WARMING_UP, "Collecting telemetry window", filled=n)
 
     async def process(
         self, *, session_factory: Callable[[], Any], sensor_reading_id: Optional[int] = None
     ) -> dict[str, Any]:
         """Score the server-held window (if full), update episodes, return the status object."""
-        provider = telemetry_window.get_window_provider()
-        samples = provider.window(telemetry_window.WINDOW_SIZE)
-        filled = len(samples)
+        # T17: the window comes from STORED samples (TELEMETRY_WINDOW_SOURCE=store, default) and is scorable only
+        # when contiguous, valid, single-origin and at the model cadence; ``memory`` is the rollback source.
+        window = await telemetry_window.current_window(session_factory)
+        self.last_window = window
+        samples = window.samples
+        filled = window.filled
 
         if not server_side_enabled():
             return self._remember(
                 self._status(STATUS_UNAVAILABLE, "Server-side anomaly pipeline disabled", filled=filled)
             )
-        if filled < telemetry_window.WINDOW_SIZE:
-            return self._remember(self._status(STATUS_WARMING_UP, "Collecting telemetry window", filled=filled))
+        if not window.scorable:
+            # No score, no episode change. The reason is carried in ``message`` (the status object's keys are unchanged).
+            message = (
+                "Collecting telemetry window"
+                if window.reason == telemetry_window.REASON_INSUFFICIENT
+                else f"Telemetry window not scorable (reason: {window.reason})"
+            )
+            return self._remember(self._status(STATUS_WARMING_UP, message, filled=filled))
 
         seq = samples[-1].seq
         origin = telemetry_window.lowest_evidence_origin([x.origin for x in samples])

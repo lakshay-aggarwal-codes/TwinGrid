@@ -94,6 +94,10 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (in .env or the shell)}@db:5432/digital_twin
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       ARTIFACT_VERIFY: ${ARTIFACT_VERIFY:-enforce}
+      # T17 telemetry. Rollback: TELEMETRY_STORE_ENABLED=false and TELEMETRY_WINDOW_SOURCE=memory.
+      TELEMETRY_STORE_ENABLED: ${TELEMETRY_STORE_ENABLED:-true}
+      TELEMETRY_WINDOW_SOURCE: ${TELEMETRY_WINDOW_SOURCE:-store}
+      TELEMETRY_MAX_SPAN_H: ${TELEMETRY_MAX_SPAN_H:-168}
     ports:
       - "8000:8000"
     depends_on:
@@ -106,6 +110,34 @@ services:
       # training (notebooks/train_all.py, scripts/artifact_manifest.py) write
       # models/. A model trained locally is still visible without a rebuild.
       - ./models:/app/models:ro
+
+  mqtt-ingest:
+    # Opt-in: `docker compose --profile mqtt up -d mqtt-ingest`. Consumes the broker named by MQTT_BROKER and writes
+    # through ingest_samples() (origin `measured`, stream `live`). In production it refuses to start without
+    # MQTT_USERNAME / MQTT_PASSWORD (api/startup_checks.py, rule R12). No broker is bundled: point MQTT_BROKER at yours.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["mqtt"]
+    restart: unless-stopped
+    command: ["python", "-m", "src.sensor_ingestion"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      MQTT_BROKER: ${MQTT_BROKER:?MQTT_BROKER must be set to use the mqtt profile}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_TOPIC: ${MQTT_TOPIC:-digital_twin/sensors}
+      MQTT_USERNAME: ${MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      MQTT_TLS: ${MQTT_TLS:-false}
+      MQTT_QUEUE_MAX: ${MQTT_QUEUE_MAX:-10000}
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (in .env or the shell)}@db:5432/digital_twin
+      TELEMETRY_STORE_ENABLED: ${TELEMETRY_STORE_ENABLED:-true}
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   db_data:

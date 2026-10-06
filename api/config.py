@@ -8,6 +8,8 @@ import logging
 import os
 from dataclasses import dataclass
 
+from api.startup_checks import StartupConfigError
+
 _logger = logging.getLogger(__name__)
 
 
@@ -20,10 +22,10 @@ def _parse_origins(raw: str | None) -> list[str]:
             # different frontend, and requests from it will be silently
             # rejected by the browser with a confusing CORS error) or, worse,
             # masks someone forgetting to set CORS_ALLOWED_ORIGINS at all.
-            raise RuntimeError(
-                "CORS_ALLOWED_ORIGINS is not set and ENVIRONMENT=production. Set it "
-                "explicitly to a comma-separated list of allowed frontend origins, e.g.: "
-                "CORS_ALLOWED_ORIGINS=https://your-frontend.example.com"
+            raise StartupConfigError(
+                ["CORS_ALLOWED_ORIGINS"],
+                "CORS_ALLOWED_ORIGINS is not set and ENVIRONMENT=production. Set it explicitly to a "
+                "comma-separated list of allowed frontend origins, e.g. https://your-frontend.example.com",
             )
         # Fallback to the one known deployed frontend rather than "*" --
         # still a single hardcoded default, but a scoped one, not a
@@ -42,6 +44,22 @@ class Settings:
 
 
 settings = Settings()
+
+
+# -----------------------------------------------------------------------------
+# Time contract (T12, roadmap §9.2) -- see docs/TIME_POLICY.md
+#
+# SITE_TIMEZONE: IANA zone used for wall-clock/diurnal logic (hour-of-day) via
+#   src.timeutil.to_site_local. Persisted instants are always aware UTC.
+# SIM_STEP_SECONDS: nominal simulated seconds per twin step (A-1). Declared
+#   here as the single configured value; the physics step itself is not driven
+#   by it in T12 (physics numerics are out of scope) -- a test pins it to
+#   src.digital_twin.INTERVAL_MINUTES * 60.
+# -----------------------------------------------------------------------------
+from src.timeutil import DEFAULT_SITE_TIMEZONE, site_timezone_name  # noqa: E402, F401  (re-exported)
+
+DEFAULT_SIM_STEP_SECONDS = 300
+SITE_TIMEZONE: str = site_timezone_name()  # import-time snapshot; timeutil re-reads the env per call
 
 
 # -----------------------------------------------------------------------------
@@ -129,6 +147,8 @@ RATE_LIMIT_DEFAULTS: dict[str, tuple[str, str]] = {
     "train_async": ("RATE_LIMIT_TRAIN_ASYNC", "5/minute"),
     # T14: applied (at include_router level, see api/main.py) to every route that has no scope of its own.
     "general": ("RATE_LIMIT_GENERAL", "120/minute"),
+    # T17: GET /api/telemetry/... (samples and gaps share one bucket per client).
+    "telemetry_read": ("RATE_LIMIT_TELEMETRY_READ", "60/minute"),
 }
 
 # Paths never rate limited (infrastructure probes). /healthz is today's liveness route; /livez is its planned name.
@@ -166,6 +186,14 @@ def trusted_proxy_hops() -> int:
 def max_query_string_chars() -> int:
     """MAX_QUERY_STRING_CHARS (default 8192): longest query string accepted before 413."""
     return _env_positive_int("MAX_QUERY_STRING_CHARS", DEFAULT_MAX_QUERY_STRING_CHARS)
+
+
+def sim_step_seconds() -> int:
+    """Configured simulated seconds per step (env ``SIM_STEP_SECONDS``, default 300)."""
+    return _env_positive_int("SIM_STEP_SECONDS", DEFAULT_SIM_STEP_SECONDS)
+
+
+SIM_STEP_SECONDS: int = sim_step_seconds()
 
 
 # -----------------------------------------------------------------------------
@@ -215,3 +243,99 @@ def compute_timeout_s() -> float:
 def max_concurrent_compute() -> int:
     """MAX_CONCURRENT_COMPUTE (default 4): compute-heavy requests in flight per process; more -> 429."""
     return _env_positive_int("MAX_CONCURRENT_COMPUTE", DEFAULT_MAX_CONCURRENT_COMPUTE)
+
+
+# -----------------------------------------------------------------------------
+# Telemetry (T17). Read on every call so a deployment or a test can change them without a reload.
+# -----------------------------------------------------------------------------
+
+# The anomaly model's input cadence. A constant until T19 moves it into the model manifest (``input_cadence_s``).
+ANOMALY_INPUT_CADENCE_S = 300
+
+DEFAULT_MQTT_QUEUE_MAX = 10_000
+DEFAULT_TELEMETRY_MAX_SPAN_H = 168
+TELEMETRY_WINDOW_SOURCES = ("store", "memory")
+
+# The five anomaly features (api.services.telemetry_window.FEATURE_ORDER) -- all direct measurands.
+TELEMETRY_FEATURES: tuple[str, ...] = (
+    "water_flow_lpm",
+    "water_pressure_bar",
+    "server_outlet_temp_C",
+    "it_power_kw",
+    "humidity_pct",
+)
+
+
+def telemetry_store_enabled() -> bool:
+    """TELEMETRY_STORE_ENABLED (default true). ``false`` is the rollback switch: producers write the legacy
+    ``sensor_readings`` table only and nothing is written to ``telemetry_sample``."""
+    return os.getenv("TELEMETRY_STORE_ENABLED", "true").strip().lower() not in {"0", "false", "no", "off"}
+
+
+def telemetry_window_source() -> str:
+    """TELEMETRY_WINDOW_SOURCE: ``store`` (default; window built from stored samples) or ``memory`` (rollback: the
+    in-process ring buffer). Anything else falls back to ``store`` with a warning, never to the weaker source."""
+    raw = os.getenv("TELEMETRY_WINDOW_SOURCE", "store").strip().lower()
+    if raw in TELEMETRY_WINDOW_SOURCES:
+        return raw
+    _logger.warning("TELEMETRY_WINDOW_SOURCE=%r is not one of %s; using 'store'", raw, TELEMETRY_WINDOW_SOURCES)
+    return "store"
+
+
+def telemetry_max_span_h() -> int:
+    """TELEMETRY_MAX_SPAN_H (default 168): longest ``to - from`` the read API accepts."""
+    return _env_positive_int("TELEMETRY_MAX_SPAN_H", DEFAULT_TELEMETRY_MAX_SPAN_H)
+
+
+def telemetry_facility_id() -> int:
+    """TELEMETRY_FACILITY_ID (default 1): the facility whose facility-level sensors feed the anomaly window
+    (``fac<id>.<measurand>``, see scripts/seed_facility.py)."""
+    return _env_positive_int("TELEMETRY_FACILITY_ID", 1)
+
+
+def telemetry_feature_sensors() -> dict[str, str]:
+    """feature name -> sensor ``external_id`` for the five anomaly features.
+
+    Default ``fac<TELEMETRY_FACILITY_ID>.<feature>``. Override with TELEMETRY_FEATURE_SENSORS, a JSON object
+    mapping feature -> external_id (must cover exactly the five features, else the default is used and a warning
+    is logged; a partial mapping must never silently score a different sensor).
+    """
+    default = {f: f"fac{telemetry_facility_id()}.{f}" for f in TELEMETRY_FEATURES}
+    raw = os.getenv("TELEMETRY_FEATURE_SENSORS")
+    if raw is None or not raw.strip():
+        return default
+    try:
+        import json
+
+        mapping = json.loads(raw)
+        if (
+            isinstance(mapping, dict)
+            and set(mapping) == set(TELEMETRY_FEATURES)
+            and all(isinstance(v, str) and v for v in mapping.values())
+        ):
+            return {f: mapping[f] for f in TELEMETRY_FEATURES}
+    except ValueError:
+        pass
+    _logger.warning(
+        "TELEMETRY_FEATURE_SENSORS is not a JSON object covering exactly %s; using the default", TELEMETRY_FEATURES
+    )
+    return default
+
+
+def mqtt_queue_max() -> int:
+    """MQTT_QUEUE_MAX (default 10000): bound of the in-process MQTT queue; overflow drops the OLDEST message."""
+    return _env_positive_int("MQTT_QUEUE_MAX", DEFAULT_MQTT_QUEUE_MAX)
+
+
+def mqtt_tls_enabled() -> bool:
+    """MQTT_TLS (default false): connect to the broker over TLS (system CA bundle)."""
+    return os.getenv("MQTT_TLS", "false").strip().lower() in _TRUE_VALUES
+
+
+def mqtt_credentials() -> tuple[str | None, str | None]:
+    """(MQTT_USERNAME, MQTT_PASSWORD); the password may come from MQTT_PASSWORD_FILE. Blank -> None."""
+    from api.secrets import read_secret
+
+    user = (os.getenv("MQTT_USERNAME") or "").strip() or None
+    password = (read_secret("MQTT_PASSWORD") or "").strip() or None
+    return user, password

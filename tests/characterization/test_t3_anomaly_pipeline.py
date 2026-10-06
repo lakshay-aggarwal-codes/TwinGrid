@@ -48,6 +48,9 @@ class ScriptedDetector:
 def pipeline_env(session_maker, monkeypatch):
     """Fresh window + pipeline, deterministic model version, stubbed explain, real DB sessions."""
     monkeypatch.setenv("ANOMALY_SERVER_SIDE", "true")
+    # T17: these tests characterize the T3 pipeline fed from the in-memory ring buffer (the rollback source);
+    # the store-backed window has its own tests in tests/test_telemetry_window.py.
+    monkeypatch.setenv("TELEMETRY_WINDOW_SOURCE", "memory")
     monkeypatch.setattr(tw, "_provider", tw.InMemoryTelemetryWindow())
     monkeypatch.setattr(svc, "_pipeline", svc.AnomalyPipeline(close_after=3))
     monkeypatch.setattr(svc, "get_model_version", lambda: "sha256-testmodel01")

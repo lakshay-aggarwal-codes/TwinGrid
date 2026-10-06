@@ -1,9 +1,14 @@
 """
 MQTT sensor ingestion for the digital twin.
 
-- Subscribes to sensor topics, parses JSON into SensorReading, validates and stores to PostgreSQL.
+- Subscribes to sensor topics, validates the JSON payload and stores the five anomaly features through
+  ``ingest_samples()`` (T17) -- the same path the live simulator uses. With TELEMETRY_STORE_ENABLED=false the legacy
+  ``sensor_readings`` write is used instead (rollback).
+- Authenticated (MQTT_USERNAME / MQTT_PASSWORD, optional MQTT_TLS) and bounded: the in-process queue holds at most
+  MQTT_QUEUE_MAX (default 10000) messages; on overflow the OLDEST message is dropped and counted in
+  ``mqtt_dropped_total{reason="overflow"}``. Unparseable or invalid payloads are counted as ``reason="malformed"``.
 - Handles connection drops with exponential backoff retry.
-- Mock mode: generates synthetic sensor data when no broker is available.
+- Mock mode: generates synthetic sensor data (origin ``simulated``) when no broker is available.
 
 Usage:
     python -m src.sensor_ingestion
@@ -20,11 +25,15 @@ import os
 import random
 import threading
 import time
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from typing import Any
 
 from dotenv import load_dotenv
+from prometheus_client import Counter
 
+from api import config
+from api.middleware.metrics import registry as _metrics_registry
 from src.timeutil import TimeContractError, parse_timestamp, utc_now
 
 load_dotenv()
@@ -160,6 +169,87 @@ def payload_to_state_dict(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 # -----------------------------------------------------------------------------
+# Metrics and the bounded queue (T17)
+# -----------------------------------------------------------------------------
+
+DROP_OVERFLOW = "overflow"  # queue full: the oldest queued message was discarded
+DROP_MALFORMED = "malformed"  # not JSON / not an object / failed payload validation
+DROP_STORE_ERROR = "store_error"  # the payload could not be written (database error); not retried
+DROP_REASONS = (DROP_OVERFLOW, DROP_MALFORMED, DROP_STORE_ERROR)
+
+
+def _dropped_counter() -> Counter:
+    existing = _metrics_registry._names_to_collectors.get("mqtt_dropped_total")  # survives module reloads in tests
+    if existing is not None:
+        return existing  # type: ignore[return-value]
+    counter = Counter(
+        "mqtt_dropped_total", "MQTT messages dropped before storage, by reason", ["reason"], registry=_metrics_registry
+    )
+    for reason in DROP_REASONS:
+        counter.labels(reason=reason)  # pre-create so /metrics shows zeros
+    return counter
+
+
+MQTT_DROPPED_TOTAL = _dropped_counter()
+
+
+class DropOldestQueue:
+    """FIFO with a hard bound. ``offer`` never blocks and never raises: when full it discards the OLDEST item and
+    counts it, so a burst cannot grow memory and the freshest data survives. Event-loop thread only."""
+
+    def __init__(self, maxsize: int) -> None:
+        if maxsize <= 0:
+            raise ValueError("maxsize must be positive")
+        self.maxsize = maxsize
+        self._q: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=maxsize)
+
+    def offer(self, item: dict[str, Any]) -> None:
+        if self._q.full():
+            self._q.get_nowait()
+            MQTT_DROPPED_TOTAL.labels(reason=DROP_OVERFLOW).inc()
+        self._q.put_nowait(item)
+
+    async def get(self) -> dict[str, Any]:
+        return await self._q.get()
+
+    def get_nowait(self) -> dict[str, Any]:
+        return self._q.get_nowait()
+
+    def empty(self) -> bool:
+        return self._q.empty()
+
+    def qsize(self) -> int:
+        return self._q.qsize()
+
+
+def parse_message(raw: bytes | str) -> dict[str, Any] | None:
+    """Raw MQTT payload -> dict, or ``None`` (counted as malformed). Safe to call from the MQTT thread."""
+    try:
+        payload = json.loads(raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw)
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+        MQTT_DROPPED_TOTAL.labels(reason=DROP_MALFORMED).inc()
+        return None
+    if not isinstance(payload, dict):
+        MQTT_DROPPED_TOTAL.labels(reason=DROP_MALFORMED).inc()
+        return None
+    return payload
+
+
+def payload_to_samples(payload: dict[str, Any], *, with_sim_time: bool = False) -> list[dict[str, Any]]:
+    """One ``ingest_samples`` sample per anomaly feature (the five direct measurands), all at the payload's
+    timestamp. ``with_sim_time`` adds ``sim_time`` (required by the store when the origin is ``simulated``).
+    Raises ``TimeContractError`` for a missing/naive timestamp."""
+    ts = parse_timestamp(payload.get("timestamp"))
+    samples = []
+    for feature, external_id in config.telemetry_feature_sensors().items():
+        sample: dict[str, Any] = {"external_id": external_id, "ts_event": ts, "value": payload.get(feature)}
+        if with_sim_time:
+            sample["sim_time"] = ts
+        samples.append(sample)
+    return samples
+
+
+# -----------------------------------------------------------------------------
 # Storage (async, uses database module)
 # -----------------------------------------------------------------------------
 
@@ -221,13 +311,65 @@ def generate_synthetic_payload() -> dict[str, Any]:
     }
 
 
+async def ingest_payloads(
+    payloads: list[dict[str, Any]],
+    *,
+    origin: str,
+    session_factory: Callable[[], Any] | None = None,
+    ingest: Callable[[list[dict[str, Any]]], Awaitable[Any]] | None = None,
+) -> int:
+    """Validate ``payloads`` and write them. Returns how many were accepted for writing.
+
+    Invalid payloads are counted (``mqtt_dropped_total{reason="malformed"}``) and skipped. With the telemetry store
+    enabled the five features of each payload go through ``ingest_samples`` in batches of at most
+    ``MAX_BATCH`` samples (stream ``live``); otherwise the legacy ``sensor_readings`` row is written.
+    ``ingest`` replaces the database write (tests / dry runs).
+    """
+    valid: list[dict[str, Any]] = []
+    for payload in payloads:
+        ok, err = validate_sensor_payload(payload)
+        if not ok:
+            logger.warning("Validation failed: %s", err)
+            MQTT_DROPPED_TOTAL.labels(reason=DROP_MALFORMED).inc()
+            continue
+        valid.append(payload)
+    if not valid:
+        return 0
+
+    if not config.telemetry_store_enabled() and ingest is None:
+        for payload in valid:
+            await store_reading(payload_to_state_dict(payload), source="mqtt" if origin == "measured" else "mock")
+        return len(valid)
+
+    from src.telemetry.validation import MAX_BATCH
+
+    samples: list[dict[str, Any]] = []
+    for payload in valid:
+        samples.extend(payload_to_samples(payload, with_sim_time=origin == "simulated"))
+    try:
+        for start in range(0, len(samples), MAX_BATCH):
+            chunk = samples[start : start + MAX_BATCH]
+            if ingest is not None:
+                await ingest(chunk)
+                continue
+            from database import get_session
+            from src.telemetry.ingest import ingest_samples
+
+            async with (session_factory or get_session)() as session:
+                await ingest_samples(session, chunk, stream_id="live", origin=origin)
+                await session.commit()
+    except Exception:
+        MQTT_DROPPED_TOTAL.labels(reason=DROP_STORE_ERROR).inc(len(valid))
+        logger.exception("Could not store %d MQTT payload(s)", len(valid))
+        return 0
+    return len(valid)
+
+
 async def run_mock_loop() -> None:
-    """Generate synthetic sensor payloads at interval and store to PostgreSQL."""
+    """Generate synthetic sensor payloads at interval and store them (origin ``simulated``)."""
     logger.info("Mock mode: generating synthetic sensor data every %.1fs", MOCK_INTERVAL_SECONDS)
     while True:
-        payload = generate_synthetic_payload()
-        state_dict = payload_to_state_dict(payload)
-        await store_reading(state_dict, source="mock")
+        await ingest_payloads([generate_synthetic_payload()], origin="simulated")
         await asyncio.sleep(MOCK_INTERVAL_SECONDS)
 
 
@@ -252,6 +394,11 @@ def _mqtt_thread(
         client_id=MQTT_CLIENT_ID,
         callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
     )
+    username, password = config.mqtt_credentials()
+    if username:
+        client.username_pw_set(username, password)  # never logged
+    if config.mqtt_tls_enabled():
+        client.tls_set()  # system CA bundle, certificate and hostname verification on
 
     def on_connect(client, userdata, flags, reason_code, properties):
         if reason_code != 0:
@@ -263,12 +410,10 @@ def _mqtt_thread(
         backoff = BACKOFF_INITIAL
 
     def on_message(client, userdata, msg):
-        try:
-            payload = json.loads(msg.payload.decode("utf-8"))
-        except (json.JSONDecodeError, UnicodeDecodeError) as e:
-            logger.warning("Invalid MQTT payload: %s", e)
+        payload = parse_message(msg.payload)  # counts malformed payloads
+        if payload is None:
             return
-        # Schedule async handling on the main loop
+        # Hand over to the event loop; queue_put is DropOldestQueue.offer (bounded, never blocks).
         loop.call_soon_threadsafe(queue_put, payload)
 
     def on_disconnect(client, userdata, disconnect_flags, reason_code, properties):
@@ -289,17 +434,19 @@ def _mqtt_thread(
         backoff = min(backoff * 2, BACKOFF_MAX)
 
 
-async def consume_mqtt_queue(queue: asyncio.Queue) -> None:
-    """Consume payloads from queue: validate and store to DB."""
+async def consume_mqtt_queue(
+    queue: DropOldestQueue,
+    *,
+    session_factory: Callable[[], Any] | None = None,
+    ingest: Callable[[list[dict[str, Any]]], Awaitable[Any]] | None = None,
+    batch_payloads: int = 100,
+) -> None:
+    """Drain ``queue`` forever: up to ``batch_payloads`` payloads (5 samples each) per transaction."""
     while True:
-        payload = await queue.get()
-        ok, err = validate_sensor_payload(payload)
-        if not ok:
-            logger.warning("Validation failed: %s", err)
-            continue
-        state_dict = payload_to_state_dict(payload)
-        await store_reading(state_dict, source="mqtt")
-        logger.debug("Stored MQTT reading")
+        batch = [await queue.get()]
+        while len(batch) < batch_payloads and not queue.empty():
+            batch.append(queue.get_nowait())
+        await ingest_payloads(batch, origin="measured", session_factory=session_factory, ingest=ingest)
 
 
 # -----------------------------------------------------------------------------
@@ -312,21 +459,21 @@ async def main_async() -> None:
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
+    from api.startup_checks import validate_mqtt_config
 
     use_mock = MOCK_SENSORS or not MQTT_BROKER
+    validate_mqtt_config(consumer_running=not use_mock)  # production requires MQTT_USERNAME / MQTT_PASSWORD
+
     if use_mock:
         await run_mock_loop()
         return
 
-    queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
-
-    def put_payload(payload: dict[str, Any]) -> None:
-        queue.put_nowait(payload)
+    queue = DropOldestQueue(config.mqtt_queue_max())
 
     loop = asyncio.get_running_loop()
     thread = threading.Thread(
         target=_mqtt_thread,
-        args=(put_payload, loop),
+        args=(queue.offer, loop),
         daemon=True,
     )
     thread.start()
