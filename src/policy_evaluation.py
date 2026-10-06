@@ -37,8 +37,11 @@ from typing import Any, Callable, Protocol, Sequence
 
 import numpy as np
 
+from .baselines.policies import ConstantPolicy, RulePolicy  # noqa: F401  (T28: moved to src/baselines; re-exported)
+from .baselines.policies import norm_chilled as _norm_chilled  # noqa: F401
+from .baselines.policies import norm_mode as _norm_mode  # noqa: F401
 from .carbon_provider import load_diurnal_carbon_intensity
-from .digital_twin import DEFAULT_CHILLED_WATER_TEMP_C, INLET_TEMP_MAX, INLET_TEMP_MIN, DigitalTwin
+from .digital_twin import DEFAULT_CHILLED_WATER_TEMP_C, INLET_TEMP_MAX, INLET_TEMP_MIN
 from .optimizer import (
     COOLING_MODES,
     EPISODE_STEPS,
@@ -207,47 +210,12 @@ def assert_disjoint(cfg: EvalConfig, scenarios: dict[str, list[Scenario]] | None
 # Policies
 # =============================================================================================
 class Policy(Protocol):
+    """``act`` maps (observation, state dict) to a normalised action. A policy MAY define ``reset()``;
+    ``run_episode`` calls it at the start of every episode (stateful controllers such as PID need it)."""
+
     name: str
 
     def act(self, obs: np.ndarray, state: dict[str, Any]) -> np.ndarray: ...
-
-
-def _norm_chilled(celsius: float) -> float:
-    return float(np.clip((celsius - 5.0) / (15.0 - 5.0), 0.0, 1.0))
-
-
-def _norm_mode(mode: str) -> float:
-    return COOLING_MODES.index(mode) / 3.0
-
-
-@dataclass
-class ConstantPolicy:
-    chilled_C: float
-    mode: str
-    name: str = ""
-
-    def __post_init__(self) -> None:
-        if self.mode not in COOLING_MODES:
-            raise ValueError(f"unknown cooling mode {self.mode!r}")
-        if not self.name:
-            self.name = f"constant[{self.chilled_C:g}C,{self.mode}]"
-
-    def act(self, obs: np.ndarray, state: dict[str, Any]) -> np.ndarray:
-        return np.array([_norm_chilled(self.chilled_C), _norm_mode(self.mode)], dtype=np.float32)
-
-
-class RulePolicy:
-    """The production rule (``DigitalTwin.select_cooling_mode``) at the twin's default setpoint.
-    It sees only what the PPO observation also carries (outside temperature, water stress)."""
-
-    def __init__(self, chilled_C: float = DEFAULT_CHILLED_WATER_TEMP_C) -> None:
-        self.name = "rule_baseline"
-        self._chilled_C = chilled_C
-        self._twin = DigitalTwin()
-
-    def act(self, obs: np.ndarray, state: dict[str, Any]) -> np.ndarray:
-        mode = self._twin.select_cooling_mode(float(state["outside_temp"]), float(state["water_stress"])).value
-        return np.array([_norm_chilled(self._chilled_C), _norm_mode(mode)], dtype=np.float32)
 
 
 class PPOPolicy:
@@ -279,7 +247,19 @@ def _round_floats(v: float) -> float:
     return float(v)
 
 
-def run_episode(policy: Policy, scenario: Scenario, cfg: EvalConfig, carbon_curve: np.ndarray) -> EpisodeResult:
+def run_episode(
+    policy: Policy,
+    scenario: Scenario,
+    cfg: EvalConfig,
+    carbon_curve: np.ndarray,
+    on_step: Callable[[dict[str, Any], float, dict[str, Any]], None] | None = None,
+) -> EpisodeResult:
+    """One episode. ``on_step(state_before, reward, state_after)`` (optional, read-only) is called after
+    every environment step; baseline tuning uses it to attribute rewards to states without a second
+    rollout loop. It cannot influence the episode."""
+    reset = getattr(policy, "reset", None)
+    if callable(reset):
+        reset()
     env = DataCentreEnv(
         alpha=cfg.alpha,
         beta=cfg.beta,
@@ -308,8 +288,11 @@ def run_episode(policy: Policy, scenario: Scenario, cfg: EvalConfig, carbon_curv
     )
     for _ in range(cfg.episode_steps):
         action = policy.act(obs, state)
+        state_before = state
         obs, r, term, trunc, info = env.step(action)
         state = info["state"]
+        if on_step is not None:
+            on_step(state_before, float(r), state)
         reward += float(r)
         energy += (float(state["it_power"]) + float(state["cooling_power"])) * dt_h
         water += float(state["water_consumed"])

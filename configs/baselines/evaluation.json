@@ -1,0 +1,34 @@
+{
+  "baseline_configs": {
+    "constant": "configs/baselines/constant.json",
+    "lookup": "configs/baselines/lookup.json",
+    "pid": "configs/baselines/pid.json",
+    "rule": "configs/baselines/rule.json"
+  },
+  "description": "Deterministic baselines v2 evaluated on the held-out test scenarios of the pre-registered evaluation config",
+  "experiment": "baselines",
+  "preregistration": "reports/policy_evaluation/PREREGISTRATION.json",
+  "schema": "twingrid-baselines-run/1",
+  "seeds": [
+    200000,
+    200001,
+    200002,
+    200003,
+    200004,
+    200005,
+    200006,
+    200007,
+    200008,
+    200009,
+    200010,
+    200011,
+    200012,
+    200013,
+    200014,
+    200015,
+    200016,
+    200017,
+    200018,
+    200019
+  ]
+}

@@ -1,0 +1,322 @@
+{
+  "config_version": 1,
+  "infeasible_reason": null,
+  "lineage": {
+    "action_schema_hash": "4eac7196a367fb0061a3a133f0541fa465297aa4be4cad086300e992ff7c1007",
+    "action_semantics_version": "1",
+    "environment_version": "1",
+    "input_cadence_s": 300,
+    "observation_schema_hash": "9fb575882c20162b7e79bc378c1e753ff4fa7a75d11326d078053961a4884626",
+    "physics_params_hash": "14ed372364a00dbaa218da884426291e20963343eb1dd01af1a1c0f82c69afad",
+    "physics_version": "1",
+    "reward_version": "1",
+    "safety_envelope_version": "1"
+  },
+  "name": "constant",
+  "parameters": {
+    "selected": {
+      "chilled_C": 15.0,
+      "mode": "closed_loop"
+    }
+  },
+  "schema": "twingrid-baseline-config/1",
+  "status": "feasible",
+  "tuner_version": "baselines-tuner/1",
+  "tuning": {
+    "carbon": {
+      "curve_sha256": "afef42cfe64a6bdae71dd82e6dd3171a926fae939b162ecadfa38d0d56e8a754",
+      "flat_curve": true,
+      "is_real": false
+    },
+    "eval_config_sha256": "25c4cc68464207f90980eee334f22032c982251afe69f11693f5320c8b1605ac",
+    "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
+    "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
+    "result": {
+      "candidates": [
+        {
+          "chilled_C": 5.0,
+          "feasible": true,
+          "mode": "free_air",
+          "validation_reward": -95.16384662641046,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 5.0,
+          "feasible": true,
+          "mode": "closed_loop",
+          "validation_reward": -76.38007830916284,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 5.0,
+          "feasible": true,
+          "mode": "evaporative",
+          "validation_reward": -114.48794297200428,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 5.0,
+          "feasible": true,
+          "mode": "hybrid",
+          "validation_reward": -95.16384662641046,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 7.5,
+          "feasible": true,
+          "mode": "free_air",
+          "validation_reward": -93.897531636323,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 7.5,
+          "feasible": true,
+          "mode": "closed_loop",
+          "validation_reward": -75.42919218426432,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 7.5,
+          "feasible": true,
+          "mode": "evaporative",
+          "validation_reward": -114.17098093037141,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 7.5,
+          "feasible": true,
+          "mode": "hybrid",
+          "validation_reward": -93.897531636323,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 10.0,
+          "feasible": true,
+          "mode": "free_air",
+          "validation_reward": -92.75838870119476,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 10.0,
+          "feasible": true,
+          "mode": "closed_loop",
+          "validation_reward": -74.57380713410717,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 10.0,
+          "feasible": true,
+          "mode": "evaporative",
+          "validation_reward": -113.88585258031905,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 10.0,
+          "feasible": true,
+          "mode": "hybrid",
+          "validation_reward": -92.75838870119476,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 12.5,
+          "feasible": true,
+          "mode": "free_air",
+          "validation_reward": -91.7319731503997,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 12.5,
+          "feasible": true,
+          "mode": "closed_loop",
+          "validation_reward": -73.80306940089109,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 12.5,
+          "feasible": true,
+          "mode": "evaporative",
+          "validation_reward": -113.62894000258034,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 12.5,
+          "feasible": true,
+          "mode": "hybrid",
+          "validation_reward": -91.7319731503997,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 15.0,
+          "feasible": true,
+          "mode": "free_air",
+          "validation_reward": -90.80622612652071,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 15.0,
+          "feasible": true,
+          "mode": "closed_loop",
+          "validation_reward": -73.1079186601823,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 15.0,
+          "feasible": true,
+          "mode": "evaporative",
+          "validation_reward": -113.39722308901075,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        },
+        {
+          "chilled_C": 15.0,
+          "feasible": true,
+          "mode": "hybrid",
+          "validation_reward": -90.80622612652071,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0
+          }
+        }
+      ],
+      "least_violating": {
+        "chilled_C": 15.0,
+        "feasible": true,
+        "mode": "closed_loop",
+        "validation_reward": -73.1079186601823,
+        "violation_steps": {
+          "inlet_over_max_steps": 0,
+          "inlet_under_min_steps": 0,
+          "outlet_violation_steps": 0
+        }
+      },
+      "tie_break": "lexicographic ascending on (chilled_C, mode index)",
+      "validation_reward": -73.1079186601823
+    },
+    "scenario_ids": [
+      "stress_0.0/validation/100000",
+      "stress_0.0/validation/100001",
+      "stress_0.0/validation/100002",
+      "stress_0.0/validation/100003",
+      "stress_0.0/validation/100004",
+      "stress_0.0/validation/100005",
+      "stress_0.0/validation/100006",
+      "stress_0.0/validation/100007",
+      "stress_0.0/validation/100008",
+      "stress_0.0/validation/100009",
+      "stress_0.4/validation/100000",
+      "stress_0.4/validation/100001",
+      "stress_0.4/validation/100002",
+      "stress_0.4/validation/100003",
+      "stress_0.4/validation/100004",
+      "stress_0.4/validation/100005",
+      "stress_0.4/validation/100006",
+      "stress_0.4/validation/100007",
+      "stress_0.4/validation/100008",
+      "stress_0.4/validation/100009",
+      "stress_0.8/validation/100000",
+      "stress_0.8/validation/100001",
+      "stress_0.8/validation/100002",
+      "stress_0.8/validation/100003",
+      "stress_0.8/validation/100004",
+      "stress_0.8/validation/100005",
+      "stress_0.8/validation/100006",
+      "stress_0.8/validation/100007",
+      "stress_0.8/validation/100008",
+      "stress_0.8/validation/100009"
+    ],
+    "scenario_set_id": "a290e92dcf0037b0",
+    "search_space": {
+      "chilled_C": [
+        5.0,
+        7.5,
+        10.0,
+        12.5,
+        15.0
+      ],
+      "modes": [
+        "free_air",
+        "closed_loop",
+        "evaporative",
+        "hybrid"
+      ],
+      "tie_tolerance": 1e-09
+    },
+    "split": "validation"
+  }
+}

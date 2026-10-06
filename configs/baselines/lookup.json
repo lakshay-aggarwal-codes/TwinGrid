@@ -1,0 +1,340 @@
+{
+  "config_version": 1,
+  "infeasible_reason": null,
+  "lineage": {
+    "action_schema_hash": "4eac7196a367fb0061a3a133f0541fa465297aa4be4cad086300e992ff7c1007",
+    "action_semantics_version": "1",
+    "environment_version": "1",
+    "input_cadence_s": 300,
+    "observation_schema_hash": "9fb575882c20162b7e79bc378c1e753ff4fa7a75d11326d078053961a4884626",
+    "physics_params_hash": "14ed372364a00dbaa218da884426291e20963343eb1dd01af1a1c0f82c69afad",
+    "physics_version": "1",
+    "reward_version": "1",
+    "safety_envelope_version": "1"
+  },
+  "name": "lookup",
+  "parameters": {
+    "bin_rule": "bin = bisect_right(edges, value): closed on the left, open on the right, first/last bins unbounded",
+    "fallback": {
+      "chilled_C": 15.0,
+      "mode": "closed_loop",
+      "rule": "best feasible constant over the lookup grid on validation"
+    },
+    "table": [
+      [
+        {
+          "chilled_C": 15.0,
+          "mean_reward": null,
+          "mode": "closed_loop",
+          "n": 0,
+          "source": "fallback",
+          "violation_steps": null
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25103760104386413,
+          "mode": "closed_loop",
+          "n": 327,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.2516201444197743,
+          "mode": "closed_loop",
+          "n": 1053,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25388235728080055,
+          "mode": "closed_loop",
+          "n": 1644,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25503142814304774,
+          "mode": "closed_loop",
+          "n": 102,
+          "source": "table",
+          "violation_steps": 0
+        }
+      ],
+      [
+        {
+          "chilled_C": 15.0,
+          "mean_reward": null,
+          "mode": "closed_loop",
+          "n": 12,
+          "source": "fallback",
+          "violation_steps": null
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.2515277132529313,
+          "mode": "closed_loop",
+          "n": 525,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.2519288584721901,
+          "mode": "closed_loop",
+          "n": 27,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25567634571382886,
+          "mode": "closed_loop",
+          "n": 507,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.2556708090178269,
+          "mode": "closed_loop",
+          "n": 60,
+          "source": "table",
+          "violation_steps": 0
+        }
+      ],
+      [
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25244370597218635,
+          "mode": "closed_loop",
+          "n": 69,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.2523865429749815,
+          "mode": "closed_loop",
+          "n": 501,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25602271427843465,
+          "mode": "closed_loop",
+          "n": 33,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25616479663780556,
+          "mode": "closed_loop",
+          "n": 525,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": null,
+          "mode": "closed_loop",
+          "n": 12,
+          "source": "fallback",
+          "violation_steps": null
+        }
+      ],
+      [
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25332731646158807,
+          "mode": "closed_loop",
+          "n": 102,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25338014405992704,
+          "mode": "closed_loop",
+          "n": 594,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.2559318391745061,
+          "mode": "closed_loop",
+          "n": 417,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.25593572809519344,
+          "mode": "closed_loop",
+          "n": 288,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": null,
+          "mode": "closed_loop",
+          "n": 0,
+          "source": "fallback",
+          "violation_steps": null
+        }
+      ],
+      [
+        {
+          "chilled_C": 15.0,
+          "mean_reward": null,
+          "mode": "closed_loop",
+          "n": 9,
+          "source": "fallback",
+          "violation_steps": null
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.2544221811270563,
+          "mode": "closed_loop",
+          "n": 969,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": -0.255229457741264,
+          "mode": "closed_loop",
+          "n": 765,
+          "source": "table",
+          "violation_steps": 0
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": null,
+          "mode": "closed_loop",
+          "n": 9,
+          "source": "fallback",
+          "violation_steps": null
+        },
+        {
+          "chilled_C": 15.0,
+          "mean_reward": null,
+          "mode": "closed_loop",
+          "n": 0,
+          "source": "fallback",
+          "violation_steps": null
+        }
+      ]
+    ],
+    "temp_edges": [
+      16.0,
+      20.0,
+      24.0,
+      28.0
+    ],
+    "util_edges": [
+      0.2,
+      0.4,
+      0.6,
+      0.8
+    ]
+  },
+  "schema": "twingrid-baseline-config/1",
+  "status": "feasible",
+  "tuner_version": "baselines-tuner/1",
+  "tuning": {
+    "carbon": {
+      "curve_sha256": "afef42cfe64a6bdae71dd82e6dd3171a926fae939b162ecadfa38d0d56e8a754",
+      "flat_curve": true,
+      "is_real": false
+    },
+    "eval_config_sha256": "25c4cc68464207f90980eee334f22032c982251afe69f11693f5320c8b1605ac",
+    "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
+    "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
+    "result": {
+      "best_constant_over_lookup_grid_validation_reward": -73.1079186601823,
+      "cells": 25,
+      "fallback_cells": 7,
+      "improves_on_best_constant": false,
+      "least_violating_cells": 0,
+      "tie_break": "lexicographic ascending on (chilled_C, mode index)",
+      "validation_reward_closed_loop": -73.1079186601823,
+      "validation_violation_steps": {
+        "inlet_over_max_steps": 0,
+        "inlet_under_min_steps": 0,
+        "outlet_violation_steps": 0
+      }
+    },
+    "scenario_ids": [
+      "stress_0.0/validation/100000",
+      "stress_0.0/validation/100001",
+      "stress_0.0/validation/100002",
+      "stress_0.0/validation/100003",
+      "stress_0.0/validation/100004",
+      "stress_0.0/validation/100005",
+      "stress_0.0/validation/100006",
+      "stress_0.0/validation/100007",
+      "stress_0.0/validation/100008",
+      "stress_0.0/validation/100009",
+      "stress_0.4/validation/100000",
+      "stress_0.4/validation/100001",
+      "stress_0.4/validation/100002",
+      "stress_0.4/validation/100003",
+      "stress_0.4/validation/100004",
+      "stress_0.4/validation/100005",
+      "stress_0.4/validation/100006",
+      "stress_0.4/validation/100007",
+      "stress_0.4/validation/100008",
+      "stress_0.4/validation/100009",
+      "stress_0.8/validation/100000",
+      "stress_0.8/validation/100001",
+      "stress_0.8/validation/100002",
+      "stress_0.8/validation/100003",
+      "stress_0.8/validation/100004",
+      "stress_0.8/validation/100005",
+      "stress_0.8/validation/100006",
+      "stress_0.8/validation/100007",
+      "stress_0.8/validation/100008",
+      "stress_0.8/validation/100009"
+    ],
+    "scenario_set_id": "a290e92dcf0037b0",
+    "search_space": {
+      "attribution": "per-step reward of constant-action rollouts, attributed to the bin the step started in; switching costs are not modelled",
+      "chilled_C": [
+        5.0,
+        7.5,
+        10.0,
+        12.5,
+        15.0
+      ],
+      "min_cell_samples": 20,
+      "modes": [
+        "free_air",
+        "closed_loop",
+        "evaporative",
+        "hybrid"
+      ],
+      "temp_edges": [
+        16.0,
+        20.0,
+        24.0,
+        28.0
+      ],
+      "tie_tolerance": 1e-09,
+      "transient_steps_excluded": 3,
+      "util_edges": [
+        0.2,
+        0.4,
+        0.6,
+        0.8
+      ]
+    },
+    "split": "validation"
+  }
+}

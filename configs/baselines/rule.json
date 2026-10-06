@@ -1,0 +1,79 @@
+{
+  "config_version": 1,
+  "infeasible_reason": null,
+  "lineage": {
+    "action_schema_hash": "4eac7196a367fb0061a3a133f0541fa465297aa4be4cad086300e992ff7c1007",
+    "action_semantics_version": "1",
+    "environment_version": "1",
+    "input_cadence_s": 300,
+    "observation_schema_hash": "9fb575882c20162b7e79bc378c1e753ff4fa7a75d11326d078053961a4884626",
+    "physics_params_hash": "14ed372364a00dbaa218da884426291e20963343eb1dd01af1a1c0f82c69afad",
+    "physics_version": "1",
+    "reward_version": "1",
+    "safety_envelope_version": "1"
+  },
+  "name": "rule",
+  "parameters": {
+    "chilled_C": 12.0,
+    "mode_rule": "production_rule"
+  },
+  "schema": "twingrid-baseline-config/1",
+  "status": "feasible",
+  "tuner_version": "baselines-tuner/1",
+  "tuning": {
+    "carbon": {
+      "curve_sha256": "afef42cfe64a6bdae71dd82e6dd3171a926fae939b162ecadfa38d0d56e8a754",
+      "flat_curve": true,
+      "is_real": false
+    },
+    "eval_config_sha256": "25c4cc68464207f90980eee334f22032c982251afe69f11693f5320c8b1605ac",
+    "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
+    "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
+    "result": {
+      "tuned": false,
+      "validation_reward": -92.16491257640048,
+      "validation_violation_steps": {
+        "inlet_over_max_steps": 0,
+        "inlet_under_min_steps": 0,
+        "outlet_violation_steps": 0
+      }
+    },
+    "scenario_ids": [
+      "stress_0.0/validation/100000",
+      "stress_0.0/validation/100001",
+      "stress_0.0/validation/100002",
+      "stress_0.0/validation/100003",
+      "stress_0.0/validation/100004",
+      "stress_0.0/validation/100005",
+      "stress_0.0/validation/100006",
+      "stress_0.0/validation/100007",
+      "stress_0.0/validation/100008",
+      "stress_0.0/validation/100009",
+      "stress_0.4/validation/100000",
+      "stress_0.4/validation/100001",
+      "stress_0.4/validation/100002",
+      "stress_0.4/validation/100003",
+      "stress_0.4/validation/100004",
+      "stress_0.4/validation/100005",
+      "stress_0.4/validation/100006",
+      "stress_0.4/validation/100007",
+      "stress_0.4/validation/100008",
+      "stress_0.4/validation/100009",
+      "stress_0.8/validation/100000",
+      "stress_0.8/validation/100001",
+      "stress_0.8/validation/100002",
+      "stress_0.8/validation/100003",
+      "stress_0.8/validation/100004",
+      "stress_0.8/validation/100005",
+      "stress_0.8/validation/100006",
+      "stress_0.8/validation/100007",
+      "stress_0.8/validation/100008",
+      "stress_0.8/validation/100009"
+    ],
+    "scenario_set_id": "a290e92dcf0037b0",
+    "search_space": {
+      "note": "the rule is not tuned; it is checked against the envelope on validation"
+    },
+    "split": "validation"
+  }
+}
