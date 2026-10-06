@@ -64,10 +64,18 @@ async def test_api_whatif_and_benchmark_persist_nothing_and_leave_live_twin_alon
     assert (twin._time, twin._water_consumed_cumulative_L) == (t0, w0)
 
 
-@pytest.mark.legacy_behavior("T9-T10")
-async def test_api_simulate_get_persists_a_run_and_hourly_rows(client, viewer_headers, count_rows, frozen_env):
-    """Contract debt D-1: a GET that writes. Moved to POST only once an owner column exists."""
+async def test_api_simulate_get_writes_nothing_by_default(client, viewer_headers, count_rows, frozen_env):
+    """T14 closed contract debt D-1 for the default path: the GET no longer writes."""
     r = await client.get("/api/simulate/3", headers=viewer_headers)
+    assert r.status_code == 200 and len(r.json()) == 3
+    assert await count_rows(SimulationRun) == 0
+    assert await count_rows(SensorReading, SensorReading.source == "simulation") == 0
+
+
+async def test_api_simulate_persist_true_is_the_operator_only_write_path(
+    client, operator_headers, count_rows, frozen_env
+):
+    r = await client.get("/api/simulate/3?persist=true", headers=operator_headers)
     assert r.status_code == 200 and len(r.json()) == 3
     assert await count_rows(SimulationRun) == 1
     assert await count_rows(SensorReading, SensorReading.source == "simulation") == 3

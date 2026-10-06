@@ -39,8 +39,9 @@ async def test_state_reading_is_stamped(client, viewer_headers, session_maker):
     assert (rows[0].origin, rows[0].physics_version) == ("simulated", "legacy-0")
 
 
-async def test_simulation_run_and_its_readings_are_stamped(client, viewer_headers, session_maker):
-    assert (await client.get("/api/simulate/3", headers=viewer_headers)).status_code == 200
+async def test_simulation_run_and_its_readings_are_stamped(client, operator_headers, session_maker):
+    # T14: /api/simulate writes only with persist=true (operator)
+    assert (await client.get("/api/simulate/3?persist=true", headers=operator_headers)).status_code == 200
     runs = await _all(session_maker, SimulationRun)
     readings = await _all(session_maker, SensorReading)
     assert [r.physics_version for r in runs] == ["legacy-0"]

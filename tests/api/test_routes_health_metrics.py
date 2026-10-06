@@ -81,8 +81,8 @@ async def test_request_id_generated_and_echoed(client):
     generated = await client.get("/healthz")
     assert generated.headers.get("X-Request-ID")
 
-    echoed = await client.get("/healthz", headers={"X-Request-ID": "abc-123"})
-    assert echoed.headers["X-Request-ID"] == "abc-123"
+    echoed = await client.get("/healthz", headers={"X-Request-ID": "abc-12345.x_y"})
+    assert echoed.headers["X-Request-ID"] == "abc-12345.x_y"
 
 
 async def test_metrics_endpoint_exposes_request_counters(client):

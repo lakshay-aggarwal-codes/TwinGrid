@@ -6,12 +6,11 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from api.auth import get_current_user
-from api.rate_limit import http_limit
+from api.rate_limit import http_limit, run_compute
 from api.serialization import to_jsonable
 from api.services import esg_report_service, twin_service
 from models.db_models import User
@@ -28,7 +27,8 @@ async def esg_report(
 ) -> FileResponse:
     """Generate and download a one-page ESG/sustainability PDF for the
     current state (see api/services/esg_report_service.py). PDF generation
-    is CPU-bound, so it runs in a worker thread."""
+    is CPU-bound, so it runs in a worker thread under the compute bound
+    (429 when too many run at once, 504 on timeout; api/rate_limit.py)."""
     state = to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, "auto", live=False))
     # One private file per request (a shared fixed path let concurrent callers
     # overwrite / receive each other's report). Deleted once the response is sent.
@@ -36,7 +36,7 @@ async def esg_report(
     os.close(fd)
     output_path = Path(tmp_name)
     try:
-        await run_in_threadpool(esg_report_service.generate_report, state, output_path)
+        await run_compute(esg_report_service.generate_report, state, output_path)
     except Exception:
         output_path.unlink(missing_ok=True)
         raise

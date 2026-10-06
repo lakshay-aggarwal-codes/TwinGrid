@@ -8,8 +8,6 @@ import logging
 import os
 from dataclasses import dataclass
 
-from api.startup_checks import StartupConfigError
-
 _logger = logging.getLogger(__name__)
 
 
@@ -22,10 +20,10 @@ def _parse_origins(raw: str | None) -> list[str]:
             # different frontend, and requests from it will be silently
             # rejected by the browser with a confusing CORS error) or, worse,
             # masks someone forgetting to set CORS_ALLOWED_ORIGINS at all.
-            raise StartupConfigError(
-                ["CORS_ALLOWED_ORIGINS"],
-                "CORS_ALLOWED_ORIGINS is not set and ENVIRONMENT=production. Set it explicitly to a "
-                "comma-separated list of allowed frontend origins, e.g. https://your-frontend.example.com",
+            raise RuntimeError(
+                "CORS_ALLOWED_ORIGINS is not set and ENVIRONMENT=production. Set it "
+                "explicitly to a comma-separated list of allowed frontend origins, e.g.: "
+                "CORS_ALLOWED_ORIGINS=https://your-frontend.example.com"
             )
         # Fallback to the one known deployed frontend rather than "*" --
         # still a single hardcoded default, but a scoped one, not a
@@ -110,14 +108,13 @@ def load_ws_limits() -> WebSocketLimits:
 
 
 # -----------------------------------------------------------------------------
-# HTTP limits (T5)
+# HTTP rate limits and request-size cap (T5; consumed by api/rate_limit.py)
 #
-# scope -> (environment variable, default "<count>/<window>"). Read from the
-# environment on every call so a deployment can retune without a code change
-# and tests can override per test. api/rate_limit.py validates the value and
-# falls back to the default here if it is malformed.
+# All values are read from the environment on every call (not at import), so a
+# deployment or a test can change them without a reload.
 # -----------------------------------------------------------------------------
 
+# scope -> (environment variable name, default "<count>/<unit>")
 RATE_LIMIT_DEFAULTS: dict[str, tuple[str, str]] = {
     "state": ("RATE_LIMIT_STATE", "30/minute"),
     "whatif": ("RATE_LIMIT_WHATIF", "30/minute"),
@@ -130,19 +127,25 @@ RATE_LIMIT_DEFAULTS: dict[str, tuple[str, str]] = {
     "webhook": ("RATE_LIMIT_WEBHOOK", "30/minute"),
     "optimize": ("RATE_LIMIT_OPTIMIZE", "10/minute"),
     "train_async": ("RATE_LIMIT_TRAIN_ASYNC", "5/minute"),
+    # T14: applied (at include_router level, see api/main.py) to every route that has no scope of its own.
+    "general": ("RATE_LIMIT_GENERAL", "120/minute"),
 }
 
-DEFAULT_MAX_QUERY_STRING_CHARS = 8192
+# Paths never rate limited (infrastructure probes). /healthz is today's liveness route; /livez is its planned name.
+HTTP_LIMIT_EXEMPT_PATHS: frozenset[str] = frozenset({"/livez", "/healthz"})
+
 DEFAULT_TRUSTED_PROXY_HOPS = 1
-# Upper bound on the ``recent_data`` query parameter of /api/anomaly_score: a (12, 5)
-# window of floats is well under 1 KB, so 8000 characters is generous.
-MAX_RECENT_DATA_CHARS = 8000
+DEFAULT_MAX_QUERY_STRING_CHARS = 8192
+
+_TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
 
 
 def rate_limit_setting(scope: str) -> str:
-    """The raw rate-limit string (e.g. ``"30/minute"``) for ``scope``: the scope's
-    environment variable if set and non-blank, else its default. Unknown scope -> KeyError.
-    The value is NOT validated here (see api/rate_limit.parse_rate)."""
+    """The raw ``"<count>/<unit>"`` limit for ``scope``: its env var if set and non-blank, else the default.
+
+    Raises KeyError for an unknown scope. The value is NOT validated here; api/rate_limit.py
+    parses it and falls back to the default (with a warning) when it is malformed.
+    """
     env_name, default = RATE_LIMIT_DEFAULTS[scope]
     raw = os.getenv(env_name)
     if raw is None or not raw.strip():
@@ -151,16 +154,64 @@ def rate_limit_setting(scope: str) -> str:
 
 
 def trust_proxy_headers() -> bool:
-    """True only when TRUST_PROXY_HEADERS is explicitly truthy (1/true/yes/on).
-    Default False: X-Forwarded-For is client-controlled unless a trusted proxy sets it."""
-    return os.getenv("TRUST_PROXY_HEADERS", "").strip().lower() in {"1", "true", "yes", "on"}
+    """TRUST_PROXY_HEADERS: honour X-Forwarded-For. Off unless explicitly enabled (true/1/yes/on)."""
+    return os.getenv("TRUST_PROXY_HEADERS", "").strip().lower() in _TRUE_VALUES
 
 
 def trusted_proxy_hops() -> int:
-    """Number of trusted proxies in front of the app (TRUSTED_PROXY_HOPS, default 1)."""
+    """TRUSTED_PROXY_HOPS (default 1): how many right-most X-Forwarded-For entries were added by trusted proxies."""
     return _env_positive_int("TRUSTED_PROXY_HOPS", DEFAULT_TRUSTED_PROXY_HOPS)
 
 
 def max_query_string_chars() -> int:
-    """Longest accepted raw query string (MAX_QUERY_STRING_CHARS, default 8192)."""
+    """MAX_QUERY_STRING_CHARS (default 8192): longest query string accepted before 413."""
     return _env_positive_int("MAX_QUERY_STRING_CHARS", DEFAULT_MAX_QUERY_STRING_CHARS)
+
+
+# -----------------------------------------------------------------------------
+# Cost controls (T14). Read on every call, like the limits above.
+# -----------------------------------------------------------------------------
+
+# Upper bound on the ``recent_data`` query parameter of /api/anomaly_score (a 12 x 5 window is ~1.2 kB).
+MAX_RECENT_DATA_CHARS = 4096
+# /api/simulate?persist=true writes one run + one reading per simulated hour; hours is validated <= 168.
+MAX_SIMULATE_PERSIST_ROWS = 168
+
+DEFAULT_MAX_BODY_BYTES = 1024 * 1024  # 1 MiB
+DEFAULT_COMPUTE_TIMEOUT_S = 60.0
+DEFAULT_MAX_CONCURRENT_COMPUTE = 4
+
+
+def _env_positive_float(name: str, default: float) -> float:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        value = float(raw.strip())
+    except ValueError:
+        value = 0.0
+    if not value > 0 or value == float("inf"):
+        _logger.warning("%s=%r is not a positive number; using default %s", name, raw, default)
+        return default
+    return value
+
+
+def http_limits_enabled() -> bool:
+    """HTTP_LIMITS_ENABLED (default true). ``false``/``0``/``no``/``off`` switches the per-client request-rate
+    windows off (rollback switch). The query-string cap, body cap, timeout and concurrency bound stay on."""
+    return os.getenv("HTTP_LIMITS_ENABLED", "true").strip().lower() not in {"0", "false", "no", "off"}
+
+
+def max_body_bytes() -> int:
+    """MAX_BODY_BYTES (default 1 MiB): larger request bodies are rejected with 413."""
+    return _env_positive_int("MAX_BODY_BYTES", DEFAULT_MAX_BODY_BYTES)
+
+
+def compute_timeout_s() -> float:
+    """COMPUTE_TIMEOUT_S (default 60): wall-clock budget of one compute-heavy request; exceeded -> 504."""
+    return _env_positive_float("COMPUTE_TIMEOUT_S", DEFAULT_COMPUTE_TIMEOUT_S)
+
+
+def max_concurrent_compute() -> int:
+    """MAX_CONCURRENT_COMPUTE (default 4): compute-heavy requests in flight per process; more -> 429."""
+    return _env_positive_int("MAX_CONCURRENT_COMPUTE", DEFAULT_MAX_CONCURRENT_COMPUTE)

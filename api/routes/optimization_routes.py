@@ -7,7 +7,8 @@ from redis.exceptions import RedisError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import require_operator
-from api.rate_limit import http_limit
+from api.errors import ApiError
+from api.rate_limit import http_limit, run_compute_async
 from api.repositories import data_repository
 from api.schemas.optimization import OptimizeRequest
 from api.serialization import to_jsonable
@@ -26,10 +27,18 @@ async def optimize(
     _user: Annotated[User, Depends(require_operator)],
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Run RL optimization. Minimizes J = alpha*W + beta*E + gamma*C. Requires 'operator' role. Rate limited: 10/minute."""
-    results, summary = await optimization_service.run_optimization(
-        body.alpha, body.beta, body.gamma, body.water_stress, body.hours
-    )
+    """Run RL optimization. Minimizes J = alpha*W + beta*E + gamma*C. Requires 'operator' role. Rate limited: 10/minute.
+
+    T14: never trains inside the request. With no loadable, verified model it answers 503
+    ``model_unavailable``. Concurrency and time are bounded (429 / 504, api/rate_limit.py)."""
+    try:
+        results, summary = await run_compute_async(
+            optimization_service.run_optimization, body.alpha, body.beta, body.gamma, body.water_stress, body.hours
+        )
+    except optimization_service.OptimizerUnavailableError:
+        raise ApiError(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "model_unavailable", "No verified optimizer model is available"
+        ) from None
     serialized_results = to_jsonable(results)
     summary = to_jsonable(summary)
     opt_result = await data_repository.save_optimization_result(

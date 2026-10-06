@@ -19,6 +19,7 @@ from typing import Any, Optional
 import pandas as pd
 
 from api.middleware.metrics import MODEL_INFERENCE_COUNT
+from src.model_registry import ModelUnavailableError, ensure_verified
 from src.optimizer import DataCentreEnv, JointOptimizer
 
 logger = logging.getLogger(__name__)
@@ -26,12 +27,15 @@ logger = logging.getLogger(__name__)
 OPTIMIZER_MODEL_PATH = Path(os.getenv("OPTIMIZER_MODEL_PATH", "models/optimizer"))
 
 STEPS_PER_HOUR = 12
-# Only used if no compatible saved model exists. Deliberately small: this runs
-# inside a request. Real training (50k steps) is `python notebooks/train_all.py`.
-FALLBACK_TRAIN_TIMESTEPS = 5000
+# T14: nothing in this module trains. Real training is `python notebooks/train_all.py`, or the
+# POST /api/optimize/train_async RQ job (src/task_jobs.py).
 
 _optimizer: Optional[JointOptimizer] = None
-_train_lock = asyncio.Lock()
+_train_lock = asyncio.Lock()  # name kept: serialises the one-time load
+
+
+class OptimizerUnavailableError(RuntimeError):
+    """No loadable, verified PPO model exists. The API maps this to 503 ``model_unavailable``."""
 
 
 def get_optimizer() -> Optional[JointOptimizer]:
@@ -40,8 +44,9 @@ def get_optimizer() -> Optional[JointOptimizer]:
 
 
 def _load_saved_optimizer() -> Optional[JointOptimizer]:
-    """BLOCKING. Load OPTIMIZER_MODEL_PATH; return None if it is missing,
-    unloadable, or was trained for a different observation/action space.
+    """BLOCKING. Load OPTIMIZER_MODEL_PATH; return None if it is missing, fails artifact verification
+    (src/model_registry.ensure_verified, ARTIFACT_VERIFY mode), unloadable, or was trained for a different
+    observation/action space.
 
     The shape check matters: PPO.load() succeeds for any well-formed zip, and
     a policy trained against an older env (e.g. 8-dim observations, while
@@ -50,6 +55,13 @@ def _load_saved_optimizer() -> Optional[JointOptimizer]:
     """
     if not (OPTIMIZER_MODEL_PATH / "ppo_model.zip").exists():
         logger.info("No saved optimizer at %s", OPTIMIZER_MODEL_PATH)
+        return None
+    try:
+        ensure_verified(
+            [OPTIMIZER_MODEL_PATH / "ppo_model.zip", OPTIMIZER_MODEL_PATH / "config.json"], artifact="PPO optimizer"
+        )
+    except ModelUnavailableError as exc:
+        logger.error("PPO optimizer not loaded: %s", exc.reason)
         return None
     try:
         loaded = JointOptimizer.load(OPTIMIZER_MODEL_PATH)
@@ -79,19 +91,6 @@ def _load_saved_optimizer() -> Optional[JointOptimizer]:
     return loaded
 
 
-def _train_fallback_optimizer(alpha: float, beta: float, gamma: float, water_stress: float) -> JointOptimizer:
-    """BLOCKING. Quick in-memory PPO training, used only when no compatible
-    saved model exists.
-
-    Not persisted on purpose: a 5k-step model must never overwrite (or be
-    mistaken for) the properly trained artifact in models/optimizer.
-    """
-    logger.warning("Training a fallback optimizer (%d timesteps) in a worker thread", FALLBACK_TRAIN_TIMESTEPS)
-    optimizer = JointOptimizer(alpha=alpha, beta=beta, gamma=gamma)
-    optimizer.train(total_timesteps=FALLBACK_TRAIN_TIMESTEPS, n_envs=2, water_stress=water_stress)
-    return optimizer
-
-
 async def warm_up() -> None:
     """Best-effort load of the saved model at startup so the first
     /api/optimize call doesn't pay for importing torch + loading weights.
@@ -104,20 +103,23 @@ async def warm_up() -> None:
     except asyncio.CancelledError:
         raise
     except Exception:
-        logger.exception("Optimizer warm-up failed -- it will be loaded/trained on first use")
+        logger.exception("Optimizer warm-up failed -- it will be loaded on first use")
 
 
-async def _ensure_optimizer(alpha: float, beta: float, gamma: float, water_stress: float) -> JointOptimizer:
-    """Load the saved model, else train a fallback -- once, under the lock, in a thread."""
+async def _ensure_optimizer(
+    alpha: float = 0.5, beta: float = 0.3, gamma: float = 0.2, water_stress: float = 0.0
+) -> Optional[JointOptimizer]:
+    """The loaded optimizer, loading the saved model once (under the lock, in a thread) if needed.
+
+    Returns None when no verified, compatible model exists. NEVER trains (T14): training inside a request let
+    one call occupy a worker for minutes. The arguments are accepted only for call-site compatibility.
+    """
     global _optimizer
     if _optimizer is not None:
         return _optimizer
     async with _train_lock:
         if _optimizer is None:
-            loaded = await asyncio.to_thread(_load_saved_optimizer)
-            if loaded is None:
-                loaded = await asyncio.to_thread(_train_fallback_optimizer, alpha, beta, gamma, water_stress)
-            _optimizer = loaded
+            _optimizer = await asyncio.to_thread(_load_saved_optimizer)
         return _optimizer
 
 
@@ -164,11 +166,14 @@ async def run_optimization(
     Concurrency note: the rollout always uses a FRESH DataCentreEnv built from
     this call's own alpha/beta/gamma -- so per-request results are correctly
     isolated even under concurrent requests. The only shared mutable state is
-    whether the optimizer's model has been loaded/trained yet; ``_train_lock``
-    makes sure only one concurrent request ever does that one-time work.
+    whether the optimizer's model has been loaded yet; ``_train_lock`` makes
+    sure only one concurrent request ever does that one-time work.
+    Raises OptimizerUnavailableError if there is no verified model (never trains).
     Results still need api.serialization.to_jsonable before being stored or
     returned.
     """
     optimizer = await _ensure_optimizer(alpha, beta, gamma, water_stress)
+    if optimizer is None:
+        raise OptimizerUnavailableError("no loadable verified optimizer model")
     MODEL_INFERENCE_COUNT.labels(model="ppo_optimizer").inc()
     return await asyncio.to_thread(_rollout, optimizer, alpha, beta, gamma, water_stress, hours)

@@ -22,17 +22,18 @@ import asyncio
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from api.auth import router as auth_router
 from api.config import settings
+from api.errors import ErrorBoundaryMiddleware, rate_limit_exceeded_handler, register_exception_handlers
 from api.logging_config import setup_api_logging
+from api.middleware.body_limit import BodyLimitMiddleware
 from api.middleware.metrics import MetricsMiddleware
 from api.middleware.request_id import RequestIDMiddleware
-from api.rate_limit import limiter
+from api.rate_limit import http_limit, limiter
 from api.routes import (
     anomaly_routes,
     digital_twin_routes,
@@ -47,7 +48,6 @@ from api.routes import (
 )
 from api.services import optimization_service
 from api.services.live_broadcast_service import run_broadcast_loop
-from api.startup_checks import validate_startup_config
 from database import init_db
 
 
@@ -59,7 +59,6 @@ async def lifespan(app: FastAPI):
     The optimizer warm-up runs as a background task (loading PPO imports torch,
     which takes seconds) so it never delays the server becoming healthy.
     """
-    validate_startup_config()  # re-checked here: the environment may differ from import time
     setup_api_logging()
     await init_db()
     background_tasks = [
@@ -71,8 +70,6 @@ async def lifespan(app: FastAPI):
         task.cancel()
     await asyncio.gather(*background_tasks, return_exceptions=True)
 
-
-validate_startup_config()  # T13: refuse to build the app with unsafe production settings
 
 app = FastAPI(
     title=settings.APP_TITLE,
@@ -98,20 +95,31 @@ app = FastAPI(
     ],
 )
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# T14: one error model (application/problem+json). Rollback: remove these two lines and ErrorBoundaryMiddleware below.
+register_exception_handlers(app)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
-app.include_router(auth_router)
-app.include_router(health_routes.router)
-app.include_router(digital_twin_routes.router)
-app.include_router(optimization_routes.router)
-app.include_router(anomaly_routes.router)
+# T14: every HTTP route gets a request-rate window: the "general" scope here (routes with their own scope also
+# have that one), except the infrastructure probes in config.HTTP_LIMIT_EXEMPT_PATHS. The WebSocket router is
+# not included: its connection caps are enforced in websocket_routes / ConnectionManager.
+_GENERAL_LIMIT = [Depends(http_limit("general"))]
+app.include_router(auth_router, dependencies=_GENERAL_LIMIT)
+app.include_router(health_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(digital_twin_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(optimization_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(anomaly_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(websocket_routes.router)
-app.include_router(equipment_health_routes.router)
-app.include_router(shadow_mode_routes.router)
-app.include_router(esg_report_routes.router)
-app.include_router(metrics_routes.router)
-app.include_router(facility_routes.router)
+app.include_router(equipment_health_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(shadow_mode_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(esg_report_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(metrics_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(facility_routes.router, dependencies=_GENERAL_LIMIT)
 
+# Middleware: the LAST one added is the outermost. Request flow:
+# Metrics -> RequestID -> CORS -> ErrorBoundary -> BodyLimit -> routes.
+# ErrorBoundary/BodyLimit sit inside CORS so their 500/413 responses carry CORS and X-Request-ID headers.
+app.add_middleware(BodyLimitMiddleware)
+app.add_middleware(ErrorBoundaryMiddleware)
 # CORS origins come from CORS_ALLOWED_ORIGINS (comma-separated) -- see api/config.py.
 app.add_middleware(
     CORSMiddleware,

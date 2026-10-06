@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 
-from api.auth import get_current_user
-from api.rate_limit import http_limit
+from api.auth import get_current_user, require_operator
+from api.errors import ApiError
+from api.rate_limit import http_limit, run_compute
 from api.services import shadow_mode_service
 from api.services.optimization_service import _ensure_optimizer
 from models.db_models import User
@@ -14,16 +15,19 @@ router = APIRouter(tags=["shadow-mode"])
 
 
 @router.post("/api/shadow_mode/sample", dependencies=[Depends(http_limit("shadow_sample"))])
-async def shadow_mode_sample(_user: Annotated[User, Depends(get_current_user)]) -> dict[str, Any]:
+async def shadow_mode_sample(_user: Annotated[User, Depends(require_operator)]) -> dict[str, Any]:
     """One shadow-mode sample: log what PPO would have done vs. the
     rule-based baseline for the live twin's CURRENT state, without applying
     either. See api/services/shadow_mode_service.py -- not on a schedule;
     call this periodically (e.g. from an external cron/task runner) to
-    build up a real comparison history."""
+    build up a real comparison history.
+
+    T14: operator only (it appends to the shadow log and runs the policy), never trains, bounded like the
+    other compute routes."""
     optimizer = await _ensure_optimizer(alpha=0.5, beta=0.3, gamma=0.2, water_stress=0.0)
-    entry = shadow_mode_service.record_comparison(optimizer)
+    entry = await run_compute(shadow_mode_service.record_comparison, optimizer)
     if entry is None:
-        raise HTTPException(status_code=503, detail="Optimizer not available for shadow-mode sampling")
+        raise ApiError(503, "model_unavailable", "Optimizer not available for shadow-mode sampling")
     return entry
 
 

@@ -1,4 +1,4 @@
-"""Optimizer service: load-first, never block the event loop, one-time fallback training.
+"""Optimizer service: load-first (verified), never block the event loop, never train in a request (T14).
 
 The PPO model is replaced by a small fake so these run without training/loading a
 real policy; DataCentreEnv, the service logic and the threading are real.
@@ -46,6 +46,9 @@ def _optimizer_with(model) -> JointOptimizer:
 def _fresh_service_state(monkeypatch):
     monkeypatch.setattr(svc, "_optimizer", None)
     monkeypatch.setattr(svc, "_train_lock", asyncio.Lock())
+    # tmp_path model files are outside the project root and have no registry entry; artifact verification has its
+    # own tests below (TestVerification), everything else exercises the loading/shape logic.
+    monkeypatch.setenv("ARTIFACT_VERIFY", "off")
 
 
 async def _max_loop_stall(coro):
@@ -131,26 +134,42 @@ class TestRunOptimization:
         assert worst_stall < 0.25, f"event loop was blocked for {worst_stall:.3f}s"
 
     @pytest.mark.asyncio
-    async def test_fallback_training_happens_once_in_a_thread(self, tmp_path, monkeypatch):
+    async def test_no_model_raises_unavailable_and_never_trains(self, tmp_path, monkeypatch):
         monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", tmp_path / "missing")
-        trained = []
 
-        def fake_train(self, total_timesteps=0, **kwargs):
-            time.sleep(0.5)  # BLOCKING, like PPO.learn()
-            trained.append(total_timesteps)
-            self._model = FakeModel()
+        def must_not_train(self, *a, **k):
+            raise AssertionError("a request must never train")
 
-        monkeypatch.setattr(JointOptimizer, "train", fake_train)
+        monkeypatch.setattr(JointOptimizer, "train", must_not_train)
         monkeypatch.setattr(JointOptimizer, "__init__", lambda self, **kw: None)
+        assert not hasattr(svc, "_train_fallback_optimizer") and not hasattr(svc, "FALLBACK_TRAIN_TIMESTEPS")
+        with pytest.raises(svc.OptimizerUnavailableError):
+            await svc.run_optimization(0.5, 0.3, 0.2, 0.0, 1)
+        assert await svc._ensure_optimizer() is None
 
-        async def five_concurrent_first_requests():
-            return await asyncio.gather(*[svc.run_optimization(0.5, 0.3, 0.2, 0.0, 1) for _ in range(5)])
 
-        results, worst_stall = await _max_loop_stall(five_concurrent_first_requests())
-        assert trained == [svc.FALLBACK_TRAIN_TIMESTEPS]  # exactly once, despite 5 racing requests
-        assert all(len(rows) == svc.STEPS_PER_HOUR for rows, _ in results)
-        assert worst_stall < 0.25, f"training blocked the event loop for {worst_stall:.3f}s"
+class TestVerification:
+    def test_unverified_artifacts_are_not_loaded_in_enforce_mode(self, tmp_path, monkeypatch):
+        (tmp_path / "ppo_model.zip").write_bytes(b"x")
+        (tmp_path / "config.json").write_text("{}")
+        monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", tmp_path)
+        monkeypatch.setenv("ARTIFACT_VERIFY", "enforce")
+        good = _optimizer_with(FakeModel())
+        monkeypatch.setattr(JointOptimizer, "load", classmethod(lambda cls, path: good))
+        assert svc._load_saved_optimizer() is None  # tmp_path is outside the project root / has no manifest entry
 
+    def test_verification_covers_both_artifact_files(self, tmp_path, monkeypatch):
+        (tmp_path / "ppo_model.zip").write_bytes(b"x")
+        monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", tmp_path)
+        seen = []
+        monkeypatch.setattr(svc, "ensure_verified", lambda paths, artifact: seen.append([p.name for p in paths]))
+        good = _optimizer_with(FakeModel())
+        monkeypatch.setattr(JointOptimizer, "load", classmethod(lambda cls, path: good))
+        assert svc._load_saved_optimizer() is good
+        assert seen == [["ppo_model.zip", "config.json"]]
+
+
+class TestWarmUp:
     @pytest.mark.asyncio
     async def test_warm_up_never_trains_and_never_raises(self, tmp_path, monkeypatch):
         monkeypatch.setattr(svc, "OPTIMIZER_MODEL_PATH", tmp_path / "missing")

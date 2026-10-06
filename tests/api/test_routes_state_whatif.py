@@ -81,14 +81,33 @@ async def test_whatif_validation(client, viewer_headers, params):
 
 
 # ----------------------------------------------------------------------------- /api/simulate
-async def test_simulate_24h_returns_hourly_rows_and_persists(client, viewer_headers, count_rows):
+async def test_simulate_24h_returns_hourly_rows_and_writes_nothing_by_default(client, viewer_headers, count_rows):
     r = await client.get("/api/simulate/24", params={"utilisation": 0.7}, headers=viewer_headers)
     assert r.status_code == 200
     rows = r.json()
     assert len(rows) == 24
     assert all(row["pue"] >= 1.0 for row in rows)
+    assert await count_rows(SimulationRun) == 0
+    assert await count_rows(SensorReading) == 0
+
+
+async def test_simulate_persist_true_stores_the_run_for_an_operator(client, operator_headers, count_rows):
+    r = await client.get("/api/simulate/24", params={"persist": "true"}, headers=operator_headers)
+    assert r.status_code == 200 and len(r.json()) == 24
     assert await count_rows(SimulationRun) == 1
     assert await count_rows(SensorReading, SensorReading.source == "simulation") == 24
+
+
+async def test_simulate_persist_true_is_forbidden_for_a_viewer_and_writes_nothing(client, viewer_headers, count_rows):
+    r = await client.get("/api/simulate/24", params={"persist": "true"}, headers=viewer_headers)
+    assert r.status_code == 403
+    assert await count_rows(SimulationRun) == 0 and await count_rows(SensorReading) == 0
+
+
+async def test_simulate_persist_168_rows_is_the_ceiling(client, operator_headers, count_rows):
+    r = await client.get("/api/simulate/168", params={"persist": "true"}, headers=operator_headers)
+    assert r.status_code == 200
+    assert await count_rows(SensorReading, SensorReading.source == "simulation") == 168
 
 
 async def test_simulate_168h(client, viewer_headers):
