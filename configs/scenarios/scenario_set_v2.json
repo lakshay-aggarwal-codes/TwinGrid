@@ -1,0 +1,43 @@
+{
+  "days_per_scenario": 14,
+  "description": "T25 scenario set v2: one scenario = one contiguous window inside a cell's month-block, one workload regime, one seed from the split's seed range.",
+  "facility": {
+    "air_flow_m3_s": 8.0,
+    "idle_power_fraction": 0.4,
+    "max_it_power_kw": 500.0,
+    "physics_version": "1"
+  },
+  "injection": {
+    "edge_margin_intervals": 12,
+    "min_separation_intervals": 24,
+    "per_scenario": {
+      "leak": {
+        "count": 1,
+        "flow_factor": 2.5,
+        "half_width_intervals": 6,
+        "pressure_factor": 0.4
+      },
+      "thermal": {
+        "count": 1,
+        "half_width_intervals": 4,
+        "spike_C_range": [
+          8.0,
+          15.0
+        ]
+      }
+    }
+  },
+  "interval_minutes": 5,
+  "min_test_events": 30,
+  "scenarios_per_cell": {
+    "test": 2,
+    "train": 2,
+    "val": 2
+  },
+  "schema": 1,
+  "water_stress": {
+    "drought_episodes": 2,
+    "episode_days": 3,
+    "min_days_for_episodes": 14
+  }
+}

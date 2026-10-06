@@ -13,12 +13,18 @@ from src.data_generator import generate_sensor_data
 from src.digital_twin import DigitalTwin
 
 
+def _synthetic(**kwargs):
+    """T25: the generator raises when the cleaned weather / Aqueduct inputs are missing. These physics-consistency
+    tests do not depend on real inputs, so they opt in explicitly to the (recorded) synthetic substitutes."""
+    return generate_sensor_data(allow_synthetic_weather=True, allow_synthetic_water_stress=True, **kwargs)
+
+
 class TestGeneratorMatchesTwinPhysics:
     def test_it_power_matches_twins_own_formula(self):
         """Regression check for the specific bug: pre-fix, it_power_kw at
         utilisation=0 was 0 (no idle floor); post-fix it must equal
         DigitalTwin's own idle-power-fraction formula."""
-        df = generate_sensor_data(days=1, seed=1)
+        df = _synthetic(days=1, seed=1)
         twin = DigitalTwin(max_it_power_kw=500.0, idle_power_fraction=0.4)
 
         # Spot-check 20 rows against the twin's own compute_it_power --
@@ -36,12 +42,12 @@ class TestGeneratorMatchesTwinPhysics:
         all. Post-fix, it must exist AND show more than one mode across a
         90-day run (otherwise the RL/forecast training data has no signal
         to learn mode-dependent behaviour from)."""
-        df = generate_sensor_data(days=90, seed=2)
+        df = _synthetic(days=90, seed=2)
         assert "cooling_mode" in df.columns
         assert df["cooling_mode"].nunique() > 1
 
     def test_water_stress_column_exists_and_varies(self):
-        df = generate_sensor_data(days=90, seed=3)
+        df = _synthetic(days=90, seed=3)
         assert "water_stress" in df.columns
         assert df["water_stress"].std() > 0.01  # not a constant
 
@@ -50,5 +56,5 @@ class TestGeneratorMatchesTwinPhysics:
         least some rows above the drought threshold -- otherwise the
         cooling_mode column would never show the forced override, and the
         training data would be missing drought behaviour entirely."""
-        df = generate_sensor_data(days=90, seed=4)
+        df = _synthetic(days=90, seed=4)
         assert (df["water_stress"] > 0.7).sum() > 0

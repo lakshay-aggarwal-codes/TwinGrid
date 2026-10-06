@@ -1,0 +1,400 @@
+{
+  "cells": {
+    "test": [
+      {
+        "city": "Chandigarh",
+        "month_block": "A"
+      },
+      {
+        "city": "Chandigarh",
+        "month_block": "B"
+      },
+      {
+        "city": "Chandigarh",
+        "month_block": "C"
+      },
+      {
+        "city": "Chandigarh",
+        "month_block": "D"
+      },
+      {
+        "city": "Delhi",
+        "month_block": "D"
+      },
+      {
+        "city": "Guwahati",
+        "month_block": "A"
+      },
+      {
+        "city": "Guwahati",
+        "month_block": "B"
+      },
+      {
+        "city": "Guwahati",
+        "month_block": "C"
+      },
+      {
+        "city": "Guwahati",
+        "month_block": "D"
+      },
+      {
+        "city": "Jaipur",
+        "month_block": "A"
+      },
+      {
+        "city": "Jaipur",
+        "month_block": "B"
+      },
+      {
+        "city": "Jaipur",
+        "month_block": "C"
+      },
+      {
+        "city": "Jaipur",
+        "month_block": "D"
+      },
+      {
+        "city": "Kochi",
+        "month_block": "A"
+      },
+      {
+        "city": "Kochi",
+        "month_block": "B"
+      },
+      {
+        "city": "Kochi",
+        "month_block": "C"
+      },
+      {
+        "city": "Kochi",
+        "month_block": "D"
+      },
+      {
+        "city": "Mumbai",
+        "month_block": "D"
+      },
+      {
+        "city": "Nagpur",
+        "month_block": "A"
+      },
+      {
+        "city": "Nagpur",
+        "month_block": "B"
+      },
+      {
+        "city": "Nagpur",
+        "month_block": "C"
+      },
+      {
+        "city": "Nagpur",
+        "month_block": "D"
+      },
+      {
+        "city": "Visakhapatnam",
+        "month_block": "A"
+      },
+      {
+        "city": "Visakhapatnam",
+        "month_block": "B"
+      },
+      {
+        "city": "Visakhapatnam",
+        "month_block": "C"
+      },
+      {
+        "city": "Visakhapatnam",
+        "month_block": "D"
+      }
+    ],
+    "train": [
+      {
+        "city": "Ahmedabad",
+        "month_block": "A"
+      },
+      {
+        "city": "Ahmedabad",
+        "month_block": "B"
+      },
+      {
+        "city": "Ahmedabad",
+        "month_block": "C"
+      },
+      {
+        "city": "Bengaluru",
+        "month_block": "A"
+      },
+      {
+        "city": "Bengaluru",
+        "month_block": "B"
+      },
+      {
+        "city": "Bengaluru",
+        "month_block": "C"
+      },
+      {
+        "city": "Bhopal",
+        "month_block": "A"
+      },
+      {
+        "city": "Bhopal",
+        "month_block": "B"
+      },
+      {
+        "city": "Bhopal",
+        "month_block": "C"
+      },
+      {
+        "city": "Chennai",
+        "month_block": "A"
+      },
+      {
+        "city": "Chennai",
+        "month_block": "B"
+      },
+      {
+        "city": "Chennai",
+        "month_block": "C"
+      },
+      {
+        "city": "Dehradun",
+        "month_block": "A"
+      },
+      {
+        "city": "Dehradun",
+        "month_block": "B"
+      },
+      {
+        "city": "Dehradun",
+        "month_block": "C"
+      },
+      {
+        "city": "Delhi",
+        "month_block": "A"
+      },
+      {
+        "city": "Delhi",
+        "month_block": "B"
+      },
+      {
+        "city": "Delhi",
+        "month_block": "C"
+      },
+      {
+        "city": "Hyderabad",
+        "month_block": "A"
+      },
+      {
+        "city": "Hyderabad",
+        "month_block": "B"
+      },
+      {
+        "city": "Hyderabad",
+        "month_block": "C"
+      },
+      {
+        "city": "Indore",
+        "month_block": "A"
+      },
+      {
+        "city": "Indore",
+        "month_block": "B"
+      },
+      {
+        "city": "Indore",
+        "month_block": "C"
+      },
+      {
+        "city": "Kanpur",
+        "month_block": "A"
+      },
+      {
+        "city": "Kanpur",
+        "month_block": "B"
+      },
+      {
+        "city": "Kanpur",
+        "month_block": "C"
+      },
+      {
+        "city": "Kolkata",
+        "month_block": "A"
+      },
+      {
+        "city": "Kolkata",
+        "month_block": "B"
+      },
+      {
+        "city": "Kolkata",
+        "month_block": "C"
+      },
+      {
+        "city": "Ludhiana",
+        "month_block": "A"
+      },
+      {
+        "city": "Ludhiana",
+        "month_block": "B"
+      },
+      {
+        "city": "Ludhiana",
+        "month_block": "C"
+      },
+      {
+        "city": "Mumbai",
+        "month_block": "A"
+      },
+      {
+        "city": "Mumbai",
+        "month_block": "B"
+      },
+      {
+        "city": "Mumbai",
+        "month_block": "C"
+      },
+      {
+        "city": "Patna",
+        "month_block": "A"
+      },
+      {
+        "city": "Patna",
+        "month_block": "B"
+      },
+      {
+        "city": "Patna",
+        "month_block": "C"
+      },
+      {
+        "city": "Pune",
+        "month_block": "A"
+      },
+      {
+        "city": "Pune",
+        "month_block": "B"
+      },
+      {
+        "city": "Pune",
+        "month_block": "C"
+      },
+      {
+        "city": "Thiruvananthapuram",
+        "month_block": "A"
+      },
+      {
+        "city": "Thiruvananthapuram",
+        "month_block": "B"
+      },
+      {
+        "city": "Thiruvananthapuram",
+        "month_block": "C"
+      }
+    ],
+    "val": [
+      {
+        "city": "Bhubaneswar",
+        "month_block": "A"
+      },
+      {
+        "city": "Bhubaneswar",
+        "month_block": "B"
+      },
+      {
+        "city": "Bhubaneswar",
+        "month_block": "C"
+      },
+      {
+        "city": "Coimbatore",
+        "month_block": "A"
+      },
+      {
+        "city": "Coimbatore",
+        "month_block": "B"
+      },
+      {
+        "city": "Coimbatore",
+        "month_block": "C"
+      },
+      {
+        "city": "Lucknow",
+        "month_block": "A"
+      },
+      {
+        "city": "Lucknow",
+        "month_block": "B"
+      },
+      {
+        "city": "Lucknow",
+        "month_block": "C"
+      },
+      {
+        "city": "Surat",
+        "month_block": "A"
+      },
+      {
+        "city": "Surat",
+        "month_block": "B"
+      },
+      {
+        "city": "Surat",
+        "month_block": "C"
+      }
+    ]
+  },
+  "country": "India",
+  "description": "T25 split v2. Exact city x month-block cells (2025 quarters) plus scenario seed ranges. Test holds 6 cities absent from train/val, month-block D (Oct-Dec) absent from train/val, and the workload regime 'burst' absent from train/val. Synthetic workload regimes; one year (2025) of weather, so no year-level generalisation.",
+  "month_blocks": {
+    "A": [
+      1,
+      2,
+      3
+    ],
+    "B": [
+      4,
+      5,
+      6
+    ],
+    "C": [
+      7,
+      8,
+      9
+    ],
+    "D": [
+      10,
+      11,
+      12
+    ]
+  },
+  "scenario_seed_ranges": {
+    "test": [
+      200000,
+      299999
+    ],
+    "train": [
+      0,
+      99999
+    ],
+    "val": [
+      100000,
+      199999
+    ]
+  },
+  "schema": 1,
+  "workload_regimes": {
+    "test": [
+      "burst",
+      "diurnal",
+      "high",
+      "low"
+    ],
+    "train": [
+      "low",
+      "diurnal",
+      "high"
+    ],
+    "val": [
+      "low",
+      "diurnal",
+      "high"
+    ]
+  },
+  "year": 2025
+}
