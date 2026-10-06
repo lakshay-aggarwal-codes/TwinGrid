@@ -3,11 +3,13 @@
   "original_path": "realData/cluster-data-master",
   "scanned_at_utc": "2026-09-09T10:18:44.430403+00:00",
   "metadata": {
-    "display_name": "Alibaba Cluster Trace",
-    "source_url": "https://github.com/alibaba/clusterdata",
-    "license": "Repository license \u2014 see clusterdata-master/LICENSE",
-    "citation": "Alibaba Cluster Trace Program, cluster-trace-gpu-v2020",
-    "used_for": "Real server_utilisation driver, replacing the synthetic diurnal curve (Phase 4)"
+    "display_name": "Cluster trace documentation repository (source unconfirmed)",
+    "source_url": null,
+    "license": "UNVERIFIED -- no licence evidence is recorded for this dataset (see data/external/REGISTER.json)",
+    "license_status": "unverified",
+    "license_claim_unverified": "Repository license -- see clusterdata-master/LICENSE",
+    "citation": "UNCONFIRMED -- an earlier manifest attributed this folder to the Alibaba Cluster Trace Program",
+    "used_for": "REFERENCE ONLY: source unconfirmed. The file set has no cluster-trace-gpu-v2020 directory, so the earlier attribution to Alibaba is not supported by the manifest."
   },
   "metadata_is_placeholder": false,
   "scan": {

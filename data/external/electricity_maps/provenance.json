@@ -3,11 +3,13 @@
   "original_path": "realData/electricity_maps",
   "scanned_at_utc": "2026-09-09T10:18:44.587835+00:00",
   "metadata": {
-    "display_name": "Electricity Maps",
+    "display_name": "Electricity Maps download scripts",
     "source_url": "https://api-portal.electricitymaps.com/",
-    "license": "Electricity Maps free-tier API terms",
-    "citation": "Electricity Maps \u2014 real-time and historical grid carbon intensity",
-    "used_for": "Feeds the gamma (carbon) term in the PPO reward function (Phase 7)"
+    "license": "UNVERIFIED -- no licence evidence is recorded for this dataset (see data/external/REGISTER.json)",
+    "license_status": "unverified",
+    "license_claim_unverified": "Electricity Maps free-tier API terms",
+    "citation": "Electricity Maps -- local download scripts (download_carbon.py, HISTORICAL_ENDPOINT.py, india.py)",
+    "used_for": "REFERENCE ONLY: local download scripts; not part of this repository's code and not executed by it."
   },
   "metadata_is_placeholder": false,
   "scan": {

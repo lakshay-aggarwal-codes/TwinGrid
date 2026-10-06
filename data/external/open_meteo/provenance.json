@@ -5,9 +5,11 @@
   "metadata": {
     "display_name": "Open-Meteo Historical Weather Archive",
     "source_url": "https://open-meteo.com/en/docs/historical-weather-api",
-    "license": "Open-Meteo \u2014 free for non-commercial use (CC BY 4.0 attribution)",
+    "license": "UNVERIFIED -- no licence evidence is recorded for this dataset (see data/external/REGISTER.json)",
+    "license_status": "unverified",
+    "license_claim_unverified": "Open-Meteo -- free for non-commercial use (CC BY 4.0 attribution)",
     "citation": "Open-Meteo.com Weather API",
-    "used_for": "Real outside_temp_C / humidity_pct driver, replacing synthetic curves (Phase 4)"
+    "used_for": "Hourly 2025 city weather. src/data_generator.py takes outside temperature and humidity from the cleaned file when it exists, otherwise from synthetic curves."
   },
   "metadata_is_placeholder": false,
   "scan": {

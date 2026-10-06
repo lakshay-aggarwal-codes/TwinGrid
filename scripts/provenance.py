@@ -15,60 +15,123 @@ DATA_EXTERNAL_DIR = REPO_ROOT / "data" / "external"
 
 HASH_SIZE_LIMIT_BYTES = 50 * 1024 * 1024
 
+# T22: ``license`` / ``used_for`` here are the RECONCILED statements. ``license`` never asserts a licence: terms are
+# unverified until a person records evidence (terms_url, terms_retrieved_at, terms_sha256) in
+# data/external/REGISTER.json (roadmap A-4). ``license_claim_unverified`` keeps what an earlier version of this table
+# asserted, labelled as a claim only. ``used_for`` states only what the code in this repository actually does with the
+# dataset; datasets no code reads say "REFERENCE ONLY". Order matters: match_known_source() returns the FIRST key that
+# is a substring of the (lower-cased) source name, so specific keys come before generic ones.
+UNVERIFIED_LICENSE = "UNVERIFIED -- no licence evidence is recorded for this dataset (see data/external/REGISTER.json)"
+
 KNOWN_SOURCES = {
-    "electricity": {
-        "display_name": "Electricity Maps",
+    "electricity_maps": {
+        "display_name": "Electricity Maps download scripts",
         "source_url": "https://api-portal.electricitymaps.com/",
-        "license": "Electricity Maps free-tier API terms",
-        "citation": "Electricity Maps — real-time and historical grid carbon intensity",
-        "used_for": "Feeds the gamma (carbon) term in the PPO reward function (Phase 7)",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "Electricity Maps free-tier API terms",
+        "citation": "Electricity Maps -- local download scripts (download_carbon.py, HISTORICAL_ENDPOINT.py, india.py)",
+        "used_for": "REFERENCE ONLY: local download scripts; not part of this repository's code and not executed by it.",
+    },
+    "electricity": {
+        "display_name": "Electricity Maps coverage catalogue",
+        "source_url": "https://api-portal.electricitymaps.com/",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "Electricity Maps free-tier API terms",
+        "citation": "Electricity Maps -- zone and signal coverage data",
+        "used_for": (
+            "Zone/signal coverage catalogue, read by src/ingestion/carbon_electricity_maps.py. It contains no "
+            "carbon-intensity values and does not feed the carbon term."
+        ),
+    },
+    "aqueduct-4-0-water-risk": {
+        "display_name": "WRI Aqueduct Water Risk Atlas (v4.0) -- water risk data",
+        "source_url": "https://www.wri.org/applications/aqueduct/water-risk-atlas/",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "Open data, WRI Aqueduct terms of use",
+        "citation": "World Resources Institute, Aqueduct 4.0 Water Risk Atlas, 2023",
+        "used_for": (
+            "Static per-country baseline water-stress score (bws_score) for generated data, blended with a synthetic "
+            "overlay by src/data_generator.py. It is not a driver of cooling-mode arbitration."
+        ),
     },
     "aqueduct": {
-        "display_name": "WRI Aqueduct Water Risk Atlas (v4.0)",
+        "display_name": "WRI Aqueduct Water Risk Atlas (v4.0) -- country rankings",
         "source_url": "https://www.wri.org/applications/aqueduct/water-risk-atlas/",
-        "license": "Open data, WRI Aqueduct terms of use",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "Open data, WRI Aqueduct terms of use",
         "citation": "World Resources Institute, Aqueduct 4.0 Water Risk Atlas, 2023",
-        "used_for": "Water stress index driving drought-aware cooling-mode arbitration (patent Claim 8, Phase 4)",
+        "used_for": "REFERENCE ONLY: no code reads this file.",
     },
     "ashrae_tc0909": {
         "display_name": "ASHRAE TC 9.9 Power Trends White Paper",
         "source_url": "https://www.ashrae.org/",
-        "license": "ASHRAE published white paper",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "ASHRAE published white paper",
         "citation": "ASHRAE TC 9.9, Power Trends White Paper, revised 22 June 2016",
-        "used_for": "Reference values for IT-power trend validation",
+        "used_for": "REFERENCE ONLY: no code reads this document.",
     },
     "power_ssj2008": {
         "display_name": "SPECpower_ssj2008 Results Database",
         "source_url": "https://www.spec.org/power_ssj2008/results/",
-        "license": "SPEC published benchmark results, free for research/education use",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "SPEC published benchmark results, free for research/education use",
         "citation": "Standard Performance Evaluation Corporation, SPECpower_ssj2008 results",
-        "used_for": "Calibrates the real (non-linear) IT-power-vs-utilisation curve (Phase 4)",
+        "used_for": "REFERENCE ONLY: no code reads this file.",
     },
     "rp-1043": {
         "display_name": "ASHRAE RP-1043 Chiller Fault Detection Dataset",
-        "source_url": "ASHRAE RP-1043 (public research-data mirror)",
-        "license": "Research dataset, public mirror",
+        "source_url": None,
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "Research dataset, public mirror",
         "citation": "Comstock & Braun, ASHRAE RP-1043, Chiller Fault Detection Data",
-        "used_for": "Calibrates per-mode cooling COP and validates anomaly-detector fault signatures (Phase 4, 6)",
+        "used_for": (
+            "REFERENCE ONLY: no code reads this dataset. Prohibited: use as calibration data or as fault-signature "
+            "validation. No source URL is recorded (the manifest named only a 'public research-data mirror')."
+        ),
     },
     "ashrae-energy-prediction": {
         "display_name": "ASHRAE Great Energy Predictor III (Kaggle)",
         "source_url": "https://www.kaggle.com/c/ashrae-energy-prediction",
-        "license": "Kaggle competition data — competition rules apply",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "Kaggle competition data -- competition rules apply",
         "citation": "ASHRAE Great Energy Predictor III, Kaggle, 2019",
-        "used_for": "Building-scale power-vs-weather validation only, not a direct column source",
+        "used_for": "REFERENCE ONLY: no code reads this dataset.",
+    },
+    "cluster-data": {
+        "display_name": "Cluster trace documentation repository (source unconfirmed)",
+        "source_url": None,
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "Repository license -- see clusterdata-master/LICENSE",
+        "citation": "UNCONFIRMED -- an earlier manifest attributed this folder to the Alibaba Cluster Trace Program",
+        "used_for": (
+            "REFERENCE ONLY: source unconfirmed. The file set has no cluster-trace-gpu-v2020 directory, so the "
+            "earlier attribution to Alibaba is not supported by the manifest."
+        ),
     },
     "cluster": {
         "display_name": "Alibaba Cluster Trace",
         "source_url": "https://github.com/alibaba/clusterdata",
-        "license": "Repository license — see clusterdata-master/LICENSE",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "Repository license -- see clusterdata-master/LICENSE",
         "citation": "Alibaba Cluster Trace Program, cluster-trace-gpu-v2020",
-        "used_for": "Real server_utilisation driver, replacing the synthetic diurnal curve (Phase 4)",
+        "used_for": "REFERENCE ONLY: no code reads this trace. Server utilisation in src/data_generator.py is synthetic.",
     },
     "cmapss": {
         "display_name": "NASA C-MAPSS Turbofan Degradation Dataset",
-        "source_url": "https://data.nasa.gov (NASA Prognostics Center of Excellence)",
-        "license": "NASA public data",
+        "source_url": "https://data.nasa.gov",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "NASA public data",
         "citation": "Saxena & Goebel, NASA Ames Prognostics Data Repository, C-MAPSS",
         "used_for": (
             "PROXY dataset for the predictive-maintenance RUL model (Phase 5). "
@@ -81,20 +144,26 @@ KNOWN_SOURCES = {
     "nab": {
         "display_name": "Numenta Anomaly Benchmark (NAB)",
         "source_url": "https://github.com/numenta/NAB",
-        "license": "AGPL-3.0 (NAB repository license)",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "AGPL-3.0 (NAB repository license)",
         "citation": "Lavin & Ahmad, Numenta Anomaly Benchmark, 2015",
         "used_for": (
-            "Ground-truth labeled anomalies for OFFLINE VALIDATION of the anomaly "
-            "detector only (Phase 6) -- not used as training data, since it comes "
-            "from a different physical system."
+            "Offline sanity check of a univariate autoencoder in src/anomaly_detector_nab_validation.py. Not "
+            "training data, and no performance claim for the production detector."
         ),
     },
     "open_meteo": {
         "display_name": "Open-Meteo Historical Weather Archive",
         "source_url": "https://open-meteo.com/en/docs/historical-weather-api",
-        "license": "Open-Meteo — free for non-commercial use (CC BY 4.0 attribution)",
+        "license": UNVERIFIED_LICENSE,
+        "license_status": "unverified",
+        "license_claim_unverified": "Open-Meteo -- free for non-commercial use (CC BY 4.0 attribution)",
         "citation": "Open-Meteo.com Weather API",
-        "used_for": "Real outside_temp_C / humidity_pct driver, replacing synthetic curves (Phase 4)",
+        "used_for": (
+            "Hourly 2025 city weather. src/data_generator.py takes outside temperature and humidity from the "
+            "cleaned file when it exists, otherwise from synthetic curves."
+        ),
     },
 }
 

@@ -4,10 +4,12 @@
   "scanned_at_utc": "2026-09-09T10:18:44.151106+00:00",
   "metadata": {
     "display_name": "ASHRAE RP-1043 Chiller Fault Detection Dataset",
-    "source_url": "ASHRAE RP-1043 (public research-data mirror)",
-    "license": "Research dataset, public mirror",
+    "source_url": null,
+    "license": "UNVERIFIED -- no licence evidence is recorded for this dataset (see data/external/REGISTER.json)",
+    "license_status": "unverified",
+    "license_claim_unverified": "Research dataset, public mirror",
     "citation": "Comstock & Braun, ASHRAE RP-1043, Chiller Fault Detection Data",
-    "used_for": "Calibrates per-mode cooling COP and validates anomaly-detector fault signatures (Phase 4, 6)"
+    "used_for": "REFERENCE ONLY: no code reads this dataset. Prohibited: use as calibration data or as fault-signature validation. No source URL is recorded (the manifest named only a 'public research-data mirror')."
   },
   "metadata_is_placeholder": false,
   "scan": {

@@ -3,11 +3,13 @@
   "original_path": "realData/2026-09-06-electricity-maps-coverage-data.csv",
   "scanned_at_utc": "2026-09-09T10:18:44.080517+00:00",
   "metadata": {
-    "display_name": "Electricity Maps",
+    "display_name": "Electricity Maps coverage catalogue",
     "source_url": "https://api-portal.electricitymaps.com/",
-    "license": "Electricity Maps free-tier API terms",
-    "citation": "Electricity Maps \u2014 real-time and historical grid carbon intensity",
-    "used_for": "Feeds the gamma (carbon) term in the PPO reward function (Phase 7)"
+    "license": "UNVERIFIED -- no licence evidence is recorded for this dataset (see data/external/REGISTER.json)",
+    "license_status": "unverified",
+    "license_claim_unverified": "Electricity Maps free-tier API terms",
+    "citation": "Electricity Maps -- zone and signal coverage data",
+    "used_for": "Zone/signal coverage catalogue, read by src/ingestion/carbon_electricity_maps.py. It contains no carbon-intensity values and does not feed the carbon term."
   },
   "metadata_is_placeholder": false,
   "scan": {

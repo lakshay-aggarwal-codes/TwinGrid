@@ -1,0 +1,541 @@
+{
+  "schema_version": 1,
+  "schema": "roadmap section 14.1 (T22); 'manifest' is a T22 addition",
+  "meta": {
+    "retrieved_at_basis": "retrieved_at is the earliest file modification time in the manifest scan, not a recorded download time",
+    "license_policy": "Every entry is unverified/not_permitted until a person records terms_url, terms_retrieved_at and terms_sha256 (A-4). No tool sets 'verified'.",
+    "excluded": "Frontier / HPC data has no entry by design; scripts/check_register.py fails if code references it.",
+    "checker": "python scripts/check_register.py"
+  },
+  "datasets": [
+    {
+      "id": "electricity-maps-coverage-2026-09-06",
+      "source_name": "Electricity Maps coverage data (zone and signal catalogue)",
+      "source_url": "https://api-portal.electricitymaps.com/",
+      "version_or_date": "2026-09-06 (taken from the file name)",
+      "retrieved_at": "2026-09-06T06:47:16.363523Z",
+      "variables": [
+        "zone",
+        "zone_key",
+        "tier",
+        "signal",
+        "available_from",
+        "historical_temporal_granularity",
+        "real_time_granularity",
+        "forecast_source",
+        "horizons",
+        "forecast_granularity"
+      ],
+      "spatial_resolution": "Electricity grid zone (columns zone, zone_key)",
+      "temporal_resolution": "Not a time series: columns describe the granularity and availability of each signal",
+      "preprocessing": [
+        "src/ingestion/carbon_electricity_maps.py validates the columns and writes data/cleaned/carbon_electricity_maps.csv"
+      ],
+      "used_by": [
+        "src/ingestion/carbon_electricity_maps.py"
+      ],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Local development and offline evaluation by the code paths in used_by only. No redistribution. Terms unverified: a person must record evidence (A-4) before any wider use.",
+      "supported_claims": [
+        "Catalogue of Electricity Maps zones and signals with their availability and granularity, read by src/ingestion/carbon_electricity_maps.py into data/cleaned/carbon_electricity_maps.csv"
+      ],
+      "prohibited_claims": [
+        "Any carbon-intensity (gCO2/kWh) value from this file: it lists signal coverage and has no intensity column",
+        "Use as the source of the carbon (gamma) term: src/carbon_provider.py reads data/cleaned/carbon_intensity.csv, a file no code in this repository produces",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/2026-09-06-electricity-maps-coverage-data.csv/provenance.json"
+    },
+    {
+      "id": "electricity-maps-download-scripts",
+      "source_name": "Electricity Maps download scripts (local folder)",
+      "source_url": "https://api-portal.electricitymaps.com/",
+      "version_or_date": "unknown: no version recorded",
+      "retrieved_at": "2026-09-06T06:50:50.682768Z",
+      "variables": [],
+      "spatial_resolution": "not applicable (scripts, no data)",
+      "temporal_resolution": "not applicable (scripts, no data)",
+      "preprocessing": [],
+      "used_by": [],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Reference only. Not consumed by any code path; no calibration, validation or derived numbers until terms are verified by a person (A-4) and a consuming code path is added and reviewed.",
+      "supported_claims": [
+        "reference_only",
+        "Records that three local download scripts exist (download_carbon.py, HISTORICAL_ENDPOINT.py, india.py); they are not code of this repository and are not executed by it"
+      ],
+      "prohibited_claims": [
+        "Any carbon-intensity data or figure: no data file from these scripts is recorded",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/electricity_maps/provenance.json"
+    },
+    {
+      "id": "open-meteo-hourly-2025",
+      "source_name": "Open-Meteo historical weather archive (per-city hourly CSV)",
+      "source_url": "https://open-meteo.com/en/docs/historical-weather-api",
+      "version_or_date": "2025 hourly files (taken from the file names *_weather_2025_hourly.csv)",
+      "retrieved_at": "2026-09-06T07:13:42.603551Z",
+      "variables": [
+        "timestamp",
+        "city",
+        "country",
+        "latitude",
+        "longitude",
+        "ambient_temperature_c",
+        "relative_humidity_pct",
+        "dew_point_c",
+        "apparent_temperature_c",
+        "precipitation_mm",
+        "cloud_cover_pct",
+        "wind_speed_10m_kmh",
+        "wind_direction_10m_deg",
+        "solar_radiation_w_m2",
+        "et0_mm"
+      ],
+      "spatial_resolution": "One file per city (latitude/longitude columns)",
+      "temporal_resolution": "Hourly",
+      "preprocessing": [
+        "src/ingestion/weather_open_meteo.py normalises timestamps to UTC and writes data/cleaned/weather_open_meteo.csv"
+      ],
+      "used_by": [
+        "src/ingestion/weather_open_meteo.py",
+        "src/data_generator.py"
+      ],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Local development and offline evaluation by the code paths in used_by only. No redistribution. Terms unverified: a person must record evidence (A-4) before any wider use.",
+      "supported_claims": [
+        "Hourly 2025 weather for the cities in the files, normalised into data/cleaned/weather_open_meteo.csv; src/data_generator.py takes outside temperature and humidity from that cleaned file when it exists and from synthetic curves otherwise"
+      ],
+      "prohibited_claims": [
+        "Weather for any location or year not in the files",
+        "Measured weather at a facility",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified) (the earlier manifest wording 'CC BY 4.0 / non-commercial' is an unverified claim)"
+      ],
+      "manifest": "data/external/open_meteo/provenance.json"
+    },
+    {
+      "id": "wri-aqueduct-4-0-water-risk-data",
+      "source_name": "WRI Aqueduct 4.0 water risk data (baseline, future; annual and monthly)",
+      "source_url": "https://www.wri.org/applications/aqueduct/water-risk-atlas/",
+      "version_or_date": "Aqueduct 4.0, download Y2023M07D05 (taken from the folder name)",
+      "retrieved_at": "2026-09-06T07:45:03.454899Z",
+      "variables": [
+        "name_0",
+        "name_1",
+        "area_km2",
+        "bws_raw",
+        "bws_score",
+        "bws_cat",
+        "bws_label",
+        "bwd_score",
+        "iav_score",
+        "sev_score",
+        "rfr_score",
+        "drr_score"
+      ],
+      "spatial_resolution": "Hydrological sub-basin polygons (string_id, pfaf_id, aqid); aggregated by country in src/data_generator.py",
+      "temporal_resolution": "Annual baseline (file Aqueduct40_baseline_annual_y2023m07d05.csv); monthly and future tables are present but unread",
+      "preprocessing": [
+        "src/ingestion/water_stress_aqueduct.py selects columns, replaces sentinel values -9999.0 and 9999.0, checks scores in [0, 5], writes data/cleaned/water_stress_aqueduct.csv",
+        "src/data_generator.py min-max normalises bws_score across the table"
+      ],
+      "used_by": [
+        "src/ingestion/water_stress_aqueduct.py",
+        "src/data_generator.py"
+      ],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Local development and offline evaluation by the code paths in used_by only. No redistribution. Terms unverified: a person must record evidence (A-4) before any wider use.",
+      "supported_claims": [
+        "Only the baseline annual table is read. src/data_generator.py uses one static, min-max-normalised bws_score per country as the water-stress baseline of generated data, combined with a synthetic seasonal and drought overlay, when data/cleaned/water_stress_aqueduct.csv exists"
+      ],
+      "prohibited_claims": [
+        "A water-stress input that drives cooling-mode arbitration or supports patent Claim 8: the drought override acts on whatever water_stress value it is given, and Aqueduct supplies only a static country baseline",
+        "Facility-level or basin-level water risk for a site",
+        "Monthly, future or projected water risk (those tables are not read)",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified) (the earlier manifest wording 'open data' is an unverified claim)"
+      ],
+      "manifest": "data/external/aqueduct-4-0-water-risk-data/provenance.json"
+    },
+    {
+      "id": "wri-aqueduct-4-0-country-rankings",
+      "source_name": "WRI Aqueduct 4.0 country rankings (xlsx)",
+      "source_url": "https://www.wri.org/applications/aqueduct/water-risk-atlas/",
+      "version_or_date": "Aqueduct 4.0, download Y2023M07D05 (taken from the folder name)",
+      "retrieved_at": "2026-09-06T07:42:46.283465Z",
+      "variables": [],
+      "spatial_resolution": "Country (by the file's name)",
+      "temporal_resolution": "not recorded",
+      "preprocessing": [],
+      "used_by": [],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Reference only. Not consumed by any code path; no calibration, validation or derived numbers until terms are verified by a person (A-4) and a consuming code path is added and reviewed.",
+      "supported_claims": [
+        "reference_only",
+        "Country-ranking workbook held locally; no code reads it"
+      ],
+      "prohibited_claims": [
+        "Any water-stress figure used by code: no code path reads this file",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/aqueduct-4-0-country-rankings/provenance.json"
+    },
+    {
+      "id": "wri-aqueduct-water-stress-country-rankings-xlsx",
+      "source_name": "WRI Aqueduct water stress country rankings data set (xlsx)",
+      "source_url": "https://www.wri.org/applications/aqueduct/water-risk-atlas/",
+      "version_or_date": "unknown: no version recorded",
+      "retrieved_at": "2026-09-06T07:34:46.957999Z",
+      "variables": [],
+      "spatial_resolution": "Country (by the file's name)",
+      "temporal_resolution": "not recorded",
+      "preprocessing": [],
+      "used_by": [],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Reference only. Not consumed by any code path; no calibration, validation or derived numbers until terms are verified by a person (A-4) and a consuming code path is added and reviewed.",
+      "supported_claims": [
+        "reference_only",
+        "Country-ranking workbook held locally; no code reads it"
+      ],
+      "prohibited_claims": [
+        "Any water-stress figure used by code: no code path reads this file",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/aqueduct-water-stress-country-rankings-data-set.xlsx/provenance.json"
+    },
+    {
+      "id": "ashrae-rp-1043",
+      "source_name": "ASHRAE RP-1043 chiller fault data (source unidentified: 'public research-data mirror')",
+      "source_url": null,
+      "version_or_date": "unknown: no version recorded",
+      "retrieved_at": "2026-09-06T07:22:43.984427Z",
+      "variables": [],
+      "spatial_resolution": "not recorded",
+      "temporal_resolution": "not recorded",
+      "preprocessing": [],
+      "used_by": [],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Reference only. Not consumed by any code path; no calibration, validation or derived numbers until terms are verified by a person (A-4) and a consuming code path is added and reviewed.",
+      "supported_claims": [
+        "reference_only",
+        "61 chiller test workbooks held locally; no code reads them"
+      ],
+      "prohibited_claims": [
+        "Calibrates per-mode cooling COP: no code reads this dataset and the COP terms in src/digital_twin.py are constants",
+        "Validates anomaly-detector fault signatures against this dataset",
+        "Any chiller fault-detection performance statement",
+        "Use as calibration data in any form",
+        "A source URL: none is recorded; a person must identify the source before any use",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/ASHRAE RP-1043/provenance.json"
+    },
+    {
+      "id": "ashrae-tc-9-9-power-white-paper-2016",
+      "source_name": "ASHRAE TC 9.9 Power Trends white paper (PDF)",
+      "source_url": "https://www.ashrae.org/",
+      "version_or_date": "Revised 22 June 2016 (taken from the file name)",
+      "retrieved_at": "2026-09-06T06:20:38.103409Z",
+      "variables": [],
+      "spatial_resolution": "not applicable (document)",
+      "temporal_resolution": "not applicable (document)",
+      "preprocessing": [],
+      "used_by": [],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Reference only. Not consumed by any code path; no calibration, validation or derived numbers until terms are verified by a person (A-4) and a consuming code path is added and reviewed.",
+      "supported_claims": [
+        "reference_only",
+        "Reading material held locally; no code reads it"
+      ],
+      "prohibited_claims": [
+        "Calibrates or validates IT-power trends: no code reads this document",
+        "Quoting its values as model parameters without citation and a terms check",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/ASHRAE_TC0909_Power_White_Paper_22_June_2016_REVISED.pdf/provenance.json"
+    },
+    {
+      "id": "ashrae-gepiii-kaggle",
+      "source_name": "ASHRAE Great Energy Predictor III (Kaggle competition data)",
+      "source_url": "https://www.kaggle.com/c/ashrae-energy-prediction",
+      "version_or_date": "2019 competition (no snapshot version recorded)",
+      "retrieved_at": "2026-09-06T06:57:55.725527Z",
+      "variables": [],
+      "spatial_resolution": "Buildings (building_metadata.csv)",
+      "temporal_resolution": "not recorded",
+      "preprocessing": [],
+      "used_by": [],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Reference only. Not consumed by any code path; no calibration, validation or derived numbers until terms are verified by a person (A-4) and a consuming code path is added and reviewed.",
+      "supported_claims": [
+        "reference_only",
+        "Six competition files (about 2.6 GB) held locally; no code reads them"
+      ],
+      "prohibited_claims": [
+        "Building-scale power-versus-weather validation: no code reads this dataset",
+        "Redistribution of competition data: Kaggle competition rules apply and have not been verified",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/ashrae-energy-prediction/provenance.json"
+    },
+    {
+      "id": "specpower-ssj2008-results-20260906",
+      "source_name": "SPECpower_ssj2008 results database export (CSV)",
+      "source_url": "https://www.spec.org/power_ssj2008/results/",
+      "version_or_date": "Export 20260906-021726 (taken from the file name)",
+      "retrieved_at": "2026-09-06T06:17:33.190837Z",
+      "variables": [],
+      "spatial_resolution": "not applicable (server benchmark results)",
+      "temporal_resolution": "not applicable (benchmark results)",
+      "preprocessing": [],
+      "used_by": [],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Reference only. Not consumed by any code path; no calibration, validation or derived numbers until terms are verified by a person (A-4) and a consuming code path is added and reviewed.",
+      "supported_claims": [
+        "reference_only",
+        "Benchmark results export held locally; no code reads it"
+      ],
+      "prohibited_claims": [
+        "Calibrates the IT-power-versus-utilisation curve: no code reads this file",
+        "Server power figures presented as measured at this facility",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified) (the earlier manifest wording 'free for research/education use' is an unverified claim)"
+      ],
+      "manifest": "data/external/power_ssj2008-results-20260906-021726.csv/provenance.json"
+    },
+    {
+      "id": "nasa-cmapss",
+      "source_name": "NASA C-MAPSS turbofan degradation dataset (NASA Prognostics Center of Excellence)",
+      "source_url": "https://data.nasa.gov",
+      "version_or_date": "unknown: no version recorded (FD001 to FD004 files)",
+      "retrieved_at": "2026-09-06T07:44:24.709504Z",
+      "variables": [
+        "unit_number",
+        "time_in_cycles",
+        "op_setting_1",
+        "op_setting_2",
+        "op_setting_3",
+        "sensor_1",
+        "sensor_2",
+        "sensor_3",
+        "sensor_4",
+        "sensor_5",
+        "sensor_6",
+        "sensor_7",
+        "sensor_8",
+        "sensor_9",
+        "sensor_10",
+        "sensor_11",
+        "sensor_12",
+        "sensor_13",
+        "sensor_14",
+        "sensor_15",
+        "sensor_16",
+        "sensor_17",
+        "sensor_18",
+        "sensor_19",
+        "sensor_20",
+        "sensor_21"
+      ],
+      "spatial_resolution": "Not applicable (simulated engine units)",
+      "temporal_resolution": "One row per engine cycle (time_in_cycles)",
+      "preprocessing": [
+        "src/predictive_maintenance/data_loader.py computes capped RUL labels (cap 125), drops low-variance sensors and scales with train-set statistics only"
+      ],
+      "used_by": [
+        "src/predictive_maintenance/data_loader.py",
+        "src/predictive_maintenance/train.py"
+      ],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Local development and offline evaluation by the code paths in used_by only. No redistribution. Terms unverified: a person must record evidence (A-4) before any wider use.",
+      "supported_claims": [
+        "PROXY run-to-failure sensor trajectories used to train and test the RUL model in src/predictive_maintenance; a structural analogue only"
+      ],
+      "prohibited_claims": [
+        "Data-centre hardware failure rates or remaining useful life of data-centre equipment",
+        "Any RUL accuracy statement for real equipment",
+        "Dropping the proxy caveat wherever the dataset is mentioned",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/CMAPSSData/provenance.json"
+    },
+    {
+      "id": "numenta-nab",
+      "source_name": "Numenta Anomaly Benchmark (NAB) repository snapshot",
+      "source_url": "https://github.com/numenta/NAB",
+      "version_or_date": "unknown: repository snapshot, no tag or commit recorded",
+      "retrieved_at": "2026-09-06T06:59:05.995888Z",
+      "variables": [
+        "timestamp",
+        "value",
+        "labelled anomaly windows (labels/combined_windows.json)"
+      ],
+      "spatial_resolution": "Not applicable (univariate series from other systems)",
+      "temporal_resolution": "Per series; not normalised by this repository",
+      "preprocessing": [
+        "src/anomaly_detector_nab_validation.py builds sequences of length 12 and a 95th-percentile threshold"
+      ],
+      "used_by": [
+        "src/anomaly_detector_nab_validation.py"
+      ],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Local development and offline evaluation by the code paths in used_by only. No redistribution. Terms unverified: a person must record evidence (A-4) before any wider use.",
+      "supported_claims": [
+        "Labelled univariate series used by src/anomaly_detector_nab_validation.py for an offline sanity check of a univariate autoencoder (not the production detector)"
+      ],
+      "prohibited_claims": [
+        "Any anomaly-detection performance statement for the production detector or for a facility",
+        "Use as training data",
+        "Redistribution: the earlier manifest recorded AGPL-3.0 for the NAB repository; that is an unverified claim and has not been evaluated for this project",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/NAB-master/provenance.json"
+    },
+    {
+      "id": "alibaba-clusterdata",
+      "source_name": "Alibaba cluster trace repository snapshot (contains cluster-trace-gpu-v2020)",
+      "source_url": "https://github.com/alibaba/clusterdata",
+      "version_or_date": "cluster-trace-gpu-v2020 (taken from the directory name); no commit recorded",
+      "retrieved_at": "2026-09-06T06:59:54.535986Z",
+      "variables": [],
+      "spatial_resolution": "not recorded",
+      "temporal_resolution": "not recorded",
+      "preprocessing": [],
+      "used_by": [],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Reference only. Not consumed by any code path; no calibration, validation or derived numbers until terms are verified by a person (A-4) and a consuming code path is added and reviewed.",
+      "supported_claims": [
+        "reference_only",
+        "Repository snapshot (documentation, simulator code, sample traces) held locally; no code reads it"
+      ],
+      "prohibited_claims": [
+        "A real server_utilisation driver: src/data_generator.py computes utilisation from a synthetic sinusoid and says so",
+        "Calibration or validation from these traces",
+        "Generalising GPU-cluster job traces to data-centre facility utilisation",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/clusterdata-master/provenance.json"
+    },
+    {
+      "id": "cluster-trace-docs-source-unconfirmed",
+      "source_name": "Cluster trace documentation repository (source unconfirmed)",
+      "source_url": null,
+      "version_or_date": "unknown: no version recorded",
+      "retrieved_at": "2026-09-06T06:57:34.534655Z",
+      "variables": [],
+      "spatial_resolution": "not recorded",
+      "temporal_resolution": "not recorded",
+      "preprocessing": [],
+      "used_by": [],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Reference only. Not consumed by any code path; no calibration, validation or derived numbers until terms are verified by a person (A-4) and a consuming code path is added and reviewed.",
+      "supported_claims": [
+        "reference_only",
+        "Documentation, trace-format and notebook files held locally; no code reads them"
+      ],
+      "prohibited_claims": [
+        "Attribution to Alibaba: the earlier manifest said so, but the file set contains no cluster-trace-gpu-v2020 directory",
+        "Any use before a person identifies the source (the file names resemble another vendor's published cluster-trace documents; this is unconfirmed)",
+        "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified)"
+      ],
+      "manifest": "data/external/cluster-data-master/provenance.json"
+    },
+    {
+      "id": "nrel-nsrdb-psm3",
+      "source_name": "NREL National Solar Radiation Database, PSM v3 download service (fetched by API, no local copy)",
+      "source_url": "https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-download.csv",
+      "version_or_date": "unknown: fetched on demand; year set by NSRDB_YEAR",
+      "retrieved_at": null,
+      "variables": [
+        "ghi",
+        "dni",
+        "dhi",
+        "air_temperature",
+        "relative_humidity",
+        "dew_point",
+        "wind_speed",
+        "wind_direction",
+        "surface_pressure"
+      ],
+      "spatial_resolution": "One point (NSRDB_LATITUDE, NSRDB_LONGITUDE)",
+      "temporal_resolution": "As returned by the PSM3 service; not fixed by this repository",
+      "preprocessing": [
+        "src/ingestion/solar_nsrdb.py parses the response and writes data/cleaned/solar_nsrdb.csv"
+      ],
+      "used_by": [
+        "src/ingestion/solar_nsrdb.py",
+        "src/ingestion/run_ingestion.py",
+        "scripts/run_ingestion.py"
+      ],
+      "license_status": "unverified",
+      "terms_url": null,
+      "terms_retrieved_at": null,
+      "terms_sha256": null,
+      "redistribution": "not_permitted",
+      "permitted_use": "Local development and offline evaluation by the code paths in used_by only. No redistribution. Terms unverified: a person must record evidence (A-4) before any wider use.",
+      "supported_claims": [
+        "Solar irradiance and meteorology can be fetched on demand through the NREL developer API into data/cleaned/solar_nsrdb.csv; nothing downstream reads that file"
+      ],
+      "prohibited_claims": [
+        "Any solar or renewable-generation feature, reward term or figure: no code reads solar_nsrdb.csv",
+        "Any statement that NSRDB data was retrieved for this repository: no raw copy and no manifest exist",
+        "NREL API terms or redistribution rights: unverified"
+      ],
+      "manifest": null
+    }
+  ]
+}

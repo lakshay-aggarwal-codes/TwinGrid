@@ -47,6 +47,11 @@ jobs:
       - name: ruff format --check
         run: ruff format --check .
 
+      - name: External-data register (T22)
+        # stdlib only. Fails on unregistered datasets, missing used_by paths, claim verbs without a code path,
+        # unverified licences marked redistributable, and references to datasets that must stay out of the repo.
+        run: python scripts/check_register.py
+
   types:
     runs-on: ubuntu-latest
     steps:

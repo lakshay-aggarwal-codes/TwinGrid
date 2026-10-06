@@ -5,9 +5,11 @@
   "metadata": {
     "display_name": "Numenta Anomaly Benchmark (NAB)",
     "source_url": "https://github.com/numenta/NAB",
-    "license": "AGPL-3.0 (NAB repository license)",
+    "license": "UNVERIFIED -- no licence evidence is recorded for this dataset (see data/external/REGISTER.json)",
+    "license_status": "unverified",
+    "license_claim_unverified": "AGPL-3.0 (NAB repository license)",
     "citation": "Lavin & Ahmad, Numenta Anomaly Benchmark, 2015",
-    "used_for": "Ground-truth labeled anomalies for OFFLINE VALIDATION of the anomaly detector only (Phase 6) -- not used as training data, since it comes from a different physical system."
+    "used_for": "Offline sanity check of a univariate autoencoder in src/anomaly_detector_nab_validation.py. Not training data, and no performance claim for the production detector."
   },
   "metadata_is_placeholder": false,
   "scan": {

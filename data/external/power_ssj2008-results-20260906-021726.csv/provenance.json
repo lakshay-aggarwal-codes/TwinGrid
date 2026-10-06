@@ -5,9 +5,11 @@
   "metadata": {
     "display_name": "SPECpower_ssj2008 Results Database",
     "source_url": "https://www.spec.org/power_ssj2008/results/",
-    "license": "SPEC published benchmark results, free for research/education use",
+    "license": "UNVERIFIED -- no licence evidence is recorded for this dataset (see data/external/REGISTER.json)",
+    "license_status": "unverified",
+    "license_claim_unverified": "SPEC published benchmark results, free for research/education use",
     "citation": "Standard Performance Evaluation Corporation, SPECpower_ssj2008 results",
-    "used_for": "Calibrates the real (non-linear) IT-power-vs-utilisation curve (Phase 4)"
+    "used_for": "REFERENCE ONLY: no code reads this file."
   },
   "metadata_is_placeholder": false,
   "scan": {
