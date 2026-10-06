@@ -22,7 +22,10 @@ Usage (from the repo root, DATABASE_URL set, after ``alembic upgrade head``):
     python scripts/seed_facility.py --scale-factor 1.0 --confirm-scale-signoff
 
 Idempotent: refuses to touch a facility that already has assets.
-No sensors are seeded: per-rack telemetry does not exist (roadmap sections 3, 10).
+No per-rack sensors are seeded: per-rack telemetry does not exist (roadmap sections 3, 10).
+With ``--seed-sensors`` (T16) the five FACILITY-LEVEL anomaly-feature sensors are registered on one
+facility-level asset (see ``seed_facility_sensors``). Their valid ranges are PROPOSED engineering limits,
+not measured or owner-approved values.
 Seeded relationships/poses start at ``--valid-from`` (default: now), because as-of
 queries must not claim this layout existed before it was recorded.
 """
@@ -167,6 +170,70 @@ async def seed_default_facility(
     return SeedSummary(facility.id, len(zones), len(racks), scale, vf)
 
 
+# Facility-level sensors for the five anomaly features (src/anomaly_detector.py FEATURE_COLUMNS).
+# (measurand == feature column name, canonical unit, proposed valid_min, proposed valid_max)
+FACILITY_SENSORS: tuple[tuple[str, str, float, float], ...] = (
+    ("water_flow_lpm", "L/min", 0.0, 1000.0),
+    ("water_pressure_bar", "bar", 0.0, 10.0),
+    ("server_outlet_temp_C", "degC", 0.0, 80.0),
+    ("it_power_kw", "kW", 0.0, 2000.0),
+    ("humidity_pct", "%", 0.0, 100.0),
+)
+FACILITY_ASSET_EXTERNAL_ID = "facility-level"
+FACILITY_ASSET_TYPE = "facility"  # repo-level text; facility_service.ASSET_TYPES is outside T16's allowed files
+SENSOR_SAMPLING_INTERVAL_S = 300.0  # A-1: one twin step
+
+
+def facility_sensor_external_id(facility_id: int, measurand: str) -> str:
+    return f"fac{facility_id}.{measurand}"
+
+
+async def seed_facility_sensors(session, *, facility_name: str = DEFAULT_FACILITY_NAME) -> int:
+    """Register the five facility-level anomaly-feature sensors. Idempotent; returns how many were created.
+
+    Caller owns the transaction. Requires the facility to exist (run the layout seed first).
+    """
+    from sqlalchemy import select
+
+    from api.repositories import facility_repository as repo
+    from models.db_models import Asset, Sensor
+
+    facility = await repo.get_facility_by_name(session, facility_name)
+    if facility is None:
+        raise RuntimeError(f"facility {facility_name!r} does not exist; seed the layout first")
+    asset = (
+        await session.execute(
+            select(Asset).where(Asset.facility_id == facility.id, Asset.external_id == FACILITY_ASSET_EXTERNAL_ID)
+        )
+    ).scalar_one_or_none()
+    if asset is None:
+        asset = await repo.insert_asset(
+            session,
+            facility_id=facility.id,
+            asset_type=FACILITY_ASSET_TYPE,
+            external_id=FACILITY_ASSET_EXTERNAL_ID,
+            name="Facility-level aggregates",
+        )
+    created = 0
+    for measurand, unit, lo, hi in FACILITY_SENSORS:
+        ext = facility_sensor_external_id(facility.id, measurand)
+        exists = (await session.execute(select(Sensor.id).where(Sensor.external_id == ext))).scalar_one_or_none()
+        if exists is not None:
+            continue
+        await repo.insert_sensor(
+            session,
+            asset_id=asset.id,
+            measurand=measurand,
+            unit=unit,
+            sampling_interval_s=SENSOR_SAMPLING_INTERVAL_S,
+            external_id=ext,
+            min_valid=lo,
+            max_valid=hi,
+        )
+        created += 1
+    return created
+
+
 def _print_plan(scale: Optional[float]) -> None:
     zones, racks = build_layout()
     xs = [r.position[0] for r in racks]
@@ -178,11 +245,15 @@ def _print_plan(scale: Optional[float]) -> None:
         print(f"Requested scale: {scale} m per scene unit")
 
 
-async def _run(scale: float, valid_from: Optional[datetime]) -> SeedSummary:
+async def _run(scale: float, valid_from: Optional[datetime], seed_sensors: bool = False) -> SeedSummary:
     from database import get_session
 
     async with get_session() as session:  # commits on success, rolls back on error
-        return await seed_default_facility(session, scale=scale, valid_from=valid_from)
+        summary = await seed_default_facility(session, scale=scale, valid_from=valid_from)
+        if seed_sensors:
+            n = await seed_facility_sensors(session)
+            print(f"Registered {n} facility-level anomaly-feature sensors")
+        return summary
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -190,13 +261,16 @@ def main(argv: Optional[list[str]] = None) -> int:
     ap.add_argument("--scale-factor", type=float, help="metres per scene unit (owner-approved value)")
     ap.add_argument("--confirm-scale-signoff", action="store_true", help="I confirm the owner signed off the scale")
     ap.add_argument("--valid-from", type=datetime.fromisoformat, help="ISO-8601 start of validity (default: now)")
+    ap.add_argument(
+        "--seed-sensors", action="store_true", help="also register the 5 facility-level anomaly sensors (T16)"
+    )
     args = ap.parse_args(argv)
 
     _print_plan(args.scale_factor)
     if args.scale_factor is None or not args.confirm_scale_signoff:
         print("\nDRY RUN: nothing written. Pass --scale-factor and --confirm-scale-signoff to apply.")
         return 0
-    summary = asyncio.run(_run(args.scale_factor, args.valid_from))
+    summary = asyncio.run(_run(args.scale_factor, args.valid_from, args.seed_sensors))
     print(
         f"\nSeeded facility {summary.facility_id}: {summary.zones} zones, {summary.racks} racks, "
         f"scale {summary.scale} m/unit, valid_from {summary.valid_from.isoformat()}"

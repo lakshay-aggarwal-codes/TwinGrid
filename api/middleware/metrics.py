@@ -15,6 +15,16 @@ REQUEST_LATENCY = Histogram(
     "http_request_duration_seconds", "HTTP request latency", ["method", "path"], registry=registry
 )
 MODEL_INFERENCE_COUNT = Counter("model_inference_total", "Model inference calls", ["model"], registry=registry)
+# T16: telemetry ingest outcomes (label values are the fixed set in src.telemetry.validation.OUTCOMES).
+TELEMETRY_SAMPLES_TOTAL = Counter(
+    "telemetry_samples_total", "Telemetry samples by ingest outcome", ["outcome"], registry=registry
+)
+TELEMETRY_BATCHES_TOTAL = Counter("telemetry_ingest_batches_total", "ingest_samples calls", registry=registry)
+for _outcome in (
+    "accepted", "invalid_future", "invalid_range", "duplicate", "conflict",
+    "unknown_sensor", "invalid_time", "unit_mismatch", "invalid_value",
+):  # fmt: skip
+    TELEMETRY_SAMPLES_TOTAL.labels(outcome=_outcome)  # pre-create so /metrics shows zeros from the start
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):
