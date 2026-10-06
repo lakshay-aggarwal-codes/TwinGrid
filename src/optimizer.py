@@ -24,10 +24,24 @@ import gymnasium as gym
 import numpy as np
 import pandas as pd
 
-from .artifacts import loaders
 from .carbon_provider import load_diurnal_carbon_intensity
-from .digital_twin import OUTLET_TEMP_MAX, CoolingMode, DigitalTwin
+from .digital_twin import (
+    CHILLED_WATER_APPROACH_C,
+    OUTLET_TEMP_MAX,
+    SAFETY_ENVELOPE,
+    CoolingMode,
+    DigitalTwin,
+    carbon_emissions_gco2,
+)
 from .logging_config import log_error, log_function_entry, log_function_exit, log_training_progress
+from .versions import (
+    LEGACY_PHYSICS_VERSION,
+    PHYSICS_V1,
+    SAFETY_ENVELOPE_VERSION,
+    active_physics_version,
+    assert_current_safety_envelope_version,
+    validate_physics_version,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +78,22 @@ MAX_IT_POWER_KW = 500.0
 IDLE_FRAC = 0.4
 AIRFLOW_M3_S = 8.0
 OUTLET_MAX = OUTLET_TEMP_MAX  # re-exported from digital_twin, not a second copy
+DEFAULT_SIM_STEP_SECONDS = INTERVAL_MIN * 60  # A-1: 300 s
+
+# Chilled-water setpoint range the agent's [0, 1] action maps onto, PER PHYSICS VERSION.
+#  * legacy-0: 5-15 C (frozen). Under legacy-0 no setpoint here gives an inlet inside the envelope
+#    (tests/test_physics_v1_invariants.py::test_legacy_envelope_was_unreachable_for_chilled_water_modes).
+#  * v1: DERIVED from the envelope, not tuned: supply air = chilled water + CHILLED_WATER_APPROACH_C and is
+#    floored at the envelope's lower inlet bound, so setpoints below (inlet_min - approach) add nothing;
+#    the top of the range puts the inlet on the envelope's upper bound. The whole inlet band is therefore
+#    attainable by a constant policy (see test_full_inlet_band_is_attainable_by_a_constant_policy).
+CHILLED_WATER_ACTION_RANGE_C: dict[str, tuple[float, float]] = {
+    LEGACY_PHYSICS_VERSION: (5.0, 15.0),
+    PHYSICS_V1: (
+        SAFETY_ENVELOPE.inlet_min_C - CHILLED_WATER_APPROACH_C,
+        SAFETY_ENVELOPE.inlet_max_C - CHILLED_WATER_APPROACH_C,
+    ),
+}
 EPISODE_STEPS = 288  # 24 hours at 5-min intervals
 DROUGHT_THRESHOLD = 0.7
 DROUGHT_OVERRIDE_MODE = "closed_loop"
@@ -132,9 +162,17 @@ class DataCentreEnv(gym.Env):
         seed: int | None = None,
         pinn: Any = None,
         carbon_intensity_by_hour: np.ndarray | None = None,
+        physics_version: str | None = None,
+        sim_step_seconds: float | None = None,
     ) -> None:
         """
         Initialise environment with patent objective weights.
+
+          physics_version: twin physics the env runs on (default: the active version). Selects the action
+                           range, the safety penalty (v1: whole SafetyEnvelope; legacy-0: outlet only) and
+                           the carbon normaliser.
+          sim_step_seconds: simulated seconds per env step (default 300 = A-1). v1 only; legacy-0 is fixed
+                           at 300 s and refuses any other value.
 
         PATENT PARAMETERS:
           alpha: Weight for W (WUE) in J = α·W + β·E + γ·C
@@ -149,6 +187,17 @@ class DataCentreEnv(gym.Env):
         self._water_stress = water_stress
         self._max_steps = max_steps
         self._pinn = pinn
+        self._physics_version = validate_physics_version(
+            physics_version if physics_version is not None else active_physics_version()
+        )
+        self._v1 = self._physics_version == PHYSICS_V1
+        step_s = DEFAULT_SIM_STEP_SECONDS if sim_step_seconds is None else float(sim_step_seconds)
+        if not (np.isfinite(step_s) and step_s > 0):
+            raise ValueError(f"sim_step_seconds must be a positive finite number, got {sim_step_seconds!r}")
+        if not self._v1 and step_s != DEFAULT_SIM_STEP_SECONDS:
+            raise ValueError(f"physics {self._physics_version!r} has a fixed {DEFAULT_SIM_STEP_SECONDS}-s step")
+        self._step_s = step_s
+        self._dt_h = step_s / 3600.0
 
         if carbon_intensity_by_hour is None:
             carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
@@ -157,7 +206,15 @@ class DataCentreEnv(gym.Env):
         # cooling power (150 kW, matching the existing cooling_norm range)
         # at the dirtiest hour in the real curve, over one 5-min interval --
         # a real, data-derived bound rather than a guessed constant.
-        self._carbon_norm_max = 150.0 * float(self._carbon_intensity_by_hour.max()) * (INTERVAL_MIN / 60)
+        # v1: the carbon term is TOTAL facility power (the single carbon definition), so the ceiling is the
+        # largest total power the envelope allows (IT max x PUE max) at the dirtiest hour, over one step.
+        # legacy-0: cooling-only carbon, ceiling unchanged.
+        if self._v1:
+            self._carbon_norm_max = (
+                MAX_IT_POWER_KW * SAFETY_ENVELOPE.pue_max * float(self._carbon_intensity_by_hour.max()) * self._dt_h
+            )
+        else:
+            self._carbon_norm_max = 150.0 * float(self._carbon_intensity_by_hour.max()) * (INTERVAL_MIN / 60)
 
         # PATENT: Action = [chilled_water_temp 5–15°C, cooling_mode 0–3]
         # Normalised to [0,1] for continuous control
@@ -216,7 +273,7 @@ class DataCentreEnv(gym.Env):
             "chilled_water_temp_C": chilled_water,
             "water_stress": self._water_stress,
         }
-        state = self._twin.step(action)
+        state = self._twin.step(action, dt_seconds=self._step_s) if self._v1 else self._twin.step(action)
 
         it_power = state.it_power_kw
         cooling = state.cooling_power_kw
@@ -235,7 +292,7 @@ class DataCentreEnv(gym.Env):
             outlet = float(pred[0, 0])
             water_consumed = float(pred[0, 1])
             pue = float(pred[0, 2])
-            it_energy_kwh = it_power * (INTERVAL_MIN / 60)
+            it_energy_kwh = it_power * (self._dt_h if self._v1 else INTERVAL_MIN / 60)
             wue = water_consumed / it_energy_kwh if it_energy_kwh > 0.01 else 0.0
         else:
             outlet = state.server_outlet_temp_C
@@ -243,9 +300,16 @@ class DataCentreEnv(gym.Env):
             # "water_consumed" is per-step, matching the original contract
             # here -- derive it from the twin's per-step flow, not its
             # running total.
-            water_consumed = state.water_flow_lpm * INTERVAL_MIN
+            water_consumed = state.water_flow_lpm * (self._step_s / 60.0 if self._v1 else INTERVAL_MIN)
             pue = state.pue
             wue = state.wue
+
+        intensity = state.carbon_intensity_gco2_per_kwh
+        if self._v1:
+            # THE carbon definition (same function the API's state/what-if/ESG use), on total power.
+            carbon_gco2 = carbon_emissions_gco2(it_power + cooling, intensity, self._dt_h)
+        else:
+            carbon_gco2 = state.carbon_gco2
 
         return {
             "hour": hour,
@@ -258,8 +322,8 @@ class DataCentreEnv(gym.Env):
             "water_consumed": water_consumed,
             "pue": pue,
             "wue": wue,
-            "carbon_intensity_gco2_per_kwh": state.carbon_intensity_gco2_per_kwh,
-            "carbon_gco2": state.carbon_gco2,
+            "carbon_intensity_gco2_per_kwh": intensity,
+            "carbon_gco2": carbon_gco2,
             "water_stress": self._water_stress,
             "drought_override_active": state.drought_override_active,
         }
@@ -284,7 +348,8 @@ class DataCentreEnv(gym.Env):
         )
 
     def _action_to_control(self, action: np.ndarray) -> tuple[float, str]:
-        chilled = _denormalise(float(np.asarray(action).flat[0]), 5.0, 15.0)
+        lo, hi = CHILLED_WATER_ACTION_RANGE_C[self._physics_version]
+        chilled = _denormalise(float(np.asarray(action).flat[0]), lo, hi)
         mode_idx = int(np.clip(round(np.asarray(action).flat[1] * 3), 0, 3))
         mode = COOLING_MODES[mode_idx]
 
@@ -292,6 +357,20 @@ class DataCentreEnv(gym.Env):
             mode = DROUGHT_OVERRIDE_MODE
 
         return chilled, mode
+
+    @staticmethod
+    def safety_violations_of(state: dict[str, float], *, legacy: bool = False) -> tuple[str, ...]:
+        """Names of the safety limits an env state violates, from THE envelope.
+
+        ``legacy=True`` reproduces legacy-0's outlet-only check (kept so legacy-0 results stay replayable).
+        """
+        if legacy:
+            return () if state["outlet_temp"] <= OUTLET_MAX else ("outlet_above_max",)
+        return SAFETY_ENVELOPE.violations(state["inlet_temp"], state["outlet_temp"], state["pue"])
+
+    @property
+    def physics_version(self) -> str:
+        return self._physics_version
 
     def reset(
         self,
@@ -308,6 +387,7 @@ class DataCentreEnv(gym.Env):
         # (only .hour/.minute are read from this synthetic date -- the twin
         # otherwise just needs a real datetime to carry).
         self._twin = DigitalTwin(
+            physics_version=self._physics_version,
             max_it_power_kw=MAX_IT_POWER_KW,
             idle_power_fraction=IDLE_FRAC,
             air_flow_m3_s=AIRFLOW_M3_S,
@@ -345,13 +425,14 @@ class DataCentreEnv(gym.Env):
         wue_norm = _normalise(self._state["wue"], 0, 5)
         pue_excess = max(0, self._state["pue"] - 1)
         pue_norm = _normalise(pue_excess, 0, 1.5)
-        carbon_norm = _normalise(self._state["carbon_gco2"], 0, self._carbon_norm_max)
+        carbon_norm = _normalise(self._state["carbon_gco2"], 0, self._carbon_norm_max)  # v1: same fn as the API
 
         J = self._alpha * wue_norm + self._beta * pue_norm + self._gamma * carbon_norm
         reward = -J
 
-        # PATENT: Safety penalty — thermal constraint violation
-        if self._state["outlet_temp"] > OUTLET_MAX:
+        # PATENT: Safety penalty. v1: any breach of THE SafetyEnvelope (inlet, outlet, PUE) costs a flat 2.0;
+        # legacy-0: outlet only (frozen).
+        if self.safety_violations_of(self._state, legacy=not self._v1):
             reward -= 2.0
 
         self._step_count += 1
@@ -389,12 +470,18 @@ class JointOptimizer:
         seed: int | None = None,
         pinn: Any = None,
         carbon_intensity_by_hour: np.ndarray | None = None,
+        physics_version: str | None = None,
+        sim_step_seconds: float | None = None,
     ) -> None:
         self._alpha = alpha
         self._beta = beta
         self._gamma = gamma
         self._seed = seed
         self._pinn = pinn
+        self._physics_version = validate_physics_version(
+            physics_version if physics_version is not None else active_physics_version()
+        )
+        self._sim_step_seconds = sim_step_seconds
         if carbon_intensity_by_hour is None:
             carbon_intensity_by_hour, _ = load_diurnal_carbon_intensity()
         self._carbon_intensity_by_hour = carbon_intensity_by_hour
@@ -409,7 +496,22 @@ class JointOptimizer:
             seed=self._seed,
             pinn=self._pinn,
             carbon_intensity_by_hour=self._carbon_intensity_by_hour,
+            physics_version=self._physics_version,
+            sim_step_seconds=self._sim_step_seconds,
         )
+
+    @staticmethod
+    def _count_safety_violations(df: pd.DataFrame, *, legacy: bool = False) -> int:
+        """Rows (steps) that breach THE SafetyEnvelope (inlet, outlet, PUE). ``legacy=True`` counts the
+        outlet limit only, as legacy-0 always did. NaN counts as a violation (negated comparisons)."""
+        outlet_bad = ~(df["outlet_temp"] <= SAFETY_ENVELOPE.outlet_max_C)
+        if legacy:
+            return int(outlet_bad.sum())
+        inlet_bad = ~(df["inlet_temp"] >= SAFETY_ENVELOPE.inlet_min_C) | (
+            df["inlet_temp"] > SAFETY_ENVELOPE.inlet_max_C
+        )
+        pue_bad = ~(df["pue"] <= SAFETY_ENVELOPE.pue_max)
+        return int((inlet_bad | outlet_bad | pue_bad).sum())
 
     def train(
         self,
@@ -545,7 +647,7 @@ class JointOptimizer:
                 "total_carbon_gco2": float(df["carbon_gco2"].sum()),
                 "drought_override_active_pct": float(df["drought_override_active"].mean() * 100),
                 "total_reward": float(df["reward"].sum()),
-                "safety_violations": int((df["outlet_temp"] > OUTLET_MAX).sum()),
+                "safety_violations": self._count_safety_violations(df, legacy=self._physics_version != PHYSICS_V1),
             }
 
         normal = run_and_aggregate(normal_stress)
@@ -583,24 +685,25 @@ class JointOptimizer:
             "seed": self._seed,
             "carbon_intensity_by_hour": self._carbon_intensity_by_hour.tolist(),
             "patent_objective": "J = alpha*W + beta*E + gamma*C (C = real grid carbon emissions)",
+            # T20: what this policy was trained under. A loader rejects an older/missing envelope version.
+            "physics_version": self._physics_version,
+            "sim_step_seconds": self._sim_step_seconds,
+            "safety_envelope_version": SAFETY_ENVELOPE_VERSION,
         }
         (path / "config.json").write_text(json.dumps(config, indent=2))
         logger.info("Saved to %s", path)
 
     @classmethod
     def load(cls, path: str | Path) -> JointOptimizer:
-        """Load PPO model and patent config -- TRAINING PROCESSES ONLY.
-
-        Goes through the ArtifactGate (status, integrity, compatibility, format) before anything is
-        read. An SB3 zip is a pickle container, so in the API process (profile ``api``) the gate
-        refuses it and this raises; a training / evaluation process sets ARTIFACT_PROFILE=training.
-        """
+        """Load PPO model and patent config."""
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Path not found: {path}")
-        name = "ppo_optimizer"
-        grant = loaders.authorize([path / "config.json", path / "ppo_model.zip"], artifact=name)
-        config = loaders.load_json(path / "config.json", artifact=name, grant=grant)
+        config = json.loads((path / "config.json").read_text())
+        # Gate BEFORE any model code runs: an artifact trained under an older envelope is rejected outright.
+        assert_current_safety_envelope_version(config.get("safety_envelope_version"))
+        sb3 = _get_sb3()
+        PPO = sb3["PPO"]
         carbon_curve = config.get("carbon_intensity_by_hour")
         optimizer = cls(
             alpha=config.get("alpha", 0.5),
@@ -608,7 +711,9 @@ class JointOptimizer:
             gamma=config.get("gamma", 0.2),
             seed=config.get("seed"),
             carbon_intensity_by_hour=np.array(carbon_curve) if carbon_curve is not None else None,
+            physics_version=config.get("physics_version"),
+            sim_step_seconds=config.get("sim_step_seconds"),
         )
-        optimizer._model = loaders.load_sb3_zip_training_only(path / "ppo_model.zip", artifact=name, grant=grant)
+        optimizer._model = PPO.load(str(path / "ppo_model"))
         logger.info("Loaded from %s", path)
         return optimizer
