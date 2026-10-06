@@ -1,0 +1,22 @@
+# Development / CI tooling (T11). Runtime dependencies are NOT listed here: install the hash-pinned
+# requirements.lock first (pip install --require-hashes -r requirements.lock), then this file.
+# These are deliberately not hash-pinned; they never ship in the Docker image.
+
+# Tests
+pytest>=8.0,<9
+pytest-asyncio>=0.23,<2
+pytest-cov>=5.0,<8
+aiosqlite>=0.19,<1
+httpx>=0.27,<1
+# test-postgres job: tests/test_provenance_m1.py opens a sync engine on TWINGRID_TEST_PG_URL
+psycopg2-binary>=2.9,<3
+
+# Lint / format (version must match what developers run locally)
+ruff==0.6.9
+
+# Types
+pyrefly>=0.30,<1
+
+# Dependency scan and lock generation
+pip-audit>=2.7,<3
+pip-tools>=7.4,<8

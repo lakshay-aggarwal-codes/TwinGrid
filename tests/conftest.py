@@ -106,3 +106,25 @@ def sample_csv_file(sample_sensor_data, temp_data_dir):
     csv_path = temp_data_dir / "sensor_data.csv"
     sample_sensor_data.to_csv(csv_path, index=False)
     return csv_path
+
+
+# ----------------------------------------------------------------------------- markers (T11)
+# Registered here (pytest.ini uses --strict-markers and is not part of T11) so CI can select by marker.
+_CI_MARKERS = {
+    "postgres": "needs a real PostgreSQL (TWINGRID_TEST_PG_URL); run by the test-postgres CI job only",
+    "slow": "slow test",
+    "requires_tf": "needs TensorFlow installed",
+    "requires_sb3": "needs stable-baselines3 installed",
+}
+
+
+def pytest_configure(config):
+    for name, description in _CI_MARKERS.items():
+        config.addinivalue_line("markers", f"{name}: {description}")
+
+
+def pytest_collection_modifyitems(config, items):
+    """Mark the existing PostgreSQL-only tests (they carry no marker, only a skipif on TWINGRID_TEST_PG_URL)."""
+    for item in items:
+        if "postgres" in item.name and item.get_closest_marker("postgres") is None:
+            item.add_marker(pytest.mark.postgres)

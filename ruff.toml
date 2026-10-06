@@ -2,6 +2,9 @@ target-version = "py312"  # matches runtime.txt exactly
 line-length = 120
 src = ["."]
 
+# Applies to `ruff check` AND `ruff format` (the [lint] exclude below affects only linting).
+extend-exclude = ["realData", "twin-stream-insight-main", "vo", "bolt-main"]
+
 [lint]
 select = ["E", "F", "I"]  # pyflakes + pycodestyle errors + import sorting
 ignore = [

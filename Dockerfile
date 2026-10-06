@@ -1,10 +1,14 @@
 # syntax=docker/dockerfile:1
 
+# Base image: Python 3.12.10 (matches runtime.txt, so container behaviour matches the Railway/Nixpacks
+# deployment). T11 requires it pinned BY DIGEST. The digest could not be resolved when this file was written
+# (no registry access), so the default below is still the tag; the CI `docker` job fails until it reads
+#   ARG PYTHON_IMAGE=python:3.12.10-slim@sha256:<64 hex>
+# Get the value from the `bootstrap` job summary, or: docker buildx imagetools inspect python:3.12.10-slim
+ARG PYTHON_IMAGE=python:3.12.10-slim
+
 # ---- Builder stage: compile/install dependencies, discarded afterward ----
-FROM python:3.12.10-slim AS builder
-# Matches runtime.txt (Python 3.12.10) so container behaviour matches the
-# Railway/Nixpacks deployment rather than introducing a second, silently
-# different Python version.
+FROM ${PYTHON_IMAGE} AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -12,16 +16,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-COPY requirements.txt .
+COPY requirements.lock .
 RUN python -m venv /venv
 ENV PATH="/venv/bin:$PATH"
 # stable-baselines3 pulls in PyTorch; the default Linux wheel bundles CUDA
 # (~2GB+). This API only does CPU inference, so prefer the CPU-only wheel.
-RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+# requirements.lock is hash-pinned (pip-compile --generate-hashes); --require-hashes rejects anything else.
+RUN pip install --no-cache-dir --require-hashes --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.lock
 
 
 # ---- Runtime stage: slim image, no build toolchain ----
-FROM python:3.12.10-slim AS runtime
+FROM ${PYTHON_IMAGE} AS runtime
+
+# Commit the image was built from (read by src/model_registry.py). Pass --build-arg GIT_SHA=$(git rev-parse HEAD).
+ARG GIT_SHA=unknown
+ENV GIT_SHA=${GIT_SHA}
 
 # libpq5 (runtime lib, not -dev) for asyncpg; curl for the HEALTHCHECK below.
 RUN apt-get update && apt-get install -y --no-install-recommends \

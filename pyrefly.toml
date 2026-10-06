@@ -1,14 +1,18 @@
+# Platform-neutral so the same file works on a developer's Windows machine and in Linux CI (T11).
+# Pyrefly checks against the ACTIVE interpreter: activate the project venv (.venv) before running it locally.
+# (Earlier revisions pinned python-interpreter-path = ".venv/Scripts/python.exe" and python-platform = "win32",
+# which only worked on one developer's machine.)
 project-includes = ["**/*.py"]
 
 project-excludes = [
     "**/.venv/**",
     "**/node_modules/**",
     "**/__pycache__/**",
-    "**/.git/**"
+    "**/.git/**",
+    "**/twin-stream-insight-main/**",
+    "**/realData/**",
 ]
 
 search-path = ["."]
 
-python-interpreter-path = ".venv/Scripts/python.exe"
 python-version = "3.12"
-python-platform = "win32"

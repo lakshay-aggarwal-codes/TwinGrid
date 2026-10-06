@@ -5,35 +5,228 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch: # runs the `bootstrap` job (hash-pinned lock, base-image digest) in addition to the gate
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  # Test-only secret -- never the real deployment secret. Required because
-  # api/auth.py refuses to import without JWT_SECRET_KEY set (Phase 12).
+  PYTHON_VERSION: "3.12.10" # matches runtime.txt
+  PYTHONHASHSEED: "0"
+  # Test-only secret -- never the real deployment secret. api/auth.py refuses to import without it.
   JWT_SECRET_KEY: ci-test-secret-not-for-production
+  ENVIRONMENT: development
+  # CPU-only torch wheels (stable-baselines3 pulls torch; the default Linux wheel bundles CUDA).
+  TORCH_CPU_INDEX: https://download.pytorch.org/whl/cpu
+  # Type-error ceiling (T11). Record the count printed by the `types` job here once; it may only go DOWN.
+  # While "unset" the job fails on purpose: a baseline must be recorded, never assumed.
+  PYREFLY_ERROR_CEILING: "unset"
 
 jobs:
-  lint-and-test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python (matches runtime.txt)
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12.10"
-          cache: "pip"
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -r tests/test_requirements.txt
-          pip install ruff==0.6.9
+      - name: Install ruff (version pinned in requirements-dev.txt)
+        run: pip install "$(grep -E '^ruff==' requirements-dev.txt)"
 
-      - name: Lint (ruff)
+      - name: ruff check
         run: ruff check .
 
-      - name: Run tests
-        run: pytest tests/ -v --cov=src --cov=api --cov-report=term-missing
+      - name: ruff format --check
+        run: ruff format --check .
+
+  types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.lock
+            requirements-dev.txt
+
+      - name: Install runtime lock (hash-checked) so imports resolve
+        run: pip install --require-hashes --extra-index-url "$TORCH_CPU_INDEX" -r requirements.lock
+
+      - name: Install pyrefly
+        run: pip install "$(grep -E '^pyrefly' requirements-dev.txt)"
+
+      - name: pyrefly check (error count ratchet)
+        run: |
+          pyrefly check --output-format=json > pyrefly.json || true
+          python - <<'PY'
+          import json, os, sys
+
+          data = json.load(open("pyrefly.json", encoding="utf-8"))
+          errors = data.get("errors", []) if isinstance(data, dict) else data
+          count = len(errors)
+          ceiling = os.environ["PYREFLY_ERROR_CEILING"]
+          print(f"pyrefly errors: {count} (ceiling: {ceiling})")
+          if ceiling == "unset":
+              sys.exit(f"No baseline recorded. Set PYREFLY_ERROR_CEILING to {count} in ci.yml and record it in reports/postT9/T11_ci_run.md.")
+          if count > int(ceiling):
+              sys.exit(f"Type errors went UP: {count} > ceiling {ceiling}. Fix them; the ceiling may only shrink.")
+          if count < int(ceiling):
+              print(f"::notice::Type errors fell to {count}; lower PYREFLY_ERROR_CEILING from {ceiling} to {count}.")
+          PY
+
+      - name: Upload pyrefly report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyrefly-report
+          path: pyrefly.json
+          if-no-files-found: ignore
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.lock
+            requirements-dev.txt
+
+      - name: Install runtime lock (hash-checked), then dev tools
+        run: |
+          pip install --require-hashes --extra-index-url "$TORCH_CPU_INDEX" -r requirements.lock
+          pip install -r requirements-dev.txt
+
+      - name: TensorFlow and stable-baselines3 must be importable
+        run: python -c "import tensorflow, stable_baselines3, torch; print(tensorflow.__version__, stable_baselines3.__version__, torch.__version__)"
+
+      - name: pytest (everything except the PostgreSQL tests)
+        run: >
+          pytest tests -m "not postgres" -rs
+          --cov=src --cov=api --cov-report=term-missing
+          --junitxml=junit.xml
+
+      - name: Fail if any test was skipped
+        # xfail is reported as <skipped type="pytest.xfail"> in JUnit XML; the strict characterization xfails are
+        # intentional, so only real skips (skipif / importorskip / skip) count.
+        run: |
+          python - <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          skipped = []
+          for case in ET.parse("junit.xml").getroot().iter("testcase"):
+              for node in case.findall("skipped"):
+                  if node.get("type") != "pytest.xfail":
+                      skipped.append(f"{case.get('classname')}::{case.get('name')} -- {node.get('message')}")
+          if skipped:
+              print("\n".join(skipped))
+              sys.exit(f"{len(skipped)} test(s) skipped; the CI gate allows none.")
+          print("no skipped tests")
+          PY
+
+      - name: Upload JUnit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit
+          path: junit.xml
+
+  test-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: twingrid_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # postgresql:// is rewritten to asyncpg by db_url.normalize_database_url (alembic) and used as-is
+      # (psycopg2) by tests/test_provenance_m1.py.
+      TWINGRID_TEST_PG_URL: postgresql://postgres:postgres@localhost:5432/twingrid_ci
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/twingrid_ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.lock
+            requirements-dev.txt
+
+      - name: Install runtime lock (hash-checked), then dev tools
+        run: |
+          pip install --require-hashes --extra-index-url "$TORCH_CPU_INDEX" -r requirements.lock
+          pip install -r requirements-dev.txt
+
+      - name: alembic upgrade head / check (ORM == migrations)
+        run: |
+          alembic heads
+          alembic upgrade head
+          alembic check
+
+      - name: alembic downgrade base (leave the database clean)
+        run: alembic downgrade base
+
+      - name: Chain test + PostgreSQL-marked tests (none may be skipped)
+        run: |
+          pytest tests/test_alembic_chain.py -rs --junitxml=junit-pg-chain.xml
+          pytest tests -m postgres -rs --junitxml=junit-pg.xml
+          python - <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          total = 0
+          for path in ("junit-pg-chain.xml", "junit-pg.xml"):
+              for case in ET.parse(path).getroot().iter("testcase"):
+                  total += 1
+                  if case.find("skipped") is not None:
+                      sys.exit(f"skipped: {case.get('classname')}::{case.get('name')}")
+          print(f"{total} PostgreSQL-side tests ran, none skipped")
+          PY
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install pip-audit
+        run: pip install "$(grep -E '^pip-audit' requirements-dev.txt)"
+
+      - name: pip-audit on the lock (no suppressions)
+        # Fails on any known vulnerability. Do not add --ignore-vuln without recording the id, the reason and an
+        # expiry in reports/postT9/T11_ci_run.md.
+        run: pip-audit --requirement requirements.lock --require-hashes --disable-pip --strict
 
   frontend:
     runs-on: ubuntu-latest
@@ -113,15 +306,82 @@ jobs:
           name: playwright-report
           path: twin-stream-insight-main/playwright-report/
 
-  docker-build:
+  docker:
     runs-on: ubuntu-latest
-    needs: lint-and-test
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker image (build-only, no push)
-        run: docker build -t digital-twin-backend:ci .
-        # No registry push here: no container registry credentials exist
-        # yet, and a push step with nowhere real to push would be dead
-        # configuration. Add a push step (with a repository secret for
-        # registry auth) once Phase 17 (deployment) actually needs it.
+      - name: Base image must be pinned by digest
+        run: |
+          grep -Eq '^ARG PYTHON_IMAGE=python:3\.12\.10-slim@sha256:[0-9a-f]{64}$' Dockerfile \
+            || { echo "::error::Dockerfile base image is not digest-pinned (see the comment at the top of the Dockerfile)"; exit 1; }
+
+      - name: Build
+        run: docker build --build-arg GIT_SHA="$GITHUB_SHA" -t digital-twin-backend:ci .
+
+      - name: Image runs as a non-root user and carries GIT_SHA
+        run: |
+          test "$(docker run --rm --entrypoint id digital-twin-backend:ci -u)" != "0"
+          test "$(docker run --rm --entrypoint printenv digital-twin-backend:ci GIT_SHA)" = "$GITHUB_SHA"
+
+      - name: Start the container with a database and curl /healthz
+        run: |
+          docker network create ci-net
+          docker run -d --name pg --network ci-net \
+            -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=digital_twin \
+            --health-cmd "pg_isready -U postgres" --health-interval 3s --health-retries 20 postgres:16
+          for i in $(seq 1 30); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' pg)" = "healthy" ] && break
+            sleep 2
+          done
+          docker run -d --name app --network ci-net -p 8000:8000 \
+            -e DATABASE_URL=postgresql://postgres:postgres@pg:5432/digital_twin \
+            -e JWT_SECRET_KEY="$JWT_SECRET_KEY" -e ENVIRONMENT=development \
+            digital-twin-backend:ci
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8000/healthz; then echo; echo "healthz OK after ~$((i * 3))s"; exit 0; fi
+            [ "$(docker inspect -f '{{.State.Running}}' app)" = "true" ] || break
+            sleep 3
+          done
+          echo "::error::container did not become healthy"
+          docker logs app
+          exit 1
+
+      - name: Container logs
+        if: always()
+        run: docker logs app || true
+
+  bootstrap:
+    # Manual (Run workflow). Produces what could not be generated offline: the hash-pinned lock, the base-image
+    # digest, and the first pyrefly count (printed by the `types` job). Commit the artifact; nothing is auto-committed.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: pip-compile --generate-hashes
+        run: |
+          pip install "$(grep -E '^pip-tools' requirements-dev.txt)"
+          pip-compile --generate-hashes --allow-unsafe --strip-extras \
+            --extra-index-url "$TORCH_CPU_INDEX" --output-file=requirements.lock.new requirements.txt
+          grep -c -- '--hash=' requirements.lock.new
+
+      - name: Resolve the base-image digest
+        run: |
+          docker pull "python:${PYTHON_VERSION}-slim" > /dev/null
+          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "python:${PYTHON_VERSION}-slim")"
+          {
+            echo "### Dockerfile line"
+            echo '```'
+            echo "ARG PYTHON_IMAGE=python:${PYTHON_VERSION}-slim@${digest#*@}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: requirements.lock
+          path: requirements.lock.new
