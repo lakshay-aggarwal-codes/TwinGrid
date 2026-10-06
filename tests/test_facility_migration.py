@@ -57,9 +57,14 @@ def pre_m3_db(tmp_path):
 
 
 def test_single_alembic_head(tmp_path):
+    # T15 added 20261003000000 on top of M3, so M3 is no longer the head itself: assert it is still an
+    # ancestor of the (single) head that the T15 revision sits on.
     r = _alembic(tmp_path / "x.db", "heads")
     assert r.returncode == 0, r.stderr
-    assert M3 in r.stdout and r.stdout.count("(head)") == 1
+    assert r.stdout.count("(head)") == 1
+    history = _alembic(tmp_path / "x.db", "history")
+    assert history.returncode == 0, history.stderr
+    assert M3 in history.stdout
 
 
 def test_upgrade_creates_schema_default_facility_and_backfills(pre_m3_db):

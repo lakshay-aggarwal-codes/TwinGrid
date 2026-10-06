@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import (
@@ -17,9 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-
-from src.timeutil import parse_timestamp, utc_now
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, synonym
 
 
 class Base(DeclarativeBase):
@@ -41,7 +39,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -65,7 +63,7 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
@@ -78,20 +76,38 @@ class RefreshToken(Base):
     user: Mapped["User"] = relationship("User")
 
 
+# Allowed values for AuditLog.outcome (roadmap 8.4). Enforced by a CHECK constraint.
+AUDIT_OUTCOME_SUCCESS = "success"
+AUDIT_OUTCOME_DENIED = "denied"
+AUDIT_OUTCOME_FAILURE = "failure"
+AUDIT_OUTCOMES = (AUDIT_OUTCOME_SUCCESS, AUDIT_OUTCOME_DENIED, AUDIT_OUTCOME_FAILURE)
+
+
 class AuditLog(Base):
     """
-    Append-only record of sensitive actions: operator account creation,
-    POST /api/optimize triggers, and alert acknowledgment. See
-    api/services/audit_service.py for the writer; nothing in this codebase
-    updates or deletes a row here.
+    Append-only record of privileged actions (roadmap 8.4). Writers live in
+    api/services/audit_service.py; nothing in this codebase updates or deletes a row.
+
+    On PostgreSQL the migration 20261003000000 installs a trigger that rejects UPDATE and
+    DELETE (the one exception: the ON DELETE SET NULL of ``user_id`` when a user account is
+    removed). SQLite -- used by the test suite -- has no such trigger; see
+    tests/test_audit_migration.py. This is a DB-enforced guard against application bugs and
+    ordinary roles, NOT immutability against a database superuser or the table owner.
+
+    Column names vs roadmap 8.4 field names: ``resource_type``/``resource_id`` are the
+    ``target_type``/``target_id`` fields (``target_*`` are provided as synonyms), and
+    ``client_ip`` was formerly ``ip_address`` (kept as a synonym).
     """
 
     __tablename__ = "audit_logs"
+    __table_args__ = (CheckConstraint("outcome IN ('success', 'denied', 'failure')", name="ck_audit_logs_outcome"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True
+    )
 
-    # Denormalized username: the row still reads sensibly if the user is later deleted.
+    # Actor. Denormalized username: the row still reads sensibly if the user is later deleted.
     user_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -101,7 +117,17 @@ class AuditLog(Base):
     resource_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     resource_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     details: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
-    ip_address: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+    # T15: outcome of the audited action, correlation id, trusted-proxy-aware client address.
+    outcome: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=AUDIT_OUTCOME_SUCCESS, server_default=AUDIT_OUTCOME_SUCCESS
+    )
+    request_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    client_ip: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+    target_type = synonym("resource_type")
+    target_id = synonym("resource_id")
+    ip_address = synonym("client_ip")
 
 
 class SensorReading(Base):
@@ -114,7 +140,7 @@ class SensorReading(Base):
     __tablename__ = "sensor_readings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     # Source of this reading
     source: Mapped[str] = mapped_column(String(32), nullable=False, index=True)  # api | ws | simulation | optimization
@@ -164,9 +190,14 @@ class SensorReading(Base):
         optimization_result_id: int | None = None,
     ) -> "SensorReading":
         """Build SensorReading from API/twin state dict (e.g. DataCentreState.to_dict())."""
-        # T12: no substitution of "now" for a missing/unparseable timestamp, and no naive values.
-        # Raises src.timeutil.TimeContractError (a ValueError) instead.
-        ts = parse_timestamp(d.get("timestamp"))
+        ts = d.get("timestamp")
+        if isinstance(ts, str) and ts:
+            try:
+                ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            except ValueError:
+                ts = datetime.utcnow()
+        elif ts is None or (isinstance(ts, str) and not ts):
+            ts = datetime.utcnow()
         return cls(
             source=source,
             timestamp=ts,
@@ -221,7 +252,7 @@ class SimulationRun(Base):
     __tablename__ = "simulation_runs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     hours: Mapped[int] = mapped_column(Integer, nullable=False)
     utilisation: Mapped[float] = mapped_column(Float, nullable=False)
@@ -249,7 +280,7 @@ class OptimizationResult(Base):
     __tablename__ = "optimization_results"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     alpha: Mapped[float] = mapped_column(Float, nullable=False)
     beta: Mapped[float] = mapped_column(Float, nullable=False)
@@ -280,7 +311,7 @@ class Alert(Base):
     __tablename__ = "alerts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     score: Mapped[float] = mapped_column(Float, nullable=False)
     alert: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -321,7 +352,8 @@ class Alert(Base):
 # =============================================================================
 
 
-_utcnow = utc_now  # backwards-compatible alias; the single clock is src.timeutil.utc_now
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Facility(Base):
@@ -334,7 +366,7 @@ class Facility(Base):
     frame_unit: Mapped[str] = mapped_column(String(8), nullable=False, default="m", server_default="m")
     # Documents origin, axes, pose convention and the scene-unit -> metre factor.
     frame_note: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
 
     __table_args__ = (CheckConstraint("frame_unit = 'm'", name="ck_facility_frame_unit_metre"),)
 
@@ -349,7 +381,7 @@ class Asset(Base):
     asset_type: Mapped[str] = mapped_column(String(32), nullable=False)  # validated text, not an enum
     external_id: Mapped[str] = mapped_column(String(128), nullable=False)  # e.g. "zone-1-row-1-rack-1"
     name: Mapped[str] = mapped_column(String(128), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
     retired_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
@@ -439,7 +471,7 @@ class Sensor(Base):
     external_id: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
     min_valid: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     max_valid: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
     retired_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (

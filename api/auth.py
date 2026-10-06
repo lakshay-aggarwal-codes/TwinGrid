@@ -34,6 +34,7 @@ import hmac
 import os
 import secrets as secrets_module
 from datetime import datetime, timedelta, timezone
+from functools import partial
 from typing import Annotated, Optional
 
 import bcrypt
@@ -46,7 +47,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.rate_limit import limiter
 from api.secrets import read_secret
-from api.startup_checks import check_jwt_secret
+from api.services import audit_service
 from database import get_db
 from models.db_models import USER_ROLE_OPERATOR, USER_ROLE_VIEWER, RefreshToken, User
 
@@ -54,9 +55,16 @@ from models.db_models import USER_ROLE_OPERATOR, USER_ROLE_VIEWER, RefreshToken,
 # Config
 # -----------------------------------------------------------------------------
 
-# Missing is fatal in every environment; a repo placeholder / short value is fatal in production
-# (rules in api/startup_checks.py -- this module only delegates).
-SECRET_KEY = check_jwt_secret(read_secret("JWT_SECRET_KEY"))
+SECRET_KEY = read_secret("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET_KEY (or JWT_SECRET_KEY_FILE) is not set. This app will not start "
+        'without it -- generate one with: python -c "import secrets; print(secrets.token_hex(32))" '
+        "and set it in your .env / deployment environment, or point JWT_SECRET_KEY_FILE at a "
+        "secrets-manager-mounted file. There is no default: a hardcoded fallback here would mean "
+        "every deployment that forgets to set this variable shares the same, publicly-visible "
+        "signing key."
+    )
 ALGORITHM = "HS256"
 # Short-lived on purpose -- see module docstring. Was 60 minutes with no
 # refresh mechanism; now a stolen access token is only useful for 15 minutes.
@@ -254,6 +262,14 @@ async def revoke_refresh_token(session: AsyncSession, plaintext: str) -> bool:
     return True
 
 
+async def _refresh_token_owner_id(session: AsyncSession, plaintext: str) -> Optional[int]:
+    """user_id owning ``plaintext`` (even if revoked/expired), or None if unknown. Used for auditing only."""
+    result = await session.execute(
+        select(RefreshToken.user_id).where(RefreshToken.token_hash == _hash_refresh_token(plaintext))
+    )
+    return result.scalar_one_or_none()
+
+
 # -----------------------------------------------------------------------------
 # DB helpers
 # -----------------------------------------------------------------------------
@@ -325,9 +341,42 @@ async def get_current_user(
     return user
 
 
-def require_operator(user: Annotated[User, Depends(get_current_user)]) -> User:
-    """Require role 'operator'. Use on POST /api/optimize."""
+def _audit_permission_denied(user: User, request: Optional[Request]) -> None:
+    """Best-effort ``permission_denied`` audit row (roadmap 8.4) for a 403 from ``require_operator``.
+
+    ``require_operator`` is a plain ``def`` dependency, so FastAPI runs it in a worker thread; the audit
+    coroutine is handed back to the application's event loop with ``anyio.from_thread.run`` (the DB engine
+    belongs to that loop). Outside a worker thread (a direct call in a unit test) or with no request there
+    is nothing to hand it to and the row is skipped. Never raises and never changes the 403 decision.
+    """
+    if request is None:
+        return
+    try:
+        from anyio import from_thread
+
+        from_thread.run(
+            partial(
+                audit_service.log_action_best_effort,
+                action="permission_denied",
+                user=user,
+                resource_type="endpoint",
+                resource_id=f"{request.method} {request.url.path}",
+                details={"required_role": "operator", "actual_role": user.role},
+                request=request,
+                outcome=audit_service.AUDIT_OUTCOME_DENIED,
+            )
+        )
+    except Exception:  # noqa: BLE001 - audit is best-effort here
+        audit_service.AUDIT_WRITE_FAILURES.inc()
+
+
+def require_operator(
+    user: Annotated[User, Depends(get_current_user)],
+    request: Request = None,  # type: ignore[assignment]  # injected by FastAPI; None on direct calls
+) -> User:
+    """Require role 'operator'. Use on POST /api/optimize. A 403 is audited (best-effort)."""
     if not user.is_operator():
+        _audit_permission_denied(user, request)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Operator role required to adjust controls",
@@ -340,6 +389,17 @@ def require_operator(user: Annotated[User, Depends(get_current_user)]) -> User:
 # -----------------------------------------------------------------------------
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+async def _audit_register_denied(request: Request, body: "RegisterRequest", reason: str) -> None:
+    await audit_service.log_action_best_effort(
+        action="permission_denied",
+        resource_type="endpoint",
+        resource_id="POST /auth/register",
+        details={"reason": reason, "requested_role": body.role},
+        request=request,
+        outcome=audit_service.AUDIT_OUTCOME_DENIED,
+    )
 
 
 @router.post("/register", response_model=UserResponse)
@@ -362,11 +422,13 @@ async def register(
     administrator provisions accounts without opening sign-up to everyone.
     """
     if not public_registration_enabled() and not operator_registration_allowed(x_admin_key):
+        await _audit_register_denied(request, body, "public_registration_disabled")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Public registration is disabled",
         )
     if body.role == USER_ROLE_OPERATOR and not operator_registration_allowed(x_admin_key):
+        await _audit_register_denied(request, body, "operator_key_required")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Operator registration requires a valid X-Admin-Key",
@@ -381,14 +443,15 @@ async def register(
     if body.role == USER_ROLE_OPERATOR:
         # Operator accounts can trigger /api/optimize and adjust controls --
         # every one created is worth a durable record of who created it and from where.
-        from api.services import audit_service
-
+        # Atomic (roadmap 8.4): the audit row is flushed in this same transaction; if it fails the
+        # exception propagates and get_db rolls the new account back.
         await audit_service.log_action(
             session,
             action="operator_registration",
             user=user,
             resource_type="user",
             resource_id=user.id,
+            details={"role": body.role, "admin_key_supplied": bool(x_admin_key)},
             request=request,
         )
     return user
@@ -405,6 +468,17 @@ async def login(
     token. Rate limited: 10/minute per IP."""
     user = await get_user_by_username(session, body.username)
     if user is None or not verify_password(body.password, user.hashed_password):
+        # The attempted username is NOT stored (people paste passwords into that field); the actor is
+        # recorded only when the account exists. Volume is bounded by the 10/minute per-IP limit above.
+        await audit_service.log_action_best_effort(
+            action="login_failure",
+            user=user,
+            resource_type="user",
+            resource_id=user.id if user is not None else None,
+            details={"reason": "invalid_credentials", "account_exists": user is not None},
+            request=request,
+            outcome=audit_service.AUDIT_OUTCOME_DENIED,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -412,6 +486,13 @@ async def login(
         )
     token = create_access_token(subject=user.id, role=user.role)
     refresh_token = await issue_refresh_token(session, user.id)
+    await audit_service.log_action_best_effort(
+        action="login_success",
+        user=user,
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+    )
     return TokenResponse(access_token=token, refresh_token=refresh_token, role=user.role)
 
 
@@ -427,10 +508,21 @@ async def refresh(
     module docstring's "Refresh tokens" section)."""
     existing = await get_active_refresh_token(session, body.refresh_token)
     if existing is None:
+        owner_id = await _refresh_token_owner_id(session, body.refresh_token)
         if await revoke_descendants_if_reused(session, body.refresh_token):
             # get_db rolls back when the request raises, which would undo the
             # revocation -- commit it explicitly before responding 401.
             await session.commit()
+            owner = await session.get(User, owner_id) if owner_id is not None else None
+            await audit_service.log_action_best_effort(
+                action="refresh_reuse_detected",
+                user=owner,
+                resource_type="user",
+                resource_id=owner_id,
+                details={"descendants_revoked": True},
+                request=request,
+                outcome=audit_service.AUDIT_OUTCOME_DENIED,
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid, expired, or already-used refresh token",
@@ -454,4 +546,14 @@ async def logout(
     access tokens. Idempotent: revoking an already-revoked/unknown token
     still returns 204, since the caller's goal (this token no longer
     works) is already true."""
-    await revoke_refresh_token(session, body.refresh_token)
+    active = await get_active_refresh_token(session, body.refresh_token)
+    owner = await session.get(User, active.user_id) if active is not None else None
+    revoked = await revoke_refresh_token(session, body.refresh_token)
+    if revoked:  # an unknown / already-revoked token is a no-op and is not an auditable logout
+        await audit_service.log_action_best_effort(
+            action="logout",
+            user=owner,
+            resource_type="user",
+            resource_id=owner.id if owner is not None else None,
+            request=request,
+        )

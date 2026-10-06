@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -7,8 +8,7 @@ from redis.exceptions import RedisError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import require_operator
-from api.errors import ApiError
-from api.rate_limit import http_limit, run_compute_async
+from api.rate_limit import http_limit
 from api.repositories import data_repository
 from api.schemas.optimization import OptimizeRequest
 from api.serialization import to_jsonable
@@ -27,18 +27,10 @@ async def optimize(
     _user: Annotated[User, Depends(require_operator)],
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Run RL optimization. Minimizes J = alpha*W + beta*E + gamma*C. Requires 'operator' role. Rate limited: 10/minute.
-
-    T14: never trains inside the request. With no loadable, verified model it answers 503
-    ``model_unavailable``. Concurrency and time are bounded (429 / 504, api/rate_limit.py)."""
-    try:
-        results, summary = await run_compute_async(
-            optimization_service.run_optimization, body.alpha, body.beta, body.gamma, body.water_stress, body.hours
-        )
-    except optimization_service.OptimizerUnavailableError:
-        raise ApiError(
-            status.HTTP_503_SERVICE_UNAVAILABLE, "model_unavailable", "No verified optimizer model is available"
-        ) from None
+    """Run RL optimization. Minimizes J = alpha*W + beta*E + gamma*C. Requires 'operator' role. Rate limited: 10/minute."""
+    results, summary = await optimization_service.run_optimization(
+        body.alpha, body.beta, body.gamma, body.water_stress, body.hours
+    )
     serialized_results = to_jsonable(results)
     summary = to_jsonable(summary)
     opt_result = await data_repository.save_optimization_result(
@@ -81,6 +73,7 @@ async def train_optimizer_async(
     request: Request,
     body: OptimizeRequest,
     _user: Annotated[User, Depends(require_operator)],
+    session: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
     """Enqueue PPO (re)training as an RQ job instead of running it inline
     (see src/task_queue.py, src/task_jobs.py). Returns immediately with a
@@ -90,8 +83,33 @@ async def train_optimizer_async(
     Redis + `rq worker` (see docker-compose.yml's `worker` service) -- a
     job just sits queued forever with no worker running.
     """
+    # Atomic audit (roadmap 8.4): the row is flushed BEFORE the job is enqueued, so a failed audit write
+    # means nothing is enqueued, and a failed enqueue (503 below) rolls the audit row back with the request.
+    # The job id is chosen here so the row can name it; RQ honours an explicit ``job_id``.
+    planned_job_id = str(uuid.uuid4())
+    await audit_service.log_action(
+        session,
+        action="train_async_enqueued",
+        user=_user,
+        resource_type="training_job",
+        resource_id=planned_job_id,
+        details={
+            "alpha": body.alpha,
+            "beta": body.beta,
+            "gamma": body.gamma,
+            "water_stress": body.water_stress,
+        },
+        request=request,
+    )
     try:
-        job_id = enqueue("src.task_jobs.train_optimizer_job", body.alpha, body.beta, body.gamma, body.water_stress)
+        job_id = enqueue(
+            "src.task_jobs.train_optimizer_job",
+            body.alpha,
+            body.beta,
+            body.gamma,
+            body.water_stress,
+            job_id=planned_job_id,
+        )
     except RedisError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Job queue unavailable") from exc
     return {"job_id": job_id}

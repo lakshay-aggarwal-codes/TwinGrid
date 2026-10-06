@@ -23,6 +23,7 @@ from sqlalchemy.pool import StaticPool  # noqa: E402
 
 from api.main import app  # noqa: E402
 from api.rate_limit import limiter  # noqa: E402
+from api.services import audit_service  # noqa: E402
 from database import get_db  # noqa: E402
 from models.db_models import Base, User  # noqa: E402
 
@@ -59,12 +60,15 @@ async def client(session_maker):
     previous_enabled = limiter.enabled
     limiter.enabled = False
     app.dependency_overrides[get_db] = override_get_db
+    # T15: best-effort audit rows use an INDEPENDENT session; point it at the test engine too.
+    audit_service.set_session_factory(session_maker)
     # raise_app_exceptions=False -> an unhandled server error comes back as HTTP 500
     # instead of being re-raised inside the test.
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
     app.dependency_overrides.clear()
+    audit_service.set_session_factory(None)
     limiter.enabled = previous_enabled
 
 
