@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Asset } from "@/contract/schemas/facility";
 import { EXPECTED_RACK_COUNT, FALLBACK_LAYOUT } from "./facilityLayout";
-import { buildFacilityModel, RACK_BOX_M, SCENE_UNITS_PER_FRAME_UNIT, type FacilityModel } from "./facilityModel.tsx";
+import { buildFacilityModel, RACK_BOX_M, SCENE_UNITS_PER_FRAME_UNIT, type FacilityModel } from "./facilityModel";
 import { FRAME_NOTE, seedAssets, topologyInput } from "./facilityFixtures";
 
 function ok(input = topologyInput()): FacilityModel {
   const r = buildFacilityModel(input);
-  if (!r.ok) throw new Error(`rejected: ${r.reason} ${r.detail ?? ""}`);
+  if (r.ok === false) throw new Error(`rejected: ${r.reason} ${r.detail ?? ""}`);
   return r.model;
 }
 

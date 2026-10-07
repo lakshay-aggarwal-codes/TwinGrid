@@ -15,7 +15,7 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: mocks.role.current }
 
 import { ApiError } from "@/api/apiError";
 import { alertRow } from "@/components/alerts/alertFixtures";
-import { IncidentsPanel, REFRESH_INTERVAL_MS } from "./IncidentsPanel.tsx";
+import { IncidentsPanel, REFRESH_INTERVAL_MS } from "./IncidentsPanel";
 
 function setup(open = true, alerts: AlertRecord[] = [alertRow({ id: 2 }), alertRow({ id: 1, acknowledged: true, acknowledged_by: "alice", acknowledged_at: "2026-10-06T11:00:00Z" })]) {
   mocks.fetchAlerts.mockResolvedValue(alerts);

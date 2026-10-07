@@ -36,11 +36,11 @@ import {
   type OptimizeResponse,
   type StateResponse,
   type WhatIfResponse,
-} from './models';
+} from './models.ts';
 
 export { ApiError, isApiError, type ApiErrorKind } from './apiError';
-export { connectWebSocket, probeHealthz } from './wsTransport';
-export type { BackendProbe, SocketStatus, TransportClosedReason, TransportState, TransportStatus, WsConnection } from './wsTransport';
+export { connectWebSocket, probeHealthz } from './wsTransport.ts';
+export type { BackendProbe, SocketStatus, TransportClosedReason, TransportState, TransportStatus, WsConnection } from './wsTransport.ts';
 export type {
   AlertRecord,
   AnomalyPipelineStatus,
@@ -53,7 +53,7 @@ export type {
   OptimizeSummary,
   StateResponse,
   WhatIfResponse,
-} from './models';
+} from './models.ts';
 
 // ------------------------------------------------------------------ request plumbing
 

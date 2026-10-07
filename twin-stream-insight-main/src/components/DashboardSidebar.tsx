@@ -1,5 +1,4 @@
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -71,11 +70,6 @@ export function DashboardSidebar({ config, onChange, onRunSim, simRunning, colla
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">Optimizer (experimental, simulator-only)</Label>
-              <Switch checked={config.aiOptimizer} onCheckedChange={v => set({ aiOptimizer: v })} />
             </div>
 
             <Separator className="bg-border/50" />

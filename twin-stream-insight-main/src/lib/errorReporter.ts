@@ -33,7 +33,23 @@ const lastSent = new Map<string, number>();
 let minuteStart = 0;
 let sentThisMinute = 0;
 
+/**
+ * Secrets that must never leave the browser: the WebSocket access token travels in the URL query
+ * (`/ws/live?token=...`) and the browser/`WebSocket` constructor quote URLs in their error messages.
+ * Pure + exported for tests.
+ */
+export function redactSecrets(text: string): string {
+  return text
+    .replace(/([?&;]token=)[^&\s"'`)<>]*/gi, '$1[redacted]')
+    .replace(/(\bBearer\s+)[A-Za-z0-9._~+/=-]+/gi, '$1[redacted]');
+}
+
 function toMessage(error: unknown): { message: string; stack?: string } {
+  const raw = toRawMessage(error);
+  return { message: redactSecrets(raw.message), stack: raw.stack === undefined ? undefined : redactSecrets(raw.stack) };
+}
+
+function toRawMessage(error: unknown): { message: string; stack?: string } {
   if (error instanceof Error) return { message: error.message, stack: error.stack };
   if (typeof error === 'string') return { message: error };
   try {

@@ -5,13 +5,17 @@ vi.mock("../authClient", () => {
   class AuthRequiredError extends Error {}
   return { AuthRequiredError, getToken: auth.getToken, forceRefresh: auth.forceRefresh };
 });
-vi.mock("../config", () => ({ API_BASE_URL: "https://api.example.com", assertApiConfigured: () => {} }));
+vi.mock("../config", () => ({
+  API_BASE_URL: "https://api.example.com",
+  WS_LIVE_URL: "wss://api.example.com/ws/live",
+  assertApiConfigured: () => {},
+}));
 vi.mock("@/lib/errorReporter", () => ({ reportError: vi.fn() }));
 
 import { AuthRequiredError } from "../authClient";
 import { ApiError } from "./apiError";
-import { ASSETS_PAGE_SIZE, fetchFacilityTopology } from "./facility.tsx";
-import { FRAME_NOTE, seedAssets } from "@/three/facilityFixtures.tsx";
+import { ASSETS_PAGE_SIZE, fetchFacilityTopology } from "./facility";
+import { FRAME_NOTE, seedAssets } from "@/three/facilityFixtures";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const FACILITY = { id: 1, name: "Default Facility", frame_unit: "m", frame_note: FRAME_NOTE, created_at: "2026-10-02T00:00:00Z" };

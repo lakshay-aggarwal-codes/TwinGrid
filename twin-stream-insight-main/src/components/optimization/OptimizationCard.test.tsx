@@ -65,7 +65,7 @@ describe("OptimizationCard", () => {
     expect(result).toHaveTextContent("Model version: ppo-3");
     expect(result).toHaveTextContent("Experimental: yes");
     expect(container.querySelector(".text-success, .text-destructive, .bg-success, .bg-destructive, [class*='text-green'], [class*='text-red']")).toBeNull();
-    expect(container.textContent).not.toMatch(/optimi[sz]ed|recommend|\bsafe\b|AI/i);
+    expect(container.textContent).not.toMatch(/optimi[sz]ed|recommend|\bsafe\b|\bAI\b/i);
     expect(onSummary).toHaveBeenLastCalledWith(summary);
     expect(result).toHaveAttribute("role", "status");
   });

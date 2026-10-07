@@ -14,7 +14,7 @@ vi.mock("@/lib/errorReporter", () => ({ reportError: vi.fn() }));
 
 import { AuthRequiredError } from "../authClient";
 import { ApiError } from "./apiError";
-import { ESG_REPORT_FILENAME, esgErrorKind, fetchEsgReportPdf } from "./esgReport.tsx";
+import { ESG_REPORT_FILENAME, esgErrorKind, fetchEsgReportPdf } from "./esgReport.ts";
 
 const pdf = (status = 200, type = "application/pdf") =>
   new Response(status === 200 ? new Blob(["%PDF-1.4 x"]) : "backend says: <b>secret detail</b>", { status, headers: { "Content-Type": type } });

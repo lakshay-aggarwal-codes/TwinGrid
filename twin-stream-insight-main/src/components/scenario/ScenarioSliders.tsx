@@ -9,7 +9,7 @@ import type { WhatIfResponse } from '@/api/apiClient';
 
 export type ScenarioControl = 'serverUtil' | 'outsideTemp' | 'waterStress' | 'chilledWaterSetpoint' | 'coolingMode';
 
-export const COOLING_MODES: CoolingMode[] = ['Auto', 'Evaporative', 'Closed-Loop', 'Free Air', 'Hybrid'];
+const COOLING_MODES: CoolingMode[] = ['Auto', 'Evaporative', 'Closed-Loop', 'Free Air', 'Hybrid'];
 
 interface SlidersProps {
   config: SimConfig;

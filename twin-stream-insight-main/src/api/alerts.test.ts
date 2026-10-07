@@ -9,12 +9,16 @@ vi.mock("../authClient", () => {
   class AuthRequiredError extends Error {}
   return { AuthRequiredError, getToken: auth.getToken, forceRefresh: auth.forceRefresh };
 });
-vi.mock("../config", () => ({ API_BASE_URL: "https://api.example.com", assertApiConfigured: () => {} }));
+vi.mock("../config", () => ({
+  API_BASE_URL: "https://api.example.com",
+  WS_LIVE_URL: "wss://api.example.com/ws/live",
+  assertApiConfigured: () => {},
+}));
 vi.mock("@/lib/errorReporter", () => ({ reportError: vi.fn() }));
 
 import { AuthRequiredError } from "../authClient";
 import { ApiError } from "./apiError";
-import { acknowledgePath, acknowledgeAlert, alertsQueryKey } from "./alerts.ts";
+import { acknowledgePath, acknowledgeAlert, alertsQueryKey } from "./alerts";
 
 const res = (status: number, headers: Record<string, string> = {}, body = "{}") => new Response(body, { status, headers });
 

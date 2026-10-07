@@ -5,8 +5,9 @@ import { useApiQuery } from "@/state/useApiQuery";
 import { buildIncidentReport, type Report } from "@/reports/reports";
 import { fetchAlerts, type AlertRecord } from "@/api/apiClient";
 import { alertsQueryKey } from "@/api/alerts";
-import { useAuth } from "@/hooks/useAuth.ts";
+import { useAuth } from "@/hooks/useAuth";
 import { AlertList } from "@/components/alerts/AlertList";
+import type { Role } from "@/components/alerts/AlertRowItem";
 import { usePageVisible } from "@/components/alerts/usePageVisible";
 import type { LatestAnomaly } from "@/hooks/useSimulation";
 
@@ -36,7 +37,9 @@ export const REFRESH_INTERVAL_MS = 15000;
  * Polling (15 s) runs only while the panel is open AND the tab is visible.
  */
 export function IncidentsPanel({ open, onClose, onFocusFacility, latestAnomaly, onGenerateReport }: IncidentsPanelProps) {
-  const { role } = useAuth();
+  const { role: authRole } = useAuth();
+  // Only the exact backend value "operator" enables operator controls; any other (or unknown) role is view-only here.
+  const role: Role = authRole === "operator" ? "operator" : "viewer";
   const visible = usePageVisible();
   const queryKey = alertsQueryKey(ALERTS_LIMIT);
 

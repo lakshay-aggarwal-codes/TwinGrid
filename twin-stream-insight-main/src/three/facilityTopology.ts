@@ -81,7 +81,7 @@ export function topologyFromQuery(state: QueryState, staticMode: boolean): Topol
       return fallbackTopology(state.kind === 'not_found' ? 'not_found' : state.kind === 'contract' ? 'invalid' : 'unavailable');
     case 'ready': {
       const built = buildFacilityModel(state.data);
-      if (!built.ok) return fallbackTopology(built.reason);
+      if (built.ok === false) return fallbackTopology(built.reason);
       const { zones, racks, frameUnit, frameNote, unplaced } = built.model;
       return { status: 'ready', source: 'backend', layout: { zones, racks }, reason: null, frameUnit, frameNote, unplaced };
     }
