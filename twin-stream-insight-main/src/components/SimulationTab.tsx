@@ -1,88 +1,149 @@
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import type { HourlyData } from '@/hooks/useSimulation';
+import { ProvenanceStrip, buildProvenance } from '@/provenance';
+import { StateNotice } from '@/state/StateBoundary';
+import { formatBackendNumber, type HourlyData, type SimInputs } from '@/hooks/useSimulation';
 
-const MODE_COLORS: Record<string, string> = {
-  'Evaporative': '#00E5FF',
-  'Closed-Loop': '#3B82F6',
-  'Free Air': '#22C55E',
-  'Hybrid': '#F59E0B',
-  'Auto': '#A78BFA',
+// Backend `cooling_mode` vocabulary -> display label + colour. A value not listed here is shown as unrecognised;
+// it is never mapped to a known mode.
+const MODES: Record<string, { label: string; color: string }> = {
+  evaporative: { label: 'Evaporative', color: '#00E5FF' },
+  closed_loop: { label: 'Closed-Loop', color: '#3B82F6' },
+  free_air: { label: 'Free Air', color: '#22C55E' },
+  hybrid: { label: 'Hybrid', color: '#F59E0B' },
 };
+const UNRECOGNISED = { label: 'Unrecognised mode', color: '#64748b' };
+const modeOf = (raw: string) => (Object.prototype.hasOwnProperty.call(MODES, raw) ? MODES[raw] : UNRECOGNISED);
+
+const RUN_VIEW = buildProvenance({ source: { kind: 'run-result' } });
+const STEP_AXIS = 'step (hours from start of simulated run)';
+const TOOLTIP_STYLE = { backgroundColor: 'hsl(213,50%,14%)', border: '1px solid hsl(213,30%,22%)', borderRadius: 8, color: '#e2e8f0' };
 
 interface Props {
   data: HourlyData[];
+  /** The settings the run was requested with; always shown beside the results. */
+  inputs: SimInputs | null;
+  /** The last run request failed. */
+  failed?: boolean;
 }
 
-export function SimulationTab({ data }: Props) {
+/** "Simulated run of 24 steps: mean utilisation 65 %, mean outside 22 °C, water stress 0.4." */
+function inputsLine(i: SimInputs, steps: number): string {
+  return `Simulated run of ${steps} steps (requested ${i.hours} h): mean utilisation ${i.meanUtilisationPct} %, mean outside ${i.meanOutsideTempC} °C, water stress ${i.waterStress}.`;
+}
+
+export function SimulationTab({ data, inputs, failed = false }: Props) {
+  const failure = failed ? (
+    <StateNotice kind="error" text="The last simulation request failed. Run it again from the sidebar." block />
+  ) : null;
+
   if (!data.length) {
     return (
-      <div className="flex items-center justify-center h-64 card-grid-glow rounded-lg">
-        <p className="text-muted-foreground">Run a 24h simulation from the sidebar to see results.</p>
+      <div className="space-y-3">
+        {failure}
+        <div className="flex items-center justify-center h-64 card-grid-glow rounded-lg">
+          <p className="text-muted-foreground">Run a simulation from the sidebar to see results.</p>
+        </div>
       </div>
     );
   }
 
-  const totalWater = data.reduce((s, d) => s + d.waterConsumed, 0);
-  const baselineWater = totalWater * 1.35;
-  const waterSaved = baselineWater - totalWater;
-  const avgPue = (data.reduce((s, d) => s + (d.itPower + d.coolingPower + 40) / d.itPower, 0) / 24).toFixed(2);
-  const totalEnergy = data.reduce((s, d) => s + d.itPower + d.coolingPower, 0);
-  const co2Avoided = (totalEnergy * 0.4 * 0.25).toFixed(0);
+  // The ONLY derived figure on this tab: the mean of the backend's hourly `pue`, labelled as a display aggregation.
+  // Energy, water totals, CO2 and any "savings" are not provided by the backend for a run, so they are not shown.
+  const meanPue = data.reduce((s, d) => s + d.pue, 0) / data.length;
+  const tiles = [
+    {
+      label: 'Mean PUE',
+      source: 'pue',
+      value: formatBackendNumber('pue', meanPue),
+      sub: 'mean of hourly backend PUE (display aggregation)',
+    },
+  ];
 
-  // pie data
   const modeCounts: Record<string, number> = {};
-  data.forEach(d => { modeCounts[d.coolingMode] = (modeCounts[d.coolingMode] || 0) + 1; });
-  const pieData = Object.entries(modeCounts).map(([name, value]) => ({ name, value }));
+  data.forEach((d) => {
+    const label = modeOf(d.coolingMode).label;
+    modeCounts[label] = (modeCounts[label] || 0) + 1;
+  });
+  const pieData = Object.entries(modeCounts).map(([name, value]) => ({
+    name,
+    value,
+    color: (Object.values(MODES).find((m) => m.label === name) ?? UNRECOGNISED).color,
+  }));
+  const barData = data.map((d) => ({ ...d, modeColor: modeOf(d.coolingMode).color }));
 
   return (
     <div className="space-y-4">
-      {/* Summary metrics */}
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: 'Water Saved', value: `${waterSaved.toFixed(0)} L`, sub: 'vs baseline' },
-          { label: 'Avg PUE', value: avgPue, sub: '24h average' },
-          { label: 'Total Energy', value: `${(totalEnergy / 1000).toFixed(1)} MWh`, sub: '24h total' },
-          { label: 'CO₂ Avoided', value: `${co2Avoided} kg`, sub: 'estimated' },
-        ].map(m => (
-          <div key={m.label} className="card-grid-glow rounded-lg p-4 text-center">
+      {failure}
+
+      <div className="space-y-1">
+        <ProvenanceStrip view={RUN_VIEW}>
+          {inputs && (
+            <span data-testid="run-inputs" className="text-xs text-foreground">
+              {inputsLine(inputs, data.length)}
+            </span>
+          )}
+        </ProvenanceStrip>
+      </div>
+
+      {/* Summary metrics: backend fields only. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="sim-tiles">
+        {tiles.map((m) => (
+          <div key={m.label} data-tile={m.label} data-source-field={m.source} className="card-grid-glow rounded-lg p-4 text-center">
             <span className="text-xs text-muted-foreground uppercase tracking-wider">{m.label}</span>
             <p className="text-xl font-bold font-mono text-foreground mt-1">{m.value}</p>
             <span className="text-[11px] text-muted-foreground">{m.sub}</span>
           </div>
         ))}
+        <div data-testid="sim-not-provided" className="rounded-lg border border-dashed border-muted-foreground/50 p-4 text-xs text-muted-foreground">
+          Not provided by the backend for a run: total energy, total water, CO₂, and any savings figure (a savings figure needs a
+          backend baseline comparison).
+        </div>
       </div>
 
       {/* Power + Temp line chart */}
       <div className="card-grid-glow rounded-lg p-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Power & Temperature — 24h</h3>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={data}>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Power & Temperature by simulated step</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={data} margin={{ bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,30%,22%)" />
-            <XAxis dataKey="hour" stroke="hsl(200,15%,55%)" tick={{ fontSize: 11 }} tickFormatter={h => `${h}:00`} />
+            <XAxis
+              dataKey="step"
+              stroke="hsl(200,15%,55%)"
+              tick={{ fontSize: 11 }}
+              label={{ value: STEP_AXIS, position: 'insideBottom', offset: -12, style: { fill: 'hsl(200,15%,55%)', fontSize: 11 } }}
+            />
             <YAxis yAxisId="power" stroke="hsl(200,15%,55%)" tick={{ fontSize: 11 }} label={{ value: 'kW', angle: -90, position: 'insideLeft', style: { fill: 'hsl(200,15%,55%)', fontSize: 11 } }} />
             <YAxis yAxisId="temp" orientation="right" stroke="hsl(200,15%,55%)" tick={{ fontSize: 11 }} label={{ value: '°C', angle: 90, position: 'insideRight', style: { fill: 'hsl(200,15%,55%)', fontSize: 11 } }} />
-            <Tooltip contentStyle={{ backgroundColor: 'hsl(213,50%,14%)', border: '1px solid hsl(213,30%,22%)', borderRadius: 8, color: '#e2e8f0' }} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line yAxisId="power" type="monotone" dataKey="itPower" name="IT Power" stroke="#F59E0B" strokeWidth={2} dot={false} />
-            <Line yAxisId="power" type="monotone" dataKey="coolingPower" name="Cooling Power" stroke="#00E5FF" strokeWidth={2} dot={false} />
-            <Line yAxisId="temp" type="monotone" dataKey="temperature" name="Ambient Temp" stroke="#EF4444" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} />
+            <Legend verticalAlign="top" wrapperStyle={{ fontSize: 12 }} />
+            <Line yAxisId="power" type="monotone" dataKey="itPowerKw" name="IT Power" stroke="#F59E0B" strokeWidth={2} dot={false} />
+            <Line yAxisId="power" type="monotone" dataKey="coolingPowerKw" name="Cooling Power" stroke="#00E5FF" strokeWidth={2} strokeDasharray="6 3" dot={false} />
+            <Line yAxisId="temp" type="monotone" dataKey="outsideTempC" name="Outside Temp" stroke="#EF4444" strokeWidth={1.5} strokeDasharray="2 4" dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Water bar chart */}
+        {/* Water: the backend field, as reported */}
         <div className="card-grid-glow rounded-lg p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Water Consumption by Hour</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Water consumed (L) — as reported per step</h3>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            Backend field <code>water_consumed_L</code>, shown as provided (the twin accumulates it); not summed or derived here.
+          </p>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={data}>
+            <BarChart data={barData} margin={{ bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,30%,22%)" />
-              <XAxis dataKey="hour" stroke="hsl(200,15%,55%)" tick={{ fontSize: 10 }} tickFormatter={h => `${h}h`} />
+              <XAxis
+                dataKey="step"
+                stroke="hsl(200,15%,55%)"
+                tick={{ fontSize: 10 }}
+                label={{ value: STEP_AXIS, position: 'insideBottom', offset: -12, style: { fill: 'hsl(200,15%,55%)', fontSize: 10 } }}
+              />
               <YAxis stroke="hsl(200,15%,55%)" tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={{ backgroundColor: 'hsl(213,50%,14%)', border: '1px solid hsl(213,30%,22%)', borderRadius: 8, color: '#e2e8f0' }} itemStyle={{ color: '#e2e8f0' }} labelStyle={{ color: '#94a3b8' }} />
-              <Bar dataKey="waterConsumed" name="Water (L)">
-                {data.map((d, i) => (
-                  <Cell key={i} fill={MODE_COLORS[d.coolingMode] || '#00E5FF'} fillOpacity={0.8} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#e2e8f0' }} labelStyle={{ color: '#94a3b8' }} />
+              <Bar dataKey="waterConsumedL" name="Water consumed (L)">
+                {barData.map((d, i) => (
+                  <Cell key={i} fill={d.modeColor} fillOpacity={0.8} />
                 ))}
               </Bar>
             </BarChart>
@@ -91,15 +152,15 @@ export function SimulationTab({ data }: Props) {
 
         {/* Pie chart */}
         <div className="card-grid-glow rounded-lg p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Cooling Mode Distribution</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Cooling mode by step (count of steps)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
                 {pieData.map((d, i) => (
-                  <Cell key={i} fill={MODE_COLORS[d.name] || '#00E5FF'} />
+                  <Cell key={i} fill={d.color} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ backgroundColor: 'hsl(213,50%,14%)', border: '1px solid hsl(213,30%,22%)', borderRadius: 8, color: '#e2e8f0' }} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />
             </PieChart>
           </ResponsiveContainer>

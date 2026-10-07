@@ -3,12 +3,12 @@ import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from '
 import {
   fetchState,
   fetchSimulation,
-  fetchEquipmentHealth,
   type AnomalyStatusPayload,
-  type EquipmentHealthResponse,
   type LiveStatePayload,
   type StateResponse,
-} from '@/api/apiClient.ts';
+} from '@/api/apiClient';
+import { unitFor } from '@/contract/units';
+import { dataStateFromError, type DataState } from '@/state/dataState';
 import type { LivenessStatus } from '@/hooks/liveness';
 import type { FeedStore, FeedView } from '@/telemetry/feedStore';
 import { toLegacyLiveness } from '@/telemetry/freshness';
@@ -28,14 +28,33 @@ export interface SimConfig {
   aiOptimizer: boolean;
 }
 
+/**
+ * FE-08: the sidebar settings a PREVIEW or run was computed for. A value never travels without these, so a result can
+ * never be shown next to inputs it was not computed from.
+ */
+export interface PreviewInputs {
+  /** Percent, as shown on the slider (sent to the backend as a 0-1 fraction). */
+  utilisationPct: number;
+  outsideTempC: number;
+  /** Water stress index as set on the slider. */
+  waterStress: number;
+  coolingMode: CoolingMode;
+}
+
+/** Backend fields of one GET /api/state response, unrounded and uncomputed. Display precision comes from the unit table. */
 export interface KpiData {
   pue: number;
-  pueTrend: 'up' | 'down' | 'stable';
   wue: number;
   itPowerKw: number;
   coolingPowerKw: number;
-  outletTemp: number;
-  waterPerHour: number;
+  outletTempC: number;
+  waterFlowLpm: number;
+}
+
+/** FE-08: a preview KPI set: backend values plus the endpoint class and the inputs it answers for. Never feed data. */
+export interface PreviewKpi {
+  value: KpiData;
+  provenance: { kind: 'preview'; inputs: PreviewInputs };
 }
 
 export interface LatestAnomaly {
@@ -43,14 +62,36 @@ export interface LatestAnomaly {
   message: string;
 }
 
-export interface HourlyData {
-  hour: number;
-  itPower: number;
-  coolingPower: number;
-  temperature: number;
-  waterConsumed: number;
-  coolingMode: CoolingMode;
+/** Inputs of a GET /api/simulate run. Utilisation and outside temperature are the run's MEANS (the backend builds a diurnal curve around them). */
+export interface SimInputs {
+  hours: number;
+  meanUtilisationPct: number;
+  meanOutsideTempC: number;
+  waterStress: number;
 }
+
+/** One backend step of GET /api/simulate. Every field is a backend field as provided; `coolingMode` is the raw backend string. */
+export interface HourlyData {
+  /** Index of the step from the start of the simulated run. Not a clock hour. */
+  step: number;
+  itPowerKw: number;
+  coolingPowerKw: number;
+  outsideTempC: number;
+  /** Backend `water_consumed_L`, as reported (a running total on the twin). Never summed or derived here. */
+  waterConsumedL: number;
+  pue: number;
+  coolingMode: string;
+}
+
+/** Number of simulated steps requested for a run. */
+const SIM_HOURS = 24;
+
+/** Format a backend number to the display precision in the FE-01 unit table (no precision claim for unknown fields). */
+export function formatBackendNumber(field: string, value: number): string {
+  const info = unitFor(field);
+  return info ? value.toFixed(info.precision) : String(value);
+}
+
 function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v));
 }
@@ -67,63 +108,34 @@ export function coolingModeToApi(mode: CoolingMode): string {
   return map[mode];
 }
 
-// Map API cooling_mode string to UI CoolingMode
-function apiToCoolingMode(mode: string): CoolingMode {
-  const map: Record<string, CoolingMode> = {
-    evaporative: 'Evaporative',
-    closed_loop: 'Closed-Loop',
-    free_air: 'Free Air',
-    hybrid: 'Hybrid',
-    auto: 'Auto',
-  };
-  return map[mode] || 'Auto';
-}
-
-// Map API state to KpiData
-function stateToKpi(state: StateResponse, prevPue?: number): KpiData {
-  const waterPerHour = state.wue * state.it_power_kw; // L/kWh * kW = L/h
-  let pueTrend: 'up' | 'down' | 'stable' = 'stable';
-  if (prevPue !== undefined) {
-    if (state.pue < prevPue - 0.01) pueTrend = 'down';
-    else if (state.pue > prevPue + 0.01) pueTrend = 'up';
-  }
+// Map API state to a preview KPI. Values are the backend's, unrounded; nothing is computed here.
+function stateToPreview(state: StateResponse, inputs: PreviewInputs): PreviewKpi {
   return {
-    pue: +state.pue.toFixed(2),
-    pueTrend,
-    wue: +state.wue.toFixed(3),
-    itPowerKw: +state.it_power_kw.toFixed(0),
-    coolingPowerKw: +state.cooling_power_kw.toFixed(0),
-    outletTemp: +state.server_outlet_temp_C.toFixed(1),
-    waterPerHour: +waterPerHour.toFixed(1),
+    value: {
+      pue: state.pue,
+      wue: state.wue,
+      itPowerKw: state.it_power_kw,
+      coolingPowerKw: state.cooling_power_kw,
+      outletTempC: state.server_outlet_temp_C,
+      waterFlowLpm: state.water_flow_lpm,
+    },
+    provenance: { kind: 'preview', inputs },
   };
 }
 
-// Map API simulation response to HourlyData
+// Map the API simulation response to per-step rows. One backend field per column; no derivations, and the backend
+// cooling mode is passed through verbatim (an unrecognised value stays unrecognised).
 function stateToHourlyData(states: StateResponse[]): HourlyData[] {
-  return states.map((state, idx) => {
-    const waterPerHour = state.wue * state.it_power_kw;
-    return {
-      hour: idx,
-      itPower: +state.it_power_kw.toFixed(0),
-      coolingPower: +state.cooling_power_kw.toFixed(0),
-      temperature: +state.outside_temp_C.toFixed(1),
-      waterConsumed: +waterPerHour.toFixed(1),
-      coolingMode: apiToCoolingMode(state.cooling_mode),
-    };
-  });
+  return states.map((state, step) => ({
+    step,
+    itPowerKw: state.it_power_kw,
+    coolingPowerKw: state.cooling_power_kw,
+    outsideTempC: state.outside_temp_C,
+    waterConsumedL: state.water_consumed_L,
+    pue: state.pue,
+    coolingMode: state.cooling_mode,
+  }));
 }
-
-// Shown until the first real /api/state response arrives. Deliberately zeros,
-// not an estimate: no number on the dashboard is ever computed locally.
-const EMPTY_KPI: KpiData = {
-  pue: 0,
-  pueTrend: 'stable',
-  wue: 0,
-  itPowerKw: 0,
-  coolingPowerKw: 0,
-  outletTemp: 0,
-  waterPerHour: 0,
-};
 
 /**
  * FE-04 TEMPORARY ADAPTER. Components still read these two fields; they migrate to `useFeed(...)` / `Stamped` in
@@ -151,18 +163,20 @@ export function useSimulation(feed: FeedStore) {
     aiOptimizer: true,
   });
 
-  const [kpi, setKpi] = useState<KpiData>(EMPTY_KPI);
+  // FE-08: before the first /api/state response there is NO value (never 0); a failure is an explicit state.
+  const [previewKpi, setPreviewKpi] = useState<DataState<PreviewKpi>>({ status: 'loading' });
+  const [previewRetry, setPreviewRetry] = useState(0);
   const liveState = useFeed(selectLegacyLiveState, Object.is, feed);
   const liveness = useFeed(selectLegacyLiveness, Object.is, feed);
   const adapter: DeprecatedLiveAdapter = { liveState, liveness };
-  const [equipmentHealth, setEquipmentHealth] = useState<EquipmentHealthResponse | null>(null);
   const [anomalyScore, setAnomalyScore] = useState(0);
   const [latestAnomaly, setLatestAnomaly] = useState<LatestAnomaly | null>(null);
   const events = useSyncExternalStore(feed.events.subscribe, feed.events.getSnapshot);
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
   const [simRunning, setSimRunning] = useState(false);
+  const [simInputs, setSimInputs] = useState<SimInputs | null>(null);
+  const [simError, setSimError] = useState(false);
 
-  const prevPueRef = useRef<number | undefined>(undefined);
   // Server-owned anomaly pipeline result (backend T3). The browser no longer scores anything.
   const [anomalyStatus, setAnomalyStatus] = useState<AnomalyStatusPayload | null>(null);
   const lastEpisodeKeyRef = useRef<string | null>(null);
@@ -170,44 +184,46 @@ export function useSimulation(feed: FeedStore) {
 
   const pushEvent = feed.events.push;
 
+  // KPI cards: driven by the sliders. A debounced, abortable fetchState() -- "what would this configuration produce",
+  // answered by the actual physics twin, not a local formula. Only the four inputs /api/state takes trigger it.
+  const { serverUtil, outsideTemp, waterStress, coolingMode } = config;
   useEffect(() => {
-    let cancelled = false;
-    fetchEquipmentHealth()
-      .then((health) => {
-        if (!cancelled) setEquipmentHealth(health);
-      })
-      .catch((e) => reportError('useSimulation.fetchEquipmentHealth', e, 'warning'));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // KPI cards: driven by the sliders. Debounced real fetchState() call --
-  // this is "what would this configuration produce right now", answered
-  // by the actual physics twin, not a local formula.
-  useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    const inputs: PreviewInputs = { utilisationPct: serverUtil, outsideTempC: outsideTemp, waterStress, coolingMode };
     const timer = setTimeout(async () => {
       try {
-        const state = await fetchState({
-          utilisation: config.serverUtil / 100,
-          outside_temp: config.outsideTemp,
-          water_stress: config.waterStress,
-          mode: coolingModeToApi(config.coolingMode),
-        });
-        if (cancelled) return;
-        setKpi(stateToKpi(state, prevPueRef.current));
-        prevPueRef.current = state.pue;
+        const state = await fetchState(
+          {
+            utilisation: serverUtil / 100,
+            outside_temp: outsideTemp,
+            water_stress: waterStress,
+            mode: coolingModeToApi(coolingMode),
+          },
+          controller.signal
+        );
+        if (controller.signal.aborted) return;
+        setPreviewKpi({ status: 'ready', data: stateToPreview(state, inputs) });
       } catch (e) {
+        if (controller.signal.aborted) return;
         reportError('useSimulation.fetchState', e, 'warning');
-        pushEvent('Live data temporarily unavailable', 'warning');
+        // Keep the last good preview, labelled stale (it still carries the inputs it was computed for); with no
+        // previous result the failure itself is the state.
+        setPreviewKpi((prev) =>
+          prev.status === 'ready' ? { ...prev, freshness: 'stale', refreshFailed: true } : dataStateFromError(e)
+        );
+        pushEvent('Preview request failed', 'warning');
       }
     }, 300);
     return () => {
-      cancelled = true;
+      controller.abort();
       clearTimeout(timer);
     };
-  }, [config]);
+  }, [serverUtil, outsideTemp, waterStress, coolingMode, previewRetry, pushEvent]);
+
+  const retryPreview = useCallback(() => {
+    setPreviewKpi({ status: 'loading' });
+    setPreviewRetry((n) => n + 1);
+  }, []);
 
   // Anomaly handling. The anomaly state arrives INSIDE the same frame as everything else (`anomaly_status`);
   // detection is SERVER-owned (backend T3): the browser sends nothing and scores nothing. The feed store calls this
@@ -240,32 +256,45 @@ export function useSimulation(feed: FeedStore) {
   }, [feed, pushEvent]);
 
   const runSimulation = useCallback(() => {
+    const inputs: SimInputs = {
+      hours: SIM_HOURS,
+      meanUtilisationPct: serverUtil,
+      meanOutsideTempC: outsideTemp,
+      waterStress,
+    };
     setSimRunning(true);
-    fetchSimulation(24, {
-      utilisation: config.serverUtil / 100,
-      outside_temp: config.outsideTemp,
-      stress: config.waterStress,
+    setSimError(false);
+    fetchSimulation(SIM_HOURS, {
+      utilisation: serverUtil / 100,
+      outside_temp: outsideTemp,
+      stress: waterStress,
     })
-      .then((states) => setHourlyData(stateToHourlyData(states)))
+      .then((states) => {
+        setHourlyData(stateToHourlyData(states));
+        setSimInputs(inputs);
+      })
       .catch((e) => {
         reportError('useSimulation.fetchSimulation', e, 'warning');
         pushEvent('Simulation request failed', 'error');
+        setSimError(true);
       })
       .finally(() => setSimRunning(false));
-  }, [config]);
+  }, [serverUtil, outsideTemp, waterStress, pushEvent]);
 
   return {
     config,
     setConfig,
-    kpi,
+    previewKpi,
+    retryPreview,
     anomalyScore,
     latestAnomaly,
     anomalyStatus,
     events,
     hourlyData,
+    simInputs,
+    simError,
     simRunning,
     runSimulation,
     ...adapter,
-    equipmentHealth,
   };
 }

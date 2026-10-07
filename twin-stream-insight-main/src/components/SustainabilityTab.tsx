@@ -1,17 +1,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusMessage } from '@/components/shell/StatusMessage';
-import { FreshnessChip, ProvenanceBadge, formatAge } from '@/provenance';
+import { FreshnessChip, ProvenanceBadge, buildProvenance, formatAge } from '@/provenance';
+import { StateBoundary, StateNotice } from '@/state/StateBoundary';
+import type { DataState } from '@/state/dataState';
+import { formatBackendNumber } from '@/hooks/useSimulation';
 import { feedProvenance, noDataNotice, toReadout, type LiveFeed } from '@/three/visualizationModes';
 import type { EquipmentHealthResponse } from '@/api/apiClient';
 
 interface Props {
   /** FE-06: the stamped live feed. Values are current, "Last known" with their age, or replaced by a state notice. */
   feed: LiveFeed;
-  equipmentHealth: EquipmentHealthResponse | null;
+  /** FE-08: a REST payload, so loading / error / unavailable are explicit states (never a silently missing card). */
+  equipmentHealth: DataState<EquipmentHealthResponse>;
+  onRetryEquipment?: () => void;
 }
 
-export function SustainabilityTab({ feed, equipmentHealth }: Props) {
+// REST payload with no origin field and no endpoint class of its own: shown as "Unverified source".
+const EQUIPMENT_VIEW = buildProvenance({ source: { kind: null } });
+
+export function SustainabilityTab({ feed, equipmentHealth, onRetryEquipment }: Props) {
   const readout = toReadout(feed);
   const view = feedProvenance(feed);
   const liveState = readout.mode === 'none' ? null : readout.state;
@@ -91,23 +99,46 @@ export function SustainabilityTab({ feed, equipmentHealth }: Props) {
         </CardContent>
       </Card>
 
-      {equipmentHealth?.available ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Predictive Maintenance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {equipmentHealth.mae_improvement_pct?.toFixed(0)}%{' '}
-              <span className="text-sm font-normal">MAE improvement over baseline</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              LSTM MAE {equipmentHealth.lstm?.mae.toFixed(1)} vs. baseline {equipmentHealth.baseline?.mae.toFixed(1)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">{equipmentHealth.dataset_caveat}</p>
-          </CardContent>
-        </Card>
-      ) : null}
+      <Card data-testid="equipment-health">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Equipment health (proxy model)</CardTitle>
+          <ProvenanceBadge view={EQUIPMENT_VIEW} />
+        </CardHeader>
+        <CardContent>
+          <StateBoundary
+            state={equipmentHealth}
+            onRetry={onRetryEquipment}
+            messages={{ loading: 'Loading equipment-health results…' }}
+          >
+            {(health) =>
+              !health.available ? (
+                <StateNotice kind="unavailable" text="No equipment-health model results are available from the backend." />
+              ) : (
+                <div className="space-y-3">
+                  {/* The caveat leads: these numbers say how a method performed on a proxy dataset, nothing about this facility. */}
+                  <div data-testid="equipment-caveat" className="space-y-1 rounded border border-warning/40 bg-warning/10 p-2 text-xs">
+                    <p>
+                      Proxy model: validated on a proxy dataset, not on this facility&apos;s equipment. It does not report the health of
+                      any rack.
+                    </p>
+                    <p>{health.dataset_caveat ?? 'Dataset caveat: not reported by the backend.'}</p>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                    <dt className="text-muted-foreground">LSTM MAE</dt>
+                    <dd className="font-mono">{health.lstm ? formatBackendNumber('mae', health.lstm.mae) : 'not reported'}</dd>
+                    <dt className="text-muted-foreground">Baseline MAE</dt>
+                    <dd className="font-mono">{health.baseline ? formatBackendNumber('mae', health.baseline.mae) : 'not reported'}</dd>
+                  </dl>
+                  <p className="text-xs text-muted-foreground" data-testid="equipment-improvement">
+                    MAE improvement over baseline:{' '}
+                    {health.mae_improvement_pct !== undefined ? `${formatBackendNumber('mae_improvement_pct', health.mae_improvement_pct)}%` : 'not reported'}
+                  </p>
+                </div>
+              )
+            }
+          </StateBoundary>
+        </CardContent>
+      </Card>
     </div>
   );
 }

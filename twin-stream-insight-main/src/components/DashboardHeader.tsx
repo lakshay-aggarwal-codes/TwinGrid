@@ -1,26 +1,24 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { Activity, Boxes } from "lucide-react";
 import { RotateLink } from "@/components/transition/RotateLink";
-import { Badge } from "@/components/ui/badge";
+import { FreshnessChip, ProvenanceStrip } from "@/provenance";
+import { feedProvenance, type LiveFeed } from "@/three/visualizationModes";
 
-export function DashboardHeader() {
-  const [time, setTime] = useState(new Date());
+interface Props {
+  /** FE-08: the stamped live feed (frame + CURRENT freshness) from the feed store. */
+  feed: LiveFeed;
+}
 
-  useEffect(() => {
-    const t = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+/**
+ * FE-08: the header states what the page is connected to, from the feed itself. It no longer claims "Systems Online"
+ * (nothing here measures that), shows no browser clock (browser time is not data time), and the static SIMULATED
+ * banner is replaced by the provenance strip, which says what the backend said about the origin -- or "Unverified source".
+ */
+export function DashboardHeader({ feed }: Props) {
+  const view = useMemo(() => feedProvenance(feed), [feed]);
 
   return (
-    <>
-      <div
-        role="status"
-        data-testid="simulated-banner"
-        className="shrink-0 border-b border-warning/40 bg-warning/10 px-6 py-1 text-center text-[11px] font-medium uppercase tracking-wider text-warning"
-      >
-        SIMULATED — no measured telemetry
-      </div>
-    <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
+    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
       <div className="flex items-center gap-3">
         <div className="h-8 w-8 rounded-md bg-primary/20 flex items-center justify-center">
           <Activity className="h-5 w-5 text-primary" />
@@ -30,7 +28,7 @@ export function DashboardHeader() {
           <span className="text-primary glow-text">Analytics</span>{" "}
         </h1>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <RotateLink
           to="/"
           direction={-1}
@@ -39,23 +37,17 @@ export function DashboardHeader() {
           <Boxes className="h-3.5 w-3.5" />
           Live Twin
         </RotateLink>
-        <span className="font-mono text-sm text-muted-foreground">
-          {time.toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })}{" "}
-          <span className="text-foreground">{time.toLocaleTimeString()}</span>
-        </span>
-        <Badge
-          variant="outline"
-          className="border-success/50 text-success gap-1.5"
-        >
-          <span className="h-2 w-2 rounded-full bg-success pulse-dot inline-block" />
-          Systems Online
-        </Badge>
+        {/* Mounted once on this page, so this is the one place freshness transitions are announced. */}
+        <div data-testid="liveness" data-liveness={feed.freshness.state}>
+          {feed.frame ? (
+            <div data-testid="origin-banner" data-origin-tone={view.origin.state}>
+              <ProvenanceStrip view={view} announce />
+            </div>
+          ) : (
+            <FreshnessChip view={view} announce />
+          )}
+        </div>
       </div>
     </header>
-    </>
   );
 }

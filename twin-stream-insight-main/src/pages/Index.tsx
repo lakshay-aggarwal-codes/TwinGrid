@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Monitor, BarChart3, GitBranch, Leaf } from 'lucide-react';
 import { DashboardHeader } from '@/components/DashboardHeader';
@@ -9,18 +9,32 @@ import { WhatIfTab } from '@/components/WhatIfTab';
 import { SustainabilityTab } from '@/components/SustainabilityTab';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useSharedSimulation } from '@/hooks/simulationContext';
+import { useFeed } from '@/telemetry/useFeed';
+import { useApiQuery } from '@/state/useApiQuery';
+import { fetchEquipmentHealth } from '@/api/apiClient';
+import type { LiveFeed } from '@/three/visualizationModes';
 
 const Index = () => {
   usePageTitle('TwinGrid — Analytics');
   const {
-    config, setConfig, kpi, anomalyScore, latestAnomaly, events, hourlyData, simRunning,
-    runSimulation, liveState, equipmentHealth,
+    config, setConfig, previewKpi, retryPreview, events, hourlyData, simInputs, simError, simRunning,
+    runSimulation,
   } = useSharedSimulation();
+  // FE-08: the stamped feed (frame + current freshness) for the header and the sustainability readings.
+  const frame = useFeed((v) => v.frame);
+  const freshness = useFeed((v) => v.freshness);
+  const reconnectAttempt = useFeed((v) => v.transport.detail?.attempt ?? null);
+  const feed: LiveFeed = useMemo(() => ({ frame, freshness, reconnectAttempt }), [frame, freshness, reconnectAttempt]);
+  // FE-08: equipment health is a REST payload: loading / error / unavailable are explicit states, never silent omission.
+  const equipment = useApiQuery({
+    queryKey: ['equipment-health'],
+    queryFn: ({ signal }) => fetchEquipmentHealth(signal),
+  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <DashboardHeader />
+      <DashboardHeader feed={feed} />
       <div className="flex flex-1 overflow-hidden">
         <DashboardSidebar
           config={config}
@@ -48,16 +62,16 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="live">
-              <LiveMonitor kpi={kpi} anomalyScore={anomalyScore} latestAnomaly={latestAnomaly} events={events} serverUtil={config.serverUtil} outsideTemp={config.outsideTemp} />
+              <LiveMonitor previewKpi={previewKpi} onRetryPreview={retryPreview} events={events} />
             </TabsContent>
             <TabsContent value="sim">
-              <SimulationTab data={hourlyData} />
+              <SimulationTab data={hourlyData} inputs={simInputs} failed={simError} />
             </TabsContent>
             <TabsContent value="whatif">
               <WhatIfTab baseConfig={config} />
             </TabsContent>
             <TabsContent value="sustainability">
-              <SustainabilityTab liveState={liveState} equipmentHealth={equipmentHealth} />
+              <SustainabilityTab feed={feed} equipmentHealth={equipment.state} onRetryEquipment={equipment.refetch} />
             </TabsContent>
           </Tabs>
         </main>
