@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +34,6 @@ export function LoginScreen() {
     }
   }
 
-  const message = error ?? notice;
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -57,6 +57,8 @@ export function LoginScreen() {
             autoComplete="username"
             autoFocus
             required
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "login-error" : undefined}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
@@ -70,14 +72,29 @@ export function LoginScreen() {
             type="password"
             autoComplete="current-password"
             required
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "login-error" : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
 
-        {message && (
-          <p role="alert" className="text-sm text-destructive">
-            {message}
+        {/* Why you are here when you did not sign out yourself (e.g. "Session ended — sign in again"). Text + icon. */}
+        {notice && (
+          <div
+            role="alert"
+            data-testid="session-notice"
+            className="flex items-start gap-2 rounded-md border border-warning/50 bg-warning/10 p-2 text-sm text-foreground"
+          >
+            <LogOut className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>{notice}</span>
+          </div>
+        )}
+
+        {/* A failed sign-in attempt, tied to both fields. */}
+        {error && (
+          <p id="login-error" role="alert" className="text-sm text-destructive">
+            {error}
           </p>
         )}
 

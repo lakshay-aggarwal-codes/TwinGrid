@@ -12,7 +12,7 @@ type Mock = ReturnType<typeof vi.fn>;
 const STORAGE_KEY = 'twingrid.session';
 
 function tokens(access = fakeJwt(900), refresh = 'refresh-1', role = 'viewer') {
-  return { access_token: access, refresh_token: refresh, role };
+  return { access_token: access, refresh_token: refresh, token_type: 'bearer', role };
 }
 const ok = (body: unknown) => ({ ok: true, status: 200, json: async () => body });
 const fail = (status: number) => ({ ok: false, status, statusText: 'x', json: async () => ({}) });
@@ -119,7 +119,7 @@ describe('authClient', () => {
       await a.login('alice', 'pw');
       await expect(a.getToken()).rejects.toBeInstanceOf(a.AuthRequiredError);
       expect(a.getAuthSnapshot()).toMatchObject({ status: 'signed-out', username: null });
-      expect(a.getAuthSnapshot().notice).toMatch(/session has ended/i);
+      expect(a.getAuthSnapshot().notice).toMatch(/Session ended — sign in again/);
       expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
     });
 
@@ -278,6 +278,66 @@ describe('authClient', () => {
       listener.mockClear();
       await a.logout();
       expect(listener).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('session UX (FE-13)', () => {
+    it('a rejected refresh token ends the session with the "Session ended" notice', async () => {
+      const f = vi.fn().mockResolvedValueOnce(ok(tokens(fakeJwt(5), 'r1'))).mockResolvedValueOnce(fail(401));
+      const a = await load(f);
+      await a.login('alice', 'pw');
+      await expect(a.getToken()).rejects.toBeInstanceOf(a.AuthRequiredError);
+      expect(a.getAuthSnapshot()).toMatchObject({ status: 'signed-out', role: null, notice: 'Session ended — sign in again' });
+      expect(a.SESSION_ENDED_NOTICE).toBe('Session ended — sign in again');
+    });
+
+    it('endSession() signs out with the notice and makes no server call', async () => {
+      const f = vi.fn().mockResolvedValue(ok(tokens()));
+      const a = await load(f);
+      await a.login('alice', 'pw');
+      f.mockClear();
+      a.endSession();
+      expect(a.getAuthSnapshot()).toMatchObject({ status: 'signed-out', notice: 'Session ended — sign in again' });
+      expect(f).not.toHaveBeenCalled();
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+      await expect(a.getToken()).rejects.toBeInstanceOf(a.AuthRequiredError);
+    });
+
+    it('a signed-out user from an earlier session end gets the notice cleared by the next sign-in', async () => {
+      const f = vi.fn().mockResolvedValue(ok(tokens()));
+      const a = await load(f);
+      a.endSession();
+      expect(a.getAuthSnapshot().notice).not.toBeNull();
+      await a.login('alice', 'pw');
+      expect(a.getAuthSnapshot()).toMatchObject({ status: 'signed-in', notice: null });
+    });
+
+    it('keeps a role it does not recognise as that string (not coerced to viewer or operator)', async () => {
+      const a = await load(vi.fn().mockResolvedValue(ok(tokens(fakeJwt(900), 'r1', 'auditor'))));
+      await a.login('alice', 'pw');
+      expect(a.getAuthSnapshot().role).toBe('auditor');
+    });
+
+    it('a login response that is not the documented shape is a sign-in failure, not a session', async () => {
+      for (const body of [{}, { access_token: 'a' }, { access_token: 'a', refresh_token: 'r', token_type: 'bearer' }, { ...tokens(), access_token: '' }]) {
+        const a = await load(vi.fn().mockResolvedValue(ok(body)));
+        await expect(a.login('alice', 'pw')).rejects.toMatchObject({ name: 'LoginError', message: expect.stringMatching(/not understood/) });
+        expect(a.getAuthSnapshot().status).toBe('signed-out');
+      }
+    });
+
+    it('a refresh response that is not the documented shape keeps the session (transient), it does not sign out', async () => {
+      const f = vi.fn().mockResolvedValueOnce(ok(tokens(fakeJwt(5), 'r1'))).mockResolvedValueOnce(ok({ nope: true }));
+      const a = await load(f);
+      await a.login('alice', 'pw');
+      await expect(a.getToken()).rejects.toThrow(/Token refresh failed/);
+      expect(a.getAuthSnapshot().status).toBe('signed-in');
+    });
+
+    it('never puts a token or password into an error message', async () => {
+      const a = await load(vi.fn().mockResolvedValue(ok({ access_token: 'SECRET-ACCESS-TOKEN', role: 'viewer' })));
+      const err = await a.login('alice', 'hunter2-SECRET').catch((e: Error) => e);
+      expect(String((err as Error).message)).not.toMatch(/SECRET/);
     });
   });
 });

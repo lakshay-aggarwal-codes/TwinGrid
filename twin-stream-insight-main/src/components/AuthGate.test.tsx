@@ -7,8 +7,10 @@ let status: Status = "signed-out";
 const logout = vi.fn();
 const initAuth = vi.fn(() => Promise.resolve());
 
-vi.mock("@/hooks/useAuth", () => ({
+vi.mock("@/hooks/useAuth", async (orig) => ({
+  ...(await orig<typeof import("@/hooks/useAuth")>()),
   useAuth: () => ({ status, username: "alice", role: "operator", notice: null, login: vi.fn(), logout }),
+  useRole: () => ({ role: "operator", known: true, isOperator: true, operatorOnly: { disabled: false, reason: null } }),
 }));
 vi.mock("@/authClient", async (orig) => ({ ...(await orig<typeof import("@/authClient")>()), initAuth: () => initAuth() }));
 

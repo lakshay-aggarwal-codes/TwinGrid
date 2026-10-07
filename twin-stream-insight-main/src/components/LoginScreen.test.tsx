@@ -76,4 +76,41 @@ describe("LoginScreen", () => {
     render(<LoginScreen />);
     expect(screen.getByRole("alert")).toHaveTextContent(/session has ended/i);
   });
+
+  describe("session notice and errors (FE-13)", () => {
+    it("shows the session-ended notice as its own alert with text, separate from a form error", () => {
+      notice = "Session ended — sign in again";
+      render(<LoginScreen />);
+      const banner = screen.getByTestId("session-notice");
+      expect(banner).toHaveAttribute("role", "alert");
+      expect(banner).toHaveTextContent("Session ended — sign in again");
+      expect(banner.querySelector("svg")).not.toBeNull(); // icon shape as well as text
+      expect(document.getElementById("login-error")).toBeNull();
+    });
+
+    it("no notice: no banner", () => {
+      render(<LoginScreen />);
+      expect(screen.queryByTestId("session-notice")).toBeNull();
+    });
+
+    it("a failed sign-in is a role=alert tied to both fields; the notice stays visible beside it", async () => {
+      notice = "Session ended — sign in again";
+      login.mockRejectedValue(new LoginError("Invalid username or password.", 401));
+      render(<LoginScreen />);
+      fill("alice", "wrong");
+      fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+      const err = await screen.findByText("Invalid username or password.");
+      expect(err).toHaveAttribute("role", "alert");
+      expect(err).toHaveAttribute("id", "login-error");
+      expect(screen.getByLabelText("Username")).toHaveAttribute("aria-describedby", "login-error");
+      expect(screen.getByLabelText("Password")).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByTestId("session-notice")).toBeTruthy();
+    });
+
+    it("has no registration or account-creation control", () => {
+      render(<LoginScreen />);
+      expect(screen.queryByRole("link", { name: /register|sign up|create/i })).toBeNull();
+      expect(screen.queryByRole("button", { name: /register|sign up|create/i })).toBeNull();
+    });
+  });
 });

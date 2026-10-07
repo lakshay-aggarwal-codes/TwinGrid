@@ -5,11 +5,15 @@ import { componentTagger } from "lovable-tagger";
 
 /** Variables a production bundle cannot work without. Vite inlines VITE_*
  * values at build time, so a missing one is baked in as "undefined" and only
- * fails once a user opens the app. Fail the build instead. */
-const REQUIRED_PRODUCTION_ENV = ["VITE_API_BASE_URL", "VITE_DEMO_USERNAME", "VITE_DEMO_PASSWORD"] as const;
+ * fails once a user opens the app. Fail the build instead.
+ *
+ * Only the API base URL is required. VITE_DEMO_USERNAME / VITE_DEMO_PASSWORD are
+ * optional and DEV-ONLY (auto sign-in under `npm run dev`); they are not part of
+ * a production bundle, which src/test/bundleScan.test.ts asserts. */
+export const REQUIRED_PRODUCTION_ENV = ["VITE_API_BASE_URL"] as const;
 
-/** Pure + exported-by-shape for the checks below; returns human-readable problems. */
-function checkProductionEnv(env: Record<string, string>): { errors: string[]; warnings: string[] } {
+/** Pure and exported for src/test/envCheck.test.ts; returns human-readable problems. */
+export function checkProductionEnv(env: Record<string, string>): { errors: string[]; warnings: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   for (const key of REQUIRED_PRODUCTION_ENV) {
@@ -22,6 +26,11 @@ function checkProductionEnv(env: Record<string, string>): { errors: string[]; wa
     } else if (/^http:\/\//i.test(api)) {
       warnings.push(`VITE_API_BASE_URL is plain http:// (${api}); tokens and telemetry would travel unencrypted`);
     }
+  }
+  if (env.VITE_DEMO_USERNAME?.trim() || env.VITE_DEMO_PASSWORD?.trim()) {
+    warnings.push(
+      "VITE_DEMO_USERNAME / VITE_DEMO_PASSWORD are set but ignored: demo sign-in exists only under `npm run dev` and is not in production bundles"
+    );
   }
   const report = env.VITE_ERROR_REPORT_URL?.trim();
   if (!report) {

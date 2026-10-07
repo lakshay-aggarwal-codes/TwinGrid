@@ -19,14 +19,24 @@
  */
 
 import { API_BASE_URL, assertApiConfigured } from './config.ts';
+import { TokenResponse, isUnknown, isFailure, parseApi } from './contract';
 
+/** Roles this client knows. The backend's vocabulary is authoritative: any other value is kept as-is (see AuthRole). */
 export type Role = 'viewer' | 'operator';
+/**
+ * The role as the backend stated it. A value this client does not recognise stays that string and is treated as
+ * "not operator" for UX purposes. A role is a display/gating HINT only: the server decides what a request may do (403 is final).
+ */
+export type AuthRole = Role | (string & {});
+
+/** Shown on the sign-in screen when the session ended without the user asking for it (expired, revoked, rejected). */
+export const SESSION_ENDED_NOTICE = 'Session ended — sign in again';
 export type AuthStatus = 'restoring' | 'signed-out' | 'signed-in';
 
 export interface AuthSnapshot {
   status: AuthStatus;
   username: string | null;
-  role: Role | null;
+  role: AuthRole | null;
   /** Why the user is signed out, when it was not their own doing (e.g. server unreachable on reload). */
   notice: string | null;
 }
@@ -64,10 +74,11 @@ const DEV_DEMO: { username: string; password: string } | null =
       }
     : null;
 
-interface TokenResponse {
+/** The validated /auth/login and /auth/refresh body (contract layer); `role` is the raw backend string. */
+interface Tokens {
   access_token: string;
   refresh_token: string;
-  role: Role;
+  role: AuthRole;
 }
 
 interface Internal {
@@ -75,7 +86,7 @@ interface Internal {
   expiresAtMs: number;
   refreshToken: string | null;
   username: string | null;
-  role: Role | null;
+  role: AuthRole | null;
 }
 
 const EMPTY: Internal = { accessToken: null, expiresAtMs: 0, refreshToken: null, username: null, role: null };
@@ -152,7 +163,7 @@ function decodeExpiryMs(token: string): number {
   return Date.now() + 2 * REFRESH_MARGIN_MS;
 }
 
-function applyTokens(data: TokenResponse, username: string, forGeneration: number): void {
+function applyTokens(data: Tokens, username: string, forGeneration: number): void {
   if (forGeneration !== generation) return; // signed out while the request was in flight
   internal = {
     accessToken: data.access_token,
@@ -186,6 +197,20 @@ async function postJson(path: string, body: unknown): Promise<Response> {
   });
 }
 
+/** Validate a token response through the contract layer. Returns null when it is not the documented shape. */
+async function readTokens(response: Response, context: string): Promise<Tokens | null> {
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return null;
+  }
+  const parsed = parseApi(TokenResponse, body, context);
+  if (isFailure(parsed)) return null;
+  const { access_token, refresh_token, role } = parsed.data;
+  return { access_token, refresh_token, role: isUnknown(role) ? role.value : role };
+}
+
 /** Sign in with a username and password. Throws LoginError (message is user-safe). */
 export async function login(username: string, password: string): Promise<void> {
   const name = username.trim();
@@ -198,7 +223,8 @@ export async function login(username: string, password: string): Promise<void> {
   if (response.status === 401) throw new LoginError('Invalid username or password.', 401);
   if (response.status === 429) throw new LoginError('Too many sign-in attempts. Wait a minute and try again.', 429);
   if (!response.ok) throw new LoginError(`Sign-in failed (${response.status}).`, response.status);
-  const data = (await response.json()) as TokenResponse;
+  const data = await readTokens(response, 'POST /auth/login');
+  if (!data) throw new LoginError('Sign-in failed: the server response was not understood.', response.status);
   applyTokens(data, name, generation);
 }
 
@@ -211,11 +237,12 @@ async function refreshAccessToken(): Promise<string> {
       if (!token) throw new AuthRequiredError();
       const response = await postJson('/auth/refresh', { refresh_token: token });
       if (response.status === 401 || response.status === 400) {
-        clearSession('Your session has ended. Please sign in again.');
+        clearSession(SESSION_ENDED_NOTICE);
         throw new AuthRequiredError();
       }
       if (!response.ok) throw new Error(`Token refresh failed: ${response.status}`);
-      const data = (await response.json()) as TokenResponse;
+      const data = await readTokens(response, 'POST /auth/refresh');
+      if (!data) throw new Error('Token refresh failed: unexpected response'); // transient: the session is kept
       if (startedIn !== generation) throw new AuthRequiredError();
       applyTokens(data, internal.username ?? '', startedIn);
       return data.access_token;
@@ -278,6 +305,15 @@ export async function getToken(): Promise<string> {
 export async function forceRefresh(): Promise<string> {
   if (internal.refreshToken) return refreshAccessToken();
   throw new AuthRequiredError();
+}
+
+/**
+ * End the session because the server stopped accepting it (e.g. the live socket was refused twice with an
+ * "unauthenticated" close even after a refresh). Shows the sign-in screen with the "Session ended" notice.
+ * No server call: the credentials are already known to be rejected.
+ */
+export function endSession(message: string = SESSION_ENDED_NOTICE): void {
+  clearSession(message);
 }
 
 /** Sign out: the UI is signed out immediately; the server-side revocation is best-effort. */
