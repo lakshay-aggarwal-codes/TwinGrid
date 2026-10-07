@@ -1,0 +1,123 @@
+name: Load and resilience (T31, manual)
+
+# Manual only. Runs the stack with docker compose on the runner, executes the T31 scenarios, uploads
+# reports/perf/*.json, and enforces budgets from scripts/load_profile.json (null budgets = first run: use
+# `allow_unset`, then fill them from `ws_load.py budgets --propose`). Results describe THIS runner only.
+# Rollback: delete this file. NOT YET EXECUTED on GitHub (see reports/postT9/T31_evidence.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration_s:
+        description: Seconds per scenario
+        default: "120"
+      allow_unset:
+        description: "First run (budgets still null) - do not fail on unset budgets"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  LOAD_DB_ENGINE: postgresql
+  LOAD_COMMIT: ${{ github.sha }}
+  LOAD_SERVER_HOST_NOTE: github-hosted ubuntu-latest, backend+db+redis+load generator on one VM
+  ENVIRONMENT: development
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.10"
+      - run: pip install locust websockets jsonschema requests
+
+      - name: Generate throwaway secrets and start the stack
+        run: |
+          {
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 12)"
+            echo "REDIS_PASSWORD=$(openssl rand -hex 12)"
+            echo "JWT_SECRET_KEY=$(openssl rand -hex 32)"
+            echo "WS_MAX_CONNECTIONS_PER_USER=1000"
+            echo "WS_MAX_CONNECTIONS_GLOBAL=1000"
+          } > .env
+          echo "LOAD_USER=loaduser" >> "$GITHUB_ENV"
+          echo "LOAD_PASSWORD=$(openssl rand -hex 12)" >> "$GITHUB_ENV"
+          docker compose up -d --build db redis backend
+          for i in $(seq 1 60); do curl -fsS localhost:8000/readyz && break || sleep 5; done
+
+      - name: Create load user
+        run: python scripts/create_demo_user.py --base-url http://localhost:8000 --username "$LOAD_USER" --password "$LOAD_PASSWORD"
+
+      - name: REST mix 25/50/100 users
+        run: |
+          for u in 25 50 100; do
+            LOAD_SCENARIO=rest_mix LOAD_SCENARIO_NAME=rest_mix_$u LOAD_RUN_ID=rest_mix_$u-${{ github.run_id }} \
+            LOAD_RESULT_PATH=reports/perf/rest_mix_$u-${{ github.run_id }}.json LOAD_USERS_COUNT=$u \
+            locust -f locustfile.py --headless -u $u -r 5 -t ${{ inputs.duration_s }}s --host http://localhost:8000
+          done
+
+      - name: Compute endpoints, limiter on / off
+        run: |
+          for mode in on off; do
+            if [ "$mode" = off ]; then echo "HTTP_LIMITS_ENABLED=false" >> .env; else sed -i '/HTTP_LIMITS_ENABLED/d' .env; fi
+            docker compose up -d --force-recreate backend
+            for i in $(seq 1 60); do curl -fsS localhost:8000/readyz && break || sleep 5; done
+            LOAD_LIMITER=$mode LOAD_SCENARIO=compute LOAD_SCENARIO_NAME=compute_limiter_$mode LOAD_RUN_ID=compute_$mode-${{ github.run_id }} \
+            LOAD_RESULT_PATH=reports/perf/compute_$mode-${{ github.run_id }}.json LOAD_USERS_COUNT=50 \
+            locust -f locustfile.py --headless -u 50 -r 5 -t ${{ inputs.duration_s }}s --host http://localhost:8000
+          done
+          sed -i '/HTTP_LIMITS_ENABLED/d' .env
+          docker compose up -d --force-recreate backend
+          for i in $(seq 1 60); do curl -fsS localhost:8000/readyz && break || sleep 5; done
+
+      - name: WebSockets 50/200/500 with one stalled client
+        run: |
+          for n in 50 200 500; do
+            python scripts/ws_load.py ws --base-url http://localhost:8000 --connections $n --stalled 1 \
+              --per-user 1000 --duration ${{ inputs.duration_s }} --run-id ws_$n-${{ github.run_id }} \
+              --scenario ws_$n --out reports/perf/ws_$n-${{ github.run_id }}.json
+          done
+
+      - name: Telemetry ingest at the batch limit, concurrent with REST
+        run: |
+          pip install -r requirements.txt
+          export DATABASE_URL="postgresql+asyncpg://postgres:$(grep ^POSTGRES_PASSWORD .env | cut -d= -f2)@localhost:5432/digital_twin"
+          # db is not published by default: forward it for the harness only (debug-db profile, loopback)
+          docker compose --profile debug-db up -d debug-db
+          python scripts/seed_facility.py || true
+          (LOAD_SCENARIO=rest_mix LOAD_SCENARIO_NAME=rest_mix_50_with_ingest LOAD_RUN_ID=rest_with_ingest-${{ github.run_id }} \
+            LOAD_RESULT_PATH=reports/perf/rest_with_ingest-${{ github.run_id }}.json LOAD_USERS_COUNT=50 \
+            locust -f locustfile.py --headless -u 50 -r 5 -t ${{ inputs.duration_s }}s --host http://localhost:8000 &)
+          python scripts/ws_load.py ingest --duration ${{ inputs.duration_s }} --run-id ingest-${{ github.run_id }} \
+            --out reports/perf/ingest-${{ github.run_id }}.json
+          wait || true
+
+      - name: Failure drills (DB down 30 s, Redis down 30 s, restart under load)
+        run: |
+          drill() {  # $1 name, $2 action-in-background
+            (python scripts/ws_load.py ws --base-url http://localhost:8000 --connections 50 --stalled 1 --per-user 1000 \
+              --duration 90 --run-id "drill_$1-${{ github.run_id }}" --scenario "drill_$1" \
+              --out "reports/perf/drill_$1-${{ github.run_id }}.json") &
+            sleep 20; eval "$2"; wait
+          }
+          drill db_down_30s      'docker compose stop db; sleep 30; docker compose start db'
+          drill redis_down_30s   'docker compose stop redis; sleep 30; docker compose start redis'
+          drill restart_under_load 'docker compose restart backend'
+
+      - name: Validate and enforce budgets
+        run: |
+          python scripts/ws_load.py validate reports/perf
+          python scripts/ws_load.py budgets --check reports/perf ${{ inputs.allow_unset && '--allow-unset' || '' }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-${{ github.run_id }}
+          path: reports/perf/*.json
+      - if: always()
+        run: docker compose down -v

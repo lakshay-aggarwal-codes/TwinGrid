@@ -1,0 +1,283 @@
+{
+  "profile_version": 1,
+  "_note": "Budgets are null until a measured run exists (T31 rule). Fill them from `ws_load.py budgets --propose`; the headroom factor below is an assumption, not a measurement.",
+  "budget_headroom": null,
+  "baseline_reference": "reports/load_baseline_stats.csv (36.5 req/s, 0 failures, p95 ~1.4 s) - historical, other commit",
+  "rest_mix": {
+    "whatif": 5,
+    "simulate": 3,
+    "state": 3,
+    "alerts": 1,
+    "healthz": 1
+  },
+  "ws": {
+    "tick_interval_s_source": "payload.interval_s"
+  },
+  "ingest": {
+    "batch": 1000,
+    "concurrency": 4
+  },
+  "drills": {
+    "down_seconds": 30
+  },
+  "scenarios": {
+    "rest_mix_25": {
+      "description": "REST mix, 25 users, limiter default",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "rest_mix_50": {
+      "description": "REST mix, 50 users, limiter default",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "rest_mix_100": {
+      "description": "REST mix, 100 users, limiter default",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "compute_limiter_on": {
+      "description": "compute endpoints alone (/api/whatif, /api/simulate), HTTP_LIMITS_ENABLED=true",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "compute_limiter_off": {
+      "description": "compute endpoints alone, HTTP_LIMITS_ENABLED=false",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "ws_50": {
+      "description": "50 healthy WebSocket clients + 1 stalled",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "ws_200": {
+      "description": "200 healthy WebSocket clients + 1 stalled (needs WS_MAX_CONNECTIONS_GLOBAL>=201)",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "ws_500": {
+      "description": "500 healthy WebSocket clients + 1 stalled (needs WS_MAX_CONNECTIONS_GLOBAL>=501)",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "ingest": {
+      "description": "telemetry ingest at the batch limit (1000), in-process, concurrent with rest_mix_50",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "drill_db_down_30s": {
+      "description": "REST mix + ws while db is stopped for 30 s",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "drill_redis_down_30s": {
+      "description": "REST mix + ws while redis is stopped for 30 s",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    },
+    "drill_restart_under_load": {
+      "description": "backend restarted under REST mix + ws load",
+      "budgets": {
+        "p95_ms": null,
+        "p99_ms": null,
+        "error_rate": null,
+        "tick_drift_p95_ms": null
+      }
+    }
+  },
+  "result_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": [
+      "schema_version",
+      "run_id",
+      "scenario",
+      "environment",
+      "percentiles",
+      "errors",
+      "tick_drift"
+    ],
+    "properties": {
+      "schema_version": {
+        "const": 1
+      },
+      "run_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "scenario": {
+        "type": "string",
+        "minLength": 1
+      },
+      "environment": {
+        "type": "object",
+        "required": [
+          "host",
+          "commit",
+          "db_engine",
+          "users",
+          "duration_s",
+          "started_at"
+        ],
+        "properties": {
+          "host": {
+            "type": "object",
+            "required": [
+              "platform",
+              "cpu_count",
+              "python"
+            ]
+          },
+          "users": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duration_s": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "percentiles": {
+        "type": "object",
+        "required": [
+          "count",
+          "p50_ms",
+          "p95_ms",
+          "p99_ms"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "p50_ms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "p95_ms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "p99_ms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "max_ms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      },
+      "errors": {
+        "type": "object",
+        "required": [
+          "requests",
+          "count",
+          "rate",
+          "by_kind"
+        ],
+        "properties": {
+          "requests": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rate": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "by_kind": {
+            "type": "object"
+          }
+        }
+      },
+      "tick_drift": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "required": [
+          "count",
+          "p95_ms",
+          "missed_ticks"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "p95_ms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "missed_ticks": {
+            "type": "integer"
+          }
+        }
+      },
+      "extra": {
+        "type": "object"
+      }
+    }
+  }
+}
