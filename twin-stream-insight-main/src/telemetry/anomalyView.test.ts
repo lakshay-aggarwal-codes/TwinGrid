@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AnomalyStatusPayload } from '@/api/apiClient';
-import { formatDetectorNumber, gaugeGeometry, toAnomalyView } from './anomalyView';
+import { formatDetectorNumber, gaugeGeometry, toAnomalyView } from './anomalyView.tsx';
 
 const base = (over: Partial<AnomalyStatusPayload> = {}): AnomalyStatusPayload => ({
   status: 'ok',

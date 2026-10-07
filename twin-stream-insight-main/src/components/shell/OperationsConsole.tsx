@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { X, ShieldAlert, Sparkles, FileText } from "lucide-react";
 import { SimulationContext } from "@/hooks/simulationContext";
-import { ANOMALY_ICONS, toAnomalyView } from "@/telemetry/anomalyView";
+import { ANOMALY_ICONS, toAnomalyView } from "@/telemetry/anomalyView.ts";
 import { Button } from "@/components/ui/button";
 import { StatusMessage } from "./StatusMessage";
 import { buildOperationalReport, type Report } from "@/reports/reports";

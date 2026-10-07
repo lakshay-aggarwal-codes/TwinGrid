@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
-import type { FacilityLayout } from "./facilityLayout";
+import type { FacilityLayout } from "./facilityLayout.tsx";
 import { ZoneOutline } from "./ZoneOutline";
 import { Rack, type RackVisualState } from "./Rack";
 import { computeThermalColors } from "./thermalMapping";

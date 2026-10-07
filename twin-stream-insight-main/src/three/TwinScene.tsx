@@ -3,7 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Facility } from "./Facility";
-import { useCameraFocus } from "./useCameraFocus";
+import { useCameraFocus } from "./useCameraFocus.tsx";
 import type { LiveFeed, VisualizationMode } from "./visualizationModes";
 import type { FacilityLayout } from "./facilityLayout";
 import { useFacilityTopology } from "./facilityTopology";

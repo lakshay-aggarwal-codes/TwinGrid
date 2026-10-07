@@ -8,7 +8,7 @@ vi.mock("@/components/transition/RotateLink", () => ({
   RotateLink: ({ to, children }: { to: string; children: ReactNode }) => <a href={to}>{children}</a>,
 }));
 
-import { DashboardHeader } from "./DashboardHeader";
+import { DashboardHeader } from "./DashboardHeader.tsx";
 
 const renderHeader = (feed: LiveFeed) => render(<DashboardHeader feed={feed} />);
 afterEach(() => vi.restoreAllMocks());

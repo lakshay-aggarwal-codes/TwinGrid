@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { RackInspectorContent } from "./RackInspectorContent";
+import { RackInspectorContent } from "./RackInspectorContent.tsx";
 
 describe("RackInspectorContent", () => {
   it("names the zone the same way as the search palette and screen-reader announcements", () => {

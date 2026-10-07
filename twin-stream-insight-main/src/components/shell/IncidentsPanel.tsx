@@ -5,7 +5,7 @@ import { useApiQuery } from "@/state/useApiQuery";
 import { buildIncidentReport, type Report } from "@/reports/reports";
 import { fetchAlerts, type AlertRecord } from "@/api/apiClient";
 import { alertsQueryKey } from "@/api/alerts";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth.ts";
 import { AlertList } from "@/components/alerts/AlertList";
 import { usePageVisible } from "@/components/alerts/usePageVisible";
 import type { LatestAnomaly } from "@/hooks/useSimulation";

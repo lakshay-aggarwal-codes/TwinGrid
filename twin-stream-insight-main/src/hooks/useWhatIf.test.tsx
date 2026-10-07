@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/apiError";
 import { AuthRequiredError } from "@/authClient";
 import type { SimConfig } from "@/hooks/useSimulation";
-import { whatIf } from "@/test/whatifFixtures";
+import { whatIf } from "@/test/whatifFixtures.tsx";
 
 const { fetchWhatIf } = vi.hoisted(() => ({ fetchWhatIf: vi.fn() }));
 vi.mock("@/api/apiClient", () => ({ fetchWhatIf }));

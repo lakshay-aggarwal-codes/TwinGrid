@@ -2,11 +2,11 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { FreshnessState } from "@/telemetry/freshness";
-import { feedIn } from "@/three/feedTestUtils";
+import { feedIn } from "@/three/feedTestUtils.ts";
 import { FeedOverlay, ModeLegend } from "./ModeLegend";
 import { ThermalLegend } from "./ThermalLegend";
-import { RackInspectorContent } from "./RackInspectorContent";
-import { SidePanel } from "./SidePanel";
+import { RackInspectorContent } from "./RackInspectorContent.ts";
+import { SidePanel } from "./SidePanel.ts";
 
 const LAST_KNOWN_STATES = ["stale", "disconnected", "reconnecting"] as const;
 const NO_NUMBER_STATES = ["connecting", "unavailable"] as const;

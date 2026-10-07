@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { SimulationContext } from '@/hooks/simulationContext';
-import { ANOMALY_ICONS, gaugeGeometry, toAnomalyView, type AnomalyView } from '@/telemetry/anomalyView';
+import { ANOMALY_ICONS, gaugeGeometry, toAnomalyView, type AnomalyView } from '@/telemetry/anomalyView.tsx';
 import type { AnomalyStatusPayload } from '@/api/apiClient';
 
 interface Props {

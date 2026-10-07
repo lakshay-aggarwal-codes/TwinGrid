@@ -10,7 +10,7 @@
  *  - the detector is "experimental, trained on simulator data" whenever the backend's `trained_on` says so.
  */
 import { AlertTriangle, CheckCircle2, CircleDashed, HelpCircle, Hourglass, ServerCrash, XOctagon, type LucideIcon } from 'lucide-react';
-import type { AnomalyStatusPayload } from '../api/apiClient';
+import type { AnomalyStatusPayload } from '../api/apiClient.tsx';
 
 export type AnomalyKind = 'warming_up' | 'ok' | 'anomalous' | 'unavailable' | 'error' | 'unrecognised' | 'not_reported';
 

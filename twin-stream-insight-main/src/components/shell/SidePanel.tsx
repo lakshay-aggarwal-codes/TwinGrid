@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { RackInspectorContent } from "./RackInspectorContent";
 import type { LiveFeed } from "@/three/visualizationModes";
-import { useTopology } from "@/three/facilityTopology";
+import { useTopology } from "@/three/facilityTopology.tsx";
 
 interface SidePanelProps {
   selectedRackId: string | null;

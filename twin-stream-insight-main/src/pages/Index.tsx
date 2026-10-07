@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Monitor, BarChart3, GitBranch, Leaf } from 'lucide-react';
-import { DashboardHeader } from '@/components/DashboardHeader';
+import { DashboardHeader } from '@/components/DashboardHeader.tsx';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { LiveMonitor } from '@/components/LiveMonitor';
 import { SimulationTab } from '@/components/SimulationTab';
 import { WhatIfTab } from '@/components/WhatIfTab';
-import { SustainabilityTab } from '@/components/SustainabilityTab';
+import { SustainabilityTab } from '@/components/SustainabilityTab.tsx';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useSharedSimulation } from '@/hooks/simulationContext';
 import { useFeed } from '@/telemetry/useFeed';

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { TwinHeader } from "@/components/shell/TwinHeader";
-import { SidePanel } from "@/components/shell/SidePanel";
+import { SidePanel } from "@/components/shell/SidePanel.tsx";
 import { FeedOverlay, ModeLegend } from "@/components/shell/ModeLegend";
 import { SimulationPanel } from "@/components/shell/SimulationPanel";
 import { OperationsConsole } from "@/components/shell/OperationsConsole";
-import { IncidentsPanel } from "@/components/shell/IncidentsPanel";
-import { CommandPalette } from "@/components/shell/CommandPalette";
+import { IncidentsPanel } from "@/components/shell/IncidentsPanel.tsx";
+import { CommandPalette } from "@/components/shell/CommandPalette.tsx";
 import { ReportDialog } from "@/components/shell/ReportDialog";
-import { TwinScene, type FocusRequest } from "@/three/TwinScene";
+import { TwinScene, type FocusRequest } from "@/three/TwinScene.tsx";
 import { SceneErrorBoundary } from "@/three/SceneErrorBoundary";
 import { MOTION, motionDuration } from "@/three/motion";
 import type { Report } from "@/reports/reports";
@@ -16,7 +16,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useSharedSimulation } from "@/hooks/simulationContext";
 import { currentState, type LiveFeed, type VisualizationMode } from "@/three/visualizationModes";
 import { useFeed } from "@/telemetry/useFeed";
-import { describeRack, isNavKey, nextRackId } from "@/three/rackNavigation.ts";
+import { describeRack, isNavKey, nextRackId } from "@/three/rackNavigation.tsx";
 
 type LeftPanel = "none" | "simulation" | "operations" | "incidents";
 

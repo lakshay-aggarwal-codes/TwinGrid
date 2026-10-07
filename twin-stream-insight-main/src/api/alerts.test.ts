@@ -14,7 +14,7 @@ vi.mock("@/lib/errorReporter", () => ({ reportError: vi.fn() }));
 
 import { AuthRequiredError } from "../authClient";
 import { ApiError } from "./apiError";
-import { acknowledgePath, acknowledgeAlert, alertsQueryKey } from "./alerts";
+import { acknowledgePath, acknowledgeAlert, alertsQueryKey } from "./alerts.ts";
 
 const res = (status: number, headers: Record<string, string> = {}, body = "{}") => new Response(body, { status, headers });
 

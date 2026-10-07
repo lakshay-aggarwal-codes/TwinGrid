@@ -10,8 +10,8 @@ vi.mock("@/lib/errorReporter", () => ({ reportError: vi.fn() }));
 
 import { AuthRequiredError } from "../authClient";
 import { ApiError } from "./apiError";
-import { ASSETS_PAGE_SIZE, fetchFacilityTopology } from "./facility";
-import { FRAME_NOTE, seedAssets } from "@/three/facilityFixtures";
+import { ASSETS_PAGE_SIZE, fetchFacilityTopology } from "./facility.tsx";
+import { FRAME_NOTE, seedAssets } from "@/three/facilityFixtures.tsx";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const FACILITY = { id: 1, name: "Default Facility", frame_unit: "m", frame_note: FRAME_NOTE, created_at: "2026-10-02T00:00:00Z" };

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Asset } from "@/contract/schemas/facility";
 import { EXPECTED_RACK_COUNT, FALLBACK_LAYOUT } from "./facilityLayout";
-import { buildFacilityModel, RACK_BOX_M, SCENE_UNITS_PER_FRAME_UNIT, type FacilityModel } from "./facilityModel";
+import { buildFacilityModel, RACK_BOX_M, SCENE_UNITS_PER_FRAME_UNIT, type FacilityModel } from "./facilityModel.tsx";
 import { FRAME_NOTE, seedAssets, topologyInput } from "./facilityFixtures";
 
 function ok(input = topologyInput()): FacilityModel {

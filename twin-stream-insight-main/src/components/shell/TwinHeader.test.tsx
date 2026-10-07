@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 import type { FreshnessState } from "@/telemetry/freshness";
 import type { LiveFeed } from "@/three/visualizationModes";
-import { feedIn } from "@/three/feedTestUtils";
+import { feedIn } from "@/three/feedTestUtils.tsx";
 
 // Navigation chrome is not under test here.
 vi.mock("@/components/transition/RotateLink", () => ({

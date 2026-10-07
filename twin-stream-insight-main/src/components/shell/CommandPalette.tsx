@@ -8,8 +8,8 @@ import {
 } from "@/components/ui/command";
 import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { MapPin, Boxes, AlertTriangle } from "lucide-react";
-import { listRacksByZone } from "@/three/facilityLayout";
-import { useTopology } from "@/three/facilityTopology";
+import { listRacksByZone } from "@/three/facilityLayout.ts";
+import { useTopology } from "@/three/facilityTopology.ts";
 import type { EventItem } from "@/hooks/useSimulation";
 
 interface CommandPaletteProps {
