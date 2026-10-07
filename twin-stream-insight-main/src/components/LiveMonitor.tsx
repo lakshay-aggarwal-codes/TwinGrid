@@ -8,17 +8,19 @@ import type { KpiData, EventItem, LatestAnomaly } from '@/hooks/useSimulation';
 
 interface Props {
   kpi: KpiData;
-  anomalyScore: number;
-  latestAnomaly: LatestAnomaly | null;
+  /** @deprecated FE-07: the detector is shown from the backend `anomaly_status`; these two are no longer used. */
+  anomalyScore?: number;
+  /** @deprecated see `anomalyScore`. */
+  latestAnomaly?: LatestAnomaly | null;
   events: EventItem[];
   serverUtil: number;
   outsideTemp: number;
 }
 
-export function LiveMonitor({ kpi, anomalyScore, latestAnomaly, events, serverUtil, outsideTemp }: Props) {
+export function LiveMonitor({ kpi, events, serverUtil, outsideTemp }: Props) {
   return (
     <div className="space-y-4">
-      <AnomalyAlert anomalyScore={anomalyScore} anomaly={latestAnomaly} />
+      <AnomalyAlert />
 
       <div className="grid grid-cols-3 gap-3">
         <KpiCard label="PUE" value={kpi.pue} trend={kpi.pueTrend} icon={Activity} color="text-primary" />
@@ -32,7 +34,7 @@ export function LiveMonitor({ kpi, anomalyScore, latestAnomaly, events, serverUt
       <FloorHeatmap serverUtil={serverUtil} outsideTemp={outsideTemp} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <AnomalyGauge score={anomalyScore} />
+        <AnomalyGauge />
         <EventLog events={events} />
       </div>
     </div>

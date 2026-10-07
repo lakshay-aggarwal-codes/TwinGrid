@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { X, ShieldAlert, Sparkles, FileText } from "lucide-react";
+import { SimulationContext } from "@/hooks/simulationContext";
+import { ANOMALY_ICONS, toAnomalyView } from "@/telemetry/anomalyView";
 import { Button } from "@/components/ui/button";
 import { StatusMessage } from "./StatusMessage";
 import { buildOperationalReport, type Report } from "@/reports/reports";
@@ -60,6 +62,8 @@ export function OperationsConsole({
   onGenerateReport,
 }: OperationsConsoleProps) {
   const [optimize, setOptimize] = useState<OptimizeState>({ status: "idle" });
+  const anomaly = toAnomalyView(useContext(SimulationContext)?.anomalyStatus ?? null);
+  const AnomalyIconComp = ANOMALY_ICONS[anomaly.icon];
 
   if (!open) return null;
 
@@ -113,13 +117,26 @@ export function OperationsConsole({
           )}
         </div>
 
-        {/* Real anomaly detector output (autoencoder), already wired since Stage 6. */}
-        <div className="space-y-1.5">
+        {/* FE-07: the server's `anomaly_status`, drawn as text + icon per state. No number for non-scored states. */}
+        <div className="space-y-1.5" data-anomaly-kind={anomaly.kind}>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Anomaly detector</p>
-          <p className="text-xs text-foreground">
-            Gauge: <span className="font-mono">{Math.round(anomalyScore)}</span> / 100 (50 marks the alert threshold).
-            {latestAnomaly ? ` Last alert: ${latestAnomaly.type} — ${latestAnomaly.message}` : " No active alert."}
-          </p>
+          <div role={anomaly.kind === "unavailable" || anomaly.kind === "error" ? "alert" : "status"} className="text-xs text-foreground space-y-1">
+            <p className="flex items-center gap-1.5 font-medium">
+              <AnomalyIconComp aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+              {anomaly.label}
+            </p>
+            {anomaly.readout && <p className="font-mono">{anomaly.readout}</p>}
+            <p className="text-muted-foreground">{anomaly.explanation}</p>
+            {anomaly.kind === "anomalous" && (anomaly.type || anomaly.message) && (
+              <p>
+                {anomaly.type}
+                {anomaly.message ? ` — ${anomaly.message}` : ""}
+              </p>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              {anomaly.provenance.trainedOnText} · {anomaly.provenance.modelVersionText} · {anomaly.provenance.originText}
+            </p>
+          </div>
         </div>
 
         {events.length > 0 && (
