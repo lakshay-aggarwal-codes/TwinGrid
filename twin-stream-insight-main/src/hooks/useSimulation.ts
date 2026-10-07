@@ -1,22 +1,21 @@
 import { reportError } from '@/lib/errorReporter.ts';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import {
   fetchState,
   fetchSimulation,
   fetchEquipmentHealth,
-  connectWebSocket,
   type AnomalyStatusPayload,
   type EquipmentHealthResponse,
   type LiveStatePayload,
-  type SocketStatus,
   type StateResponse,
-} from '@/api/apiClient';
-import {
-  LIVENESS_CHECK_INTERVAL_MS,
-  deriveLiveness,
-  staleAfterMs,
-  type LivenessStatus,
-} from '@/hooks/liveness';
+} from '@/api/apiClient.ts';
+import type { LivenessStatus } from '@/hooks/liveness';
+import type { FeedStore, FeedView } from '@/telemetry/feedStore';
+import { toLegacyLiveness } from '@/telemetry/freshness';
+import { useFeed } from '@/telemetry/useFeed';
+import type { EventItem } from '@/telemetry/eventStore';
+
+export type { EventItem };
 
 export type CoolingMode = 'Auto' | 'Evaporative' | 'Closed-Loop' | 'Free Air' | 'Hybrid';
 
@@ -42,13 +41,6 @@ export interface KpiData {
 export interface LatestAnomaly {
   type: string;
   message: string;
-}
-
-export interface EventItem {
-  id: number;
-  time: string;
-  message: string;
-  type: 'info' | 'warning' | 'success' | 'error';
 }
 
 export interface HourlyData {
@@ -133,7 +125,23 @@ const EMPTY_KPI: KpiData = {
   waterPerHour: 0,
 };
 
-export function useSimulation() {
+/**
+ * FE-04 TEMPORARY ADAPTER. Components still read these two fields; they migrate to `useFeed(...)` / `Stamped` in
+ * FE-06/07/08/09/10, which then delete this interface. `liveState` is a BARE frame with no freshness or provenance,
+ * which is exactly what the store forbids -- do not add new uses.
+ */
+export interface DeprecatedLiveAdapter {
+  /** @deprecated Use `useFeed((v) => v.frame)` (a `Stamped` value). Removed in FE-06. */
+  liveState: LiveStatePayload | null;
+  /** @deprecated Use `useFeed((v) => v.freshness)`. Removed in FE-06. */
+  liveness: LivenessStatus;
+}
+
+const selectLegacyLiveState = (v: FeedView): LiveStatePayload | null => v.frame?.value ?? null;
+const selectLegacyLiveness = (v: FeedView): LivenessStatus => toLegacyLiveness(v.freshness.state);
+
+/** The live feed itself (socket, freshness, seq, events) lives in `feed` (FE-04); this hook adds the slider/KPI/anomaly UI state. */
+export function useSimulation(feed: FeedStore) {
   const [config, setConfig] = useState<SimConfig>({
     serverUtil: 65,
     outsideTemp: 22,
@@ -144,16 +152,13 @@ export function useSimulation() {
   });
 
   const [kpi, setKpi] = useState<KpiData>(EMPTY_KPI);
-  const [liveState, setLiveState] = useState<LiveStatePayload | null>(null);
-  // Liveness (T1a): from socket state + wall time of the last payload, never from sim_time.
-  const [liveness, setLiveness] = useState<LivenessStatus>('connecting');
-  const socketStatusRef = useRef<SocketStatus>('connecting');
-  const lastMessageAtRef = useRef<number | null>(null);
-  const staleWindowMsRef = useRef<number>(staleAfterMs());
+  const liveState = useFeed(selectLegacyLiveState, Object.is, feed);
+  const liveness = useFeed(selectLegacyLiveness, Object.is, feed);
+  const adapter: DeprecatedLiveAdapter = { liveState, liveness };
   const [equipmentHealth, setEquipmentHealth] = useState<EquipmentHealthResponse | null>(null);
   const [anomalyScore, setAnomalyScore] = useState(0);
   const [latestAnomaly, setLatestAnomaly] = useState<LatestAnomaly | null>(null);
-  const [events, setEvents] = useState<EventItem[]>([]);
+  const events = useSyncExternalStore(feed.events.subscribe, feed.events.getSnapshot);
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
   const [simRunning, setSimRunning] = useState(false);
 
@@ -163,11 +168,7 @@ export function useSimulation() {
   const lastEpisodeKeyRef = useRef<string | null>(null);
   const lastAnomalyStatusRef = useRef<string | null>(null);
 
-  function pushEvent(message: string, type: EventItem['type']) {
-    setEvents((prev) =>
-      [{ id: Date.now(), time: new Date().toLocaleTimeString(), message, type }, ...prev].slice(0, 5)
-    );
-  }
+  const pushEvent = feed.events.push;
 
   useEffect(() => {
     let cancelled = false;
@@ -208,65 +209,35 @@ export function useSimulation() {
     };
   }, [config]);
 
-  const refreshLiveness = useCallback(() => {
-    const next = deriveLiveness({
-      socket: socketStatusRef.current,
-      lastMessageAt: lastMessageAtRef.current,
-      now: Date.now(),
-      staleAfterMs: staleWindowMsRef.current,
-    });
-    // Same value -> same state -> no re-render of every consumer once a second.
-    setLiveness((prev) => (prev === next ? prev : next));
-  }, []);
-
-  // Between payloads nothing else triggers a render, so re-evaluate on a timer.
+  // Anomaly handling. The anomaly state arrives INSIDE the same frame as everything else (`anomaly_status`);
+  // detection is SERVER-owned (backend T3): the browser sends nothing and scores nothing. The feed store calls this
+  // once per accepted frame (duplicates are dropped there), so an episode can never be skipped by render batching.
   useEffect(() => {
-    const id = setInterval(refreshLiveness, LIVENESS_CHECK_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [refreshLiveness]);
-
-  // Live ambient feed: independent of the sliders -- this is the facility's live telemetry stream,
-  // not a what-if preview. Anomaly detection is SERVER-owned (backend T3): each payload carries
-  // `anomaly_status`, computed once per tick from the server-held 12-sample window. The browser
-  // sends nothing and scores nothing.
-  useEffect(() => {
-    const { disconnect } = connectWebSocket(
-      (state) => {
-        lastMessageAtRef.current = Date.now();
-        staleWindowMsRef.current = staleAfterMs(state.interval_s);
-        setLiveState(state);
-        refreshLiveness();
-
-        const a = state.anomaly_status;
-        if (!a) return; // older backend: no anomaly information, never invent a "normal"
-        setAnomalyStatus(a);
-        const scored = a.status === 'ok' || a.status === 'anomalous';
-        // Normalize against the model's OWN trained threshold: score === threshold lands at 50.
-        // Not scored (warming up / unavailable / error) shows 0 on the gauge -- the status itself,
-        // not this number, says why.
-        setAnomalyScore(
-          scored && a.score !== null && a.threshold !== null ? clamp((a.score / (a.threshold || 1)) * 50, 0, 100) : 0
-        );
-        // One event per anomaly EPISODE (the server's dedupe key), not per tick.
-        const key = a.episode?.dedupe_key ?? null;
-        if (a.status === 'anomalous' && key && key !== lastEpisodeKeyRef.current) {
-          lastEpisodeKeyRef.current = key;
-          pushEvent(a.message, 'warning');
-          setLatestAnomaly({ type: a.type ?? 'unknown', message: a.message });
-        }
-        // Fail-closed states are surfaced once per transition, not every tick.
-        if ((a.status === 'unavailable' || a.status === 'error') && lastAnomalyStatusRef.current !== a.status) {
-          pushEvent(a.message, 'error');
-        }
-        lastAnomalyStatusRef.current = a.status;
-      },
-      (status) => {
-        socketStatusRef.current = status;
-        refreshLiveness();
+    return feed.onFrame(({ value: state }) => {
+      const a = state.anomaly_status;
+      if (!a) return; // older backend: no anomaly information, never invent a "normal"
+      setAnomalyStatus(a);
+      const scored = a.status === 'ok' || a.status === 'anomalous';
+      // Normalize against the model's OWN trained threshold: score === threshold lands at 50.
+      // Not scored (warming up / unavailable / error) shows 0 on the gauge -- the status itself,
+      // not this number, says why.
+      setAnomalyScore(
+        scored && a.score !== null && a.threshold !== null ? clamp((a.score / (a.threshold || 1)) * 50, 0, 100) : 0
+      );
+      // One event per anomaly EPISODE (the server's dedupe key), not per tick.
+      const key = a.episode?.dedupe_key ?? null;
+      if (a.status === 'anomalous' && key && key !== lastEpisodeKeyRef.current) {
+        lastEpisodeKeyRef.current = key;
+        pushEvent(a.message, 'warning');
+        setLatestAnomaly({ type: a.type ?? 'unknown', message: a.message });
       }
-    );
-    return disconnect;
-  }, [refreshLiveness]);
+      // Fail-closed states are surfaced once per transition, not every tick.
+      if ((a.status === 'unavailable' || a.status === 'error') && lastAnomalyStatusRef.current !== a.status) {
+        pushEvent(a.message, 'error');
+      }
+      lastAnomalyStatusRef.current = a.status;
+    });
+  }, [feed, pushEvent]);
 
   const runSimulation = useCallback(() => {
     setSimRunning(true);
@@ -294,8 +265,7 @@ export function useSimulation() {
     hourlyData,
     simRunning,
     runSimulation,
-    liveState,
-    liveness,
+    ...adapter,
     equipmentHealth,
   };
 }
