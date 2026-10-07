@@ -19,10 +19,36 @@ WORKDIR /build
 COPY requirements.lock .
 RUN python -m venv /venv
 ENV PATH="/venv/bin:$PATH"
-# stable-baselines3 pulls in PyTorch; the default Linux wheel bundles CUDA
-# (~2GB+). This API only does CPU inference, so prefer the CPU-only wheel.
+# T29: the API image has NO PyTorch and NO stable-baselines3 -- it serves a promoted policy through the NumPy runtime
+# (src/rl/numpy_policy.py). requirements.txt no longer lists them, so a lock regenerated from it (the CI `bootstrap` job)
+# does not contain them. A lock generated BEFORE the split still does; this step removes those requirement blocks (and
+# the packages only they need) so the image is correct either way, and the check after the install fails the build if
+# either package is importable. It is a no-op on a regenerated lock.
+RUN python - <<'PY'
+import re
+import pathlib
+
+drop = {"torch", "stable-baselines3", "filelock", "fsspec", "jinja2", "mpmath", "networkx", "sympy"}
+lock = pathlib.Path("requirements.lock")
+blocks, current = [], []
+for line in lock.read_text(encoding="utf-8").splitlines(keepends=True):
+    if line.strip() and not line[0].isspace() and not line.startswith("#"):
+        blocks.append(current)
+        current = []
+    current.append(line)
+blocks.append(current)
+kept = []
+for block in blocks:
+    head = block[0] if block else ""
+    match = re.match(r"([A-Za-z0-9_.\-]+)==", head)
+    if match and re.sub(r"[-_.]+", "-", match.group(1)).lower() in drop:
+        continue
+    kept.extend(block)
+lock.write_text("".join(kept), encoding="utf-8")
+PY
 # requirements.lock is hash-pinned (pip-compile --generate-hashes); --require-hashes rejects anything else.
-RUN pip install --no-cache-dir --require-hashes --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.lock
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
+RUN python -c "import importlib.util as u, sys; bad = [m for m in ('torch', 'stable_baselines3') if u.find_spec(m)]; sys.exit('training packages in the API image: ' + ', '.join(bad)) if bad else print('API image has no torch / stable-baselines3')"
 
 
 # ---- Runtime stage: slim image, no build toolchain ----
@@ -53,7 +79,8 @@ ENV PATH="/venv/bin:$PATH" \
 # image), the local venv, tests, docs, and the two abandoned frontends.
 COPY --chown=appuser:appuser . .
 
-RUN mkdir -p /app/logs && chown appuser:appuser /app/logs
+# Training outputs (SB3 zips, train_config.json) are never loaded by the API (T29); keep them out of the image.
+RUN rm -rf /app/artifacts_training /app/requirements-train.txt && mkdir -p /app/logs && chown appuser:appuser /app/logs
 USER appuser
 EXPOSE 8000
 

@@ -1,0 +1,225 @@
+{
+  "action_schema_hash": "8a9f75c4a98717d8e50af4e08e10d474fe7ad83273ed72cdfa249b8c221db273",
+  "action_semantics_version": "2",
+  "artifact_path": "models/candidates/ppo/ppo-p1-e2-cd2345024-s2",
+  "code_revision": null,
+  "compat_waiver": null,
+  "created_at_utc": "2026-10-06T03:23:26.824043+00:00",
+  "data_source": "synthetic: DataCentreEnv v2 (src/rl/env.py); no external dataset is read",
+  "dataset_id": null,
+  "dataset_manifest_sha256": null,
+  "dataset_sha256": null,
+  "environment_version": "2",
+  "evaluation_ref": null,
+  "files": {
+    "models/candidates/ppo/ppo-p1-e2-cd2345024-s2/policy.npz": {
+      "format": "npz",
+      "sha256": "451cce191905568305f7a2b4997e1b972c5934928718649b7d0dbfe28965e94f",
+      "size": 23210
+    },
+    "models/candidates/ppo/ppo-p1-e2-cd2345024-s2/policy_spec.json": {
+      "format": "json",
+      "sha256": "f8ac18c7b3a4de246f701e05c4412df3f9614ab0bc1476158195813dfa526726",
+      "size": 1251
+    }
+  },
+  "git_sha": "unknown",
+  "history": [
+    {
+      "action": "logged",
+      "actor": "log_model",
+      "at_utc": "2026-10-06T03:23:26.826992+00:00",
+      "from": null,
+      "reason": "artifact logged after training",
+      "seq": 0,
+      "to": "candidate"
+    }
+  ],
+  "input_cadence_s": 300,
+  "kind": "ppo",
+  "manifest_version": 2,
+  "metrics": {
+    "carbon_basis": {
+      "aggregation": "constant",
+      "is_fallback": true,
+      "license_ref": null,
+      "retrieved_at": null,
+      "semantic": "constant_assumption",
+      "site_timezone": "Asia/Kolkata",
+      "source_version": "world-average assumption (IEA/Ember), not retrieved",
+      "statement": "Carbon term present; the signal is an assumption (a flat assumed intensity), not measured grid data.",
+      "time_varying_signal": false,
+      "zone": null
+    },
+    "claim": "candidate only; not evaluated, not promoted; no statement is made about its quality or safety",
+    "export": {
+      "equivalence": {
+        "max_abs_diff": 5.960464477539063e-08,
+        "n_observations": 1000,
+        "tolerance": 1e-05
+      },
+      "runtime_version": "numpy-mlp-1"
+    },
+    "null_reasons": {
+      "code_revision": "the code revision could not be determined (no git checkout and no GIT_SHA at training time)",
+      "compat_waiver": "no waiver: the candidate is fully compatible with the running code",
+      "dataset_id": "no dataset: the policy is trained on the synthetic DataCentreEnv v2 day (src/rl/env.py); dataset v2 does not exist yet (T25 needs owner-supplied cleaned inputs)",
+      "dataset_manifest_sha256": "no dataset manifest: same reason as dataset_id",
+      "evaluation_ref": "not evaluated: evaluation and promotion are T30"
+    },
+    "scenario_use": "lineage only: DataCentreEnv v2 generates its own synthetic day; scenario windows of the scenario set are not consumed during training",
+    "train_config_file": "artifacts_training/ppo-p1-e2-cd2345024-s2/train_config.json",
+    "training_artifact": {
+      "format": "sb3_zip",
+      "note": "training-only; the API process cannot load an SB3 zip",
+      "path": "artifacts_training/ppo-p1-e2-cd2345024-s2/model.zip",
+      "sha256": "3183bf13b4f44193ded11fa4ce882333ccfcf12192cebbab4328e316985ce20e",
+      "size": 159698
+    }
+  },
+  "model_id": "ppo-p1-e2-cd2345024-s2",
+  "name": "ppo-p1-e2-cd2345024",
+  "observation_schema_hash": "a585b2fef4a5b153973d14cc7ddebb84b37a6d1a4eb206ddb154a099cff4a4eb",
+  "package_versions": {
+    "gymnasium": "1.3.0",
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1",
+    "stable-baselines3": "2.9.0",
+    "torch": "2.14.0"
+  },
+  "params": {
+    "action_semantics_version": "2",
+    "description": "PPO baseline on environment v2 (T29). Candidate generation only: nothing trained from this file is evaluated, good, or safe until T30 says so.",
+    "environment_version": "2",
+    "hyperparameters": {
+      "activation": "tanh",
+      "batch_size": 64,
+      "clip_range": 0.2,
+      "clip_range_vf": null,
+      "device": "cpu",
+      "ent_coef": 0.0,
+      "gae_lambda": 0.95,
+      "gamma": 0.99,
+      "learning_rate": 0.0003,
+      "max_grad_norm": 0.5,
+      "n_epochs": 10,
+      "n_steps": 2048,
+      "net_arch": {
+        "pi": [
+          64,
+          64
+        ],
+        "vf": [
+          64,
+          64
+        ]
+      },
+      "normalize_advantage": true,
+      "policy": "MlpPolicy",
+      "sde_sample_freq": -1,
+      "target_kl": null,
+      "use_sde": false,
+      "vf_coef": 0.5
+    },
+    "n_envs": 4,
+    "physics_version": "1",
+    "reward_version": "2",
+    "reward_weights": {
+      "alpha": 0.5,
+      "beta": 0.3,
+      "gamma": 0.2
+    },
+    "safety_envelope_version": "2",
+    "scenario_set_id": "ff8a128b25abfd0f99a627275fd4bd0c28e3c87e7b3600532727ab475c264905",
+    "scenario_set_path": "configs/scenarios/scenario_set_v2.json",
+    "schema": 1,
+    "seed": 2,
+    "shield_version": "1",
+    "split_id": "9750a1bae82e251b0bc59c7ef2cb7bc9b17d89f4050d7eff156a70484d57de43",
+    "split_path": "configs/splits/split_v2.json",
+    "total_timesteps": 98304,
+    "water_stress_levels": [
+      0.0,
+      0.3,
+      0.6,
+      0.9
+    ]
+  },
+  "physics_params_hash": "14ed372364a00dbaa218da884426291e20963343eb1dd01af1a1c0f82c69afad",
+  "physics_version": "1",
+  "python": "3.12.3",
+  "relative_path": "models/candidates/ppo/ppo-p1-e2-cd2345024-s2",
+  "reward_version": "2",
+  "safety_envelope_version": "2",
+  "scenario_set_id": "ff8a128b25abfd0f99a627275fd4bd0c28e3c87e7b3600532727ab475c264905",
+  "seeds": [
+    2
+  ],
+  "sha256": "1141a90655e953e725674e0e3fe9d43bed791a1f5ac36c1bbb068d64af3f79d9",
+  "size": 24461,
+  "split_id": "9750a1bae82e251b0bc59c7ef2cb7bc9b17d89f4050d7eff156a70484d57de43",
+  "status": "candidate",
+  "trained_at": "2026-10-06T03:23:26.824043+00:00",
+  "training_config": {
+    "json": {
+      "action_semantics_version": "2",
+      "description": "PPO baseline on environment v2 (T29). Candidate generation only: nothing trained from this file is evaluated, good, or safe until T30 says so.",
+      "environment_version": "2",
+      "hyperparameters": {
+        "activation": "tanh",
+        "batch_size": 64,
+        "clip_range": 0.2,
+        "clip_range_vf": null,
+        "device": "cpu",
+        "ent_coef": 0.0,
+        "gae_lambda": 0.95,
+        "gamma": 0.99,
+        "learning_rate": 0.0003,
+        "max_grad_norm": 0.5,
+        "n_epochs": 10,
+        "n_steps": 2048,
+        "net_arch": {
+          "pi": [
+            64,
+            64
+          ],
+          "vf": [
+            64,
+            64
+          ]
+        },
+        "normalize_advantage": true,
+        "policy": "MlpPolicy",
+        "sde_sample_freq": -1,
+        "target_kl": null,
+        "use_sde": false,
+        "vf_coef": 0.5
+      },
+      "n_envs": 4,
+      "physics_version": "1",
+      "reward_version": "2",
+      "reward_weights": {
+        "alpha": 0.5,
+        "beta": 0.3,
+        "gamma": 0.2
+      },
+      "safety_envelope_version": "2",
+      "scenario_set_id": "ff8a128b25abfd0f99a627275fd4bd0c28e3c87e7b3600532727ab475c264905",
+      "scenario_set_path": "configs/scenarios/scenario_set_v2.json",
+      "schema": 1,
+      "seed": 2,
+      "shield_version": "1",
+      "split_id": "9750a1bae82e251b0bc59c7ef2cb7bc9b17d89f4050d7eff156a70484d57de43",
+      "split_path": "configs/splits/split_v2.json",
+      "total_timesteps": 98304,
+      "water_stress_levels": [
+        0.0,
+        0.3,
+        0.6,
+        0.9
+      ]
+    },
+    "sha256": "7cd7036f5f515d4bd9f1309c44924f6f6988fb51decd7ff24ed66dd90fb6f640"
+  },
+  "version": "s2"
+}

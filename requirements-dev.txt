@@ -2,6 +2,10 @@
 # requirements.lock first (pip install --require-hashes -r requirements.lock), then this file.
 # These are deliberately not hash-pinned; they never ship in the Docker image.
 
+# Training stack (T29): tests that train/export a PPO policy and the T27 environment tests import torch and
+# stable-baselines3. It is a dev/CI dependency only; the API image never installs it.
+-r requirements-train.txt
+
 # Tests
 pytest>=8.0,<9
 pytest-asyncio>=0.23,<2

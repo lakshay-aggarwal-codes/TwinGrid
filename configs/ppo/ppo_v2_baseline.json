@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "description": "PPO baseline on environment v2 (T29). Candidate generation only: nothing trained from this file is evaluated, good, or safe until T30 says so.",
+  "physics_version": "1",
+  "environment_version": "2",
+  "reward_version": "2",
+  "action_semantics_version": "2",
+  "safety_envelope_version": "2",
+  "shield_version": "1",
+  "reward_weights": {
+    "alpha": 0.5,
+    "beta": 0.3,
+    "gamma": 0.2
+  },
+  "scenario_set_id": "ff8a128b25abfd0f99a627275fd4bd0c28e3c87e7b3600532727ab475c264905",
+  "split_id": "9750a1bae82e251b0bc59c7ef2cb7bc9b17d89f4050d7eff156a70484d57de43",
+  "scenario_set_path": "configs/scenarios/scenario_set_v2.json",
+  "split_path": "configs/splits/split_v2.json",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "total_timesteps": 98304,
+  "n_envs": 4,
+  "water_stress_levels": [
+    0.0,
+    0.3,
+    0.6,
+    0.9
+  ],
+  "hyperparameters": {
+    "policy": "MlpPolicy",
+    "net_arch": {
+      "pi": [
+        64,
+        64
+      ],
+      "vf": [
+        64,
+        64
+      ]
+    },
+    "activation": "tanh",
+    "learning_rate": 0.0003,
+    "n_steps": 2048,
+    "batch_size": 64,
+    "n_epochs": 10,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip_range": 0.2,
+    "clip_range_vf": null,
+    "normalize_advantage": true,
+    "ent_coef": 0.0,
+    "vf_coef": 0.5,
+    "max_grad_norm": 0.5,
+    "use_sde": false,
+    "sde_sample_freq": -1,
+    "target_kl": null,
+    "device": "cpu"
+  }
+}

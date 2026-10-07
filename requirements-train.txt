@@ -1,0 +1,13 @@
+# Training-only dependencies (T29). NOT installed in the API image (the Dockerfile removes them from the hash-pinned
+# lock and fails the build if PyTorch or stable-baselines3 is importable).
+#
+#     pip install -r requirements-train.txt
+#
+# Used by scripts/train_ppo.py and by the tests that train or export a policy. The pins are the versions the lock
+# recorded when training was split out (stable-baselines3 2.9.0 + torch 2.14.0 + gymnasium 1.3.0 on Python 3.12).
+# The CPU wheel index avoids the ~2 GB CUDA build of PyTorch on Linux.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+-r requirements.txt
+stable-baselines3==2.9.0
+torch==2.14.0

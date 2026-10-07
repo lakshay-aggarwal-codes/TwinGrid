@@ -185,14 +185,14 @@ async def test_500_is_generic_and_discloses_nothing(client, probe_routes, caplog
 async def test_503_model_unavailable_when_no_verified_model_and_never_trains(
     client, operator_headers, monkeypatch, session_maker, count_rows
 ):
-    async def no_model(*a, **k):
-        return None
-
     def must_not_train(*a, **k):
         raise AssertionError("must not train in a request")
 
-    monkeypatch.setattr(optimization_service, "_ensure_optimizer", no_model)
-    monkeypatch.setattr(optimization_service.JointOptimizer, "train", must_not_train)
+    # T29: no promoted policy is admitted -> the service raises OptimizerUnavailableError (503 model_unavailable)
+    monkeypatch.setattr(optimization_service, "_optimizer", None)
+    monkeypatch.setattr(optimization_service, "_last_unavailable_at", None)
+    monkeypatch.setattr(optimization_service, "_load_saved_optimizer", lambda: None)
+    monkeypatch.setattr("src.optimizer.JointOptimizer.train", must_not_train)
     r = await client.post("/api/optimize", json={}, headers=operator_headers)
     body = assert_problem(r, 503, "model_unavailable")
     assert "model" in body["detail"].lower()

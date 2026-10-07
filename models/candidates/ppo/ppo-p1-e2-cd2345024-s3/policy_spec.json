@@ -1,0 +1,53 @@
+{
+  "action_dim": 2,
+  "action_high": [
+    1.0,
+    1.0
+  ],
+  "action_low": [
+    0.0,
+    0.0
+  ],
+  "action_rule": "clip(action_net(policy_net(obs)), action_low, action_high)",
+  "activation": "tanh",
+  "dtype": "float32",
+  "env_contract": {
+    "action_schema_hash": "8a9f75c4a98717d8e50af4e08e10d474fe7ad83273ed72cdfa249b8c221db273",
+    "action_semantics_version": "2",
+    "env_version": "2",
+    "observation_schema_hash": "a585b2fef4a5b153973d14cc7ddebb84b37a6d1a4eb206ddb154a099cff4a4eb",
+    "physics_version": "1",
+    "reward_version": "2",
+    "safety_envelope_version": "2",
+    "shield_version": "1"
+  },
+  "format": "ppo-mlp-numpy",
+  "hidden_sizes": [
+    64,
+    64
+  ],
+  "model_id": "ppo-p1-e2-cd2345024-s3",
+  "obs_dim": 17,
+  "obs_normalization": null,
+  "observation_names": [
+    "hour",
+    "utilisation",
+    "outside_temp",
+    "inlet_temp",
+    "outlet_temp",
+    "it_power",
+    "wue",
+    "pue",
+    "water_stress_scenario",
+    "applied_chilled_water_C",
+    "applied_mode_free_air",
+    "applied_mode_closed_loop",
+    "applied_mode_evaporative",
+    "applied_mode_hybrid",
+    "prev_executed_setpoint_norm",
+    "prev_executed_mode_norm",
+    "room_thermal_C"
+  ],
+  "runtime_version": "numpy-mlp-1",
+  "seed": 3
+}
