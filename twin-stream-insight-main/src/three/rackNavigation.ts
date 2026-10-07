@@ -1,4 +1,5 @@
-import { FACILITY_LAYOUT, findRack, type RackDef } from "./facilityLayout";
+import { findRack, type FacilityLayout, type RackDef } from "./facilityLayout";
+import { getTopology } from "./facilityTopology";
 
 /**
  * Stage 21: keyboard traversal of the 3D scene (deferred since Stage 3).
@@ -23,35 +24,35 @@ export function isNavKey(key: string): key is NavKey {
 const ROW_EPSILON = 1e-6;
 
 /** Human-readable name for screen readers, e.g. "Zone A, row 1, rack 3". */
-export function describeRack(rackId: string): string {
-  const rack = findRack(rackId);
+export function describeRack(rackId: string, layout: FacilityLayout = getTopology().layout): string {
+  const rack = findRack(rackId, layout);
   if (!rack) return rackId;
-  const zone = FACILITY_LAYOUT.zones.find((z) => z.zoneId === rack.zoneId);
+  const zone = layout.zones.find((z) => z.zoneId === rack.zoneId);
   const row = rack.rowId.replace(/^row-/, "row ");
   const rackNumber = /rack-(\d+)$/.exec(rack.rackId)?.[1];
-  return [zone?.label ?? rack.zoneId, row, rackNumber ? `rack ${rackNumber}` : rack.rackId].join(", ");
+  return [zone?.label ?? rack.zoneId, row, rackNumber ? `rack ${rackNumber}` : rack.rackId].filter((part) => part !== "").join(", ");
 }
 
 /** Racks in the same physical row line (same z), left to right across zones. */
-function rowLine(rack: RackDef): RackDef[] {
-  return FACILITY_LAYOUT.racks
+function rowLine(rack: RackDef, layout: FacilityLayout): RackDef[] {
+  return layout.racks
     .filter((r) => Math.abs(r.position[2] - rack.position[2]) < ROW_EPSILON)
     .sort((a, b) => a.position[0] - b.position[0]);
 }
 
 /** The rack a nav key moves to. With no current selection, any nav key lands
  * on the first rack; at an edge the current rack is returned unchanged. */
-export function nextRackId(currentId: string | null, key: NavKey): string {
-  const racks = FACILITY_LAYOUT.racks;
+export function nextRackId(currentId: string | null, key: NavKey, layout: FacilityLayout = getTopology().layout): string {
+  const racks = layout.racks;
   const first = racks[0].rackId;
-  const current = currentId ? findRack(currentId) : undefined;
+  const current = currentId ? findRack(currentId, layout) : undefined;
 
   if (key === "Home") return first;
   if (key === "End") return racks[racks.length - 1].rackId;
   if (!current) return first;
 
   if (key === "ArrowLeft" || key === "ArrowRight") {
-    const line = rowLine(current);
+    const line = rowLine(current, layout);
     const index = line.findIndex((r) => r.rackId === current.rackId);
     const step = key === "ArrowRight" ? 1 : -1;
     return (line[index + step] ?? current).rackId;

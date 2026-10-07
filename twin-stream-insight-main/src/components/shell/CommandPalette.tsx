@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/command";
 import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { MapPin, Boxes, AlertTriangle } from "lucide-react";
-import { FACILITY_LAYOUT, listRacksByZone } from "@/three/facilityLayout";
+import { listRacksByZone } from "@/three/facilityLayout";
+import { useTopology } from "@/three/facilityTopology";
 import type { EventItem } from "@/hooks/useSimulation";
 
 interface CommandPaletteProps {
@@ -25,12 +26,13 @@ interface CommandPaletteProps {
 
 /** "row-2" -> "Row 2" */
 function formatRow(rowId: string): string {
-  return `Row ${rowId.split("-")[1]}`;
+  return rowId === "" ? "" : `Row ${rowId.split("-")[1]}`;
 }
 
 /** "zone-1-row-2-rack-3" -> "Rack 3" */
 function formatRackNumber(rackId: string): string {
-  return `Rack ${rackId.split("-rack-")[1]}`;
+  const n = rackId.split("-rack-")[1];
+  return n === undefined ? rackId : `Rack ${n}`;
 }
 
 /**
@@ -53,7 +55,8 @@ export function CommandPalette({
   onSelectAlert,
   events,
 }: CommandPaletteProps) {
-  const rackGroups = listRacksByZone();
+  const { layout } = useTopology();
+  const rackGroups = listRacksByZone(layout);
   const run = (action: () => void) => {
     onOpenChange(false);
     action();
@@ -69,7 +72,7 @@ export function CommandPalette({
         <CommandEmpty>No matching racks, zones or alerts.</CommandEmpty>
 
         <CommandGroup heading="Zones">
-          {FACILITY_LAYOUT.zones.map((zone) => (
+          {layout.zones.map((zone) => (
             <CommandItem
               key={zone.zoneId}
               value={`${zone.label} ${zone.zoneId}`}
@@ -91,7 +94,8 @@ export function CommandPalette({
                 onSelect={() => run(() => onFocusRack(rack.rackId))}
               >
                 <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-                {formatRow(rack.rowId)} · {formatRackNumber(rack.rackId)}
+                {formatRow(rack.rowId) !== "" ? `${formatRow(rack.rowId)} · ` : ""}
+                {formatRackNumber(rack.rackId)}
                 <span className="ml-auto font-mono text-[10px] text-muted-foreground">{rack.rackId}</span>
               </CommandItem>
             ))}

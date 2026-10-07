@@ -1,6 +1,7 @@
 import { AlertCircle } from "lucide-react";
 import { StatusMessage } from "./StatusMessage";
-import { FACILITY_LAYOUT, findRack } from "@/three/facilityLayout";
+import { findRack, type FacilityLayout } from "@/three/facilityLayout";
+import { FALLBACK_BADGE, FALLBACK_REASON_TEXT, useTopology } from "@/three/facilityTopology";
 import { feedProvenance, noDataNotice, toReadout, type LiveFeed } from "@/three/visualizationModes";
 import { FreshnessChip, ProvenanceBadge, formatAge } from "@/provenance";
 
@@ -14,8 +15,8 @@ interface RackInspectorContentProps {
 
 /** Uses the layout's own zone label ("Zone A") so the inspector, the search
  * palette and the screen-reader announcements all name a zone the same way. */
-function formatZoneLabel(zoneId: string): string {
-  return FACILITY_LAYOUT.zones.find((z) => z.zoneId === zoneId)?.label ?? zoneId;
+function formatZoneLabel(layout: FacilityLayout, zoneId: string): string {
+  return layout.zones.find((z) => z.zoneId === zoneId)?.label ?? zoneId;
 }
 
 function formatRowLabel(rowId: string): string {
@@ -35,7 +36,9 @@ const Divider = () => <div className="h-px bg-border" />;
  * exist yet.
  */
 export function RackInspectorContent({ rackId, feed }: RackInspectorContentProps) {
-  const rack = findRack(rackId);
+  const topology = useTopology();
+  const layout = topology.layout;
+  const rack = findRack(rackId, layout);
   const readout = toReadout(feed);
   const view = feed ? feedProvenance(feed) : null;
   const lastKnown = readout.mode === "last-known";
@@ -45,26 +48,39 @@ export function RackInspectorContent({ rackId, feed }: RackInspectorContentProps
     // shouldn't happen -- but a selected id that no longer resolves (e.g.
     // the layout changed under it) is worth saying plainly, not silently
     // rendering nothing.
-    return <p className="text-sm text-muted-foreground">Rack "{rackId}" not found in the facility layout.</p>;
+    return <p className="text-sm text-muted-foreground">Rack "{rackId}" not found in the {topology.source === "backend" ? "backend facility topology" : "built-in layout"}.</p>;
   }
 
   const [x, y, z] = rack.position;
+  const backend = topology.source === "backend" && rack.pose !== undefined;
+  const unit = topology.frameUnit ?? "";
 
   return (
     <div className="space-y-5">
       {/* Identity */}
       <div className="space-y-1">
         <p className="text-sm text-foreground">
-          {formatZoneLabel(rack.zoneId)} · {formatRowLabel(rack.rowId)}
+          {formatZoneLabel(layout, rack.zoneId)}
+          {rack.rowId !== "" && <> · {formatRowLabel(rack.rowId)}</>}
         </p>
         <p className="text-xs font-mono text-muted-foreground break-all">{rack.rackId}</p>
+        {backend && (
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11px]" data-testid="asset-identity">
+            <dt className="text-muted-foreground">Asset type</dt>
+            <dd>{rack.assetType}</dd>
+            <dt className="text-muted-foreground">External id</dt>
+            <dd className="font-mono break-all">{rack.externalId}</dd>
+          </dl>
+        )}
       </div>
 
       <Divider />
 
       {/* Coordinates */}
       <div className="space-y-1.5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Position</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {backend ? `Position (${unit}, backend frame)` : "Position"}
+        </p>
         <div className="grid grid-cols-3 gap-2 font-mono text-xs text-foreground">
           <div>
             <span className="text-muted-foreground">X </span>
@@ -79,9 +95,24 @@ export function RackInspectorContent({ rackId, feed }: RackInspectorContentProps
             {z.toFixed(2)}
           </div>
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          Scene-space coordinates (this view's own layout), not a surveyed floor position.
-        </p>
+        {backend && rack.pose ? (
+          <div className="space-y-1" data-testid="pose-detail">
+            <p className="text-[11px] font-mono text-foreground">
+              Rotation {rack.pose.rotationDeg.toFixed(1)}° · valid from {rack.pose.validFrom}
+            </p>
+            <details className="text-[11px] text-muted-foreground">
+              <summary className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Coordinate frame (from the backend)</summary>
+              <p className="mt-1 break-words" data-testid="frame-note">
+                {topology.frameNote}
+              </p>
+            </details>
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground" data-testid="fallback-position-note">
+            {topology.status === "loading" ? "Topology is loading." : `${FALLBACK_BADGE} — ${FALLBACK_REASON_TEXT[topology.reason ?? "unavailable"]}.`} Coordinates are this
+            view's built-in layout units, not a surveyed floor position.
+          </p>
+        )}
       </div>
 
       <Divider />

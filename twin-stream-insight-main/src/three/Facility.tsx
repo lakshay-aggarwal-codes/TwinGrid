@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
-import { FACILITY_LAYOUT } from "./facilityLayout";
+import type { FacilityLayout } from "./facilityLayout";
 import { ZoneOutline } from "./ZoneOutline";
 import { Rack, type RackVisualState } from "./Rack";
 import { computeThermalColors } from "./thermalMapping";
@@ -22,6 +22,8 @@ export interface FacilityProps {
    * once, from the same `liveState` -- Rack picks whichever its mode branch
    * needs. 'physical' (or a null liveState) renders racks uncolored. */
   mode: VisualizationMode;
+  /** FE-14: the active topology (backend-sourced, or the built-in fallback). */
+  layout: FacilityLayout;
   /** FE-06: tints derive from `currentState(feed)` only, so stale / disconnected / unavailable / no-data all render
    * the neutral colours (WAITING_COLOR / NEUTRAL) -- a last-known value is never tinted as if it were current. */
   feed: LiveFeed;
@@ -34,6 +36,7 @@ export function Facility({
   onFocusRack,
   isInteractingRef,
   mode,
+  layout,
   feed,
 }: FacilityProps) {
   const liveState = currentState(feed);
@@ -74,11 +77,11 @@ export function Facility({
 
   return (
     <group>
-      {FACILITY_LAYOUT.zones.map((zone) => (
+      {layout.zones.map((zone) => (
         <ZoneOutline key={zone.zoneId} zone={zone} />
       ))}
 
-      {FACILITY_LAYOUT.racks.map((rack) => {
+      {layout.racks.map((rack) => {
         const state: RackVisualState =
           rack.rackId === selectedRackId ? "selected" : rack.rackId === hoveredRackId ? "hovered" : "idle";
         return (

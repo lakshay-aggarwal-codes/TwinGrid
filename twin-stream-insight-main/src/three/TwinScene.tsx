@@ -5,6 +5,9 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Facility } from "./Facility";
 import { useCameraFocus } from "./useCameraFocus";
 import type { LiveFeed, VisualizationMode } from "./visualizationModes";
+import type { FacilityLayout } from "./facilityLayout";
+import { useFacilityTopology } from "./facilityTopology";
+import { TopologyBadge } from "./TopologyBadge";
 import { DEFAULT_CAMERA_POSITION, DEFAULT_CAMERA_TARGET } from "./cameraDefaults";
 
 /** `nonce` is bumped on every request so re-selecting the *same* already-
@@ -30,6 +33,11 @@ export interface TwinSceneProps {
   feed: LiveFeed;
 }
 
+interface SceneContentsProps extends TwinSceneProps {
+  /** FE-14: the active topology, passed in because React context does not cross into the Canvas. */
+  layout: FacilityLayout;
+}
+
 function SceneContents({
   selectedRackId,
   onSelectRack,
@@ -38,10 +46,11 @@ function SceneContents({
   focusRequest,
   mode,
   feed,
-}: TwinSceneProps) {
+  layout,
+}: SceneContentsProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const isInteractingRef = useRef(false);
-  const { focusOnRack, focusOnZone, focusOnOverview } = useCameraFocus(controlsRef);
+  const { focusOnRack, focusOnZone, focusOnOverview } = useCameraFocus(controlsRef, layout);
 
   useEffect(() => {
     if (!focusRequest) return;
@@ -69,6 +78,7 @@ function SceneContents({
         onFocusRack={onRequestFocus}
         isInteractingRef={isInteractingRef}
         mode={mode}
+        layout={layout}
         feed={feed}
       />
 
@@ -98,7 +108,10 @@ function SceneContents({
  * `target` were added on top of it; the control scheme itself is untouched.
  */
 export function TwinScene(props: TwinSceneProps) {
+  // FE-14: the one place the topology is fetched. Until it resolves (or if it fails) the built-in layout is used and flagged.
+  const topology = useFacilityTopology();
   return (
+    <>
     <Canvas
       shadows
       // Stage 14: render only when something changed (data tick, hover/select,
@@ -109,7 +122,9 @@ export function TwinScene(props: TwinSceneProps) {
       camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}
       onPointerMissed={props.onDeselect}
     >
-      <SceneContents {...props} />
+      <SceneContents {...props} layout={topology.layout} />
     </Canvas>
+    <TopologyBadge topology={topology} />
+    </>
   );
 }

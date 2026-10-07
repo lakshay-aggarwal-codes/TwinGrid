@@ -2,7 +2,7 @@ import { useCallback, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import gsap from "gsap";
 import type { Vector3 } from "three";
-import { findRack, FACILITY_LAYOUT } from "./facilityLayout";
+import { findRack, type FacilityLayout } from "./facilityLayout";
 import { DEFAULT_CAMERA_POSITION, DEFAULT_CAMERA_TARGET } from "./cameraDefaults";
 import { MOTION, motionDuration } from "./motion";
 
@@ -29,7 +29,7 @@ interface FocusOptions {
  * Stage 14: the canvas renders on demand, so every tween frame calls
  * invalidate() -- without it the camera would move but nothing would redraw.
  */
-export function useCameraFocus(controlsRef: React.MutableRefObject<FocusableControls | null>) {
+export function useCameraFocus(controlsRef: React.MutableRefObject<FocusableControls | null>, layout: FacilityLayout) {
   const { camera, invalidate } = useThree();
   const activeTweens = useRef<gsap.core.Tween[]>([]);
 
@@ -80,17 +80,17 @@ export function useCameraFocus(controlsRef: React.MutableRefObject<FocusableCont
 
   const focusOnRack = useCallback(
     (rackId: string, options: FocusOptions = {}) => {
-      const rack = findRack(rackId);
+      const rack = findRack(rackId, layout);
       if (!rack) return;
       const [rx, ry, rz] = rack.position;
       focusOnPoint(rx, ry, rz, { distance: 3.5, ...options });
     },
-    [focusOnPoint],
+    [focusOnPoint, layout],
   );
 
   const focusOnZone = useCallback(
     (zoneId: string, options: FocusOptions = {}) => {
-      const zone = FACILITY_LAYOUT.zones.find((z) => z.zoneId === zoneId);
+      const zone = layout.zones.find((z) => z.zoneId === zoneId);
       if (!zone) return;
       const { centerX, centerZ, width, depth } = zone.bounds;
       // Wide enough to fit the whole zone footprint, with a floor so a small
@@ -98,7 +98,7 @@ export function useCameraFocus(controlsRef: React.MutableRefObject<FocusableCont
       const distance = Math.max(Math.max(width, depth) * 1.15, 6);
       focusOnPoint(centerX, 0, centerZ, { distance, durationSeconds: motionDuration(1.2), ...options });
     },
-    [focusOnPoint],
+    [focusOnPoint, layout],
   );
 
   /**

@@ -9,6 +9,15 @@
  * Nothing here should be read as, or extended into, real telemetry.
  */
 
+/** FE-14: a backend pose, as received (metres in the backend frame for `frame_unit` "m"). */
+export interface RackPose {
+  x: number;
+  y: number;
+  z: number;
+  rotationDeg: number;
+  validFrom: string;
+}
+
 export interface RackDef {
   /** Stable, unique identifier -- the only thing selection is keyed on. */
   rackId: string;
@@ -18,6 +27,13 @@ export interface RackDef {
   position: [number, number, number];
   /** [width, height, depth] in world units. */
   size: [number, number, number];
+  /** FE-14: present only for backend-sourced racks. `rackId` === `externalId`; `zoneId` === `zoneExternalId`. */
+  assetId?: number;
+  externalId?: string;
+  name?: string;
+  assetType?: string;
+  zoneExternalId?: string;
+  pose?: RackPose;
 }
 
 export interface ZoneDef {
@@ -25,6 +41,7 @@ export interface ZoneDef {
   label: string;
   /** Floor-plan outline on the XZ plane. */
   bounds: { centerX: number; centerZ: number; width: number; depth: number };
+  assetId?: number;
 }
 
 export interface FacilityLayout {
@@ -90,11 +107,19 @@ function buildLayout(): FacilityLayout {
   return { zones, racks };
 }
 
-/** Computed once -- the layout is static, so there's no reason to rebuild it per render. */
+/**
+ * FE-14: the BUILT-IN layout. It is only the fallback now: the backend topology (`/api/facility` + `/api/assets`) is the
+ * source of truth, and whenever this is shown the UI says so ("Topology: built-in fallback (not backend-sourced)").
+ * Computed once -- the layout is static, so there's no reason to rebuild it per render.
+ */
 export const FACILITY_LAYOUT: FacilityLayout = buildLayout();
+export const FALLBACK_LAYOUT: FacilityLayout = FACILITY_LAYOUT;
 
-export function findRack(rackId: string): RackDef | undefined {
-  return FACILITY_LAYOUT.racks.find((r) => r.rackId === rackId);
+/** Racks the built-in layout holds; a backend topology with another count is not trusted silently (see facilityModel). */
+export const EXPECTED_RACK_COUNT = FALLBACK_LAYOUT.racks.length;
+
+export function findRack(rackId: string, layout: FacilityLayout = FACILITY_LAYOUT): RackDef | undefined {
+  return layout.racks.find((r) => r.rackId === rackId);
 }
 
 /**
@@ -114,11 +139,11 @@ export interface LocateGroup {
   racks: LocateOption[];
 }
 
-export function listRacksByZone(): LocateGroup[] {
-  return FACILITY_LAYOUT.zones.map((zone) => ({
+export function listRacksByZone(layout: FacilityLayout = FACILITY_LAYOUT): LocateGroup[] {
+  return layout.zones.map((zone) => ({
     zoneId: zone.zoneId,
     zoneLabel: zone.label,
-    racks: FACILITY_LAYOUT.racks
+    racks: layout.racks
       .filter((rack) => rack.zoneId === zone.zoneId)
       .map(({ rackId, rowId, position }) => ({ rackId, rowId, position })),
   }));
