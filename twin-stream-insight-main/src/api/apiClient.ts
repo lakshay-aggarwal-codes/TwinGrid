@@ -414,3 +414,8 @@ export async function fetchEquipmentHealth(): Promise<EquipmentHealthResponse> {
   const response = await authedFetch(`${BASE_URL}/api/equipment/health`);
   return handleResponse(response);
 }
+
+// FE-01: type-only access to the validated contract layer. No runtime change; the existing interfaces above
+// are replaced by contract types in FE-02.
+export type { ApiResult } from '../contract/parse';
+export type * as Contract from '../contract';
