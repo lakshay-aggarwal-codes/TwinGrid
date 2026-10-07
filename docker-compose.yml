@@ -139,5 +139,21 @@ services:
       db:
         condition: service_healthy
 
+  backup:
+    # Opt-in (T32): `docker compose --profile backup up -d backup`. A staging area for backups: same postgres major as
+    # `db`, a named volume mounted at /backups, no published port. scripts/backup.py writes dumps through
+    # `docker compose exec db pg_dump`; copy them into this volume (or off the host) with `docker compose cp`.
+    # It holds DB contents: treat the volume as sensitive. Not started by a plain `docker compose up`.
+    image: postgres:15-alpine
+    profiles: ["backup"]
+    restart: "no"
+    command: ["sleep", "infinity"]
+    volumes:
+      - backup_data:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   db_data:
+  backup_data:
