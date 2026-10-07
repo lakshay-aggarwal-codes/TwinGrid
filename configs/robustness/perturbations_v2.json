@@ -1,0 +1,268 @@
+{
+  "description": "T30 perturbation manifest (roadmap 13.9). Every entry is a STRESS TEST: +/-20% is a convenient grid, it is NOT asserted to be a realistic parameter uncertainty. Interpretation limit: 'robust to these listed perturbations in this simulator'. Parameters that do not exist in the current physics (C_th, actuator_lag) are listed so the gap is visible; the runner records them as not_applicable and they cannot make a criterion pass or fail.",
+  "joint_sets": [
+    {
+      "basis": "stress-test:no empirical basis",
+      "id": "joint_adverse_cooling",
+      "members": [
+        "cop_closed_loop_m20",
+        "cop_evaporative_m20",
+        "cop_hybrid_m20",
+        "capacity_margin_m20"
+      ]
+    },
+    {
+      "basis": "stress-test:no empirical basis",
+      "id": "joint_adverse_dynamics",
+      "members": [
+        "tau_air_p20",
+        "actuator_rate_m20",
+        "idle_fraction_p20",
+        "humidity_coeff_p20"
+      ]
+    }
+  ],
+  "perturbations": [
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "cop_free_air_m20",
+      "mode": "multiplicative",
+      "parameter": "cop_base.free_air",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "cop_free_air_p20",
+      "mode": "multiplicative",
+      "parameter": "cop_base.free_air",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "cop_closed_loop_m20",
+      "mode": "multiplicative",
+      "parameter": "cop_base.closed_loop",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "cop_closed_loop_p20",
+      "mode": "multiplicative",
+      "parameter": "cop_base.closed_loop",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "cop_evaporative_m20",
+      "mode": "multiplicative",
+      "parameter": "cop_base.evaporative",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "cop_evaporative_p20",
+      "mode": "multiplicative",
+      "parameter": "cop_base.evaporative",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "cop_hybrid_m20",
+      "mode": "multiplicative",
+      "parameter": "cop_base.hybrid",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "cop_hybrid_p20",
+      "mode": "multiplicative",
+      "parameter": "cop_base.hybrid",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "capacity_margin_m20",
+      "mode": "multiplicative",
+      "parameter": "capacity_margin",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "capacity_margin_p20",
+      "mode": "multiplicative",
+      "parameter": "capacity_margin",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "idle_fraction_m20",
+      "mode": "multiplicative",
+      "parameter": "idle_fraction",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "idle_fraction_p20",
+      "mode": "multiplicative",
+      "parameter": "idle_fraction",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "tau_air_m20",
+      "mode": "multiplicative",
+      "parameter": "tau_air",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "tau_air_p20",
+      "mode": "multiplicative",
+      "parameter": "tau_air",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "c_th_m20",
+      "mode": "multiplicative",
+      "parameter": "C_th",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "c_th_p20",
+      "mode": "multiplicative",
+      "parameter": "C_th",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "actuator_rate_m20",
+      "mode": "multiplicative",
+      "parameter": "actuator_rate",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "actuator_rate_p20",
+      "mode": "multiplicative",
+      "parameter": "actuator_rate",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "actuator_lag_m20",
+      "mode": "multiplicative",
+      "parameter": "actuator_lag",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "actuator_lag_p20",
+      "mode": "multiplicative",
+      "parameter": "actuator_lag",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "humidity_coeff_m20",
+      "mode": "multiplicative",
+      "parameter": "humidity_coefficient",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "humidity_coeff_p20",
+      "mode": "multiplicative",
+      "parameter": "humidity_coefficient",
+      "value": 1.2
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "evap_water_m20",
+      "mode": "multiplicative",
+      "parameter": "evaporative_water_coefficient",
+      "value": 0.8
+    },
+    {
+      "applies_to": [
+        "all"
+      ],
+      "basis": "stress-test:no empirical basis",
+      "id": "evap_water_p20",
+      "mode": "multiplicative",
+      "parameter": "evaporative_water_coefficient",
+      "value": 1.2
+    }
+  ],
+  "schema": 1
+}

@@ -1,34 +1,27 @@
 #!/usr/bin/env python3
-"""Operator tool for model lifecycle states in ``models/registry.json`` (T19, contract 10.4).
+"""Model registry transitions (T30; roadmap 10.3, 10.4, 13.5). The ONLY place a model's ``status`` changes.
 
-    list        show every artifact: status, kind, waiver, evaluation_ref
-    promote     candidate -> promoted           (the ONLY way an artifact becomes loadable by the API)
-    reject      candidate | promoted | quarantined -> rejected
-    quarantine  candidate | promoted -> quarantined
-    migrate     one-time conversion of a pre-T19 (manifest v1) registry to v2
-
-This is the only code that changes an artifact's ``status``. Every transition appends one object
-to that artifact's ``history[]``; existing history entries and every other artifact are copied
-through byte for byte. Writes are atomic and keep the previous registry as ``registry.json.bak``.
-
-Promotion refuses unless, right now: the manifest is well-formed; every file's SHA-256 and size
-match; every file's format is loadable by the API (json / npz / keras -- so an SB3 zip cannot be
-promoted); every compatibility field matches the running code or is covered by the artifact's
-named ``compat_waiver``; and either an ``--evaluation-ref`` is given or a waiver is present.
-"Compatible" is not "good": promotion does not look at model quality.
-
-Audit. By default a row is written to the database ``audit_logs`` table when the database is
-reachable, and skipped (with a note) when it is not. ``--audit`` REQUIRES the row: if it cannot be
-written the command exits with status 3 and the registry is left unchanged. ``--no-audit`` skips
-it. (If the registry write succeeds but the final DB commit then fails, the registry has changed;
-the command says so and still exits 3.)
-
-Exit status: 0 ok; 1 refused (rule violated, unknown id, ...); 2 usage; 3 required audit failed.
-
-Examples:
     python scripts/registry_cli.py list
-    python scripts/registry_cli.py quarantine ppo_optimizer-20260927T143232Z --reason "..." --audit
-    python scripts/registry_cli.py promote forecaster-... --evaluation-ref run-2026-10-11 --reason "T26 sign-off"
+    python scripts/registry_cli.py promote    <model_id> --run reports/runs/<run_id>
+    python scripts/registry_cli.py reject     <model_id> --run reports/runs/<run_id> --reason "..."
+    python scripts/registry_cli.py quarantine <model_id> --reason "..."
+    python scripts/registry_cli.py retire     <model_id> --reason "..."
+
+Statuses: ``candidate, promoted, quarantined, rejected, retired``; only ``promoted`` loads in the API.
+
+* ``promote`` refuses unless EVERY check passes: candidate in status ``candidate`` · evaluation run completed and its
+  ``results.json`` hash matches its manifest · the pre-registration hash is the locked one AND the one the run used ·
+  clean tree (40-hex ``code_revision``, not dirty) · outcome A with every criterion met and ``promotable`` · the
+  files in the registry entry are the files that were evaluated and still match their recorded sha256 · the candidate
+  is compatible with the running system (10.2 step 2: every field must be present and equal; a field whose running
+  value cannot be determined counts as a failure) and carries no ``compat_waiver``. All failures are listed.
+* ``reject`` moves a ``candidate`` to ``quarantined`` with a mandatory reason and the run id (10.3: a rejected
+  artifact is quarantined, never silently kept loadable).
+* Every transition appends to ``history[]``; earlier entries are never altered (checked before every write). The file
+  is replaced atomically (``os.replace``, previous contents kept in ``.bak``).
+* Each transition also tries to write a DB audit row (``audit_logs``); if the database is unreachable the transition
+  still happens and the history entry records ``audit.written = false`` with the reason.
+* If no candidate qualifies the recorded result is "no promotable policy".
 """
 
 from __future__ import annotations
@@ -36,472 +29,393 @@ from __future__ import annotations
 import argparse
 import asyncio
 import getpass
-import hashlib
 import json
+import os
 import re
+import shutil
 import sys
+import tempfile
+from collections.abc import Callable, Mapping, Sequence
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+SCRIPTS_DIR = Path(__file__).resolve().parent
+for _p in (REPO_ROOT, SCRIPTS_DIR):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
-from src import model_registry as mr  # noqa: E402
-from src import versions  # noqa: E402
-from src.artifacts import loaders  # noqa: E402
+import eval_policies as ep  # noqa: E402  (scripts/eval_policies.py)
 
-EXIT_OK, EXIT_REFUSED, EXIT_AUDIT = 0, 1, 3
-AUDIT_TIMEOUT_S = 5.0
-
-ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
-    "candidate": frozenset({"promoted", "rejected", "quarantined"}),
-    "promoted": frozenset({"rejected", "quarantined"}),
-    "quarantined": frozenset({"rejected"}),
-    "rejected": frozenset(),
-    "retired": frozenset(),
+REGISTRY_PATH = REPO_ROOT / "models" / "registry.json"
+STATUSES = ("candidate", "promoted", "quarantined", "rejected", "retired")
+# action -> (allowed from-statuses, resulting status)
+TRANSITIONS: dict[str, tuple[tuple[str, ...], str]] = {
+    "promote": (("candidate",), "promoted"),
+    "reject": (("candidate",), "quarantined"),
+    "quarantine": (("candidate", "promoted"), "quarantined"),
+    "retire": (("promoted",), "retired"),
 }
+# Fields that must equal the running values (10.2 step 2).
+COMPAT_FIELDS = (
+    "physics_version",
+    "physics_params_hash",
+    "environment_version",
+    "observation_schema_hash",
+    "action_schema_hash",
+    "action_semantics_version",
+    "reward_version",
+    "safety_envelope_version",
+    "input_cadence_s",
+)
 
 
-class Refused(Exception):
-    """A rule forbids the requested change (exit status 1)."""
+class RegistryError(RuntimeError):
+    """A transition was refused. ``failures`` lists every reason."""
+
+    def __init__(self, message: str, failures: Sequence[str] = ()) -> None:
+        super().__init__(message)
+        self.failures = list(failures)
 
 
-class AuditUnavailable(Exception):
-    """The audit row could not be written because the database was not usable (nothing applied)."""
+# ----------------------------------------------------------------------------- registry file
+def load_registry(path: Path = REGISTRY_PATH) -> list[dict[str, Any]]:
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, list) or not all(isinstance(e, dict) for e in data):
+        raise RegistryError(f"{path} is not a JSON list of objects")
+    return data
 
 
-class AuditCommitFailed(Exception):
-    """The registry change was applied but the audit row's commit then failed."""
+def write_registry_atomic(path: Path, entries: list[dict[str, Any]]) -> None:
+    """Temp file in the same directory, fsync, copy of the old file to ``.bak``, then ``os.replace``."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
+            json.dump(entries, fh, indent=2)
+            fh.write("\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+        if path.exists():
+            shutil.copy2(path, path.with_name(path.name + ".bak"))
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
 
 
-# ----------------------------------------------------------------------------- audit backend
+def find_entry(entries: Sequence[Mapping[str, Any]], model_id: str) -> int:
+    hits = [i for i, e in enumerate(entries) if e.get("model_id") == model_id]
+    if not hits:
+        raise RegistryError(f"no registry entry with model_id {model_id!r}")
+    if len(hits) > 1:
+        raise RegistryError(f"model_id {model_id!r} is not unique in the registry")
+    return hits[0]
 
 
-def _db_backend(row: dict[str, Any], apply: Callable[[], None]) -> None:
-    """Write ``row`` to ``audit_logs`` in a transaction that also covers ``apply()``.
+def assert_history_unaltered(old: Sequence[Mapping[str, Any]], new: Sequence[Mapping[str, Any]]) -> None:
+    """The history of every entry may only grow: its old items must be a byte-identical prefix of the new ones."""
+    if len(new) != len(old):
+        raise RegistryError("a transition may not add or remove registry entries")
+    for before, after in zip(old, new, strict=True):
+        h0, h1 = before.get("history", []), after.get("history", [])
+        if h1[: len(h0)] != h0:
+            raise RegistryError(f"history of {before.get('model_id')!r} was altered")
 
-    The row is flushed first, so an unreachable database fails BEFORE the registry is touched. If
-    ``apply()`` raises, the row is rolled back and that error propagates unchanged. Raises
-    AuditUnavailable if nothing was applied, AuditCommitFailed if ``apply()`` ran and the commit
-    then failed.
-    """
-    state: dict[str, Any] = {"applied": False, "apply_error": None}
 
-    def guarded_apply() -> None:
-        try:
-            apply()
-        except BaseException as exc:
-            state["apply_error"] = exc
-            raise
-        state["applied"] = True
+# ----------------------------------------------------------------------------- compatibility (10.2 step 2)
+def running_compat_values() -> dict[str, Any]:
+    """The values of the running system for ``COMPAT_FIELDS``. A field this tree cannot determine is ``None``, and
+    ``None`` never equals anything: promotion fails closed until T19/T27 provide the values."""
+    values: dict[str, Any] = {f: None for f in COMPAT_FIELDS}
+    try:
+        from src import versions
 
-    async def go() -> None:
-        from database import get_session  # imported late: needs the API's DB dependencies
-        from models.db_models import AuditLog
+        values["physics_version"] = versions.PHYSICS_VERSION
+    except Exception:
+        pass
+    try:  # the shipped environment's spaces: hashes of observation / action schema
+        import hashlib
+
+        from src.optimizer import DataCentreEnv
+
+        env = DataCentreEnv(seed=0)
+
+        def space_hash(space: Any) -> str:
+            doc = {"shape": list(space.shape), "low": [float(x) for x in space.low.ravel()],
+                   "high": [float(x) for x in space.high.ravel()]}  # fmt: skip
+            return hashlib.sha256(ep.canonical_json(doc).encode()).hexdigest()
+
+        values["observation_schema_hash"] = space_hash(env.observation_space)
+        values["action_schema_hash"] = space_hash(env.action_space)
+        env.close()
+    except Exception:
+        pass
+    return values
+
+
+def check_compat(entry: Mapping[str, Any], running: Mapping[str, Any]) -> list[str]:
+    failures = []
+    if entry.get("compat_waiver"):
+        failures.append("compat_waiver present: a waived candidate cannot be promoted")
+    for field in COMPAT_FIELDS:
+        have, want = entry.get(field), running.get(field)
+        if want is None:
+            failures.append(f"compat {field}: running value unavailable (cannot verify)")
+        elif have is None:
+            failures.append(f"compat {field}: candidate manifest lacks it")
+        elif have != want:
+            failures.append(f"compat {field}: candidate {have!r} != running {want!r}")
+    return failures
+
+
+# ----------------------------------------------------------------------------- promotion checks
+def _load(path: Path) -> dict[str, Any]:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def file_hashes_of_entry(entry: Mapping[str, Any], root: Path) -> tuple[dict[str, str], list[str]]:
+    """basename -> recorded sha256 for the entry's files, plus problems (missing file, recorded != actual)."""
+    out: dict[str, str] = {}
+    problems: list[str] = []
+    for rel, meta in (entry.get("files") or {}).items():
+        recorded = meta.get("sha256") if isinstance(meta, Mapping) else None
+        out[Path(rel).name] = str(recorded)
+        path = Path(root) / rel
+        if not path.is_file():
+            problems.append(f"file {rel} is missing")
+        elif recorded and ep.sha256_file(path) != recorded:
+            problems.append(f"file {rel} no longer matches its recorded sha256")
+    return out, problems
+
+
+def promotion_failures(
+    entry: Mapping[str, Any],
+    run_dir: Path,
+    *,
+    running: Mapping[str, Any] | None = None,
+    verify_prereg: Callable[[], Mapping[str, Any]] | None = None,
+    root: Path = REPO_ROOT,
+) -> list[str]:
+    """Every reason ``entry`` may not be promoted on the evidence in ``run_dir`` (empty list = promotable)."""
+    failures: list[str] = []
+    run_dir = Path(run_dir)
+    if entry.get("status") != "candidate":
+        failures.append(f"status is {entry.get('status')!r}, not 'candidate'")
+
+    needed = ("status.json", "manifest.json", "results.json", "decision.json")
+    missing = [n for n in needed if not (run_dir / n).is_file()]
+    if missing:
+        return failures + [f"run is incomplete: missing {missing}"]
+    status, manifest, results, decision = (_load(run_dir / n) for n in needed)
+
+    if status.get("status") != "completed":
+        failures.append(f"run status is {status.get('status')!r}, not 'completed'")
+    if ep.sha256_file(run_dir / "results.json") != manifest.get("result_sha256"):
+        failures.append("results.json does not match the hash in manifest.json")
+    if decision.get("result_sha256") != manifest.get("result_sha256"):
+        failures.append("decision.json was not produced from this results.json")
+    if results.get("decision", {}).get("outcome") != decision.get("outcome"):
+        failures.append("decision.json disagrees with results.json")
+
+    try:
+        locked = (verify_prereg or ep.verify_prereg)()
+        locked_sha = locked["preregistration_sha256"]
+        for label, value in (
+            ("manifest", manifest.get("prereg_sha256")),
+            ("results", results.get("prereg_sha256")),
+            ("decision", decision.get("prereg_sha256")),
+        ):
+            if value != locked_sha:
+                failures.append(f"pre-registration hash mismatch: {label} has {value}, locked is {locked_sha}")
+    except ep.EvalProtocolError as exc:
+        failures.append(f"pre-registration cannot be verified: {exc}")
+
+    rev = str(manifest.get("code_revision", ""))
+    if manifest.get("dirty") is not False or not re.fullmatch(r"[0-9a-f]{40}", rev):
+        failures.append(f"run is not from a clean tree (code_revision={rev!r}, dirty={manifest.get('dirty')!r})")
+    if not ep.manifest_is_complete(manifest):
+        failures.append("run manifest is incomplete")
+
+    if decision.get("outcome") != "A":
+        failures.append(f"outcome is {decision.get('outcome')!r}, not 'A'")
+    failed = [c["id"] for c in decision.get("criteria", []) if not c.get("passed")]
+    failed += [g["id"] for g in decision.get("gates", []) if not g.get("passed")]
+    if failed:
+        failures.append(f"criteria/gates not met: {failed}")
+    if not decision.get("criteria"):
+        failures.append("decision records no criteria")
+    if decision.get("promotable") is not True or decision.get("registry_action") != "promote":
+        failures.append("decision.json does not say promote")
+
+    if decision.get("model_id") not in (None, entry.get("model_id")):
+        failures.append(f"run evaluated model {decision.get('model_id')!r}, not {entry.get('model_id')!r}")
+    evaluated = decision.get("candidate_files") or {}
+    have, problems = file_hashes_of_entry(entry, root)
+    failures += problems
+    if not evaluated:
+        failures.append("the run recorded no candidate files")
+    elif {k: v for k, v in have.items() if k in evaluated} != evaluated or set(have) != set(evaluated):
+        failures.append("the registry entry's files are not the files that were evaluated")
+
+    failures += check_compat(entry, running if running is not None else running_compat_values())
+    return failures
+
+
+# ----------------------------------------------------------------------------- audit row
+def write_audit_row(action: str, model_id: str, details: Mapping[str, Any]) -> dict[str, Any]:
+    """Best effort: one ``audit_logs`` row. Returns ``{"written": bool, "reason": str | None}``; never raises."""
+    if not os.getenv("DATABASE_URL", "").strip():
+        return {"written": False, "reason": "DATABASE_URL not set"}
+
+    async def _write() -> None:
+        from api.services.audit_service import log_action
+        from database import get_session
 
         async with get_session() as session:
-            session.add(AuditLog(**row))
-            await asyncio.wait_for(session.flush(), AUDIT_TIMEOUT_S)
-            guarded_apply()
+            await log_action(
+                session, action=f"model_registry.{action}", resource_type="model", resource_id=model_id,
+                details=dict(details),
+            )  # fmt: skip
 
     try:
-        asyncio.run(go())
-    except Exception as exc:  # noqa: BLE001 - any DB / import failure means "audit not written"
-        if state["apply_error"] is not None:
-            raise state["apply_error"] from None  # the registry write itself failed: not an audit problem
-        if state["applied"]:
-            raise AuditCommitFailed(f"{type(exc).__name__}: {exc}") from exc
-        raise AuditUnavailable(f"{type(exc).__name__}: {exc}") from exc
-
-
-_audit_backend: Callable[[dict[str, Any], Callable[[], None]], None] = _db_backend
-
-
-def apply_with_audit(mode: str, row: dict[str, Any], apply: Callable[[], None]) -> str:
-    """Run ``apply`` (the registry write) with the requested audit behaviour.
-
-    ``mode``: ``"auto"`` (audit if the DB is reachable), ``"require"`` or ``"off"``. Returns a
-    one-line description of what happened to the audit. Raises AuditUnavailable /
-    AuditCommitFailed for ``require``.
-    """
-    if mode == "off":
-        apply()
-        return "audit: skipped (--no-audit)"
-    try:
-        _audit_backend(row, apply)
-        return "audit: row written"
-    except AuditUnavailable as exc:
-        if mode == "require":
-            raise
-        apply()
-        return f"audit: SKIPPED, database not reachable ({exc})"
-    except AuditCommitFailed:
-        if mode == "require":
-            raise
-        return "audit: row NOT written (commit failed); registry was updated"
-
-
-def _audit_row(action: str, model_id: str, actor: str, details: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "username": actor[:64],
-        "action": f"model_{action}"[:64],
-        "resource_type": "model_artifact",
-        "resource_id": model_id[:64],
-        "details": details,
-    }
+        asyncio.run(asyncio.wait_for(_write(), timeout=10))
+        return {"written": True, "reason": None}
+    except Exception as exc:  # unreachable DB, missing drivers, missing table...
+        return {"written": False, "reason": f"{type(exc).__name__}"}
 
 
 # ----------------------------------------------------------------------------- transitions
-
-
-def _find(entries: list[dict[str, Any]], model_id: str) -> int:
-    matches = [i for i, e in enumerate(entries) if e.get("model_id") == model_id]
-    if not matches:
-        raise Refused(f"no artifact with model_id {model_id!r} (see: registry_cli.py list)")
-    return matches[-1]
-
-
-def _preflight_for_promotion(entry: dict[str, Any], evaluation_ref: str | None) -> None:
-    if entry.get("manifest_version") != mr.MANIFEST_VERSION:
-        raise Refused("not a manifest v2 entry; migrate the registry first")
-    problems = mr.validate_manifest(entry)
-    if problems:
-        raise Refused("invalid manifest: " + "; ".join(problems))
-    try:
-        mr.check_integrity(entry, list(entry["files"]))
-    except mr.ModelUnavailableError as exc:
-        raise Refused(f"integrity: {exc.reason}") from None
-    for rel, info in entry["files"].items():
-        fmt = info.get("format")
-        if fmt not in loaders.ALLOWED_FORMATS["api"]:
-            raise Refused(f"{rel}: format {fmt!r} is not loadable by the API process, so it cannot be promoted")
-        if mr.format_for_path(rel) != fmt:
-            raise Refused(f"{rel}: recorded format {fmt!r} does not match the file name")
-    try:
-        blocking, _waived = loaders.evaluate_compat(entry)
-    except mr.ModelUnavailableError as exc:
-        raise Refused(exc.reason) from None
-    if blocking:
-        field, expected, actual = blocking[0]
-        raise Refused(
-            f"incompatible: {field} is {actual!r} in the manifest but {expected!r} in the running code "
-            f"({len(blocking)} field(s) not covered by a waiver)"
-        )
-    if not evaluation_ref and not entry.get("evaluation_ref") and not entry.get("compat_waiver"):
-        raise Refused("promotion needs --evaluation-ref (the run that evaluated this model) or a compat_waiver")
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def transition(
-    entries: list[dict[str, Any]],
+    action: str,
     model_id: str,
-    to_status: str,
     *,
-    actor: str,
-    reason: str,
-    evaluation_ref: str | None = None,
-) -> list[dict[str, Any]]:
-    """The new artifact list after moving ``model_id`` to ``to_status``. Pure: ``entries`` is not
-    modified, and every entry other than ``model_id`` is returned unchanged. The target's old
-    ``history`` items are carried over untouched and exactly one is appended."""
-    if not reason.strip():
-        raise Refused("--reason is required")
-    index = _find(entries, model_id)
-    entry = entries[index]
+    registry_path: Path = REGISTRY_PATH,
+    run_dir: Path | None = None,
+    reason: str | None = None,
+    actor: str | None = None,
+    running: Mapping[str, Any] | None = None,
+    verify_prereg: Callable[[], Mapping[str, Any]] | None = None,
+    audit: Callable[[str, str, Mapping[str, Any]], dict[str, Any]] | None = None,
+    root: Path = REPO_ROOT,
+) -> dict[str, Any]:
+    """Apply one registry transition or raise RegistryError. Returns the updated entry."""
+    if action not in TRANSITIONS:
+        raise RegistryError(f"unknown action {action!r}")
+    allowed_from, to_status = TRANSITIONS[action]
+    entries = load_registry(registry_path)
+    idx = find_entry(entries, model_id)
+    entry = entries[idx]
     current = entry.get("status")
-    if to_status not in ALLOWED_TRANSITIONS.get(current, frozenset()):
-        raise Refused(f"cannot move {model_id} from {current!r} to {to_status!r}")
-    if to_status == "promoted":
-        _preflight_for_promotion(entry, evaluation_ref)
-    history = list(entry["history"])
-    history.append(mr.history_entry(len(history), to_status_action(to_status), current, to_status, actor, reason))
-    updated = {**entry, "status": to_status, "status_reason": reason, "history": history}
-    if evaluation_ref:
-        updated["evaluation_ref"] = evaluation_ref
-    out = list(entries)
-    out[index] = updated
-    return out
+    if current not in allowed_from:
+        raise RegistryError(f"cannot {action} a model whose status is {current!r} (allowed from {list(allowed_from)})")
+    if action in ("reject", "quarantine", "retire") and not (reason and reason.strip()):
+        raise RegistryError(f"{action} requires a reason")
 
+    run_id = None
+    prereg_sha = None
+    if action == "promote":
+        if run_dir is None:
+            raise RegistryError("promote needs --run <evaluation run directory>")
+        failures = promotion_failures(entry, Path(run_dir), running=running, verify_prereg=verify_prereg, root=root)
+        if failures:
+            raise RegistryError(f"promotion refused ({len(failures)} problem(s))", failures)
+    if run_dir is not None:
+        run_id = Path(run_dir).name
+        if (Path(run_dir) / "manifest.json").is_file():
+            prereg_sha = _load(Path(run_dir) / "manifest.json").get("prereg_sha256")
+    if action == "reject":
+        if run_dir is None or not (Path(run_dir) / "decision.json").is_file():
+            raise RegistryError("reject needs --run <evaluation run directory> with a decision.json")
 
-def to_status_action(to_status: str) -> str:
-    return {"promoted": "promote", "rejected": "reject", "quarantined": "quarantine"}[to_status]
-
-
-def _registry_digest(entries: list[dict[str, Any]]) -> str:
-    return hashlib.sha256(json.dumps(mr.registry_document(entries), sort_keys=True).encode()).hexdigest()
-
-
-def cmd_transition(args: argparse.Namespace, to_status: str) -> int:
-    actor = args.actor or getpass.getuser()
-    document = mr.read_registry_document()
-    if document.get("registry_version") != mr.REGISTRY_VERSION:
-        raise Refused("the registry is not v2; run: registry_cli.py migrate")
-    entries = document["artifacts"]
-    old = entries[_find(entries, args.model_id)]
-    new_entries = transition(
-        entries,
-        args.model_id,
-        to_status,
-        actor=actor,
-        reason=args.reason,
-        evaluation_ref=getattr(args, "evaluation_ref", None),
-    )
-    row = _audit_row(
-        to_status_action(to_status),
-        args.model_id,
-        actor,
-        {
-            "from": old.get("status"),
-            "to": to_status,
-            "reason": args.reason,
-            "evaluation_ref": getattr(args, "evaluation_ref", None),
-            "registry_sha256_after": _registry_digest(new_entries),
-        },
-    )
-    if args.dry_run:
-        print(f"dry run: {args.model_id}: {old.get('status')} -> {to_status} (nothing written)")
-        return EXIT_OK
-    note = apply_with_audit(args.audit_mode, row, lambda: mr.write_registry(new_entries))
-    print(f"{args.model_id}: {old.get('status')} -> {to_status}")
-    print(note)
-    return EXIT_OK
-
-
-# ----------------------------------------------------------------------------- list
-
-
-def cmd_list(args: argparse.Namespace) -> int:
-    document = mr.read_registry_document()
-    entries = document["artifacts"]
-    if args.status:
-        entries = [e for e in entries if e.get("status") == args.status]
-    if args.json:
-        print(json.dumps(entries, indent=2))
-        return EXIT_OK
-    print(f"registry_version {document.get('registry_version')}, {len(entries)} artifact(s)")
-    for e in entries:
-        waiver = e.get("compat_waiver")
-        flag = f"  WAIVER {waiver.get('name')} (expires after {waiver.get('expires_after_task')})" if waiver else ""
-        print(
-            f"{e.get('model_id', e.get('name'))}\n    kind={e.get('kind')} status={e.get('status')} "
-            f"evaluation_ref={e.get('evaluation_ref')} code_revision={e.get('code_revision')}{flag}"
-        )
-        if e.get("status_reason"):
-            print(f"    reason: {e['status_reason']}")
-    return EXIT_OK
-
-
-# ----------------------------------------------------------------------------- migrate (v1 -> v2)
-
-LEGACY_WAIVER_TASK = "T26"
-
-
-def _legacy_split_id(kind: str, v1: dict[str, Any]) -> str | None:
-    if kind == "anomaly":
-        m = re.search(r"rows (\d+):(\d+) train, (\d+):(\d+) held out", str(v1.get("data_source", "")))
-        if m:
-            return f"chronological:train=rows[{m[1]}:{m[2]}],heldout=rows[{m[3]}:{m[4]}]"
-    if kind == "forecaster" and "train_ratio" in (v1.get("params") or {}):
-        return f"chronological:train_ratio={v1['params']['train_ratio']}"
-    return None
-
-
-def _quarantine_reason(v1: dict[str, Any]) -> str:
-    metrics = v1.get("metrics") or {}
-    pue = metrics.get("pue_improvement_mean_pct")
-    pue_text = (
-        f"mean PUE improvement {pue:+.2f}% vs the rule baseline (worse, not better)"
-        if pue is not None
-        else "no PUE result recorded"
-    )
-    return (
-        f"physics legacy-0; environment, reward and safety-envelope versions were never recorded (unversioned); "
-        f"{pue_text}; never evaluated under the T8 decision gate; SB3 zip is not loadable by the API process"
-    )
-
-
-def migrate_entry(v1: dict[str, Any], *, actor: str) -> dict[str, Any]:
-    """A manifest-v2 entry for a manifest-v1 ``v1`` entry, from the files on disk now.
-
-    Nothing is guessed: fields that were not recorded at training time are null. Model files must
-    still match the hashes v1 recorded (the migration never blesses a file that changed); the
-    ``scaler.joblib`` -> ``scaler.json`` swap is the one allowed difference.
-    """
-    name, version = str(v1["name"]), str(v1["version"])
-    kind = mr.infer_kind(name)
-    files: dict[str, dict[str, Any]] = {}
-    for rel, info in (v1.get("files") or {}).items():
-        if rel.endswith("scaler.joblib"):
-            rel_new = rel[: -len("scaler.joblib")] + "scaler.json"
-            if not (mr.PROJECT_ROOT / rel_new).is_file():
-                raise Refused(f"{name}: {rel_new} is missing; run scripts/convert_scalers.py first")
-            files.update(mr.file_digests([rel_new]))
-            continue
-        path = mr.PROJECT_ROOT / rel
-        if not path.is_file():
-            raise Refused(f"{name}: {rel} is missing")
-        digest = mr.file_digests([rel])[rel]
-        if digest["sha256"] != info.get("sha256"):
-            raise Refused(f"{name}: {rel} no longer matches the hash recorded at training time; not migrating")
-        files[rel] = digest
-    if not files:
-        raise Refused(f"{name}: v1 entry lists no files")
-
-    revision = v1.get("git_sha")
-    code_revision = revision if isinstance(revision, str) and re.fullmatch(r"[0-9a-f]{40}", revision) else None
-    params = v1.get("params") or {}
-    lineage = {field: None for field in versions.COMPAT_FIELDS}
-    lineage["physics_version"] = v1.get("physics_version")
-    lineage["input_cadence_s"] = (
-        versions.INPUT_CADENCE_S
-    )  # 5-minute telemetry / env step, as in the code that trained it
-
-    if kind == "ppo":
-        status, waiver = "quarantined", None
-        reason = _quarantine_reason(v1)
-    else:
-        status = "promoted"
-        reason = "migrated from manifest v1 under a named compatibility waiver"
-        waiver = {
-            "name": f"legacy-0-physics-until-{LEGACY_WAIVER_TASK}",
-            "fields": ["physics_version", "physics_params_hash"],
-            "reason": (
-                f"{name} was trained on data produced under physics legacy-0 and its physics parameters were "
-                f"not recorded; it is re-validated or retrained under the current physics in {LEGACY_WAIVER_TASK}"
-            ),
-            "expires_after_task": LEGACY_WAIVER_TASK,
-        }
-    trained_at = v1.get("trained_at") or mr.now_utc()
-    return {
-        "model_id": f"{name}-{version}",
-        "name": name,
-        "kind": kind,
-        "status": status,
-        "status_reason": reason,
-        "created_at_utc": trained_at,
-        "code_revision": code_revision,
-        **lineage,
-        "training_config": mr.training_config_block(params),
-        "seeds": params.get("seeds"),
-        "dataset_id": v1.get("dataset_id"),
-        "dataset_manifest_sha256": None,
-        "scenario_set_id": None,
-        "split_id": _legacy_split_id(kind, v1),
-        "package_versions": v1.get("key_package_versions"),
-        "files": files,
-        "evaluation_ref": None,
-        "compat_waiver": waiver,
-        "history": [
-            {
-                "seq": 0,
-                "at_utc": trained_at,
-                "action": "logged",
-                "from": None,
-                "to": "candidate",
-                "actor": "legacy-training",
-                "reason": "recorded by the training run (manifest v1)",
-            },
-            mr.history_entry(1, "migrate", "candidate", status, actor, reason),
-        ],
-        "version": version,
-        "trained_at": trained_at,
-        "metrics": v1.get("metrics", {}),
-        "data_source": v1.get("data_source"),
-        "params": params,
-        "python": v1.get("python"),
-        "manifest_version": mr.MANIFEST_VERSION,
-        "migrated_from_manifest_version": v1.get("manifest_version", 0),
-        "relative_path": v1.get("relative_path") or v1.get("artifact_path"),
-        "artifact_path": v1.get("relative_path") or v1.get("artifact_path"),
-        "sha256": mr.aggregate_sha256(files),
-        "size": sum(f["size"] for f in files.values()),
-        "git_sha": v1.get("git_sha", "unknown"),
-        "dataset_sha256": v1.get("dataset_sha256"),
+    event = {
+        "at_utc": _now(),
+        "action": action,
+        "from": current,
+        "to": to_status,
+        "reason": reason,
+        "run_id": run_id,
+        "prereg_sha256": prereg_sha,
+        "actor": actor or getpass.getuser(),
     }
+    event["audit"] = (audit or write_audit_row)(action, model_id, {k: v for k, v in event.items() if k != "audit"})
+
+    updated = dict(entry)
+    updated["status"] = to_status
+    if action in ("promote", "reject") and run_id:
+        updated["evaluation_ref"] = run_id
+    if action in ("reject", "quarantine"):
+        updated["quarantine_reason"] = reason
+    updated["history"] = list(entry.get("history", [])) + [event]
+
+    new_entries = list(entries)
+    new_entries[idx] = updated
+    assert_history_unaltered(entries, new_entries)
+    write_registry_atomic(Path(registry_path), new_entries)
+    return updated
 
 
-def cmd_migrate(args: argparse.Namespace) -> int:
-    actor = args.actor or getpass.getuser()
-    document = mr.read_registry_document()
-    if document.get("registry_version") == mr.REGISTRY_VERSION:
-        print("registry is already v2; nothing to do")
-        return EXIT_OK
-    migrated = [migrate_entry(e, actor=actor) for e in document["artifacts"]]
-    for e in migrated:
-        print(
-            f"{e['model_id']}: -> {e['status']}"
-            + (f" (waiver {e['compat_waiver']['name']})" if e["compat_waiver"] else "")
-        )
-    if args.dry_run:
-        print("dry run: nothing written")
-        return EXIT_OK
-    row = _audit_row(
-        "registry_migrate",
-        "registry",
-        actor,
-        {"artifacts": [e["model_id"] for e in migrated], "registry_sha256_after": _registry_digest(migrated)},
-    )
-    note = apply_with_audit(args.audit_mode, row, lambda: mr.write_registry(migrated))
-    print(f"wrote registry v2 ({len(migrated)} artifacts); previous file kept as {mr.REGISTRY_PATH.name}.bak")
-    print(note)
-    return EXIT_OK
-
-
-# ----------------------------------------------------------------------------- entry point
-
-
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = parser.add_subparsers(dest="command", required=True)
-
-    def common(p: argparse.ArgumentParser) -> None:
-        p.add_argument("--actor", help="who is making the change (default: the OS user)")
-        group = p.add_mutually_exclusive_group()
-        group.add_argument(
-            "--audit", dest="audit_mode", action="store_const", const="require", help="REQUIRE the DB audit row"
-        )
-        group.add_argument(
-            "--no-audit", dest="audit_mode", action="store_const", const="off", help="skip the DB audit row"
-        )
-        p.set_defaults(audit_mode="auto")
-        p.add_argument("--dry-run", action="store_true", help="check and show the change; write nothing")
-
-    ls = sub.add_parser("list", help="show artifacts and their status")
-    ls.add_argument("--status", choices=mr.STATUSES)
-    ls.add_argument("--json", action="store_true")
-    ls.set_defaults(func=cmd_list)
-
-    for name, status in (("promote", "promoted"), ("reject", "rejected"), ("quarantine", "quarantined")):
-        p = sub.add_parser(name, help=f"move an artifact to {status}")
-        p.add_argument("model_id")
-        p.add_argument("--reason", required=True, help="why (recorded in history[] and the audit row)")
-        if name == "promote":
-            p.add_argument("--evaluation-ref", help="id of the evaluation run that justifies promotion")
-        common(p)
-        p.set_defaults(func=lambda a, s=status: cmd_transition(a, s))
-
-    mg = sub.add_parser("migrate", help="convert a pre-T19 (manifest v1) registry to v2")
-    common(mg)
-    mg.set_defaults(func=cmd_migrate)
-    return parser
-
-
-def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+def decide_from_run(
+    model_id: str, run_dir: Path, *, registry_path: Path = REGISTRY_PATH, **kwargs: Any
+) -> tuple[str, dict[str, Any] | None]:
+    """Apply the run's decision: promote if the run says so and every check passes, otherwise reject (-> quarantined)
+    with the reasons. Returns ``("promote" | "reject" | "none", entry)``; ``"none"`` when the run evaluated no
+    candidate (result "no promotable policy" and nothing to transition)."""
+    decision = _load(Path(run_dir) / "decision.json")
+    if decision.get("outcome") == "NOT_EVALUATED":
+        return "none", None
     try:
-        return args.func(args)
-    except Refused as exc:
+        return "promote", transition("promote", model_id, registry_path=registry_path, run_dir=run_dir, **kwargs)
+    except RegistryError as exc:
+        reason = f"{decision.get('result', ep.NO_PROMOTABLE)}: outcome {decision.get('outcome')}; " + "; ".join(
+            exc.failures or [str(exc)]
+        )
+        return "reject", transition(
+            "reject", model_id, registry_path=registry_path, run_dir=run_dir, reason=reason[:1000], **kwargs
+        )
+
+
+# ----------------------------------------------------------------------------- CLI
+def main(argv: Sequence[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--registry", type=Path, default=REGISTRY_PATH)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("list")
+    for name in TRANSITIONS:
+        p = sub.add_parser(name)
+        p.add_argument("model_id")
+        p.add_argument("--run", type=Path)
+        p.add_argument("--reason")
+    d = sub.add_parser("decide", help="promote if the run qualifies, otherwise reject (quarantine) with the reasons")
+    d.add_argument("model_id")
+    d.add_argument("--run", type=Path, required=True)
+    args = ap.parse_args(argv)
+
+    try:
+        if args.cmd == "list":
+            for e in load_registry(args.registry):
+                print(f"{e.get('model_id', '-'):<40} {e.get('name', '-'):<20} {e.get('status', '(no status)')}")
+            return 0
+        if args.cmd == "decide":
+            action, entry = decide_from_run(args.model_id, args.run, registry_path=args.registry)
+            print(f"{action}: {entry['status'] if entry else ep.NO_PROMOTABLE}")
+            return 0
+        entry = transition(args.cmd, args.model_id, registry_path=args.registry, run_dir=args.run, reason=args.reason)
+        print(f"{args.model_id}: {entry['history'][-1]['from']} -> {entry['status']}")
+        return 0
+    except RegistryError as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
-        return EXIT_REFUSED
-    except AuditUnavailable as exc:
-        print(f"AUDIT FAILED: {exc}. The registry was NOT changed.", file=sys.stderr)
-        return EXIT_AUDIT
-    except AuditCommitFailed as exc:
-        print(f"AUDIT FAILED after the registry was written: {exc}. The registry HAS changed.", file=sys.stderr)
-        return EXIT_AUDIT
-    except (OSError, ValueError) as exc:
-        print(f"ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
-        return EXIT_REFUSED
+        for failure in exc.failures:
+            print(f"  - {failure}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

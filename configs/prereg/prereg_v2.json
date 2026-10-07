@@ -1,0 +1,110 @@
+{
+  "bootstrap": {
+    "confidence": 0.95,
+    "n_resamples": 10000,
+    "seed": 20260101
+  },
+  "eval_config": {
+    "alpha": 0.5,
+    "beta": 0.3,
+    "confidence": 0.95,
+    "constant_chilled_C": [
+      5.0,
+      7.5,
+      10.0,
+      12.5,
+      15.0
+    ],
+    "episode_steps": 288,
+    "families": [
+      {
+        "name": "stress_0.0",
+        "seen_in_training": true,
+        "water_stress": 0.0
+      },
+      {
+        "name": "stress_0.4",
+        "seen_in_training": false,
+        "water_stress": 0.4
+      },
+      {
+        "name": "stress_0.8",
+        "seen_in_training": false,
+        "water_stress": 0.8
+      }
+    ],
+    "gamma": 0.2,
+    "min_training_seeds": 5,
+    "n_test_per_family": 20,
+    "n_validation_per_family": 10,
+    "physics_version": "1",
+    "primary_tolerance_rel": 0.01,
+    "rule_chilled_C": 12.0,
+    "scenario_inputs_label": "synthetic diurnal weather and workload from DataCentreEnv; simulated plant",
+    "secondary_tolerance_rel": 0.02,
+    "test_seed_start": 200000,
+    "training_seed_reserved": [
+      0,
+      99999
+    ],
+    "training_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "validation_seed_start": 100000
+  },
+  "name": "T30 robustness evaluation and promotion decision",
+  "outcome_rules": {
+    "A": "Continue under governance: for BOTH the rule baseline and the best constant, (1) the t-based 95% CI of the paired primary-metric difference across TRAINING SEEDS excludes zero in PPO's favour, (2) the same holds across test scenarios for the validation-selected candidate, (3) PPO's mean advantage is positive in every test family, (4) the selected candidate has zero outlet-over-limit and inlet-over-max steps and no more inlet-under-min steps than the rule baseline, (5) no secondary metric is worse by more than the secondary tolerance. Only supports 'simulator-validated candidate'.",
+    "B": "Offline research module only: PPO is not shown to be better than simple controllers, and not shown to be equal.",
+    "C": "Replace with a simpler controller: the rule baseline or the best constant, if it has zero outlet-over-limit and inlet-over-max steps on the test set and PPO's mean primary-metric advantage over it is at most the primary tolerance (including the case where PPO is worse). Checked before B."
+  },
+  "perturbation_manifest": {
+    "n_joint": 2,
+    "n_single": 24,
+    "path": "configs/robustness/perturbations_v2.json",
+    "sha256": "191e61f165899200cc675800bd3de0bf6e25353abf0caf03c9aa58961624a7f7"
+  },
+  "preregistration_sha256": "1fe941db597fc22ff5184f5d434acd6f42c07bd4547e4b89244f1602de07a75c",
+  "promotion": {
+    "requires": [
+      "run completed",
+      "clean tree (code_revision is a 40-hex commit and not dirty)",
+      "pre-registration hash matches",
+      "outcome A (T8 rules on the unperturbed test set) AND robustness criteria R1-R4",
+      "candidate compatible (10.2 step 2)",
+      "candidate files match the files evaluated"
+    ],
+    "result_if_none_qualifies": "no promotable policy"
+  },
+  "protocol": "roadmap 13.5 (outcome A/B/C) and 13.9 (physics-mismatch robustness)",
+  "registered_at_utc": "2026-10-05T03:09:24+00:00",
+  "robustness_criteria": {
+    "R1_envelope": {
+      "description": "Under every perturbation the candidate's envelope-violation steps (outlet over limit + inlet over max, summed over test scenarios) do not exceed the LOWER of the two baselines' by more than the allowance.",
+      "max_extra_violation_steps": 0,
+      "metrics": [
+        "outlet_violation_steps",
+        "inlet_over_max_steps"
+      ]
+    },
+    "R2_noninferiority": {
+      "description": "Under every perturbation, for BOTH baselines, the lower bound of the bootstrap CI of the paired primary-metric difference (candidate - baseline) is above -margin x |baseline's unperturbed mean primary metric|.",
+      "margin_rel": 0.05,
+      "metric": "total_reward"
+    },
+    "R3_degradation": {
+      "description": "Under every perturbation the candidate's relative degradation of the primary metric (vs its own unperturbed mean) exceeds the larger baseline degradation by no more than the allowance.",
+      "max_extra_relative_degradation": 0.05,
+      "metric": "total_reward"
+    },
+    "R4_completeness": {
+      "description": "Every perturbation in the manifest was either evaluated or recorded as not_applicable with a reason, and at least one one-at-a-time and one joint perturbation were evaluated."
+    }
+  },
+  "schema": 1,
+  "status_note": "PROPOSED thresholds: the owner must review every number below BEFORE the first evaluation; any later change invalidates the hash and stops the run."
+}
