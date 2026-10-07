@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { TwinHeader } from "@/components/shell/TwinHeader";
 import { SidePanel } from "@/components/shell/SidePanel";
-import { ModeLegend } from "@/components/shell/ModeLegend";
+import { FeedOverlay, ModeLegend } from "@/components/shell/ModeLegend";
 import { SimulationPanel } from "@/components/shell/SimulationPanel";
 import { OperationsConsole } from "@/components/shell/OperationsConsole";
 import { IncidentsPanel } from "@/components/shell/IncidentsPanel";
@@ -14,7 +14,8 @@ import { MOTION, motionDuration } from "@/three/motion";
 import type { Report } from "@/reports/reports";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useSharedSimulation } from "@/hooks/simulationContext";
-import type { VisualizationMode } from "@/three/visualizationModes";
+import { currentState, type LiveFeed, type VisualizationMode } from "@/three/visualizationModes";
+import { useFeed } from "@/telemetry/useFeed";
 import { describeRack, isNavKey, nextRackId } from "@/three/rackNavigation.ts";
 
 type LeftPanel = "none" | "simulation" | "operations" | "incidents";
@@ -23,8 +24,7 @@ type LeftPanel = "none" | "simulation" | "operations" | "incidents";
  * Selection lives here (not inside Rack/Facility) so both the 3D scene and
  * the Inspector rail read off the same single source of truth.
  *
- * Stage 6: the header and inspector now read `liveState` -- the actual
- * live WebSocket feed -- rather than `kpi` (which reflects the *default*
+ * Stage 6: the header and inspector now read the live WebSocket feed (FE-06: as a stamped `LiveFeed`) -- rather than `kpi` (which reflects the *default*
  * slider configuration, fetched once, not a continuously live value; see
  * useSimulation.ts). `liveState` is null until the first message arrives
  * and both consumers render an explicit "connecting" state for that,
@@ -62,7 +62,17 @@ export default function LiveTwin() {
   // Each panel builds its own report from data it already holds and hands it
   // up here; a report is a snapshot, so it is never recomputed while open.
   const [report, setReport] = useState<Report | null>(null);
-  const { liveState, config, anomalyScore, latestAnomaly, events } = useSharedSimulation();
+  const { config, anomalyScore, latestAnomaly, events } = useSharedSimulation();
+
+  // FE-06: every surface below reads the STAMPED feed (frame + current freshness) from the store, not a bare frame.
+  const frame = useFeed((v) => v.frame);
+  const freshness = useFeed((v) => v.freshness);
+  const reconnectAttempt = useFeed((v) => v.transport.detail?.attempt ?? null);
+  const feed: LiveFeed = useMemo(() => ({ frame, freshness, reconnectAttempt }), [frame, freshness, reconnectAttempt]);
+  // The Simulation Lab "Live now" column and the Operations Console status are outside FE-06's file allowance and still
+  // take a bare state: hand them a value only while it is current, so they show their connecting/waiting state otherwise
+  // (they can never show a stale reading as live).
+  const liveState = currentState(feed);
 
   // Stage 14: panel open/close motion. `leftPanel` is what the header says
   // (immediate); `shownPanel` is what is mounted, which lags on close so the
@@ -169,7 +179,7 @@ export default function LiveTwin() {
     <div className="flex flex-col h-full bg-background">
       <TwinHeader
         onOpenSearch={() => setSearchOpen(true)}
-        liveState={liveState}
+        feed={feed}
         mode={mode}
         onModeChange={setMode}
         simulationOpen={leftPanel === "simulation"}
@@ -233,12 +243,13 @@ export default function LiveTwin() {
               onRequestFocus={handleRequestFocus}
               focusRequest={focusRequest}
               mode={mode}
-              liveState={liveState}
+              feed={feed}
             />
           </SceneErrorBoundary>
-          <ModeLegend mode={mode} liveState={liveState} onGenerateReport={setReport} />
+          <FeedOverlay feed={feed} />
+          <ModeLegend mode={mode} feed={feed} onGenerateReport={setReport} />
         </div>
-        <SidePanel selectedRackId={selectedRackId} onDeselect={handleDeselect} liveState={liveState} />
+        <SidePanel selectedRackId={selectedRackId} onDeselect={handleDeselect} feed={feed} />
       </div>
       <CommandPalette
         open={searchOpen}

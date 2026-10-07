@@ -1,25 +1,48 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { StateResponse, EquipmentHealthResponse } from '@/api/apiClient';
+import { StatusMessage } from '@/components/shell/StatusMessage';
+import { FreshnessChip, ProvenanceBadge, formatAge } from '@/provenance';
+import { feedProvenance, noDataNotice, toReadout, type LiveFeed } from '@/three/visualizationModes';
+import type { EquipmentHealthResponse } from '@/api/apiClient';
 
 interface Props {
-  liveState: StateResponse | null;
+  /** FE-06: the stamped live feed. Values are current, "Last known" with their age, or replaced by a state notice. */
+  feed: LiveFeed;
   equipmentHealth: EquipmentHealthResponse | null;
 }
 
-export function SustainabilityTab({ liveState, equipmentHealth }: Props) {
+export function SustainabilityTab({ feed, equipmentHealth }: Props) {
+  const readout = toReadout(feed);
+  const view = feedProvenance(feed);
+  const liveState = readout.mode === 'none' ? null : readout.state;
+  const lastKnown = readout.mode === 'last-known';
+  const notice = readout.mode === 'none' ? noDataNotice(readout.freshness) : null;
+  const provenance = feed.frame ? <ProvenanceBadge view={view} /> : <FreshnessChip view={view} />;
+  const valueClass = lastKnown ? 'text-muted-foreground' : '';
+  const cardClass = lastKnown ? 'border-dashed border-muted-foreground/60' : '';
+  const lastKnownLabel =
+    readout.mode === 'last-known' ? (
+      <p data-testid="last-known" className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+        Last known · {formatAge(readout.ageMs)}
+      </p>
+    ) : null;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-readout={readout.mode}>
+      <Card className={cardClass}>
         <CardHeader>
           <CardTitle className="text-sm font-medium">
             {liveState?.carbon_data_is_real === true ? 'Grid Carbon Intensity' : 'Carbon Intensity (fallback)'}
           </CardTitle>
+          {provenance}
         </CardHeader>
         <CardContent>
-          {liveState?.carbon_intensity_gco2_per_kwh !== undefined ? (
+          {notice ? (
+            <StatusMessage kind={notice.kind}>{notice.text}</StatusMessage>
+          ) : liveState?.carbon_intensity_gco2_per_kwh !== undefined ? (
             <>
-              <div className="text-2xl font-bold">
+              {lastKnownLabel}
+              <div className={`text-2xl font-bold ${valueClass}`}>
                 {liveState.carbon_intensity_gco2_per_kwh.toFixed(0)} <span className="text-sm font-normal">gCO2/kWh</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -34,21 +57,25 @@ export function SustainabilityTab({ liveState, equipmentHealth }: Props) {
               </p>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">Waiting for live data...</p>
+            <p className="text-sm text-muted-foreground">Carbon intensity not reported by the backend.</p>
           )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={cardClass}>
         <CardHeader>
           <CardTitle className="text-sm font-medium">Live Water Stress</CardTitle>
+          {provenance}
         </CardHeader>
         <CardContent>
-          {liveState?.water_stress !== undefined ? (
+          {notice ? (
+            <StatusMessage kind={notice.kind}>{notice.text}</StatusMessage>
+          ) : liveState?.water_stress !== undefined ? (
             <>
-              <div className="text-2xl font-bold">{(liveState.water_stress * 100).toFixed(0)}%</div>
+              {lastKnownLabel}
+              <div className={`text-2xl font-bold ${valueClass}`}>{(liveState.water_stress * 100).toFixed(0)}%</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Live facility reading — independent of the Water Stress Index slider (What-If only)
+                {lastKnown ? 'Last known facility reading' : 'Live facility reading'} — independent of the Water Stress Index slider (What-If only)
               </p>
               {liveState.drought_override_active ? (
                 <Badge variant="destructive" className="mt-2">
@@ -59,7 +86,7 @@ export function SustainabilityTab({ liveState, equipmentHealth }: Props) {
               )}
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">Waiting for live data...</p>
+            <p className="text-sm text-muted-foreground">Water stress not reported by the backend.</p>
           )}
         </CardContent>
       </Card>

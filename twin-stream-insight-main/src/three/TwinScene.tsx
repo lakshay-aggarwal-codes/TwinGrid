@@ -4,8 +4,7 @@ import { OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Facility } from "./Facility";
 import { useCameraFocus } from "./useCameraFocus";
-import type { VisualizationMode } from "./visualizationModes";
-import type { StateResponse } from "@/api/apiClient";
+import type { LiveFeed, VisualizationMode } from "./visualizationModes";
 import { DEFAULT_CAMERA_POSITION, DEFAULT_CAMERA_TARGET } from "./cameraDefaults";
 
 /** `nonce` is bumped on every request so re-selecting the *same* already-
@@ -27,7 +26,8 @@ export interface TwinSceneProps {
   onRequestFocus: (rackId: string) => void;
   focusRequest: FocusRequest | null;
   mode: VisualizationMode;
-  liveState: StateResponse | null;
+  /** FE-06: the stamped feed. Only a CURRENT frame tints the scene (see `currentState`). */
+  feed: LiveFeed;
 }
 
 function SceneContents({
@@ -37,7 +37,7 @@ function SceneContents({
   onRequestFocus,
   focusRequest,
   mode,
-  liveState,
+  feed,
 }: TwinSceneProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const isInteractingRef = useRef(false);
@@ -69,7 +69,7 @@ function SceneContents({
         onFocusRack={onRequestFocus}
         isInteractingRef={isInteractingRef}
         mode={mode}
-        liveState={liveState}
+        feed={feed}
       />
 
       <OrbitControls

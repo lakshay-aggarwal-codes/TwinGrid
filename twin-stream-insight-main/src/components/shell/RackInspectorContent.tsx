@@ -1,16 +1,15 @@
 import { AlertCircle } from "lucide-react";
 import { StatusMessage } from "./StatusMessage";
 import { FACILITY_LAYOUT, findRack } from "@/three/facilityLayout";
-import type { StateResponse } from "@/api/apiClient";
+import { feedProvenance, noDataNotice, toReadout, type LiveFeed } from "@/three/visualizationModes";
+import { FreshnessChip, ProvenanceBadge, formatAge } from "@/provenance";
 
 interface RackInspectorContentProps {
   rackId: string;
-  /** Current facility-aggregate state from the live WebSocket feed (Stage 6),
-   * shown only as explicitly-labeled facility-wide context -- never implied
-   * to describe this rack specifically. Null until the first message
-   * arrives; the panel shows an explicit "connecting" line rather than a
-   * placeholder number for that case. */
-  liveState?: StateResponse | null;
+  /** Facility-aggregate state from the stamped live feed (FE-06), shown only as explicitly-labeled facility-wide
+   * context -- never implied to describe this rack specifically. Absent / no frame yet: an explicit state notice,
+   * never a placeholder number. Stale or disconnected: shown as "Last known" with its age. */
+  feed?: LiveFeed;
 }
 
 /** Uses the layout's own zone label ("Zone A") so the inspector, the search
@@ -35,8 +34,11 @@ const Divider = () => <div className="h-px bg-border" />;
  * facility-aggregate numbers, that section says plainly that it doesn't
  * exist yet.
  */
-export function RackInspectorContent({ rackId, liveState }: RackInspectorContentProps) {
+export function RackInspectorContent({ rackId, feed }: RackInspectorContentProps) {
   const rack = findRack(rackId);
+  const readout = toReadout(feed);
+  const view = feed ? feedProvenance(feed) : null;
+  const lastKnown = readout.mode === "last-known";
 
   if (!rack) {
     // Selection is always set from a real rack's userData, so this
@@ -98,24 +100,41 @@ export function RackInspectorContent({ rackId, liveState }: RackInspectorContent
       {/* Facility-wide reference, from the real live feed -- see module docstring */}
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Facility reference</p>
-        <p className="text-[11px] text-muted-foreground">Facility-wide, live -- not specific to this rack.</p>
-        {liveState ? (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-xs text-foreground pt-0.5">
+        <p className="text-[11px] text-muted-foreground">
+          {lastKnown ? "Facility-wide, last known" : readout.mode === "current" ? "Facility-wide, live" : "Facility-wide"} -- not specific to this rack.
+        </p>
+        {feed && view && (feed.frame ? <ProvenanceBadge view={view} /> : <FreshnessChip view={view} />)}
+        {readout.mode === "none" ? (
+          (() => {
+            const notice = noDataNotice(readout.freshness);
+            return <StatusMessage kind={notice.kind}>{notice.text}</StatusMessage>;
+          })()
+        ) : (
+          <div
+            data-testid="facility-reference"
+            data-readout={readout.mode}
+            className={`grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-xs pt-0.5 ${
+              lastKnown ? "text-muted-foreground rounded border border-dashed border-muted-foreground/60 p-1.5" : "text-foreground"
+            }`}
+          >
+            {readout.mode === "last-known" && (
+              <p data-testid="last-known" className="col-span-2 font-sans text-[10px] uppercase tracking-wider">
+                Last known · {formatAge(readout.ageMs)}
+              </p>
+            )}
             <div>
               <span className="text-muted-foreground">PUE </span>
-              {liveState.pue.toFixed(2)}
+              {readout.state.pue.toFixed(2)}
             </div>
             <div>
               <span className="text-muted-foreground">WUE </span>
-              {liveState.wue.toFixed(3)}
+              {readout.state.wue.toFixed(3)}
             </div>
             <div className="col-span-2">
               <span className="text-muted-foreground">Mode </span>
-              {liveState.cooling_mode}
+              {readout.state.cooling_mode}
             </div>
           </div>
-        ) : (
-          <StatusMessage kind="loading">Connecting to live feed…</StatusMessage>
         )}
       </div>
     </div>

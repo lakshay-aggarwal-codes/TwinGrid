@@ -1,20 +1,17 @@
 import { RotateLink } from "@/components/transition/RotateLink";
 import { loadAnalyticsPage } from "@/pages/lazyPages.ts";
-import { Boxes, Radio, FlaskConical, Wrench, AlertTriangle, Search } from "lucide-react";
+import { Boxes, FlaskConical, Wrench, AlertTriangle, Search } from "lucide-react";
 import { ModeSwitcher } from "./ModeSwitcher";
-import type { LiveStatePayload } from "@/api/apiClient.ts";
-import { originBanner, type LivenessStatus } from "@/hooks/liveness.ts";
-import { useSharedSimulation } from "@/hooks/simulationContext";
-import type { VisualizationMode } from "@/three/visualizationModes";
+import { feedProvenance, toReadout, type LiveFeed, type VisualizationMode } from "@/three/visualizationModes";
+import { FreshnessChip, ProvenanceStrip, formatAge } from "@/provenance";
 
 interface TwinHeaderProps {
   /** Stage 11: opens the command palette (replaces the Stage 4 Locate
    * dropdown -- everything it could do is reachable through search). */
   onOpenSearch: () => void;
-  /** Real live facility state from the WebSocket feed (see useSimulation's
-   * `liveState`). Null until the first message arrives -- rendered as an
-   * explicit "Connecting" state, never a guessed number (Stage 6). */
-  liveState: LiveStatePayload | null;
+  /** FE-06: the stamped live feed (frame + CURRENT freshness) from the feed store. No frame yet -> an explicit
+   * "Connecting" state, never a guessed number; stale/disconnected -> "Last known" with its age. */
+  feed: LiveFeed;
   /** Active visualization mode (Stage 8) + its setter. */
   mode: VisualizationMode;
   onModeChange: (mode: VisualizationMode) => void;
@@ -28,19 +25,11 @@ interface TwinHeaderProps {
   onToggleIncidents: () => void;
 }
 
-/** Status text/colour per liveness state. "Live" is shown ONLY while the socket is open and payloads are fresh. */
-const LIVENESS_DISPLAY: Record<LivenessStatus, { label: string; text: string }> = {
-  live: { label: "Live", text: "text-success" },
-  stale: { label: "Stale", text: "text-warning" },
-  disconnected: { label: "Disconnected", text: "text-destructive" },
-  connecting: { label: "Connecting", text: "text-muted-foreground" },
-};
-
 function Reading({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline gap-1.5">
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
-      <span className="font-mono text-xs text-foreground">{value}</span>
+      <span className="font-mono text-xs">{value}</span>
     </div>
   );
 }
@@ -48,7 +37,7 @@ function Reading({ label, value }: { label: string; value: string }) {
 /** Minimal shell header for the 3D Live Twin page. */
 export function TwinHeader({
   onOpenSearch,
-  liveState,
+  feed,
   mode,
   onModeChange,
   simulationOpen,
@@ -58,14 +47,12 @@ export function TwinHeader({
   incidentsOpen,
   onToggleIncidents,
 }: TwinHeaderProps) {
-  // Liveness comes from the socket state + wall time of the last payload (see hooks/liveness.ts),
-  // not from "have we ever received a payload".
-  const { liveness } = useSharedSimulation();
-  const hasData = liveState !== null;
-  const status = LIVENESS_DISPLAY[liveness];
-  // Last values stay visible while stale/disconnected, but dimmed so they are not read as current.
-  const dimmed = liveness === "stale" || liveness === "disconnected";
-  const banner = hasData ? originBanner(liveState.origin) : null;
+  // FE-06: everything below derives from the stamped feed. "Live" needs an open socket AND a fresh valid frame
+  // (FE-04); the readings are current only then, otherwise "Last known" with their age, or "—".
+  const readout = toReadout(feed);
+  const view = feedProvenance(feed);
+  const lastKnown = readout.mode === "last-known";
+  const state = readout.mode === "none" ? null : readout.state;
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm shrink-0">
@@ -117,30 +104,40 @@ export function TwinHeader({
           only -- never implies anything about a specific rack (see RackInspectorContent
           for how the same distinction is kept in the inspector). */}
       <div className="flex items-center gap-4">
-        {banner && (
-          <span
-            role="status"
-            data-testid="origin-banner"
-            data-origin-tone={banner.tone}
-            title={banner.title}
-            className={`rounded border px-1.5 py-0.5 text-[10px] uppercase tracking-wider ${
-              banner.tone === "simulated" ? "border-warning/40 text-warning" : "border-destructive/40 text-destructive"
-            }`}
-          >
-            {banner.label}
-          </span>
-        )}
-        <div className={`flex items-center gap-4 ${dimmed ? "opacity-50" : ""}`} data-testid="live-readings">
-          <Reading label="PUE" value={hasData ? liveState.pue.toFixed(2) : "—"} />
-          <Reading label="WUE" value={hasData ? liveState.wue.toFixed(3) : "—"} />
+        {/* Origin + freshness + source/time context (FE-05 strip). Mounted once here, so this is the one place
+            freshness transitions are announced (polite; "Disconnected" assertive). */}
+        <div data-testid="liveness" data-liveness={feed.freshness.state}>
+          {feed.frame ? (
+            <div data-testid="origin-banner" data-origin-tone={view.origin.state}>
+              <ProvenanceStrip view={view} announce />
+            </div>
+          ) : (
+            <FreshnessChip view={view} announce />
+          )}
+        </div>
+        <div
+          data-testid="live-readings"
+          data-readout={readout.mode}
+          className={`flex items-center gap-4 ${
+            lastKnown ? "rounded border border-dashed border-muted-foreground/60 px-2 py-0.5 text-muted-foreground" : "text-foreground"
+          }`}
+        >
+          {readout.mode === "last-known" && (
+            <span data-testid="last-known" className="text-[10px] uppercase tracking-wider">
+              Last known · {formatAge(readout.ageMs)}
+            </span>
+          )}
+          <Reading label="PUE" value={state ? state.pue.toFixed(2) : "—"} />
+          <Reading label="WUE" value={state ? state.wue.toFixed(3) : "—"} />
           <div className="hidden min-[1600px]:block">
-            <Reading label="Mode" value={hasData ? liveState.cooling_mode : "—"} />
+            <Reading label="Mode" value={state ? state.cooling_mode : "—"} />
           </div>
         </div>
-        <div className="flex items-center gap-1.5" data-testid="liveness" data-liveness={liveness}>
-          <Radio className={`h-3 w-3 ${status.text}`} />
-          <span className={`text-[10px] uppercase tracking-wider ${status.text}`}>{status.label}</span>
-        </div>
+        {simulationOpen && (
+          <span data-testid="preview-note" className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Simulation Lab results are previews, not the live feed
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-4">

@@ -1,4 +1,8 @@
-import type { StateResponse } from "@/api/apiClient";
+import type { LiveStatePayload, StateResponse } from "@/api/apiClient";
+import type { Freshness, FreshnessState } from "@/telemetry/freshness";
+import type { Stamped } from "@/telemetry/stamped";
+import type { UiStateKind } from "@/state/dataState";
+import { buildProvenance, type ProvenanceView } from "@/provenance";
 
 /**
  * 'thermal' is Stage 7's mode -- its coloring lives entirely in
@@ -124,4 +128,85 @@ export function getModeReadings(mode: VisualizationMode, liveState: StateRespons
 /** Whether the sustainability legend should disclose the carbon-fallback caveat. */
 export function isCarbonDataFallback(liveState: StateResponse | null): boolean {
   return liveState?.carbon_data_is_real === false;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// FE-06: how a Live Twin surface may present feed data. Pure; consumes FE-04 `Stamped` + FE-05 provenance only.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** What every Live Twin surface receives from the feed store: the stamped frame (if any) and the CURRENT freshness. */
+export interface LiveFeed {
+  readonly frame: Stamped<LiveStatePayload> | null;
+  readonly freshness: Freshness;
+  /** Transport reconnect attempt (shown only while reconnecting). */
+  readonly reconnectAttempt?: number | null;
+}
+
+/**
+ * Rendering mode for numbers (roadmap section 8). "Last known" is a rendering mode, not a value: it only exists together
+ * with its age (`ageMs` is a required member of that variant), and only `current` may use the live style.
+ */
+export type Readout =
+  | { readonly mode: "current"; readonly state: LiveStatePayload }
+  | { readonly mode: "last-known"; readonly state: LiveStatePayload; readonly ageMs: number; readonly freshness: FreshnessState }
+  | { readonly mode: "none"; readonly freshness: FreshnessState };
+
+const LAST_KNOWN_STATES: ReadonlySet<FreshnessState> = new Set<FreshnessState>(["stale", "disconnected", "reconnecting"]);
+
+export function toReadout(feed: LiveFeed | null | undefined): Readout {
+  if (!feed) return { mode: "none", freshness: "connecting" };
+  const { frame, freshness } = feed;
+  if (!frame) return { mode: "none", freshness: freshness.state };
+  if (freshness.state === "live") return { mode: "current", state: frame.value };
+  if (LAST_KNOWN_STATES.has(freshness.state) && freshness.ageMs !== null) {
+    return { mode: "last-known", state: frame.value, ageMs: freshness.ageMs, freshness: freshness.state };
+  }
+  // connecting / unavailable / unknown: no numbers at all.
+  return { mode: "none", freshness: freshness.state };
+}
+
+/**
+ * The only value the 3D scene may tint from: the current frame, else null. A null reading makes every tint function
+ * return its neutral colour (`getModeColor` -> NEUTRAL, `computeThermalColors` -> null -> WAITING_COLOR).
+ */
+export function currentState(feed: LiveFeed | null | undefined): LiveStatePayload | null {
+  const r = toReadout(feed);
+  return r.mode === "current" ? r.state : null;
+}
+
+export interface NoDataNotice {
+  kind: UiStateKind;
+  text: string;
+}
+
+/** Notice for a surface that has no numbers to show. Fixed copy; never 0 or blank. */
+export function noDataNotice(state: FreshnessState): NoDataNotice {
+  switch (state) {
+    case "connecting":
+      return { kind: "loading", text: "Connecting to live feed…" };
+    case "unavailable":
+      return { kind: "unavailable", text: "Backend unavailable." };
+    case "stale":
+      return { kind: "stale", text: "Stale — no readings available." };
+    case "disconnected":
+    case "reconnecting":
+      return { kind: "disconnected", text: "Disconnected — no data received yet." };
+    default:
+      return { kind: "unavailable", text: "Backend unavailable." };
+  }
+}
+
+/** FE-05 view-model for the live feed. `kind` labels the endpoint class only; origin/times come from the frame. */
+export function feedProvenance(feed: LiveFeed): ProvenanceView {
+  const frame = feed.frame;
+  const p = frame?.provenance;
+  return buildProvenance({
+    source: { kind: "live-feed" },
+    origin: p?.origin,
+    serverTime: p?.tsIngest,
+    simTime: p?.simTime,
+    freshness: feed.freshness,
+    reconnectAttempt: feed.reconnectAttempt,
+    inputsFallback: frame?.value.carbon_data_is_real === false ? ["carbon"] : undefined,
+  });
 }

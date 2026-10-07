@@ -4,8 +4,7 @@ import { FACILITY_LAYOUT } from "./facilityLayout";
 import { ZoneOutline } from "./ZoneOutline";
 import { Rack, type RackVisualState } from "./Rack";
 import { computeThermalColors } from "./thermalMapping";
-import { getModeColor, type VisualizationMode } from "./visualizationModes";
-import type { StateResponse } from "@/api/apiClient";
+import { currentState, getModeColor, type LiveFeed, type VisualizationMode } from "./visualizationModes";
 
 const FLOOR_COLOR = "#0d0d0f";
 
@@ -23,7 +22,9 @@ export interface FacilityProps {
    * once, from the same `liveState` -- Rack picks whichever its mode branch
    * needs. 'physical' (or a null liveState) renders racks uncolored. */
   mode: VisualizationMode;
-  liveState: StateResponse | null;
+  /** FE-06: tints derive from `currentState(feed)` only, so stale / disconnected / unavailable / no-data all render
+   * the neutral colours (WAITING_COLOR / NEUTRAL) -- a last-known value is never tinted as if it were current. */
+  feed: LiveFeed;
 }
 
 export function Facility({
@@ -33,8 +34,9 @@ export function Facility({
   onFocusRack,
   isInteractingRef,
   mode,
-  liveState,
+  feed,
 }: FacilityProps) {
+  const liveState = currentState(feed);
   const [hoveredRackId, setHoveredRackId] = useState<string | null>(null);
 
   const thermalColors = useMemo(

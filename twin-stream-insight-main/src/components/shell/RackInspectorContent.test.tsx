@@ -8,4 +8,9 @@ describe("RackInspectorContent", () => {
     expect(screen.getByText(/Zone B · Row 1/)).toBeTruthy();
     expect(screen.queryByText(/Zone 2/)).toBeNull();
   });
+
+  it("without a feed it shows a state notice, never a number", () => {
+    render(<RackInspectorContent rackId="zone-2-row-1-rack-3" />);
+    expect(screen.getByText(/Connecting to live feed/)).toBeTruthy();
+  });
 });
