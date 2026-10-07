@@ -16,11 +16,16 @@
  */
 import type {
   AlertRecord,
+  AnomalyStatusPayload,
+  LiveStatePayload,
   OptimizeSummary,
   StateResponse,
   WhatIfResponse,
 } from "@/api/apiClient";
 import type { LatestAnomaly, SimConfig } from "@/hooks/useSimulation";
+import type { Freshness } from "@/telemetry/freshness";
+import type { Stamped } from "@/telemetry/stamped";
+import { buildProvenance, formatAge, type ProvenanceView } from "@/provenance";
 
 export type ReportKind = "operational" | "simulation" | "incident" | "sustainability";
 
@@ -43,11 +48,59 @@ export interface ReportSection {
   note?: string;
 }
 
+/**
+ * FE-10: what the browser knew about the live feed at the moment of generation. Built from the feed store's stamped data only.
+ * `browserTime` is the BROWSER clock and is only ever labelled as such; it is never data time.
+ */
+export interface ReportCapture {
+  readonly frame: Stamped<LiveStatePayload> | null;
+  readonly freshness: Freshness;
+  readonly reconnectAttempt?: number | null;
+  readonly browserTime: Date;
+}
+
+/** Facts a builder knows about its own data (everything else comes from the capture). Plain data, so a report can be re-stamped. */
+export interface ProvenanceSeed {
+  /** Values come from the live feed: a stale/disconnected feed at generation is stated at the top. */
+  readonly usesLiveFeed: boolean;
+  /** Origin / times / physics version are taken from the live payload below (false: the data has no feed origin). */
+  readonly feed: {
+    readonly origin?: string;
+    readonly tsIngest?: string;
+    readonly simTime?: string;
+    readonly physicsVersion?: string;
+    readonly anomaly?: Pick<AnomalyStatusPayload, "model_version" | "detector_id" | "trained_on"> | null;
+  } | null;
+  readonly inputsFallback: readonly string[];
+  /** Scenario parameters / id text, or null when none apply. */
+  readonly scenarioNote: string | null;
+  /** Extra provenance rows (e.g. the optimisation run). */
+  readonly extraRows: readonly ReportRow[];
+  /** Where the origin row's value was read from. */
+  readonly originSource: string;
+}
+
+export interface ReportProvenance {
+  readonly view: ProvenanceView;
+  /** false => no feed capture was available when this was built. */
+  readonly captured: boolean;
+  readonly capturedFrom: readonly Stamped<LiveStatePayload>[];
+  /** Printed in the first lines of every export. */
+  readonly warnings: readonly string[];
+  /** The provenance block, as report rows. */
+  readonly rows: readonly ReportRow[];
+  /** Browser clock at generation. Labelled "browser time". */
+  readonly browserTime: string;
+}
+
 export interface Report {
   kind: ReportKind;
   title: string;
-  /** ISO timestamp of when this report was generated (client clock). */
+  /** ISO timestamp of when this report was generated (BROWSER clock -- labelled "browser time" wherever shown). */
   generatedAt: string;
+  /** FE-10: every report carries a provenance block; serializers always print it before the data sections. */
+  provenance: ReportProvenance;
+  seed: ProvenanceSeed;
   sections: ReportSection[];
   /** Honesty caveats that apply to this report (fallback data, missing
    * per-rack data, etc.). Always rendered, never collapsed. */
@@ -63,25 +116,180 @@ const CARBON_FALLBACK_CAVEAT =
 const f = (v: number, d: number) => v.toFixed(d);
 
 // ---------------------------------------------------------------------------
+// Provenance block (FE-10, roadmap section 16): the FE-05 view-model rendered as report rows
+// ---------------------------------------------------------------------------
+
+const NOT_REPORTED = "not reported by backend";
+const NOT_AVAILABLE = "not available from backend";
+
+const DETAIL_SOURCE: Record<string, string> = {
+  quality: "not provided by the backend",
+  source: "report endpoint class (frontend-known)",
+  "server-time": "WS /ws/live → ts_ingest",
+  "sim-clock": "WS /ws/live → sim_time (simulated clock, not event time)",
+  "browser-receipt": "browser receipt age (monotonic clock; not data time)",
+  freshness: "feed store state at generation",
+  scenario: "not provided by the backend",
+  run: "not provided by the backend",
+  physics: "WS /ws/live → physics_version",
+  model: "WS /ws/live → anomaly_status.model_version",
+  detector: "WS /ws/live → anomaly_status.detector_id",
+  "trained-on": "WS /ws/live → anomaly_status.trained_on",
+  dataset: "not provided by the backend",
+  "weather-plant": "not provided by the backend",
+  evaluation: "not provided by the backend",
+  calibration: "not provided by the backend",
+  fallback: "carbon_data_is_real from the data shown",
+};
+
+function stateWarning(freshness: Freshness | null, captured: boolean, hasFrame: boolean): string[] {
+  if (!captured || !freshness) {
+    return ["Feed state at generation was not captured, so how current these values are is unknown."];
+  }
+  const age = freshness.ageMs === null ? null : formatAge(freshness.ageMs);
+  switch (freshness.state) {
+    case "live":
+      return hasFrame ? [] : ["No live frame had been received when this report was generated."];
+    case "stale":
+      return [`STALE: generated while the live feed was stale${age ? ` (last update ${age})` : ""}. Values are last known, not current.`];
+    case "disconnected":
+      return [`DISCONNECTED: generated while the live feed was disconnected${age ? ` (last data ${age})` : ""}. Values are last known, not current.`];
+    case "reconnecting":
+      return [`RECONNECTING: generated while the live feed was reconnecting${age ? ` (last data ${age})` : ""}. Values are last known, not current.`];
+    case "unavailable":
+      return ["UNAVAILABLE: generated while the backend was unavailable. Values are last known, not current."];
+    default:
+      return ["No live frame had been received when this report was generated."];
+  }
+}
+
+/** Pure. The provenance block for a report: same view-model as the UI, with "not reported by backend" for every gap. */
+export function buildReportProvenance(seed: ProvenanceSeed, capture: ReportCapture | null | undefined, generatedAt: string): ReportProvenance {
+  const frame = capture?.frame ?? null;
+  const captured = capture != null;
+  const feed = seed.feed;
+  const view = buildProvenance({
+    source: { kind: "report" },
+    origin: feed?.origin,
+    serverTime: feed?.tsIngest,
+    simTime: feed?.simTime,
+    physicsVersion: feed?.physicsVersion,
+    modelVersion: feed?.anomaly?.model_version ?? undefined,
+    detectorId: feed?.anomaly?.detector_id,
+    trainedOn: feed?.anomaly?.trained_on,
+    inputsFallback: [...seed.inputsFallback],
+    freshness: seed.usesLiveFeed ? capture?.freshness : undefined,
+    reconnectAttempt: capture?.reconnectAttempt,
+  });
+
+  const rows: ReportRow[] = view.detail.map((d) => {
+    const raw = d.id === "scenario" || d.id === "run" ? (d.reported ? d.value : NOT_AVAILABLE) : d.value.replace(/not reported/g, NOT_REPORTED);
+    const value = d.id === "freshness" && !seed.usesLiveFeed ? "not applicable (data is not from the live feed)" : raw;
+    return {
+      item: d.label,
+      value,
+      source: d.id === "origin" ? seed.originSource : (DETAIL_SOURCE[d.id] ?? NOT_REPORTED),
+    };
+  });
+  const scope =
+    view.origin.state === "simulated"
+      ? "Simulator-only — values come from the physics simulator, not measured telemetry."
+      : view.origin.state === "unverified"
+        ? "Unverified source — these values are not presented as measured."
+        : view.origin.text;
+  rows.push({ item: "Scope", value: scope, source: "origin (as reported)" });
+  if (seed.scenarioNote) rows.push({ item: "Scenario parameters", value: seed.scenarioNote, source: "Simulation Lab controls" });
+  rows.push(...seed.extraRows);
+  rows.push({ item: "Generated (browser time)", value: generatedAt, source: "browser clock at generation; not data time" });
+
+  return {
+    view,
+    captured,
+    capturedFrom: frame ? [frame] : [],
+    warnings: seed.usesLiveFeed ? stateWarning(capture?.freshness ?? null, captured, frame !== null) : [],
+    rows,
+    browserTime: generatedAt,
+  };
+}
+
+/** The provenance block as a section (the first one in every export). */
+export function provenanceSection(r: Report): ReportSection {
+  return {
+    title: "Provenance",
+    note: "Where these values came from. Fields the backend did not provide are stated as such.",
+    rows: [...r.provenance.rows],
+  };
+}
+
+/** Re-stamp a report with the feed state captured at generation (used when the builder was not given a capture). */
+export function attachCapture(report: Report, capture: ReportCapture): Report {
+  if (report.provenance.captured) return report;
+  return { ...report, provenance: buildReportProvenance(report.seed, { ...capture, browserTime: new Date(report.generatedAt) }, report.generatedAt) };
+}
+
+function finish(
+  base: Pick<Report, "kind" | "title" | "sections" | "caveats">,
+  seed: ProvenanceSeed,
+  capture: ReportCapture | null | undefined,
+): Report {
+  const generatedAt = (capture?.browserTime ?? new Date()).toISOString();
+  return { ...base, generatedAt, seed, provenance: buildReportProvenance(seed, capture, generatedAt) };
+}
+
+function feedSeedOf(s: LiveStatePayload): NonNullable<ProvenanceSeed["feed"]> {
+  return {
+    origin: s.origin,
+    tsIngest: s.ts_ingest,
+    simTime: s.sim_time,
+    physicsVersion: (s as { physics_version?: string }).physics_version,
+    anomaly: s.anomaly_status ?? null,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Operational
 // ---------------------------------------------------------------------------
 
 export interface OperationalInput {
-  liveState: StateResponse;
-  /** The 0-100 gauge value from useSimulation: clamp(score ÷ threshold × 50). */
-  anomalyGauge: number;
+  /** The latest live payload (anomaly_status, origin and times ride on it). */
+  liveState: StateResponse | LiveStatePayload;
+  /** @deprecated Not used. The gauge was a client-side normalisation; the report prints the backend's anomaly_status instead. */
+  anomalyGauge?: number;
   latestAnomaly: LatestAnomaly | null;
   /** Most recent PPO evaluation run from the Operations Console this session. */
   optimizeSummary: OptimizeSummary | null;
 }
 
-export function buildOperationalReport(input: OperationalInput): Report {
-  const { liveState: s, anomalyGauge, latestAnomaly, optimizeSummary } = input;
+const ANOMALY = "WS /ws/live → anomaly_status";
+
+export function buildOperationalReport(input: OperationalInput, capture?: ReportCapture | null): Report {
+  const { liveState: s, latestAnomaly, optimizeSummary } = input;
+  const live = s as LiveStatePayload;
+  const a = live.anomaly_status;
+
+  const anomalyRows: ReportRow[] = a
+    ? [
+        { item: "Pipeline status", value: String(a.status), source: `${ANOMALY}.status` },
+        { item: "Score", value: a.score === null ? "not scored" : a.score.toFixed(4), source: `${ANOMALY}.score` },
+        { item: "Detector threshold", value: a.threshold === null ? "not reported by backend" : a.threshold.toFixed(4), source: `${ANOMALY}.threshold` },
+        { item: "Type", value: a.type ?? "none", source: `${ANOMALY}.type` },
+        {
+          item: "Window filled",
+          value: a.window_filled !== undefined && a.window_size !== undefined ? `${a.window_filled} of ${a.window_size}` : "not reported by backend",
+          source: `${ANOMALY}.window_filled / window_size`,
+        },
+      ]
+    : [{ item: "Anomaly status", value: "not reported by backend", source: ANOMALY }];
+  anomalyRows.push({
+    item: "Most recent anomaly episode this session",
+    value: latestAnomaly ? `${latestAnomaly.type} — ${latestAnomaly.message}` : "None received",
+    source: `${ANOMALY} (type, message; first frame of each episode)`,
+  });
 
   const sections: ReportSection[] = [
     {
       title: "Facility state (latest live reading)",
-      note: `Reading timestamp reported by the backend: ${s.timestamp}`,
+      note: `Reading timestamp (simulated clock, not event time): ${s.timestamp}`,
       rows: [
         { item: "PUE", value: f(s.pue, 2), source: `${LIVE}.pue` },
         { item: "WUE (L/kWh)", value: f(s.wue, 3), source: `${LIVE}.wue` },
@@ -99,25 +307,17 @@ export function buildOperationalReport(input: OperationalInput): Report {
         { item: "Water consumed (L)", value: f(s.water_consumed_L, 0), source: `${LIVE}.water_consumed_L` },
       ],
     },
-    {
-      title: "Anomaly detector",
-      rows: [
-        {
-          item: "Gauge value (0–100; 50 = alert threshold)",
-          value: f(anomalyGauge, 0),
-          source: "GET /api/anomaly_score → clamp(score ÷ threshold × 50, 0, 100), computed in hooks/useSimulation.ts",
-        },
-        {
-          item: "Most recent alert this session",
-          value: latestAnomaly ? `${latestAnomaly.type} — ${latestAnomaly.message}` : "None received",
-          source: "GET /api/anomaly_score → type, message",
-        },
-      ],
-    },
+    { title: "Anomaly detector (server-side)", note: "Reported by the backend's anomaly pipeline; the browser does not score anything.", rows: anomalyRows },
   ];
 
+  const extraRows: ReportRow[] = [];
   if (optimizeSummary) {
     const o = optimizeSummary;
+    extraRows.push({
+      item: "Optimisation run",
+      value: "Experimental; simulator-only. Evaluation of the trained PPO policy, not a control action on a real facility.",
+      source: "POST /api/optimize",
+    });
     sections.push({
       title: "Most recent cooling optimization run (this session; experimental, simulator-only)",
       note: "Result of a 24h evaluation of the trained PPO policy, triggered from the Operations Console.",
@@ -135,20 +335,22 @@ export function buildOperationalReport(input: OperationalInput): Report {
   const caveats = [FACILITY_WIDE_CAVEAT];
   if (s.carbon_data_is_real === false) caveats.push(CARBON_FALLBACK_CAVEAT);
 
-  return {
-    kind: "operational",
-    title: "Operational report",
-    generatedAt: new Date().toISOString(),
-    sections,
-    caveats,
+  const seed: ProvenanceSeed = {
+    usesLiveFeed: true,
+    feed: feedSeedOf(live),
+    inputsFallback: s.carbon_data_is_real === false ? ["carbon"] : [],
+    scenarioNote: null,
+    extraRows,
+    originSource: "WS /ws/live → origin",
   };
+  return finish({ kind: "operational", title: "Operational report", sections, caveats }, seed, capture);
 }
 
 // ---------------------------------------------------------------------------
 // Sustainability
 // ---------------------------------------------------------------------------
 
-export function buildSustainabilityReport(s: StateResponse): Report {
+export function buildSustainabilityReport(s: StateResponse | LiveStatePayload, capture?: ReportCapture | null): Report {
   const rows: ReportRow[] = [
     { item: "WUE (L/kWh)", value: f(s.wue, 3), source: `${LIVE}.wue` },
     { item: "Water consumed (L)", value: f(s.water_consumed_L, 0), source: `${LIVE}.water_consumed_L` },
@@ -195,19 +397,21 @@ export function buildSustainabilityReport(s: StateResponse): Report {
   const sections: ReportSection[] = [
     {
       title: "Water and efficiency (latest live reading)",
-      note: `Reading timestamp reported by the backend: ${s.timestamp}`,
+      note: `Reading timestamp (simulated clock, not event time): ${s.timestamp}`,
       rows,
     },
   ];
   if (carbonRows.length > 0) sections.push({ title: "Carbon (real grid data)", rows: carbonRows });
 
-  return {
-    kind: "sustainability",
-    title: "Sustainability report",
-    generatedAt: new Date().toISOString(),
-    sections,
-    caveats,
+  const seed: ProvenanceSeed = {
+    usesLiveFeed: true,
+    feed: feedSeedOf(s as LiveStatePayload),
+    inputsFallback: s.carbon_data_is_real === true ? [] : ["carbon"],
+    scenarioNote: null,
+    extraRows: [],
+    originSource: "WS /ws/live → origin",
   };
+  return finish({ kind: "sustainability", title: "Sustainability report", sections, caveats }, seed, capture);
 }
 
 // ---------------------------------------------------------------------------
@@ -219,11 +423,11 @@ export interface SimulationInput {
   cfgB: SimConfig;
   a: WhatIfResponse;
   b: WhatIfResponse;
-  /** Measured-now reference, when the live feed is connected. */
-  liveState: StateResponse | null;
+  /** Live-feed reference (the latest simulated reading), when the feed is connected. */
+  liveState: StateResponse | LiveStatePayload | null;
 }
 
-export function buildSimulationReport({ cfgA, cfgB, a, b, liveState }: SimulationInput): Report {
+export function buildSimulationReport({ cfgA, cfgB, a, b, liveState }: SimulationInput, capture?: ReportCapture | null): Report {
   const W = "GET /api/whatif →";
   const inputRow = (label: string, va: string, vb: string) => [label, va, vb, "Simulation Lab controls (sent as /api/whatif query params)"];
 
@@ -263,8 +467,8 @@ export function buildSimulationReport({ cfgA, cfgB, a, b, liveState }: Simulatio
 
   if (liveState) {
     sections.push({
-      title: "Measured now (for reference, not part of either scenario)",
-      note: `Reading timestamp reported by the backend: ${liveState.timestamp}`,
+      title: "Live feed now (for reference, not part of either scenario)",
+      note: `Reading timestamp (simulated clock, not event time): ${liveState.timestamp}. Origin of this reference: ${(liveState as LiveStatePayload).origin ?? "not reported by backend"}.`,
       rows: [
         { item: "PUE", value: f(liveState.pue, 2), source: `${LIVE}.pue` },
         { item: "WUE (L/kWh)", value: f(liveState.wue, 3), source: `${LIVE}.wue` },
@@ -279,42 +483,47 @@ export function buildSimulationReport({ cfgA, cfgB, a, b, liveState }: Simulatio
   ];
   if (!a.carbon_data_is_real || !b.carbon_data_is_real) caveats.push(CARBON_FALLBACK_CAVEAT);
 
-  return {
-    kind: "simulation",
-    title: "Simulation report",
-    generatedAt: new Date().toISOString(),
-    sections,
-    caveats,
+  // The /api/whatif response carries no origin, physics version or run/scenario id: they are stated as not reported.
+  const seed: ProvenanceSeed = {
+    usesLiveFeed: false,
+    feed: null,
+    inputsFallback: !a.carbon_data_is_real || !b.carbon_data_is_real ? ["carbon"] : [],
+    scenarioNote: "Scenario A and B inputs are listed in the \"Scenario inputs\" table below (preview of what these settings would produce).",
+    extraRows: [{ item: "Kind", value: "Preview — what this configuration would produce (GET /api/whatif); not the live facility", source: "report endpoint class (frontend-known)" }],
+    originSource: "GET /api/whatif → (no origin field)",
   };
+  return finish({ kind: "simulation", title: "Simulation report", sections, caveats }, seed, capture);
 }
 
 // ---------------------------------------------------------------------------
 // Incident
 // ---------------------------------------------------------------------------
 
-export function buildIncidentReport(alerts: AlertRecord[]): Report {
+export function buildIncidentReport(alerts: AlertRecord[], capture?: ReportCapture | null): Report {
   const bySeverity = new Map<string, number>();
   for (const a of alerts) bySeverity.set(a.severity, (bySeverity.get(a.severity) ?? 0) + 1);
   const acknowledged = alerts.filter((a) => a.acknowledged).length;
+  const inList = `in the list of ${alerts.length} fetched`;
+  const NR = "not reported by backend";
 
   const sections: ReportSection[] = [
     {
       title: "Summary",
-      note: "Counts below are tallied from the alert rows listed in this report (derived), not separately reported by the backend.",
+      note: `Counts below are tallied from the alert rows listed in this report (${inList}), not separately reported by the backend, and are not totals for all alerts.`,
       rows: [
-        { item: "Alerts included", value: String(alerts.length), source: "GET /api/alerts (most recent 50, newest first)" },
+        { item: "Alerts fetched", value: String(alerts.length), source: "GET /api/alerts (most recent first; limited request)" },
         ...[...bySeverity.entries()].map(([sev, n]) => ({
-          item: `Severity ${sev}`,
+          item: `Severity ${sev} (${inList})`,
           value: String(n),
           source: "GET /api/alerts → severity (counted)",
         })),
-        { item: "Acknowledged", value: `${acknowledged} of ${alerts.length}`, source: "GET /api/alerts → acknowledged (counted)" },
+        { item: `Acknowledged (${inList})`, value: `${acknowledged} of ${alerts.length}`, source: "GET /api/alerts → acknowledged (counted)" },
       ],
     },
     {
       title: "Alerts",
       table: {
-        columns: ["ID", "Time", "Severity", "Type", "Message", "Score", "Acknowledged"],
+        columns: ["ID", "Time", "Severity", "Type", "Message", "Score", "Acknowledged", "Origin", "Model version"],
         rows: alerts.map((a) => [
           String(a.id),
           a.created_at ?? "Unknown",
@@ -323,21 +532,34 @@ export function buildIncidentReport(alerts: AlertRecord[]): Report {
           a.message,
           a.score.toFixed(4),
           a.acknowledged ? `Yes (${a.acknowledged_by ?? "unknown"})` : "No",
+          a.origin ?? NR,
+          a.model_version ?? NR,
         ]),
       },
-      note: "Columns map directly to GET /api/alerts fields: id, created_at, severity, type, message, score, acknowledged / acknowledged_by.",
+      note: "Columns map directly to GET /api/alerts fields: id, created_at, severity, type, message, score, acknowledged / acknowledged_by, origin, model_version.",
     },
   ];
 
-  return {
-    kind: "incident",
-    title: "Incident report",
-    generatedAt: new Date().toISOString(),
-    sections,
-    caveats: [
-      "Alerts are facility-wide detections. The backend does not attribute an alert to a rack, and it does not store a facility-state snapshot with each alert -- so no per-alert temperatures, power draw or rack are shown, and current live readings are deliberately not substituted.",
-    ],
+  const seed: ProvenanceSeed = {
+    usesLiveFeed: false,
+    feed: null,
+    inputsFallback: [],
+    scenarioNote: null,
+    extraRows: [{ item: "Per-alert provenance", value: "Origin and model version are listed per alert in the Alerts table; no combined origin is computed here.", source: "GET /api/alerts → origin, model_version" }],
+    originSource: "GET /api/alerts → origin (per alert; see table)",
   };
+  return finish(
+    {
+      kind: "incident",
+      title: "Incident report",
+      sections,
+      caveats: [
+        "Alerts are facility-wide detections. The backend does not attribute an alert to a rack, and it does not store a facility-state snapshot with each alert -- so no per-alert temperatures, power draw or rack are shown, and current live readings are deliberately not substituted.",
+      ],
+    },
+    seed,
+    capture,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -348,8 +570,10 @@ const mdCell = (v: string) => v.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 
 export function reportToMarkdown(r: Report): string {
   const out: string[] = [];
-  out.push(`# ${r.title}`, "", `Generated: ${new Date(r.generatedAt).toLocaleString()} (${r.generatedAt})`, "");
-  for (const s of r.sections) {
+  out.push(`# ${r.title}`, "", `Generated (browser time): ${r.generatedAt}`, "");
+  // Stale / disconnected / not-captured is stated in the first lines.
+  for (const w of r.provenance.warnings) out.push(`**Data currency — ${w}**`, "");
+  for (const s of [provenanceSection(r), ...r.sections]) {
     out.push(`## ${s.title}`, "");
     if (s.note) out.push(s.note, "");
     if (s.rows) {
@@ -377,8 +601,9 @@ const esc = (v: string) =>
 /** Self-contained HTML (inline CSS) for print / Save-as-PDF in a new window. */
 export function reportToHtml(r: Report): string {
   const parts: string[] = [];
-  parts.push(`<h1>${esc(r.title)}</h1>`, `<p class="meta">Generated: ${esc(new Date(r.generatedAt).toLocaleString())}</p>`);
-  for (const s of r.sections) {
+  parts.push(`<h1>${esc(r.title)}</h1>`, `<p class="meta">Generated (browser time): ${esc(new Date(r.generatedAt).toLocaleString())}</p>`);
+  for (const w of r.provenance.warnings) parts.push(`<p class="warn"><strong>Data currency — ${esc(w)}</strong></p>`);
+  for (const s of [provenanceSection(r), ...r.sections]) {
     parts.push(`<h2>${esc(s.title)}</h2>`);
     if (s.note) parts.push(`<p class="note">${esc(s.note)}</p>`);
     if (s.rows) {
@@ -395,6 +620,6 @@ export function reportToHtml(r: Report): string {
   if (r.caveats.length > 0) {
     parts.push('<h2>Caveats</h2><ul class="caveats">', ...r.caveats.map((c) => `<li>${esc(c)}</li>`), "</ul>");
   }
-  const css = `body{font:13px/1.45 system-ui,Segoe UI,Arial,sans-serif;color:#111;margin:28px}h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;margin:20px 0 6px}.meta,.note{color:#555;margin:2px 0 8px}table{border-collapse:collapse;width:100%;margin:4px 0 8px}th,td{border:1px solid #ccc;padding:4px 7px;text-align:left;vertical-align:top}th{background:#f2f2f2}.v{font-family:ui-monospace,Consolas,monospace}.src{color:#555;font-size:11px}.caveats{background:#fff7e0;border:1px solid #e6c766;padding:8px 8px 8px 26px}`;
+  const css = `body{font:13px/1.45 system-ui,Segoe UI,Arial,sans-serif;color:#111;margin:28px}h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;margin:20px 0 6px}.meta,.note{color:#555;margin:2px 0 8px}.warn{background:#fdecea;border:1px solid #d9534f;padding:6px 8px}table{border-collapse:collapse;width:100%;margin:4px 0 8px}th,td{border:1px solid #ccc;padding:4px 7px;text-align:left;vertical-align:top}th{background:#f2f2f2}.v{font-family:ui-monospace,Consolas,monospace}.src{color:#555;font-size:11px}.caveats{background:#fff7e0;border:1px solid #e6c766;padding:8px 8px 8px 26px}`;
   return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(r.title)}</title><style>${css}</style></head><body>${parts.join("")}</body></html>`;
 }
