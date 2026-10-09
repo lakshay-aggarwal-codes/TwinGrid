@@ -1,14 +1,16 @@
 """T16: telemetry_sample table + sensor.source_tz.
 
-Revision ID: 20261003000000
-Revises: 20261002000000
-Create Date: 2026-10-03
+Revision ID: 20261004000000
+Revises: 20261003000000
+Create Date: 2026-10-04
 
 Additive. Adds ``sensor.source_tz`` (NOT NULL, server default 'UTC') and creates ``telemetry_sample``
 (roadmap §9.1). ``sensor_readings`` is untouched. Downgrade drops the table and the added column.
 
-NOTE (chain): this extends the T9 branch. The snapshot already has several heads (M1/alert-integrity/T9
-all revise 20250223000000); merging them is not part of T16.
+NOTE (chain, T10-fix): T16 originally shared revision id 20261003000000 with T15
+(audit_log_completion), causing a duplicate-head error. It is now renumbered
+20261004000000 and chains onto T15 (20261003000000). The upgrade/downgrade bodies
+are unchanged.
 """
 
 from typing import Sequence, Union
@@ -16,8 +18,8 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "20261003000000"
-down_revision: Union[str, None] = "20261002000000"
+revision: str = "20261004000000"
+down_revision: Union[str, None] = "20261003000000"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

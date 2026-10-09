@@ -1,0 +1,21 @@
+{
+  "hours": 24,
+  "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+  "inputs": {
+    "utilisation": 0.65,
+    "outside_temp_C": 38.0,
+    "water_stress": 0.0,
+    "mode": "auto",
+    "chilled_water_temp_C": 7.0
+  },
+  "mean_pue": 1.416075536017105,
+  "wue": 2.2556955440980446,
+  "total_water_L": 21383.993758049477,
+  "total_energy_kwh": 13424.396081442237,
+  "total_co2_kg": 6376.5881386850715,
+  "max_outlet_temp_C": 36.73735821275013,
+  "final_cooling_mode": "evaporative",
+  "drought_override_active": false,
+  "carbon_data_is_real": false,
+  "scenario_id": "whatif-heat-wave"
+}

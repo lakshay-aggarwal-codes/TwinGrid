@@ -26,9 +26,11 @@ from alembic.script import ScriptDirectory  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# The intended order of the three provenance/facility migrations, after the last legacy one.
+# The intended order of the five provenance/facility/audit/telemetry migrations, after the last legacy one.
 LEGACY_HEAD = "20250223000000"
 M1, M2, M3 = "20261001000000", "20261001000001", "20261002000000"
+# M4 = T15 (audit-log completion); M5 = T16 (telemetry_sample, renumbered from 20261003000000).
+M4, M5 = "20261003000000", "20261004000000"
 
 
 def _script() -> ScriptDirectory:
@@ -58,7 +60,7 @@ def _tables(db: Path) -> set[str]:
 
 
 def test_single_head():
-    assert _script().get_heads() == [M3]
+    assert _script().get_heads() == [M5]
 
 
 def test_revision_ids_are_unique():
@@ -71,13 +73,15 @@ def test_revision_ids_are_unique():
 def test_chain_is_linear_and_in_the_agreed_order():
     script = _script()
     ordered = [rev.revision for rev in script.walk_revisions("base", "heads")][::-1]  # oldest first
-    assert ordered[-4:] == [LEGACY_HEAD, M1, M2, M3]
+    assert ordered[-6:] == [LEGACY_HEAD, M1, M2, M3, M4, M5]
     for rev in script.walk_revisions():
         assert not rev.is_branch_point, f"{rev.revision} has more than one child"
         assert not rev.is_merge_point, f"{rev.revision} is a merge point"
     assert script.get_revision(M1).down_revision == LEGACY_HEAD
     assert script.get_revision(M2).down_revision == M1
     assert script.get_revision(M3).down_revision == M2
+    assert script.get_revision(M4).down_revision == M3
+    assert script.get_revision(M5).down_revision == M4
 
 
 # ----------------------------------------------------------------------------- SQLite round trip
@@ -99,7 +103,7 @@ def test_upgrade_downgrade_upgrade_on_sqlite(tmp_path):
 
     current = _alembic(db, "current")
     assert current.returncode == 0, current.stderr
-    assert M3 in current.stdout
+    assert M5 in current.stdout
 
 
 def test_orm_matches_migrations_no_autogenerate_diff(tmp_path):

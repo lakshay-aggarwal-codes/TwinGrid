@@ -12,9 +12,8 @@ No assets, poses or edges are created here -- the 36-rack layout is seeded by
 ``scripts/seed_facility.py`` only after the owner signs off the scene-unit ->
 metre factor (roadmap section 25, decision 5).
 
-NOTE (chain): M1 (T1b) and M2 (T3) are not present in this snapshot, so this
-revision chains onto the current head. When M1/M2 land, re-point
-``down_revision`` (or add a merge revision); M3 touches none of their columns.
+NOTE (chain, T10): M3 now follows M2 (20261001000001), which follows M1
+(20261001000000). M3 touches none of their columns.
 
 Partial unique indexes use both ``postgresql_where`` and ``sqlite_where`` so the
 same constraints hold on production (PostgreSQL) and in the SQLite test engine.
@@ -26,7 +25,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "20261002000000"
-down_revision: Union[str, None] = "20250223000000"
+down_revision: Union[str, None] = "20261001000001"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
