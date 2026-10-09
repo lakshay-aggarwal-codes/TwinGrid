@@ -102,9 +102,14 @@ async def test_healthz_reports_database_ok(client):
     assert r.json()["database"] == "ok"
 
 
-async def test_metrics_exposes_prometheus_text(client):
+async def test_metrics_exposes_prometheus_text(client, monkeypatch):
+    # /metrics is bearer-protected whenever METRICS_TOKEN is set (a developer .env sets it), so the test supplies
+    # its own token instead of depending on the ambient environment.
+    monkeypatch.delenv("METRICS_TOKEN_FILE", raising=False)
+    monkeypatch.setenv("METRICS_TOKEN", "suite-metrics-token-0123456789abcdef")
     await client.get("/healthz")
-    r = await client.get("/metrics")
+    assert (await client.get("/metrics")).status_code == 401
+    r = await client.get("/metrics", headers={"Authorization": "Bearer suite-metrics-token-0123456789abcdef"})
     assert r.status_code == 200
     assert "http_requests_total" in r.text
 

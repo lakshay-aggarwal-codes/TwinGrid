@@ -136,7 +136,7 @@ class SensorReading(Base):
     source: Mapped[str] = mapped_column(String(32), nullable=False, index=True)  # api | ws | simulation | optimization
 
     # State fields (align with DataCentreState / API response)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     server_utilisation: Mapped[float] = mapped_column(Float, nullable=False)
     outside_temp_C: Mapped[float] = mapped_column(Float, nullable=False)
     server_inlet_temp_C: Mapped[float] = mapped_column(Float, nullable=False)
@@ -152,6 +152,11 @@ class SensorReading(Base):
     water_pressure_bar: Mapped[float] = mapped_column(Float, nullable=False)
     cooling_mode: Mapped[str] = mapped_column(String(32), nullable=False)
     anomaly: Mapped[int] = mapped_column(Integer, default=0)
+
+    # T1b / M1 provenance. ``origin`` is filled by the database default ('simulated') when a writer does not set
+    # it; ``physics_version`` stays NULL for writers that predate versioning.
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, server_default=text("'simulated'"))
+    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     # T9 / M3: facility ownership reference. Nullable and additive: existing writers
     # do not set it yet (backfilled to the default facility by migration M3).
@@ -178,12 +183,22 @@ class SensorReading(Base):
         *,
         simulation_run_id: int | None = None,
         optimization_result_id: int | None = None,
+        origin: str | None = None,
+        physics_version: str | None = None,
     ) -> "SensorReading":
         """Build SensorReading from API/twin state dict (e.g. DataCentreState.to_dict())."""
         # T12: no substitution of "now" for a missing/unparseable timestamp, and no naive values.
         # Raises src.timeutil.TimeContractError (a ValueError) instead.
         ts = parse_timestamp(d.get("timestamp"))
+        # Provenance is only set when given: an unset ``origin`` must reach the database as "absent" so the
+        # server default applies (an explicit None would be inserted as NULL and violate NOT NULL).
+        provenance: dict[str, Any] = {}
+        if origin is not None:
+            provenance["origin"] = origin
+        if physics_version is not None:
+            provenance["physics_version"] = physics_version
         return cls(
+            **provenance,
             source=source,
             timestamp=ts,
             server_utilisation=float(d["server_utilisation"]),
@@ -243,6 +258,9 @@ class SimulationRun(Base):
     utilisation: Mapped[float] = mapped_column(Float, nullable=False)
     stress: Mapped[float] = mapped_column(Float, nullable=False)
 
+    # T1b / M1 provenance (NULL for runs written before versioning).
+    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+
     # T9 / M3: facility ownership reference. Nullable and additive: existing writers
     # do not set it yet (backfilled to the default facility by migration M3).
     facility_id: Mapped[Optional[int]] = mapped_column(ForeignKey("facility.id", ondelete="RESTRICT"), nullable=True)
@@ -279,6 +297,10 @@ class OptimizationResult(Base):
     total_water_consumed_L: Mapped[float] = mapped_column(Float, nullable=False)
     total_reward: Mapped[float] = mapped_column(Float, nullable=False)
     safety_violations: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # T1b / M1 provenance (NULL for results written before versioning).
+    physics_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    model_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     # Full results array as JSON (each element is a state dict)
     results_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)

@@ -21,7 +21,7 @@ from alembic.script import ScriptDirectory
 from sqlalchemy.orm import Session
 
 from models.db_models import Base, OptimizationResult, SensorReading, SimulationRun
-from src.versions import ORIGIN_SIMULATED, PHYSICS_VERSION
+from src.versions import KNOWN_PHYSICS_VERSIONS, LEGACY_PHYSICS_VERSION, ORIGIN_SIMULATED, PHYSICS_VERSION
 
 ROOT = Path(__file__).resolve().parent.parent
 M1_PATH = ROOT / "alembic" / "versions" / "20261001000000_m1_provenance.py"
@@ -74,15 +74,17 @@ def pre_m1_engine():
 
 
 def test_physics_version_constant():
-    assert PHYSICS_VERSION == "legacy-0"
+    # The M1 backfill label is frozen at "legacy-0"; the version new work runs under has since moved on.
+    assert LEGACY_PHYSICS_VERSION == "legacy-0"
+    assert PHYSICS_VERSION in KNOWN_PHYSICS_VERSIONS
     assert ORIGIN_SIMULATED == "simulated"
 
 
-def test_m1_is_the_single_head_and_follows_the_previous_head():
+def test_m1_follows_the_previous_head_and_is_in_the_chain():
     cfg = Config()
     cfg.set_main_option("script_location", str(ROOT / "alembic"))
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_heads() == ["20261001000000"]
+    # The single-head / full-order checks live in tests/test_alembic_chain.py; M1 stays on the legacy head.
     assert script.get_revision("20261001000000").down_revision == "20250223000000"
 
 
@@ -194,7 +196,9 @@ def test_from_state_dict_without_provenance_leaves_defaults_to_the_database():
 
 
 def test_from_state_dict_carries_explicit_provenance():
-    reading = SensorReading.from_state_dict(STATE, "ws", origin=ORIGIN_SIMULATED, physics_version=PHYSICS_VERSION)
+    reading = SensorReading.from_state_dict(
+        STATE, "ws", origin=ORIGIN_SIMULATED, physics_version=LEGACY_PHYSICS_VERSION
+    )
     assert (reading.origin, reading.physics_version) == ("simulated", "legacy-0")
     assert reading.timestamp == datetime(2026, 3, 1, tzinfo=timezone.utc)
 
