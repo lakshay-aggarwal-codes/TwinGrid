@@ -35,6 +35,9 @@ KNOWN_PHYSICS_VERSIONS: tuple[str, ...] = (LEGACY_PHYSICS_VERSION, PHYSICS_V1, P
 # The version new work is done under.
 PHYSICS_VERSION = PHYSICS_V1
 
+# Provenance label for a reading produced by the simulator (sensor_readings.origin; migration M1 default).
+ORIGIN_SIMULATED = "simulated"
+
 # Version of THE safety envelope definition (src.digital_twin.SAFETY_ENVELOPE) and of every consumer that
 # must agree with it (twin ``is_safe``, the RL safety penalty, the optimizer's violation count).
 #   "1"  (implicit, never recorded) outlet-only penalty/violation count; inlet and PUE were not checked
