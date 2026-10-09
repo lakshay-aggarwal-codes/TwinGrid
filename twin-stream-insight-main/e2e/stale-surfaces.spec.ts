@@ -13,14 +13,16 @@ test("dropping the real socket leaves no current-looking value; restoring it bri
   test.setTimeout(180_000);
 
   let dropped = false;
-  let current: { page: WebSocketRoute; server: WebSocketRoute } | null = null;
+  // Held in an object property: TypeScript does not narrow property writes made inside callbacks, whereas a bare
+  // `let` assigned in the callback is narrowed to `null`/`never` at the use site.
+  const conn: { current: { page: WebSocketRoute; server: WebSocketRoute } | null } = { current: null };
   await page.routeWebSocket(/\/ws\/live/, (ws) => {
     if (dropped) {
       void ws.close({ code: 1012, reason: "e2e: socket dropped" });
       return;
     }
     const server = ws.connectToServer(); // forwards frames both ways, unmodified
-    current = { page: ws, server };
+    conn.current = { page: ws, server };
   });
 
   await signIn(page);
@@ -33,8 +35,8 @@ test("dropping the real socket leaves no current-looking value; restoring it bri
 
   // Drop: the open connection is closed and every reconnect attempt is refused.
   dropped = true;
-  await current?.server.close();
-  await current?.page.close({ code: 1012, reason: "e2e: socket dropped" });
+  await conn.current?.server.close();
+  await conn.current?.page.close({ code: 1012, reason: "e2e: socket dropped" });
 
   const liveness = page.getByTestId("liveness");
   await expect(liveness).not.toHaveAttribute("data-liveness", "live");
