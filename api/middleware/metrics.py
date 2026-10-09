@@ -29,6 +29,14 @@ BACKGROUND_LOOP_LAST_SUCCESS = Gauge(
     ["loop"],
     registry=registry,
 )
+# T16: telemetry ingest. The sample counter is labelled by per-sample outcome (src/telemetry/validation.py OUTCOMES);
+# the batch counter's name is the one tests/test_telemetry_ingest.py reads.
+TELEMETRY_BATCHES_TOTAL = Counter(
+    "telemetry_ingest_batches_total", "Telemetry ingest batches processed", registry=registry
+)
+TELEMETRY_SAMPLES_TOTAL = Counter(
+    "telemetry_samples_total", "Telemetry samples by ingest outcome", ["outcome"], registry=registry
+)
 WS_CONNECTIONS = Gauge("ws_connections", "WebSocket clients currently registered for live broadcast", registry=registry)
 WS_DROPPED_MESSAGES = Counter(
     "ws_dropped_messages_total",

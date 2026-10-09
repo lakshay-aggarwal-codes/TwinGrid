@@ -4,11 +4,13 @@ import asyncio
 import logging
 import os
 import random
+from collections import deque
+from dataclasses import dataclass, field
 
 import numpy as np
-from fastapi import WebSocket
 
 from api import config
+from api.middleware.metrics import WS_CONNECTIONS, WS_DROPPED_MESSAGES
 from api.serialization import to_jsonable
 from api.services import anomaly_service, telemetry_window
 from api.services.twin_service import get_twin
@@ -23,6 +25,8 @@ from src.versions import PHYSICS_V1
 logger = logging.getLogger(__name__)
 
 BROADCAST_INTERVAL_SECONDS = 3
+# Name under which api/main.py registers the loop with the supervisor; /readyz reads the same name.
+BROADCAST_LOOP_NAME = "broadcast"
 
 # --- Live payload provenance (T1a, additive) --------------------------------
 # WS_SCHEMA_VERSION: version of the additive provenance fields below.
@@ -82,36 +86,191 @@ _water_stress_state = 0.2
 _WATER_STRESS_STEP = 0.02
 
 
+class ConnectionLimitExceeded(Exception):
+    """A new socket would exceed the per-user or global cap (``scope`` is ``"user"`` or ``"global"``)."""
+
+    def __init__(self, scope: str) -> None:
+        super().__init__(f"WebSocket connection limit reached ({scope})")
+        self.scope = scope
+
+
+# Close codes sent by the fan-out itself (the session-control codes live in api/routes/websocket_routes.py).
+WS_CLOSE_SLOW_CLIENT = 1013  # try again later: send timed out, or too many consecutive dropped frames
+WS_CLOSE_SEND_FAILED = 1011  # a send raised
+_CLOSE_TIMEOUT_S = 1.0
+_SERIAL = "serial"
+_CONCURRENT = "concurrent"
+
+
+@dataclass
+class _Channel:
+    """Per-client outbound state: a bounded queue (drop-oldest) drained by one writer task."""
+
+    ws: object
+    pending: deque = field(default_factory=deque)
+    wake: asyncio.Event = field(default_factory=asyncio.Event)
+    task: asyncio.Task | None = None
+    dropped_frames: int = 0
+    consecutive_drops: int = 0
+
+
 class ConnectionManager:
-    """Tracks active WebSocket connections and broadcasts to all of them."""
+    """Tracks live WebSocket connections and fans one payload out to all of them.
 
-    def __init__(self) -> None:
-        self._connections: set[WebSocket] = set()
+    * T4a: optional per-user / global connection caps, checked atomically in ``connect``. The counts are
+      kept in ``_owners`` / ``_per_user`` and released only by ``disconnect`` (what the route's ``finally``
+      calls), so a socket that ``broadcast`` evicted still counts until its handler has actually ended.
+    * T4b / T18: ``broadcast`` never awaits a client. Each client has a bounded queue (drop-oldest, so the
+      newest state wins) and its own writer task; a send that does not finish within ``send_timeout`` closes
+      the client with 1013, a send that raises closes it with 1011, and ``max_consecutive_drops`` dropped
+      frames without one completed send closes it with 1013. One slow client therefore cannot delay others.
+    * ``mode="serial"`` (BROADCAST_MODE=sequential) is the rollback: the old awaited, one-by-one send.
+    """
 
-    def connect(self, websocket: WebSocket) -> None:
+    def __init__(
+        self,
+        *,
+        send_timeout: float | None = None,
+        queue_depth: int | None = None,
+        mode: str | None = None,
+        max_consecutive_drops: int | None = None,
+    ) -> None:
+        self._send_timeout = send_timeout if send_timeout is not None else config.ws_send_timeout_s()
+        self._queue_depth = queue_depth if queue_depth is not None else config.ws_client_queue_max()
+        self._max_consecutive_drops = (
+            max_consecutive_drops if max_consecutive_drops is not None else config.ws_max_consecutive_drops()
+        )
+        if mode is None:
+            self._mode = config.broadcast_mode()
+        else:
+            self._mode = config._BROADCAST_MODES.get(str(mode).strip().lower(), _CONCURRENT)
+        self._connections: set = set()
+        self._channels: dict = {}
+        self._owners: dict = {}  # ws -> user id (only sockets registered with a user)
+        self._per_user: dict = {}  # user id -> number of registered sockets
+        self._closers: set[asyncio.Task] = set()
+
+    # ------------------------------------------------------------------ registration
+    def connect(
+        self,
+        websocket,
+        user_id: str | None = None,
+        *,
+        max_per_user: int | None = None,
+        max_global: int | None = None,
+    ) -> None:
+        """Register ``websocket``. With ``user_id`` and caps, raise ``ConnectionLimitExceeded`` BEFORE
+        registering anything (check and registration happen with no await between them)."""
+        if user_id is not None:
+            if max_per_user is not None and self._per_user.get(user_id, 0) >= max_per_user:
+                raise ConnectionLimitExceeded("user")
+            if max_global is not None and len(self._owners) >= max_global:
+                raise ConnectionLimitExceeded("global")
+            if websocket not in self._owners:
+                self._owners[websocket] = user_id
+                self._per_user[user_id] = self._per_user.get(user_id, 0) + 1
         self._connections.add(websocket)
+        self._channels.setdefault(websocket, _Channel(ws=websocket))
+        WS_CONNECTIONS.set(len(self._connections))
         logger.info("WebSocket connected (%d active)", len(self._connections))
 
-    def disconnect(self, websocket: WebSocket) -> None:
+    def disconnect(self, websocket) -> None:
+        """Release everything held for ``websocket``. Idempotent; a never-registered socket is a no-op."""
         self._connections.discard(websocket)
+        self._drop_channel(websocket)
+        user_id = self._owners.pop(websocket, None)
+        if user_id is not None:
+            left = self._per_user.get(user_id, 0) - 1
+            if left > 0:
+                self._per_user[user_id] = left
+            else:
+                self._per_user.pop(user_id, None)
+        WS_CONNECTIONS.set(len(self._connections))
         logger.info("WebSocket disconnected (%d active)", len(self._connections))
 
     def has_connections(self) -> bool:
         return bool(self._connections)
 
+    # ------------------------------------------------------------------ fan-out
     async def broadcast(self, payload: dict) -> None:
         if not self._connections:
             return
-        dead: list[WebSocket] = []
-        # Iterate a snapshot: connect()/disconnect() can run while we await a
-        # send, and mutating a set during iteration raises RuntimeError.
+        if self._mode == _SERIAL:
+            await self._broadcast_serial(payload)
+            return
+        for ws in list(self._connections):  # snapshot: connect/disconnect can run while we iterate
+            channel = self._channels.get(ws)
+            if channel is None:
+                channel = self._channels[ws] = _Channel(ws=ws)
+            if len(channel.pending) >= self._queue_depth:
+                channel.pending.popleft()  # drop-oldest: the newest state wins
+                channel.dropped_frames += 1
+                channel.consecutive_drops += 1
+                WS_DROPPED_MESSAGES.inc()
+                if channel.consecutive_drops >= self._max_consecutive_drops:
+                    self._evict(ws, WS_CLOSE_SLOW_CLIENT)
+                    continue
+            channel.pending.append(payload)
+            channel.wake.set()
+            if channel.task is None or channel.task.done():
+                channel.task = asyncio.get_running_loop().create_task(self._writer(channel), name="ws-writer")
+
+    async def _broadcast_serial(self, payload: dict) -> None:
         for ws in list(self._connections):
             try:
                 await ws.send_json(payload)
             except Exception:
-                dead.append(ws)
-        for ws in dead:
-            self._connections.discard(ws)
+                self._evict(ws, WS_CLOSE_SEND_FAILED)
+
+    async def _writer(self, channel: _Channel) -> None:
+        ws = channel.ws
+        while True:
+            if not channel.pending:
+                channel.wake.clear()
+                await channel.wake.wait()
+                continue
+            frame = channel.pending.popleft()
+            try:
+                await asyncio.wait_for(ws.send_json(frame), self._send_timeout)
+            except asyncio.CancelledError:
+                raise
+            except asyncio.TimeoutError:
+                self._evict(ws, WS_CLOSE_SLOW_CLIENT, from_writer=True)
+                return
+            except Exception:
+                self._evict(ws, WS_CLOSE_SEND_FAILED, from_writer=True)
+                return
+            channel.consecutive_drops = 0
+
+    # ------------------------------------------------------------------ eviction
+    def _drop_channel(self, ws, *, keep_task: bool = False) -> None:
+        channel = self._channels.pop(ws, None)
+        if channel is not None and channel.task is not None and not keep_task and not channel.task.done():
+            channel.task.cancel()
+
+    def _evict(self, ws, code: int, *, from_writer: bool = False) -> None:
+        """Remove ``ws`` from fan-out and close it. The user/global counts are NOT released here: the
+        route's handler still owns the socket until it ends and calls ``disconnect``."""
+        self._connections.discard(ws)
+        self._drop_channel(ws, keep_task=from_writer)  # the writer that evicts is already returning
+        WS_CONNECTIONS.set(len(self._connections))
+        logger.warning("WebSocket evicted from live broadcast (close code %d)", code)
+        close = getattr(ws, "close", None)
+        if close is None:
+            return
+        try:
+            task = asyncio.get_running_loop().create_task(self._close(close, code))
+        except RuntimeError:  # no running loop (synchronous caller): nothing to close with
+            return
+        self._closers.add(task)
+        task.add_done_callback(self._closers.discard)
+
+    @staticmethod
+    async def _close(close, code: int) -> None:
+        try:
+            await asyncio.wait_for(close(code=code), _CLOSE_TIMEOUT_S)
+        except Exception:  # already closed, or the peer is gone
+            pass
 
 
 manager = ConnectionManager()
@@ -225,17 +384,24 @@ async def _tick() -> dict:
     )
 
 
+async def broadcast_once() -> None:
+    """ONE iteration of the live loop, run by the supervisor (api/supervisor.py).
+
+    No clients -> no tick and no database write, but the iteration still returns normally, so the supervisor
+    keeps refreshing the heartbeat that /readyz reports. A failing tick raises: the supervisor restarts it.
+    """
+    if manager.has_connections():
+        payload = await _tick()
+        await manager.broadcast(payload)
+
+
 async def run_broadcast_loop() -> None:
-    """Runs forever (until cancelled at app shutdown). Started once in
-    api/main.py's lifespan, not per-connection."""
+    """Unsupervised loop (kept for tests and rollback); production runs ``broadcast_once`` under the
+    supervisor, started once in api/main.py's lifespan."""
     logger.info("Starting live broadcast loop (interval=%ds)", BROADCAST_INTERVAL_SECONDS)
     while True:
         try:
-            # No clients -> nobody to stream to, so don't advance the twin or
-            # write to the database at all (previously: a row every 3 s, 24/7).
-            if manager.has_connections():
-                payload = await _tick()
-                await manager.broadcast(payload)
+            await broadcast_once()
         except asyncio.CancelledError:
             logger.info("Broadcast loop cancelled")
             raise

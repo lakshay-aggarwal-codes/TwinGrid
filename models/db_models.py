@@ -81,6 +81,12 @@ class RefreshToken(Base):
     user: Mapped["User"] = relationship("User")
 
 
+AUDIT_OUTCOME_SUCCESS = "success"
+AUDIT_OUTCOME_DENIED = "denied"
+AUDIT_OUTCOME_FAILURE = "failure"
+AUDIT_OUTCOMES = (AUDIT_OUTCOME_SUCCESS, AUDIT_OUTCOME_DENIED, AUDIT_OUTCOME_FAILURE)
+
+
 class AuditLog(Base):
     """
     Append-only record of sensitive actions: operator account creation,
@@ -90,6 +96,8 @@ class AuditLog(Base):
     """
 
     __tablename__ = "audit_logs"
+    # Same name and predicate as alembic/versions/20261003000000_t15_audit_log_completion.py.
+    __table_args__ = (CheckConstraint("outcome IN ('success', 'denied', 'failure')", name="ck_audit_logs_outcome"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
@@ -104,7 +112,12 @@ class AuditLog(Base):
     resource_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     resource_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     details: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
-    ip_address: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    # T15 (migration 20261003000000): ``ip_address`` was renamed ``client_ip``; ``outcome`` and ``request_id`` added.
+    client_ip: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    outcome: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=AUDIT_OUTCOME_SUCCESS, server_default="success"
+    )
+    request_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
 
 
 class SensorReading(Base):
