@@ -1,7 +1,7 @@
 import { AlertCircle } from "lucide-react";
 import { StatusMessage } from "./StatusMessage";
-import { findRack, type FacilityLayout } from "@/three/facilityLayout.tsx";
-import { FALLBACK_BADGE, FALLBACK_REASON_TEXT, useTopology } from "@/three/facilityTopology.tsx";
+import { findRack, type FacilityLayout } from "@/three/facilityLayout";
+import { FALLBACK_BADGE, FALLBACK_REASON_TEXT, useTopology } from "@/three/facilityTopology";
 import { feedProvenance, noDataNotice, toReadout, type LiveFeed } from "@/three/visualizationModes";
 import { FreshnessChip, ProvenanceBadge, formatAge } from "@/provenance";
 

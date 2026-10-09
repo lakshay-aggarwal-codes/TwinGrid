@@ -257,7 +257,7 @@ def _p_capacity(ctx: _Ctx, e: Mapping[str, Any]) -> None:
 
 
 def _p_idle(ctx: _Ctx, e: Mapping[str, Any]) -> None:
-    from src import optimizer as opt
+    from src.rl import env as opt  # the env reads its own module globals; src.optimizer only re-exports them
 
     _patch_attr(ctx, opt, "IDLE_FRAC", e["mode"], e["value"])
 
@@ -327,7 +327,7 @@ def perturbed(entries: Sequence[Mapping[str, Any]]) -> Iterator[None]:
         for e in entries:
             _patcher_for(e["parameter"])(ctx, e)  # type: ignore[misc]
         if ctx.twin_kwargs:
-            from src import optimizer as opt
+            from src.rl import env as opt  # DataCentreEnv builds its twin from THIS module's DigitalTwin
 
             base, forced = opt.DigitalTwin, dict(ctx.twin_kwargs)
 

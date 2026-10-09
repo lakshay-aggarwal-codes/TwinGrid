@@ -285,7 +285,7 @@ def test_additive_and_set_modes():
 
 def test_plant_dynamics_perturbations_reach_the_environment_twin_and_are_restored():
     pytest.importorskip("gymnasium")
-    from src import optimizer as opt
+    from src.rl import env as opt  # DataCentreEnv lives here and reads its own module globals
 
     original = opt.DigitalTwin
     idle = opt.IDLE_FRAC

@@ -127,6 +127,8 @@ RATE_LIMIT_DEFAULTS: dict[str, tuple[str, str]] = {
     "webhook": ("RATE_LIMIT_WEBHOOK", "30/minute"),
     "optimize": ("RATE_LIMIT_OPTIMIZE", "10/minute"),
     "train_async": ("RATE_LIMIT_TRAIN_ASYNC", "5/minute"),
+    # T17: GET /api/telemetry/sensors/{external_id}/samples|gaps (own class: range reads are heavier than /state).
+    "telemetry_read": ("RATE_LIMIT_TELEMETRY_READ", "60/minute"),
     # T14: applied (at include_router level, see api/main.py) to every route that has no scope of its own.
     "general": ("RATE_LIMIT_GENERAL", "120/minute"),
 }
@@ -329,3 +331,120 @@ def shutdown_deadline_s() -> float:
 def readyz_check_schema() -> bool:
     """READYZ_CHECK_SCHEMA (default true). ``false`` skips the Alembic-head check (create_all-built dev databases)."""
     return os.getenv("READYZ_CHECK_SCHEMA", "true").strip().lower() not in {"0", "false", "no", "off"}
+
+
+# -----------------------------------------------------------------------------
+# Time contract (T20). Read on every call.
+# -----------------------------------------------------------------------------
+
+DEFAULT_SIM_STEP_SECONDS = 300  # A-1: one simulated tick is 5 minutes
+DEFAULT_SITE_TIMEZONE = "Asia/Kolkata"
+
+
+def sim_step_seconds() -> float:
+    """SIM_STEP_SECONDS (default 300): simulated seconds per live tick.
+
+    Unlike ``src.physics.v2.sim_step_seconds`` (which raises on a bad value) this is the *serving* read:
+    a malformed or non-positive value falls back to the strict default and says so in the log.
+    """
+    return _env_positive_float("SIM_STEP_SECONDS", float(DEFAULT_SIM_STEP_SECONDS))
+
+
+# -----------------------------------------------------------------------------
+# Telemetry store and MQTT consumer (T16/T17). Read on every call.
+# -----------------------------------------------------------------------------
+
+DEFAULT_TELEMETRY_MAX_SPAN_H = 168
+DEFAULT_TELEMETRY_FACILITY_ID = 1
+DEFAULT_MQTT_QUEUE_MAX = 10_000
+
+# The five anomaly-model inputs, in the model's own order (models/anomaly/config.json: feature_columns).
+TELEMETRY_FEATURES: tuple[str, ...] = (
+    "water_flow_lpm",
+    "water_pressure_bar",
+    "server_outlet_temp_C",
+    "it_power_kw",
+    "humidity_pct",
+)
+
+_FALSE_VALUES = frozenset({"0", "false", "no", "off"})
+
+
+def telemetry_store_enabled() -> bool:
+    """TELEMETRY_STORE_ENABLED (default true). ``false`` is the rollback: legacy ``sensor_readings`` write path."""
+    return os.getenv("TELEMETRY_STORE_ENABLED", "true").strip().lower() not in _FALSE_VALUES
+
+
+def telemetry_window_source() -> str:
+    """TELEMETRY_WINDOW_SOURCE: ``store`` (default) or ``memory`` (in-process ring buffer, the rollback).
+
+    Any other value does NOT select ``memory``: it falls back to ``store`` so a typo cannot silently
+    switch the anomaly pipeline onto the unaudited in-memory window.
+    """
+    raw = os.getenv("TELEMETRY_WINDOW_SOURCE", "store").strip().lower()
+    if raw == "memory":
+        return "memory"
+    if raw not in ("", "store"):
+        _logger.warning("TELEMETRY_WINDOW_SOURCE=%r is not 'store' or 'memory'; using 'store'", raw)
+    return "store"
+
+
+def telemetry_max_span_h() -> int:
+    """TELEMETRY_MAX_SPAN_H (default 168): longest ``to - from`` the telemetry read API accepts."""
+    return _env_positive_int("TELEMETRY_MAX_SPAN_H", DEFAULT_TELEMETRY_MAX_SPAN_H)
+
+
+def telemetry_facility_id() -> int:
+    """TELEMETRY_FACILITY_ID (default 1): facility whose ``fac<ID>.<measurand>`` sensors feed the anomaly window."""
+    return _env_positive_int("TELEMETRY_FACILITY_ID", DEFAULT_TELEMETRY_FACILITY_ID)
+
+
+def telemetry_feature_sensors() -> dict[str, str]:
+    """Feature -> sensor ``external_id`` for the five anomaly features, in model order.
+
+    Default mapping is ``fac<TELEMETRY_FACILITY_ID>.<feature>``. ``TELEMETRY_FEATURE_SENSORS`` may hold a JSON
+    object overriding it; it must cover exactly the five features, otherwise it is ignored (with a warning).
+    """
+    import json
+
+    default = {f: f"fac{telemetry_facility_id()}.{f}" for f in TELEMETRY_FEATURES}
+    raw = os.getenv("TELEMETRY_FEATURE_SENSORS")
+    if raw is None or not raw.strip():
+        return default
+    try:
+        parsed = json.loads(raw)
+    except ValueError:
+        parsed = None
+    if (
+        not isinstance(parsed, dict)
+        or set(parsed) != set(TELEMETRY_FEATURES)
+        or not all(isinstance(v, str) and v.strip() for v in parsed.values())
+    ):
+        _logger.warning(
+            "TELEMETRY_FEATURE_SENSORS must be a JSON object covering exactly %s; using default", TELEMETRY_FEATURES
+        )
+        return default
+    return {f: parsed[f].strip() for f in TELEMETRY_FEATURES}
+
+
+def mqtt_credentials() -> tuple[str | None, str | None]:
+    """(username, password) for the MQTT broker, each from ``MQTT_USERNAME`` / ``MQTT_PASSWORD`` or its ``_FILE``.
+
+    Blank -> ``None``. Never logged.
+    """
+    from api.secrets import read_secret
+
+    def _clean(value: str | None) -> str | None:
+        return value if value and value.strip() else None
+
+    return _clean(read_secret("MQTT_USERNAME")), _clean(read_secret("MQTT_PASSWORD"))
+
+
+def mqtt_tls_enabled() -> bool:
+    """MQTT_TLS (default false): wrap the broker connection in TLS (system CA bundle, hostname checked)."""
+    return os.getenv("MQTT_TLS", "").strip().lower() in _TRUE_VALUES
+
+
+def mqtt_queue_max() -> int:
+    """MQTT_QUEUE_MAX (default 10000): bound of the in-process queue. Malformed -> default, never unbounded."""
+    return _env_positive_int("MQTT_QUEUE_MAX", DEFAULT_MQTT_QUEUE_MAX)

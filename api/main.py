@@ -48,6 +48,7 @@ from api.routes import (
     optimization_routes,
     scenario_routes,
     shadow_mode_routes,
+    telemetry_routes,
     websocket_routes,
 )
 from api.services import optimization_service
@@ -124,6 +125,7 @@ app.include_router(shadow_mode_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(esg_report_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(metrics_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(facility_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(telemetry_routes.router, dependencies=_GENERAL_LIMIT)  # plus its own telemetry_read class
 
 # Middleware: the LAST one added is the outermost. Request flow:
 # Metrics -> RequestID -> CORS -> ErrorBoundary -> BodyLimit -> routes.
