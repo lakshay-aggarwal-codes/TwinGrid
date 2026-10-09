@@ -18,7 +18,14 @@ can switch without a reload. An unknown value raises: it never falls back.
 
 from __future__ import annotations
 
+import dataclasses
+import enum
+import hashlib
+import json
+import math
 import os
+import re
+from typing import Any
 
 LEGACY_PHYSICS_VERSION = "legacy-0"
 PHYSICS_V1 = "1"
@@ -171,3 +178,111 @@ def assert_same_physics_identity(*identities: "dict[str, str | None] | None") ->
             f"Refusing to mix physics parameter sets: {sorted(str(h) for h in hashes)}"
         )  # RECONSTRUCTED
     return {"physics_version": version, "physics_params_hash": next(iter(hashes))}  # RECONSTRUCTED
+
+
+# ----------------------------------------------------------------------------------------------
+# Artifact compatibility (T19, restored). An artifact records these nine values; the loader and the registry
+# compare them with the RUNNING values and reject any difference. ``None`` never equals anything, so a value this
+# tree cannot determine makes the check fail closed.
+# ----------------------------------------------------------------------------------------------
+COMPAT_FIELDS: tuple[str, ...] = (
+    "physics_version",
+    "physics_params_hash",
+    "environment_version",
+    "observation_schema_hash",
+    "action_schema_hash",
+    "action_semantics_version",
+    "reward_version",
+    "safety_envelope_version",
+    "input_cadence_s",
+)
+
+# Seconds of simulated time per model input step (src.digital_twin.INTERVAL_MINUTES * 60).
+INPUT_CADENCE_S = 300
+
+
+def sha256_json(obj: object) -> str:
+    """SHA-256 (hex) of the compact, key-sorted, ASCII JSON of ``obj``. Verified against the ``training_config``
+    hashes recorded in models/registry.json."""
+    text = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False)
+    return hashlib.sha256(text.encode("ascii")).hexdigest()
+
+
+_PHYSICS_CONSTANT_NAME = re.compile(r"^_?[A-Z][A-Z0-9_]*$")
+# Version LABELS that digital_twin imports for dispatch. PHYSICS_V2 is left out so that adding the v2 label did not
+# change the physics-v1 hash: this reproduces ``physics_params_hash`` recorded by the T29 candidates and baselines.
+_PHYSICS_CONSTANT_EXCLUDED = frozenset({"PHYSICS_V2"})
+
+
+def _hashable_value(value: Any) -> Any:
+    """JSON-able form of a physics constant, or raise TypeError if it is not a plain constant."""
+    if isinstance(value, enum.Enum):
+        return f"{type(value).__name__}.{value.name}"
+    if isinstance(value, float):
+        return value if math.isfinite(value) else repr(value)
+    if isinstance(value, (bool, int, str)) or value is None:
+        return value
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return {f.name: _hashable_value(getattr(value, f.name)) for f in dataclasses.fields(value)}
+    if isinstance(value, (tuple, list)):
+        return [_hashable_value(v) for v in value]
+    if isinstance(value, dict):
+        out: dict[str, Any] = {}
+        for k, v in value.items():
+            key = f"{type(k).__name__}.{k.name}" if isinstance(k, enum.Enum) else str(k)
+            out[key] = _hashable_value(v)
+        return out
+    raise TypeError(type(value).__name__)
+
+
+def physics_constants(module: Any = None) -> dict[str, Any]:
+    """Every UPPER_CASE plain-data constant of src/digital_twin.py, as JSON-able values (discovered, not listed)."""
+    if module is None:
+        from src import digital_twin as module  # lazy: digital_twin imports this module
+    found: dict[str, Any] = {}
+    for name in sorted(vars(module)):
+        if not _PHYSICS_CONSTANT_NAME.match(name) or name in _PHYSICS_CONSTANT_EXCLUDED:
+            continue
+        try:
+            found[name] = _hashable_value(getattr(module, name))
+        except TypeError:
+            continue  # classes, functions, loggers, compiled patterns ...: not constants
+    return found
+
+
+def physics_params_hash(version: str | None = None, *, module: Any = None) -> str:
+    """Hash of the physics version label plus every physics constant the twin runs with."""
+    chosen = validate_physics_version(version) if version is not None else active_physics_version()
+    return sha256_json({"physics_version": chosen, "constants": physics_constants(module)})
+
+
+def running_compat_values() -> dict[str, object]:
+    """The running system's value for every field in ``COMPAT_FIELDS`` (read at call time).
+
+    The schema hashes come from src/rl/env.py (imported lazily: it imports this module). A value that cannot be
+    computed is ``None``, which never equals anything, so every check fails closed.
+    """
+    pv = active_physics_version()
+    values: dict[str, object] = {
+        "physics_version": pv,
+        "physics_params_hash": None,
+        "environment_version": ENV_VERSION,
+        "observation_schema_hash": None,
+        "action_schema_hash": None,
+        "action_semantics_version": ACTION_SEMANTICS_VERSION,
+        "reward_version": REWARD_VERSION,
+        "safety_envelope_version": SAFETY_ENVELOPE_VERSION,
+        "input_cadence_s": INPUT_CADENCE_S,
+    }
+    try:
+        values["physics_params_hash"] = physics_params_hash(pv)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from src.rl import env as _env
+
+        values["observation_schema_hash"] = _env.observation_schema_hash(pv)
+        values["action_schema_hash"] = _env.action_schema_hash()
+    except Exception:  # noqa: BLE001
+        pass
+    return values
