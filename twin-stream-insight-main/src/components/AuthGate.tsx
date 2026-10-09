@@ -2,8 +2,8 @@ import { useEffect, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { initAuth } from "@/authClient";
 import { useAuth } from "@/hooks/useAuth.ts";
-import { LoginScreen } from "@/components/LoginScreen.tsx";
-import { AccountMenu } from "@/components/AccountMenu";
+import { LoginScreen } from "@/components/LoginScreen";
+import { AccountMenu } from "@/components/AccountMenu.tsx";
 
 /**
  * Nothing behind the gate (and so no API request and no WebSocket) exists until

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, act } from "@testing-library/react";
-import type { LiveStatePayload, SocketStatus } from "@/api/apiClient.tsx";
+import type { LiveStatePayload, SocketStatus } from "@/api/apiClient.ts";
 
 const ws = vi.hoisted(() => ({
   onMessage: null as null | ((s: unknown) => unknown),

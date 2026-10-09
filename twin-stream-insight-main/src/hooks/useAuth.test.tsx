@@ -19,7 +19,7 @@ vi.mock("@/authClient", () => ({
   logout: vi.fn(),
 }));
 
-import { OPERATOR_REQUIRED_TEXT, roleView, useRole } from "./useAuth.tsx";
+import { OPERATOR_REQUIRED_TEXT, roleView, useRole } from "./useAuth.ts";
 
 beforeEach(() => {
   listeners.clear();

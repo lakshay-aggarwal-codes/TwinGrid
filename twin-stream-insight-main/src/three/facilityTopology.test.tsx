@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import { ApiError } from "@/api/apiError";
 import { FALLBACK_LAYOUT } from "./facilityLayout";
-import { FALLBACK_BADGE, LOADING_TOPOLOGY, fallbackTopology, getTopology, resetTopology, setTopology, topologyFromQuery, useTopology } from "./facilityTopology.tsx";
+import { FALLBACK_BADGE, LOADING_TOPOLOGY, fallbackTopology, getTopology, resetTopology, setTopology, topologyFromQuery, useTopology } from "./facilityTopology.ts";
 import { TopologyBadge } from "./TopologyBadge.tsx";
-import { describeRack, nextRackId } from "./rackNavigation.tsx";
+import { describeRack, nextRackId } from "./rackNavigation.ts";
 import { topologyInput, seedAssets } from "./facilityFixtures";
 import type { FacilityTopologyRaw } from "@/api/facility";
 

@@ -7,8 +7,8 @@
  * additionally pinned by the backend's own `tests/test_facility_seed.py`.
  */
 import type { Asset } from "@/contract/schemas/facility";
-import { FALLBACK_LAYOUT } from "./facilityLayout.tsx";
-import type { TopologyInput } from "./facilityModel.tsx";
+import { FALLBACK_LAYOUT } from "./facilityLayout.ts";
+import type { TopologyInput } from "./facilityModel.ts";
 
 const VALID_FROM = "2026-10-02T00:00:00Z";
 

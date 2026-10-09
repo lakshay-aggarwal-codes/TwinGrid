@@ -1,4 +1,4 @@
-import { useAuth, useRole } from "@/hooks/useAuth.tsx";
+import { useAuth, useRole } from "@/hooks/useAuth.ts";
 
 const ROLE_LABEL: Record<string, string> = { viewer: "Viewer", operator: "Operator" };
 

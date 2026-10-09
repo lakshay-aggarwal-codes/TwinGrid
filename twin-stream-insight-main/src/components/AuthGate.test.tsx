@@ -8,7 +8,7 @@ const logout = vi.fn();
 const initAuth = vi.fn(() => Promise.resolve());
 
 vi.mock("@/hooks/useAuth", async (orig) => ({
-  ...(await orig<typeof import("@/hooks/useAuth.tsx")>()),
+  ...(await orig<typeof import("@/hooks/useAuth.ts")>()),
   useAuth: () => ({ status, username: "alice", role: "operator", notice: null, login: vi.fn(), logout }),
   useRole: () => ({ role: "operator", known: true, isOperator: true, operatorOnly: { disabled: false, reason: null } }),
 }));

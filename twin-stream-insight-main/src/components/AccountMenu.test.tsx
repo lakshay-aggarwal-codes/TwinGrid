@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 let role: string | null = "viewer";
 const logout = vi.fn();
 vi.mock("@/hooks/useAuth.ts", async () => {
-  const real = await vi.importActual<typeof import("@/hooks/useAuth.tsx")>("@/hooks/useAuth");
+  const real = await vi.importActual<typeof import("@/hooks/useAuth.ts")>("@/hooks/useAuth");
   return {
     ...real,
     useAuth: () => ({ status: "signed-in", username: "alice", role, notice: null, login: vi.fn(), logout }),

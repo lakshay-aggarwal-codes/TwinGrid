@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { SimulationContext } from '@/hooks/simulationContext';
-import { toAnomalyView } from '@/telemetry/anomalyView.tsx';
+import { toAnomalyView } from '@/telemetry/anomalyView';
 import type { AnomalyStatusPayload } from '@/api/apiClient';
 
 interface Props {
