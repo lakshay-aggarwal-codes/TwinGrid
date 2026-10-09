@@ -512,7 +512,7 @@ def _sqlite_objects(db_path: Path):
     return tables, cols
 
 
-T9_REV, T16_REV = "20261002000000", "20261003000000"
+T9_REV, T16_REV = "20261002000000", "20261004000000"
 
 
 @pytest.fixture

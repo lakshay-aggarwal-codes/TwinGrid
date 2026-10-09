@@ -22,7 +22,8 @@ import os
 
 LEGACY_PHYSICS_VERSION = "legacy-0"
 PHYSICS_V1 = "1"
-KNOWN_PHYSICS_VERSIONS: tuple[str, ...] = (LEGACY_PHYSICS_VERSION, PHYSICS_V1)
+PHYSICS_V2 = "2"  # RECONSTRUCTED
+KNOWN_PHYSICS_VERSIONS: tuple[str, ...] = (LEGACY_PHYSICS_VERSION, PHYSICS_V1, PHYSICS_V2)  # RECONSTRUCTED
 
 # The version new work is done under.
 PHYSICS_VERSION = PHYSICS_V1
@@ -129,3 +130,44 @@ def assert_same_physics_version(*versions: str | None) -> str:
     if len(unique) != 1:
         raise PhysicsVersionError(f"Refusing to mix physics versions: {sorted(v for v in unique if v)}")
     return validate_physics_version(next(iter(unique)))  # type: ignore[arg-type]
+
+
+def physics_identity(version: str, params: "object | None" = None) -> dict[str, str | None]:  # RECONSTRUCTED
+    """The identity a result/manifest must carry: ``{"physics_version", "physics_params_hash"}``.  # RECONSTRUCTED
+                                                                                                    # RECONSTRUCTED
+    Versions without a parameter surface (``legacy-0``, ``1``) have ``physics_params_hash`` None. Version  # RECONSTRUCTED
+    ``2`` REQUIRES its ``PhysicsParams`` (anything with ``params_hash()``): two v2 runs with different  # RECONSTRUCTED
+    parameters are different physics and must never be combined.  # RECONSTRUCTED
+    """  # RECONSTRUCTED
+    validate_physics_version(version)  # RECONSTRUCTED
+    if version != PHYSICS_V2:  # RECONSTRUCTED
+        if params is not None:  # RECONSTRUCTED
+            raise PhysicsVersionError(
+                f"physics version {version!r} has no parameter surface; got params"
+            )  # RECONSTRUCTED
+        return {"physics_version": version, "physics_params_hash": None}  # RECONSTRUCTED
+    if params is None or not hasattr(params, "params_hash"):  # RECONSTRUCTED
+        raise PhysicsVersionError(
+            "physics version '2' requires PhysicsParams (its hash is part of the identity)"
+        )  # RECONSTRUCTED
+    return {"physics_version": version, "physics_params_hash": params.params_hash()}  # type: ignore[attr-defined]  # RECONSTRUCTED
+
+
+def assert_same_physics_identity(*identities: "dict[str, str | None] | None") -> dict[str, str | None]:  # RECONSTRUCTED
+    """Like ``assert_same_physics_version`` but also refuses different ``physics_params_hash`` values, and a  # RECONSTRUCTED
+    v2 record without a hash. Returns the single shared identity."""  # RECONSTRUCTED
+    if not identities:  # RECONSTRUCTED
+        raise PhysicsVersionError("No physics identities given")  # RECONSTRUCTED
+    if any(i is None for i in identities):  # RECONSTRUCTED
+        raise PhysicsVersionError(
+            "A record has no physics identity; refusing to mix it with identified records"
+        )  # RECONSTRUCTED
+    version = assert_same_physics_version(*(i.get("physics_version") for i in identities))  # type: ignore[union-attr]  # RECONSTRUCTED
+    hashes = {i.get("physics_params_hash") for i in identities}  # type: ignore[union-attr]  # RECONSTRUCTED
+    if version == PHYSICS_V2 and (None in hashes or "" in hashes):  # RECONSTRUCTED
+        raise PhysicsVersionError("A physics-v2 record has no physics_params_hash")  # RECONSTRUCTED
+    if len(hashes) != 1:  # RECONSTRUCTED
+        raise PhysicsVersionError(
+            f"Refusing to mix physics parameter sets: {sorted(str(h) for h in hashes)}"
+        )  # RECONSTRUCTED
+    return {"physics_version": version, "physics_params_hash": next(iter(hashes))}  # RECONSTRUCTED

@@ -11,6 +11,7 @@ Endpoints (unchanged from before the refactor):
 - GET /api/state
 - GET /api/simulate/{hours}
 - GET /api/whatif
+- GET /api/scenarios
 - POST /api/optimize
 - GET /api/anomaly_score
 - GET /api/alerts
@@ -45,6 +46,7 @@ from api.routes import (
     health_routes,
     metrics_routes,
     optimization_routes,
+    scenario_routes,
     shadow_mode_routes,
     websocket_routes,
 )
@@ -113,6 +115,7 @@ _GENERAL_LIMIT = [Depends(http_limit("general")), Depends(bind_log_context)]
 app.include_router(auth_router, dependencies=_GENERAL_LIMIT)
 app.include_router(health_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(digital_twin_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(scenario_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(optimization_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(anomaly_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(websocket_routes.router)

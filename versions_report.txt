@@ -1,0 +1,108 @@
+ACTION_SCHEMA :: a=T19
+ACTION_SEMANTICS_VERSION :: a=T19  b=T27
+COMPAT_FIELDS :: a=T19
+CURRENT_ENV_VERSIONS :: a=T27
+ENV_VERSION :: a=T19  b=T27
+EnvContractError :: a=T27
+INPUT_CADENCE_S :: a=T19
+KNOWN_ORIGINS :: a=T10
+KNOWN_PHYSICS_VERSIONS :: a=T10,T19,T20,T27  b=T21
+LEGACY_PHYSICS_VERSION :: a=T10,T19,T20,T21,T27
+OBSERVATION_SCHEMA :: a=T19
+ORIGIN_MEASURED :: a=T10
+ORIGIN_REPLAY :: a=T10
+ORIGIN_SIMULATED :: a=T10
+PHYSICS_V1 :: a=T10,T19,T20,T21,T27
+PHYSICS_V2 :: a=T21
+PHYSICS_VERSION :: a=T10,T19,T20,T21,T27
+PhysicsVersionError :: a=T10,T19,T20,T21,T27
+REWARD_VERSION :: a=T19  b=T27
+SAFETY_ENVELOPE_VERSION :: a=T19  b=T20,T27
+SHIELD_VERSION :: a=T27
+SafetyEnvelopeVersionError :: a=T20,T27
+_PHYSICS_CONSTANT_NAME :: a=T19
+_SCALARS :: a=T19
+_hashable_value :: a=T19
+action_schema_hash :: a=T19
+active_physics_version :: a=T10,T19,T20,T21,T27
+assert_current_env_versions :: a=T27
+assert_current_safety_envelope_version :: a=T20,T27
+assert_same_physics_identity :: a=T21
+assert_same_physics_version :: a=T10,T19,T20,T21,T27
+canonical_json :: a=T19
+observation_schema_hash :: a=T19
+physics_constants :: a=T19
+physics_identity :: a=T21
+physics_params_hash :: a=T19
+running_compat_values :: a=T19
+sha256_json :: a=T19
+validate_physics_version :: a=T10,T19,T20,T21,T27
+
+CONFLICTING DEFINITIONS (same name, different code):
+
+### ACTION_SEMANTICS_VERSION
+--- version a first in T19
+ACTION_SEMANTICS_VERSION = "1"
+--- version b first in T27
+ACTION_SEMANTICS_VERSION = "2"
+
+### ENV_VERSION
+--- version a first in T19
+# =============================================================================================
+# T19 -- artifact-lineage version constants (contract section 10)
+#
+# Every constant below is part of what a trained artifact was built against. The ArtifactGate
+# (src/artifacts/loaders.py) compares the values recorded in a model's manifest with the values
+# defined here, read at call time. Changing ANY of them -- or any physics constant in
+# src/digital_twin.py, which feeds ``physics_params_hash`` -- therefore makes every artifact that
+# recorded the old value fail the gate until it is retrained or explicitly waived.
+#
+# Bump a constant in the same change that alters the thing it names:
+#   ENV_VERSION               DataCentreEnv dynamics / episode structure (src/optimizer.py)
+#   REWARD_VERSION            the reward function and its normalisation constants
+#   SAFETY_ENVELOPE_VERSION   the safety limits / violation definition the policy is trained against
+#   ACTION_SEMANTICS_VERSION  what an action vector MEANS (ranges, mode mapping), not just its shape
+# The observation / action SHAPES are covered separately by their schema hashes.
+# =============================================================================================
+ENV_VERSION = "1"
+--- version b first in T27
+# ----------------------------------------------------------------------------------------------
+# Environment contract (T27, roadmap 13.5). Every trained artifact records these; the loader rejects
+# any artifact whose values differ (a missing value == a pre-v2 artifact).
+#   ENV_VERSION  "2"  observation = base state + applied actuator state + previous executed action +
+#                     room-thermal state; the shield is part of the environment; ``info`` reports what
+#                     was executed. (pre-v2 environments had 9 features, no shield, no action report.)
+#   ACTION_SEMANTICS_VERSION "2"  a_s (sampled) -> a_e = clip(a_s, 0, 1) (SB3) -> shield(state, a_e) = a_x
+#                     executed; the PPO buffer keeps a_s. ("1": the drought override was applied inside
+#                     the env's action decoding and not reported.)
+#   REWARD_VERSION "2"  -J with the SafetyEnvelope penalty and the single carbon function (T20).
+#   SHIELD_VERSION "1"  the pure ``shield`` in src/rl/safety_filter.py (drought rule, sanitising).
+# Bump the string whenever the behaviour it names changes.
+# ----------------------------------------------------------------------------------------------
+ENV_VERSION = "2"
+
+### KNOWN_PHYSICS_VERSIONS
+--- version a first in T10
+KNOWN_PHYSICS_VERSIONS: tuple[str, ...] = (LEGACY_PHYSICS_VERSION, PHYSICS_V1)
+--- version b first in T21
+KNOWN_PHYSICS_VERSIONS: tuple[str, ...] = (LEGACY_PHYSICS_VERSION, PHYSICS_V1, PHYSICS_V2)
+
+### REWARD_VERSION
+--- version a first in T19
+REWARD_VERSION = "1"
+--- version b first in T27
+REWARD_VERSION = "2"
+
+### SAFETY_ENVELOPE_VERSION
+--- version a first in T19
+SAFETY_ENVELOPE_VERSION = "1"
+--- version b first in T20
+# Version of THE safety envelope definition (src.digital_twin.SAFETY_ENVELOPE) and of every consumer that
+# must agree with it (twin ``is_safe``, the RL safety penalty, the optimizer's violation count).
+#   "1"  (implicit, never recorded) outlet-only penalty/violation count; inlet and PUE were not checked
+#        by the optimizer; the v1 action range could not reach the inlet band.
+#   "2"  one envelope (inlet, outlet, PUE) drives penalty and violation count; the v1 chilled-water action
+#        range is derived from the envelope; carbon reward term uses ``carbon_emissions_gco2``.
+# Bump this string whenever any envelope limit or any consumer's use of it changes. An artifact (trained
+# policy, manifest) records the value it was produced under; one with an older or missing value is rejected.
+SAFETY_ENVELOPE_VERSION = "2"

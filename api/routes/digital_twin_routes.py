@@ -10,6 +10,7 @@ from api.auth import get_current_user
 from api.rate_limit import http_limit, run_compute
 from api.repositories import data_repository
 from api.serialization import to_jsonable
+from api.services import scenario_registry as SR
 from api.services import twin_service
 from database import get_db
 from models.db_models import User
@@ -97,16 +98,52 @@ async def simulate(
 @router.get("/api/whatif", dependencies=[Depends(http_limit("whatif"))])
 async def whatif(
     _user: Annotated[User, Depends(get_current_user)],
-    utilisation: float = Query(0.65, ge=0, le=1, description="Server utilisation [0-1]"),
-    outside_temp: float = Query(22.0, ge=-10, le=50, description="Outside temp (°C)"),
-    water_stress: float = Query(0.0, ge=0, le=1, description="Water stress [0-1]"),
-    mode: Literal["auto", "free_air", "closed_loop", "evaporative", "hybrid"] = Query("auto"),
-    chilled_water_temp: float = Query(7.0, ge=5, le=15, description="Chilled-water setpoint (°C)"),
+    scenario_id: str | None = Query(
+        None, description="Optional preset id from GET /api/scenarios; explicit parameters below override it"
+    ),
+    utilisation: float | None = Query(
+        None, ge=SR.UTILISATION_BOUNDS[0], le=SR.UTILISATION_BOUNDS[1], description="Server utilisation [0-1]"
+    ),
+    outside_temp: float | None = Query(
+        None, ge=SR.OUTSIDE_TEMP_BOUNDS[0], le=SR.OUTSIDE_TEMP_BOUNDS[1], description="Outside temp (°C)"
+    ),
+    water_stress: float | None = Query(
+        None, ge=SR.WATER_STRESS_BOUNDS[0], le=SR.WATER_STRESS_BOUNDS[1], description="Water stress [0-1]"
+    ),
+    mode: Literal["auto", "free_air", "closed_loop", "evaporative", "hybrid"] | None = Query(None),
+    chilled_water_temp: float | None = Query(
+        None,
+        ge=SR.CHILLED_WATER_TEMP_BOUNDS[0],
+        le=SR.CHILLED_WATER_TEMP_BOUNDS[1],
+        description="Chilled-water setpoint (°C)",
+    ),
 ) -> dict[str, Any]:
     """Run an isolated 24 h digital-twin scenario at constant inputs and return its
     aggregate PUE / WUE / water / energy / CO2. Nothing is persisted and the
-    shared live twin is not touched."""
+    shared live twin is not touched.
+
+    Parameter precedence: explicit query value > ``scenario_id`` preset > built-in default
+    (utilisation 0.65, outside_temp 22, water_stress 0, mode auto, chilled_water_temp 7). The response
+    echoes ``scenario_id`` (null for a raw what-if) and the resolved ``inputs``. An unknown
+    ``scenario_id`` is a 404, never silently ignored.
+    """
+    if scenario_id is not None and SR.get_scenario(scenario_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"Unknown scenario_id: {scenario_id!r}")
+    base = SR.scenario_defaults(scenario_id) if scenario_id is not None else dict(SR.WHATIF_DEFAULTS)
+    given = {
+        "utilisation": utilisation,
+        "outside_temp": outside_temp,
+        "water_stress": water_stress,
+        "mode": mode,
+        "chilled_water_temp": chilled_water_temp,
+    }
+    p = {k: (given[k] if given[k] is not None else base[k]) for k in base}
     result = await run_compute(
-        twin_service.compute_whatif, utilisation, outside_temp, water_stress, mode, chilled_water_temp
+        twin_service.compute_whatif,
+        p["utilisation"],
+        p["outside_temp"],
+        p["water_stress"],
+        p["mode"],
+        p["chilled_water_temp"],
     )
-    return to_jsonable(result)
+    return {**to_jsonable(result), "scenario_id": scenario_id}
