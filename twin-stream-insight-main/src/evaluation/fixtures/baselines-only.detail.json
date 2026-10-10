@@ -1,0 +1,141 @@
+{
+  "evaluation_id": "baselines_only_0fcafef9d28fd539",
+  "source": "policy_evaluation_v1",
+  "origin": "simulated",
+  "schema_version": 1,
+  "generated_at_utc": "2026-10-02T02:27:11+00:00",
+  "physics_version": "legacy-0 (implicit)",
+  "scenario_inputs": "synthetic diurnal weather and workload from DataCentreEnv; simulated plant",
+  "carbon": {
+    "flat_curve": true,
+    "is_real": false
+  },
+  "scenario_set_id": "0fcafef9d28fd539",
+  "scenario_sets": {
+    "test": {
+      "id": "b8329f196c910981",
+      "n": 60
+    },
+    "validation": {
+      "id": "a290e92dcf0037b0",
+      "n": 30
+    }
+  },
+  "preregistration_sha256": "25c4cc68464207f90980eee334f22032c982251afe69f11693f5320c8b1605ac",
+  "decision": {
+    "claim_allowed": "none",
+    "outcome": "NOT_EVALUATED",
+    "reason": "No PPO candidates were supplied: this is a baselines-only run. No PPO claim can be made from it."
+  },
+  "policies": [
+    {
+      "policy_id": "rule",
+      "kind": "rule",
+      "metrics": {
+        "carbon_gco2": 1022199.7176244048,
+        "energy_kwh": 9929.62897635071,
+        "inlet_over_max_steps": 0.0,
+        "inlet_under_min_steps": 288.0,
+        "mean_pue": 1.2751064952851843,
+        "mean_wue": 6.153938317145071,
+        "outlet_violation_steps": 0.0,
+        "total_reward": -151.27517508784118,
+        "water_L": 47475.6889060325
+      }
+    },
+    {
+      "policy_id": "best_constant",
+      "kind": "best_constant",
+      "metrics": {
+        "carbon_gco2": 889273.3615933008,
+        "energy_kwh": 9649.784016285228,
+        "inlet_over_max_steps": 0.0,
+        "inlet_under_min_steps": 288.0,
+        "mean_pue": 1.2392362863563184,
+        "mean_wue": 0.4912013420569751,
+        "outlet_violation_steps": 0.0,
+        "total_reward": -57.881079872718104,
+        "water_L": 3806.6110121383886
+      }
+    }
+  ],
+  "selection": {
+    "best_constant": {
+      "chilled_C": 15.0,
+      "mode": "closed_loop",
+      "name": "constant[15C,closed_loop]"
+    },
+    "best_constant_validation_reward": -57.879498496530616,
+    "constants_validation_reward": {
+      "constant[10C,closed_loop]": -63.892055151973,
+      "constant[10C,evaporative]": -158.47779205796158,
+      "constant[10C,free_air]": -153.50316198598767,
+      "constant[10C,hybrid]": -153.50316198598767,
+      "constant[12.5C,closed_loop]": -60.73106645267502,
+      "constant[12.5C,evaporative]": -157.42412915819557,
+      "constant[12.5C,free_air]": -150.658234697426,
+      "constant[12.5C,hybrid]": -150.658234697426,
+      "constant[15C,closed_loop]": -57.879498496530616,
+      "constant[15C,evaporative]": -156.47360650614743,
+      "constant[15C,free_air]": -148.09166225299884,
+      "constant[15C,hybrid]": -148.09166225299884,
+      "constant[5C,closed_loop]": -71.30084664634352,
+      "constant[5C,evaporative]": -160.94738922275175,
+      "constant[5C,free_air]": -159.84750394501168,
+      "constant[5C,hybrid]": -159.84750394501168,
+      "constant[7.5C,closed_loop]": -67.40021373496762,
+      "constant[7.5C,evaporative]": -159.64717825229312,
+      "constant[7.5C,free_air]": -156.6516560202308,
+      "constant[7.5C,hybrid]": -156.6516560202308
+    },
+    "min_inlet_under_min_steps_across_constant_grid": 288.0,
+    "ppo_validation_reward": {},
+    "rule_validation_reward": -151.26395711179015,
+    "selected_by": "highest mean validation reward (not seed order)",
+    "selected_ppo_seed": null
+  },
+  "metrics": {
+    "carbon_gco2": {
+      "better": "lower",
+      "definition": "Carbon emitted as accounted by the twin (cooling energy x intensity)"
+    },
+    "energy_kwh": {
+      "better": "lower",
+      "definition": "Facility energy, (IT + cooling power) x 5 min, summed"
+    },
+    "inlet_over_max_steps": {
+      "better": "lower",
+      "definition": "Steps with inlet temperature > 27.0 C"
+    },
+    "inlet_under_min_steps": {
+      "better": "lower",
+      "definition": "Steps with inlet temperature < 18.0 C"
+    },
+    "mean_pue": {
+      "better": "lower",
+      "definition": "Mean of per-step PUE"
+    },
+    "mean_wue": {
+      "better": "lower",
+      "definition": "Mean of per-step WUE"
+    },
+    "outlet_violation_steps": {
+      "better": "lower",
+      "definition": "Steps with outlet temperature > 45.0 C"
+    },
+    "total_reward": {
+      "better": "higher",
+      "definition": "Sum of env reward over the episode (-J minus the outlet penalty): the PPO objective"
+    },
+    "water_L": {
+      "better": "lower",
+      "definition": "Water consumed, summed over the episode"
+    }
+  },
+  "outcome_definitions": {
+    "A": "Continue under governance: for BOTH the rule baseline and the best constant, (1) the t-based 95% CI of the paired primary-metric difference across TRAINING SEEDS excludes zero in PPO's favour, (2) the same holds across test scenarios for the validation-selected candidate, (3) PPO's mean advantage is positive in every test family, (4) the selected candidate has zero outlet-over-limit and inlet-over-max steps and no more inlet-under-min steps than the rule baseline, (5) no secondary metric is worse by more than the secondary tolerance. Only supports 'simulator-validated candidate'.",
+    "B": "Offline research module only: PPO is not shown to be better than simple controllers, and not shown to be equal.",
+    "C": "Replace with a simpler controller: the rule baseline or the best constant, if it has zero outlet-over-limit and inlet-over-max steps on the test set and PPO's mean primary-metric advantage over it is at most the primary tolerance (including the case where PPO is worse). Checked before B."
+  },
+  "ci_level": 0.95
+}

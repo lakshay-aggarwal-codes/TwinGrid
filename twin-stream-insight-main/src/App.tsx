@@ -19,6 +19,8 @@ import { createAppQueryClient } from "@/state/queryClient";
 const Index = lazy(loadAnalyticsPage);
 // FE-16: the run workflow page, loaded on demand.
 const Runs = lazy(() => import("./pages/Runs"));
+// FE-17: backend policy-evaluation reports, loaded on demand.
+const Evaluation = lazy(() => import("./pages/Evaluation"));
 
 // FE-03: explicit staleTime, no retry on 4xx (see src/state/queryClient.ts).
 const queryClient = createAppQueryClient();
@@ -51,6 +53,9 @@ const App = () => (
           {/* FE-16: run workflow. The run id in the URL lets a reload recover the run. */}
           <Route path="/runs" element={<Runs />} />
           <Route path="/runs/:id" element={<Runs />} />
+          {/* FE-17: evaluation reports (BC-11). */}
+          <Route path="/evaluation" element={<Evaluation />} />
+          <Route path="/evaluation/:id" element={<Evaluation />} />
           {/* Old bookmarks/links keep working. */}
           <Route path="/legacy" element={<Navigate to="/analytics" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
