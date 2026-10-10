@@ -21,6 +21,7 @@ import {
   parseApi,
 } from '../contract';
 import { ScenarioRegistrySchema, type ScenarioRegistry } from '../scenarios/schema';
+import { RunRecordSchema, RunResultSchema, type RunRecord, type RunResult } from '../runs/schema';
 import { ApiError, describeBodyForReport, extractCode, kindForStatus, parseRetryAfter } from './apiError';
 import {
   toAlert,
@@ -268,6 +269,43 @@ export async function fetchScenarioWhatIf(params: ScenarioWhatIfParams, signal?:
     throw new ApiError({ kind: 'contract' });
   }
   return result;
+}
+
+// ------------------------------------------------------------------ FE-16: runs (BC-10, gate G-RUN)
+
+/** Body of `POST /api/runs`: descriptor parameter names; `parameters` only carries the values the person changed. */
+export interface RunSubmitBody {
+  scenario_id: string;
+  parameters?: Record<string, string | number>;
+}
+
+/**
+ * POST /api/runs — submit a scenario as a queued run (202). A submitted job is not a result. The record must name
+ * the scenario that was requested; anything else is a contract violation.
+ */
+export async function submitRun(body: RunSubmitBody, signal?: AbortSignal): Promise<RunRecord> {
+  const record = await callApi(
+    RunRecordSchema,
+    'POST /api/runs',
+    buildUrl('/api/runs'),
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal },
+    (r) => r
+  );
+  if (record.scenario_id !== body.scenario_id) {
+    reportError('apiClient.contract', 'POST /api/runs: scenario_id does not match the request', 'error');
+    throw new ApiError({ kind: 'contract' });
+  }
+  return record;
+}
+
+/** GET /api/runs/{id} — the status record. */
+export async function fetchRun(id: string, signal?: AbortSignal): Promise<RunRecord> {
+  return callApi(RunRecordSchema, 'GET /api/runs/{id}', buildUrl(`/api/runs/${encodeURIComponent(id)}`), { signal }, (r) => r);
+}
+
+/** GET /api/runs/{id}/result — 409 until the run is `completed`. The caller verifies `result.run_id`. */
+export async function fetchRunResult(id: string, signal?: AbortSignal): Promise<RunResult> {
+  return callApi(RunResultSchema, 'GET /api/runs/{id}/result', buildUrl(`/api/runs/${encodeURIComponent(id)}/result`), { signal }, (r) => r);
 }
 
 export interface FetchOptimizedParams {

@@ -17,6 +17,8 @@ import { createAppQueryClient } from "@/state/queryClient";
 // and recharts with it) is only needed on /analytics,
 // so it is loaded on demand instead of shipping in the homepage bundle.
 const Index = lazy(loadAnalyticsPage);
+// FE-16: the run workflow page, loaded on demand.
+const Runs = lazy(() => import("./pages/Runs"));
 
 // FE-03: explicit staleTime, no retry on 4xx (see src/state/queryClient.ts).
 const queryClient = createAppQueryClient();
@@ -46,6 +48,9 @@ const App = () => (
               brief's core product principle is that the twin, not a dashboard,
               is the primary interface. */}
           <Route path="/analytics" element={<Index />} />
+          {/* FE-16: run workflow. The run id in the URL lets a reload recover the run. */}
+          <Route path="/runs" element={<Runs />} />
+          <Route path="/runs/:id" element={<Runs />} />
           {/* Old bookmarks/links keep working. */}
           <Route path="/legacy" element={<Navigate to="/analytics" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
