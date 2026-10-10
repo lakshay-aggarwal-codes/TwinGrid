@@ -21,6 +21,8 @@ const Index = lazy(loadAnalyticsPage);
 const Runs = lazy(() => import("./pages/Runs"));
 // FE-17: backend policy-evaluation reports, loaded on demand.
 const Evaluation = lazy(() => import("./pages/Evaluation"));
+// FE-18: stored telemetry history, loaded on demand.
+const TelemetryHistory = lazy(() => import("./pages/TelemetryHistory"));
 
 // FE-03: explicit staleTime, no retry on 4xx (see src/state/queryClient.ts).
 const queryClient = createAppQueryClient();
@@ -56,6 +58,8 @@ const App = () => (
           {/* FE-17: evaluation reports (BC-11). */}
           <Route path="/evaluation" element={<Evaluation />} />
           <Route path="/evaluation/:id" element={<Evaluation />} />
+          {/* FE-18: telemetry history (BC-12). */}
+          <Route path="/telemetry" element={<TelemetryHistory />} />
           {/* Old bookmarks/links keep working. */}
           <Route path="/legacy" element={<Navigate to="/analytics" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
