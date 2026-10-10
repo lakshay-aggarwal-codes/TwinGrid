@@ -23,6 +23,13 @@ import {
 import { ScenarioRegistrySchema, type ScenarioRegistry } from '../scenarios/schema';
 import { RunRecordSchema, RunResultSchema, type RunRecord, type RunResult } from '../runs/schema';
 import { EvaluationListSchema, EvaluationResultSchema, type EvaluationList, type EvaluationResult } from '../evaluation/schema';
+import {
+  FacilityIdSchema,
+  TelemetryGapsSchema,
+  TelemetrySamplesSchema,
+  type TelemetryGaps,
+  type TelemetrySamplesPage,
+} from '../telemetry/history/schema';
 import { ApiError, describeBodyForReport, extractCode, kindForStatus, parseRetryAfter } from './apiError';
 import {
   toAlert,
@@ -415,3 +422,63 @@ export async function fetchEquipmentHealth(signal?: AbortSignal): Promise<Equipm
 // Type-only access to the validated contract layer. Consumers move onto these types in FE-03/05.
 export type { ApiResult } from '../contract/parse';
 export type * as Contract from '../contract';
+
+// ------------------------------------------------------------------ FE-18: telemetry history (BC-12, gate G-HIST)
+
+/** GET /api/facility — only the facility id is used, to build `fac<id>.<measurand>` sensor ids. */
+export async function fetchFacilityId(signal?: AbortSignal): Promise<number> {
+  return callApi(FacilityIdSchema, 'GET /api/facility', buildUrl('/api/facility'), { signal }, (f) => f.id);
+}
+
+export interface TelemetrySamplesParams {
+  /** RFC 3339 with offset (`Z`). Inclusive. */
+  from: string;
+  /** RFC 3339 with offset (`Z`). Exclusive; at most 168 h after `from`. */
+  to: string;
+  /** 1..5000. */
+  limit: number;
+  cursor?: string | null;
+}
+
+/**
+ * GET /api/telemetry/sensors/{id}/samples — one page of stored samples of the `live` stream, `quality=any` so that
+ * invalid samples are listed (never plotted). The record must name the sensor that was requested. Ordering is the
+ * backend's and is not changed here.
+ */
+export async function fetchTelemetrySamples(sensorId: string, params: TelemetrySamplesParams, signal?: AbortSignal): Promise<TelemetrySamplesPage> {
+  const page = await callApi(
+    TelemetrySamplesSchema,
+    'GET /api/telemetry/sensors/{id}/samples',
+    buildUrl(`/api/telemetry/sensors/${encodeURIComponent(sensorId)}/samples`, {
+      from: params.from,
+      to: params.to,
+      stream: 'live',
+      quality: 'any',
+      limit: params.limit,
+      cursor: params.cursor ?? undefined,
+    }),
+    { signal },
+    (r) => r
+  );
+  if (page.external_id !== sensorId) {
+    reportError('apiClient.contract', 'GET /api/telemetry/sensors/{id}/samples: external_id does not match the request', 'error');
+    throw new ApiError({ kind: 'contract' });
+  }
+  return page;
+}
+
+/** GET /api/telemetry/sensors/{id}/gaps — backend-computed gaps between consecutive valid samples (at most 1000). */
+export async function fetchTelemetryGaps(sensorId: string, window: { from: string; to: string }, signal?: AbortSignal): Promise<TelemetryGaps> {
+  const gaps = await callApi(
+    TelemetryGapsSchema,
+    'GET /api/telemetry/sensors/{id}/gaps',
+    buildUrl(`/api/telemetry/sensors/${encodeURIComponent(sensorId)}/gaps`, { from: window.from, to: window.to, stream: 'live' }),
+    { signal },
+    (r) => r
+  );
+  if (gaps.external_id !== sensorId) {
+    reportError('apiClient.contract', 'GET /api/telemetry/sensors/{id}/gaps: external_id does not match the request', 'error');
+    throw new ApiError({ kind: 'contract' });
+  }
+  return gaps;
+}

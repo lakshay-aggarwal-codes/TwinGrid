@@ -10,6 +10,7 @@ import { AlertList } from "@/components/alerts/AlertList";
 import type { Role } from "@/components/alerts/AlertRowItem";
 import { usePageVisible } from "@/components/alerts/usePageVisible";
 import type { LatestAnomaly } from "@/hooks/useSimulation";
+import { usePanelFocus } from "./usePanelFocus.ts";
 
 interface IncidentsPanelProps {
   open: boolean;
@@ -58,12 +59,14 @@ export function IncidentsPanel({ open, onClose, onFocusFacility, latestAnomaly, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, latestAnomaly]);
 
+  const headingRef = usePanelFocus(open);
+
   if (!open) return null;
 
   return (
     <aside aria-label="Incidents" className="w-80 border-r border-border bg-sidebar flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Incidents</span>
+        <h2 ref={headingRef} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground focus:outline-none">Incidents</h2>
         <button
           onClick={onClose}
           className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

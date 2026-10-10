@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { X } from "lucide-react";
 import { RackInspectorContent } from "./RackInspectorContent";
 import type { LiveFeed } from "@/three/visualizationModes";
@@ -18,17 +19,22 @@ interface SidePanelProps {
  */
 export function SidePanel({ selectedRackId, onDeselect, feed }: SidePanelProps) {
   const topology = useTopology();
+  // FE-19: clearing the selection removes the button that had focus; focus goes to the inspector heading instead of <body>.
+  const headingRef = useRef<HTMLHeadingElement>(null);
   return (
     <aside aria-label="Rack inspector" className="w-80 border-l border-border bg-sidebar flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Inspector</span>
+        <h2 ref={headingRef} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground focus:outline-none">Inspector</h2>
         {selectedRackId && (
           <button
-            onClick={onDeselect}
-            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => {
+              onDeselect();
+              headingRef.current?.focus({ preventScroll: true });
+            }}
+            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Clear selection"
           >
-            <X className="h-4 w-4" />
+            <X aria-hidden="true" className="h-4 w-4" />
           </button>
         )}
       </div>

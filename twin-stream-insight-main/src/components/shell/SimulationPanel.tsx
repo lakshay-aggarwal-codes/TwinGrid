@@ -7,6 +7,7 @@ import { useWhatIf, whatIfParams } from "@/hooks/useWhatIf";
 import type { StateResponse } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { buildSimulationReport, type Report } from "@/reports/reports";
+import { usePanelFocus } from "./usePanelFocus.ts";
 
 interface SimulationPanelProps {
   open: boolean;
@@ -32,6 +33,7 @@ export function SimulationPanel({ open, onClose, baseConfig, liveState, onGenera
 
   const a = useWhatIf(cfgA, { enabled: open });
   const b = useWhatIf(cfgB, { enabled: open });
+  const headingRef = usePanelFocus(open);
 
   if (!open) return null;
 
@@ -53,9 +55,9 @@ export function SimulationPanel({ open, onClose, baseConfig, liveState, onGenera
   return (
     <aside aria-label="Simulation Lab" className="w-80 border-r border-border bg-sidebar flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Simulation Lab</span>
-        <button onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" aria-label="Close simulation lab">
-          <X className="h-4 w-4" />
+        <h2 ref={headingRef} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground focus:outline-none">Simulation Lab</h2>
+        <button onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Close simulation lab">
+          <X aria-hidden="true" className="h-4 w-4" />
         </button>
       </div>
 

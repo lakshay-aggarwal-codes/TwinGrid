@@ -2,6 +2,7 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { ProvenanceStrip, buildProvenance } from '@/provenance';
 import { StateNotice } from '@/state/StateBoundary';
 import { formatBackendNumber, type HourlyData, type SimInputs } from '@/hooks/useSimulation';
+import { ChartFrame } from '@/components/charts/ChartFrame';
 
 // Backend `cooling_mode` vocabulary -> display label + colour. A value not listed here is shown as unrecognised;
 // it is never mapped to a known mode.
@@ -13,6 +14,22 @@ const MODES: Record<string, { label: string; color: string }> = {
 };
 const UNRECOGNISED = { label: 'Unrecognised mode', color: '#64748b' };
 const modeOf = (raw: string) => (Object.prototype.hasOwnProperty.call(MODES, raw) ? MODES[raw] : UNRECOGNISED);
+
+const LINE_COLUMNS = [
+  { key: 'step', header: 'Step' },
+  { key: 'it', header: 'IT power (kW)' },
+  { key: 'cooling', header: 'Cooling power (kW)' },
+  { key: 'outside', header: 'Outside temperature (°C)' },
+];
+const WATER_COLUMNS = [
+  { key: 'step', header: 'Step' },
+  { key: 'water', header: 'Water consumed (L)' },
+  { key: 'mode', header: 'Cooling mode' },
+];
+const MODE_COLUMNS = [
+  { key: 'mode', header: 'Cooling mode' },
+  { key: 'steps', header: 'Steps' },
+];
 
 const RUN_VIEW = buildProvenance({ source: { kind: 'run-result' } });
 const STEP_AXIS = 'step (hours from start of simulated run)';
@@ -71,6 +88,34 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
   }));
   const barData = data.map((d) => ({ ...d, modeColor: modeOf(d.coolingMode).color }));
 
+  // FE-19 text alternatives: only backend values as provided (first/last step), counts of the rows returned, and the
+  // simulated-not-live origin. Nothing is derived beyond the counts the pie already shows.
+  const last = data[data.length - 1];
+  const lineSummary =
+    `Simulated run result, not live. ${data.length} steps, step ${data[0].step} to step ${last.step}. ` +
+    `At step ${last.step}: IT power ${formatBackendNumber('it_power_kw', last.itPowerKw)} kW, ` +
+    `cooling power ${formatBackendNumber('cooling_power_kw', last.coolingPowerKw)} kW, ` +
+    `outside temperature ${formatBackendNumber('outside_temp_C', last.outsideTempC)} °C. The three series differ by line style.`;
+  const lineRows = data.map((d) => ({
+    step: d.step,
+    it: formatBackendNumber('it_power_kw', d.itPowerKw),
+    cooling: formatBackendNumber('cooling_power_kw', d.coolingPowerKw),
+    outside: formatBackendNumber('outside_temp_C', d.outsideTempC),
+  }));
+  const waterSummary =
+    `Simulated run result, not live. ${data.length} steps. At step ${last.step}: ${formatBackendNumber('water_consumed_L', last.waterConsumedL)} L. ` +
+    `Bars are coloured by cooling mode; the data table names the mode of every step.`;
+  const waterRows = data.map((d) => ({
+    step: d.step,
+    water: formatBackendNumber('water_consumed_L', d.waterConsumedL),
+    mode: modeOf(d.coolingMode).label,
+  }));
+  const modeSummary =
+    `Simulated run result, not live. ${data.length} steps by cooling mode: ` +
+    pieData.map((d) => `${d.name} ${d.value}`).join(', ') +
+    '.';
+  const modeRows = pieData.map((d) => ({ mode: d.name, steps: d.value }));
+
   return (
     <div className="space-y-4">
       {failure}
@@ -101,8 +146,12 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
       </div>
 
       {/* Power + Temp line chart */}
-      <div className="card-grid-glow rounded-lg p-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Power & Temperature by simulated step</h3>
+      <ChartFrame
+        title="Power & Temperature by simulated step"
+        summary={lineSummary}
+        columns={LINE_COLUMNS}
+        rows={lineRows}
+      >
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data} margin={{ bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,30%,22%)" />
@@ -121,15 +170,21 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
             <Line yAxisId="temp" type="monotone" dataKey="outsideTempC" name="Outside Temp" stroke="#EF4444" strokeWidth={1.5} strokeDasharray="2 4" dot={false} />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </ChartFrame>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Water: the backend field, as reported */}
-        <div className="card-grid-glow rounded-lg p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Water consumed (L) — as reported per step</h3>
-          <p className="text-[11px] text-muted-foreground mb-3">
-            Backend field <code>water_consumed_L</code>, shown as provided (the twin accumulates it); not summed or derived here.
-          </p>
+        <ChartFrame
+          title="Water consumed (L) — as reported per step"
+          summary={waterSummary}
+          columns={WATER_COLUMNS}
+          rows={waterRows}
+          note={
+            <p className="text-[11px] text-muted-foreground mb-2">
+              Backend field <code>water_consumed_L</code>, shown as provided (the twin accumulates it); not summed or derived here.
+            </p>
+          }
+        >
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={barData} margin={{ bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,30%,22%)" />
@@ -148,11 +203,15 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </ChartFrame>
 
         {/* Pie chart */}
-        <div className="card-grid-glow rounded-lg p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Cooling mode by step (count of steps)</h3>
+        <ChartFrame
+          title="Cooling mode by step (count of steps)"
+          summary={modeSummary}
+          columns={MODE_COLUMNS}
+          rows={modeRows}
+        >
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
@@ -164,7 +223,7 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
               <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />
             </PieChart>
           </ResponsiveContainer>
-        </div>
+        </ChartFrame>
       </div>
     </div>
   );
