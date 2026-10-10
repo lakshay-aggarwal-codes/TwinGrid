@@ -1,0 +1,8 @@
+{
+  "type": "urn:twingrid:error:not_found",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "Unknown sensor",
+  "instance": "/api/telemetry/sensors/nope/samples",
+  "request_id": "<uuid>"
+}
