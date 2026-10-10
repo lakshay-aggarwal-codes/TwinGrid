@@ -1,0 +1,253 @@
+{
+  "registry_version": "1",
+  "scenarios": [
+    {
+      "id": "whatif-baseline",
+      "label": "Baseline",
+      "kind": "workload",
+      "description": "Moderate load, mild outside temperature, no water stress.",
+      "weather_source": "constant_input",
+      "plant": "simulated",
+      "control": "none",
+      "endpoint": "/api/whatif",
+      "parameters": [
+        {
+          "name": "utilisation",
+          "type": "number",
+          "unit": null,
+          "min": 0.0,
+          "max": 1.0,
+          "default": 0.65,
+          "description": "Server utilisation, fraction of capacity."
+        },
+        {
+          "name": "outside_temp",
+          "type": "number",
+          "unit": "\u00b0C",
+          "min": -10.0,
+          "max": 50.0,
+          "default": 22.0,
+          "description": "Outside temperature held constant for the run."
+        },
+        {
+          "name": "water_stress",
+          "type": "number",
+          "unit": null,
+          "min": 0.0,
+          "max": 1.0,
+          "default": 0.0,
+          "description": "Water-stress index, 0 (none) to 1 (severe)."
+        },
+        {
+          "name": "mode",
+          "type": "enum",
+          "unit": null,
+          "options": [
+            "auto",
+            "free_air",
+            "closed_loop",
+            "evaporative",
+            "hybrid"
+          ],
+          "default": "auto",
+          "description": "Cooling mode; 'auto' lets the twin's rule-based selector choose."
+        },
+        {
+          "name": "chilled_water_temp",
+          "type": "number",
+          "unit": "\u00b0C",
+          "min": 5.0,
+          "max": 15.0,
+          "default": 7.0,
+          "description": "Chilled-water setpoint."
+        }
+      ]
+    },
+    {
+      "id": "whatif-peak-workload",
+      "label": "Peak workload",
+      "kind": "workload",
+      "description": "Server utilisation raised to 0.95 with all other inputs at baseline.",
+      "weather_source": "constant_input",
+      "plant": "simulated",
+      "control": "none",
+      "endpoint": "/api/whatif",
+      "parameters": [
+        {
+          "name": "utilisation",
+          "type": "number",
+          "unit": null,
+          "min": 0.0,
+          "max": 1.0,
+          "default": 0.95,
+          "description": "Server utilisation, fraction of capacity."
+        },
+        {
+          "name": "outside_temp",
+          "type": "number",
+          "unit": "\u00b0C",
+          "min": -10.0,
+          "max": 50.0,
+          "default": 22.0,
+          "description": "Outside temperature held constant for the run."
+        },
+        {
+          "name": "water_stress",
+          "type": "number",
+          "unit": null,
+          "min": 0.0,
+          "max": 1.0,
+          "default": 0.0,
+          "description": "Water-stress index, 0 (none) to 1 (severe)."
+        },
+        {
+          "name": "mode",
+          "type": "enum",
+          "unit": null,
+          "options": [
+            "auto",
+            "free_air",
+            "closed_loop",
+            "evaporative",
+            "hybrid"
+          ],
+          "default": "auto",
+          "description": "Cooling mode; 'auto' lets the twin's rule-based selector choose."
+        },
+        {
+          "name": "chilled_water_temp",
+          "type": "number",
+          "unit": "\u00b0C",
+          "min": 5.0,
+          "max": 15.0,
+          "default": 7.0,
+          "description": "Chilled-water setpoint."
+        }
+      ]
+    },
+    {
+      "id": "whatif-heat-wave",
+      "label": "Heat wave",
+      "kind": "heat-wave",
+      "description": "Outside temperature held at 38 \u00b0C for the whole run.",
+      "weather_source": "constant_input",
+      "plant": "simulated",
+      "control": "none",
+      "endpoint": "/api/whatif",
+      "parameters": [
+        {
+          "name": "utilisation",
+          "type": "number",
+          "unit": null,
+          "min": 0.0,
+          "max": 1.0,
+          "default": 0.65,
+          "description": "Server utilisation, fraction of capacity."
+        },
+        {
+          "name": "outside_temp",
+          "type": "number",
+          "unit": "\u00b0C",
+          "min": -10.0,
+          "max": 50.0,
+          "default": 38.0,
+          "description": "Outside temperature held constant for the run."
+        },
+        {
+          "name": "water_stress",
+          "type": "number",
+          "unit": null,
+          "min": 0.0,
+          "max": 1.0,
+          "default": 0.0,
+          "description": "Water-stress index, 0 (none) to 1 (severe)."
+        },
+        {
+          "name": "mode",
+          "type": "enum",
+          "unit": null,
+          "options": [
+            "auto",
+            "free_air",
+            "closed_loop",
+            "evaporative",
+            "hybrid"
+          ],
+          "default": "auto",
+          "description": "Cooling mode; 'auto' lets the twin's rule-based selector choose."
+        },
+        {
+          "name": "chilled_water_temp",
+          "type": "number",
+          "unit": "\u00b0C",
+          "min": 5.0,
+          "max": 15.0,
+          "default": 7.0,
+          "description": "Chilled-water setpoint."
+        }
+      ]
+    },
+    {
+      "id": "whatif-drought",
+      "label": "Drought",
+      "kind": "drought",
+      "description": "Water stress held at 0.85, above the twin's drought-override threshold (0.7).",
+      "weather_source": "constant_input",
+      "plant": "simulated",
+      "control": "none",
+      "endpoint": "/api/whatif",
+      "parameters": [
+        {
+          "name": "utilisation",
+          "type": "number",
+          "unit": null,
+          "min": 0.0,
+          "max": 1.0,
+          "default": 0.65,
+          "description": "Server utilisation, fraction of capacity."
+        },
+        {
+          "name": "outside_temp",
+          "type": "number",
+          "unit": "\u00b0C",
+          "min": -10.0,
+          "max": 50.0,
+          "default": 22.0,
+          "description": "Outside temperature held constant for the run."
+        },
+        {
+          "name": "water_stress",
+          "type": "number",
+          "unit": null,
+          "min": 0.0,
+          "max": 1.0,
+          "default": 0.85,
+          "description": "Water-stress index, 0 (none) to 1 (severe)."
+        },
+        {
+          "name": "mode",
+          "type": "enum",
+          "unit": null,
+          "options": [
+            "auto",
+            "free_air",
+            "closed_loop",
+            "evaporative",
+            "hybrid"
+          ],
+          "default": "auto",
+          "description": "Cooling mode; 'auto' lets the twin's rule-based selector choose."
+        },
+        {
+          "name": "chilled_water_temp",
+          "type": "number",
+          "unit": "\u00b0C",
+          "min": 5.0,
+          "max": 15.0,
+          "default": 7.0,
+          "description": "Chilled-water setpoint."
+        }
+      ]
+    }
+  ]
+}
