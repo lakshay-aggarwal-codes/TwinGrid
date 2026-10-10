@@ -1,0 +1,12 @@
+{
+  "evaluations": [
+    {
+      "evaluation_id": "baselines_only_0fcafef9d28fd539",
+      "source": "policy_evaluation_v1",
+      "generated_at_utc": "2026-10-02T02:27:11+00:00",
+      "outcome": "NOT_EVALUATED",
+      "claim_allowed": "none",
+      "ppo_evaluated": false
+    }
+  ]
+}

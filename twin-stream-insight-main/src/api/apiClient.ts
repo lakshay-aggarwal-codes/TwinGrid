@@ -22,6 +22,7 @@ import {
 } from '../contract';
 import { ScenarioRegistrySchema, type ScenarioRegistry } from '../scenarios/schema';
 import { RunRecordSchema, RunResultSchema, type RunRecord, type RunResult } from '../runs/schema';
+import { EvaluationListSchema, EvaluationResultSchema, type EvaluationList, type EvaluationResult } from '../evaluation/schema';
 import { ApiError, describeBodyForReport, extractCode, kindForStatus, parseRetryAfter } from './apiError';
 import {
   toAlert,
@@ -306,6 +307,32 @@ export async function fetchRun(id: string, signal?: AbortSignal): Promise<RunRec
 /** GET /api/runs/{id}/result — 409 until the run is `completed`. The caller verifies `result.run_id`. */
 export async function fetchRunResult(id: string, signal?: AbortSignal): Promise<RunResult> {
   return callApi(RunResultSchema, 'GET /api/runs/{id}/result', buildUrl(`/api/runs/${encodeURIComponent(id)}/result`), { signal }, (r) => r);
+}
+
+// ------------------------------------------------------------------ FE-17: evaluations (BC-11, gate G-EVAL)
+
+/** GET /api/evaluations — the backend's evaluation reports, newest first. Read-only; nothing is computed here. */
+export async function fetchEvaluations(signal?: AbortSignal): Promise<EvaluationList> {
+  return callApi(EvaluationListSchema, 'GET /api/evaluations', buildUrl('/api/evaluations'), { signal }, (r) => r);
+}
+
+/**
+ * GET /api/evaluations/{id} — one evaluation report. The record must name the report that was requested; anything
+ * else is a contract violation (same rule as run results).
+ */
+export async function fetchEvaluation(id: string, signal?: AbortSignal): Promise<EvaluationResult> {
+  const result = await callApi(
+    EvaluationResultSchema,
+    'GET /api/evaluations/{id}',
+    buildUrl(`/api/evaluations/${encodeURIComponent(id)}`),
+    { signal },
+    (r) => r
+  );
+  if (result.evaluation_id !== id) {
+    reportError('apiClient.contract', 'GET /api/evaluations/{id}: evaluation_id does not match the request', 'error');
+    throw new ApiError({ kind: 'contract' });
+  }
+  return result;
 }
 
 export interface FetchOptimizedParams {

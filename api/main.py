@@ -42,6 +42,7 @@ from api.routes import (
     digital_twin_routes,
     equipment_health_routes,
     esg_report_routes,
+    evaluation_routes,
     facility_routes,
     health_routes,
     metrics_routes,
@@ -119,6 +120,7 @@ app.include_router(health_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(digital_twin_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(scenario_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(run_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(evaluation_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(optimization_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(anomaly_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(websocket_routes.router)
