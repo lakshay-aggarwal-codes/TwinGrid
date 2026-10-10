@@ -1,0 +1,20 @@
+{
+  "run_id": "ed4366fb-7772-4f9f-bc24-0891674e06af",
+  "kind": "whatif",
+  "status": "failed",
+  "scenario_id": "whatif-drought",
+  "scenario_set_id": "sset-1-1d29e4177772",
+  "registry_version": "1",
+  "parameters": {
+    "utilisation": 0.65,
+    "outside_temp": 22.0,
+    "water_stress": 0.85,
+    "mode": "auto",
+    "chilled_water_temp": 7.0
+  },
+  "created_at": "2026-10-09T18:53:00.507663+00:00",
+  "started_at": "2026-10-09T18:53:00.515616+00:00",
+  "ended_at": "2026-10-09T18:53:00.516021+00:00",
+  "failure_code": "internal_error",
+  "result_url": null
+}

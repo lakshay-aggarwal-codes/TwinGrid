@@ -46,6 +46,7 @@ from api.routes import (
     health_routes,
     metrics_routes,
     optimization_routes,
+    run_routes,
     scenario_routes,
     shadow_mode_routes,
     telemetry_routes,
@@ -117,6 +118,7 @@ app.include_router(auth_router, dependencies=_GENERAL_LIMIT)
 app.include_router(health_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(digital_twin_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(scenario_routes.router, dependencies=_GENERAL_LIMIT)
+app.include_router(run_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(optimization_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(anomaly_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(websocket_routes.router)
