@@ -1,0 +1,8 @@
+{
+  "type": "urn:twingrid:error:conflict",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "Run has no result (status: queued)",
+  "instance": "/api/runs/42b9753a-e869-47cb-8b40-c0e7ab038ae8/result",
+  "request_id": "e8c59975-287f-4d31-96c5-4e49c95cff1e"
+}

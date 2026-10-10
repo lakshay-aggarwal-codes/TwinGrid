@@ -1,0 +1,39 @@
+{
+  "run_id": "42b9753a-e869-47cb-8b40-c0e7ab038ae8",
+  "kind": "whatif",
+  "scenario_id": "whatif-heat-wave",
+  "scenario_set_id": "sset-1-1d29e4177772",
+  "registry_version": "1",
+  "parameters": {
+    "utilisation": 0.65,
+    "outside_temp": 38.0,
+    "water_stress": 0.0,
+    "mode": "auto",
+    "chilled_water_temp": 7.0
+  },
+  "started_at": "2026-10-09T18:53:00.296111+00:00",
+  "ended_at": "2026-10-09T18:53:00.301701+00:00",
+  "provenance": {
+    "origin": "simulated",
+    "scenario_kind": "heat-wave",
+    "weather_source": "constant_input",
+    "plant": "simulated",
+    "control": "none",
+    "physics_version": "1",
+    "model_version": null,
+    "carbon_data_is_real": false
+  },
+  "outputs": {
+    "hours": 24,
+    "basis": "24h at constant inputs, isolated digital-twin run (no RL optimizer applied)",
+    "mean_pue": 1.416075536017105,
+    "wue": 2.2556955440980446,
+    "total_water_L": 21383.993758049477,
+    "total_energy_kwh": 13424.396081442237,
+    "total_co2_kg": 6376.5881386850715,
+    "max_outlet_temp_C": 36.73735821275013,
+    "final_cooling_mode": "evaporative",
+    "drought_override_active": false,
+    "carbon_data_is_real": false
+  }
+}

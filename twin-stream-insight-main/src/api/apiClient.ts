@@ -20,6 +20,7 @@ import {
   isSuccess,
   parseApi,
 } from '../contract';
+import { ScenarioRegistrySchema, type ScenarioRegistry } from '../scenarios/schema';
 import { ApiError, describeBodyForReport, extractCode, kindForStatus, parseRetryAfter } from './apiError';
 import {
   toAlert,
@@ -243,6 +244,30 @@ export interface WhatIfParams {
 /** GET /api/whatif — real backend scenario result (never computed locally). */
 export async function fetchWhatIf(params: WhatIfParams, signal?: AbortSignal): Promise<WhatIfResponse> {
   return callApi(WhatIfSchema, 'GET /api/whatif', buildUrl('/api/whatif', { ...params }), { signal }, toWhatIf);
+}
+
+/** GET /api/scenarios — the backend scenario registry (BC-09). There is no per-id endpoint. */
+export async function fetchScenarios(signal?: AbortSignal): Promise<ScenarioRegistry> {
+  return callApi(ScenarioRegistrySchema, 'GET /api/scenarios', buildUrl('/api/scenarios'), { signal }, (r) => r);
+}
+
+/** `scenario_id` plus only the parameters the user overrode; the backend preset covers the rest. */
+export interface ScenarioWhatIfParams {
+  scenario_id: string;
+  [param: string]: string | number | undefined;
+}
+
+/**
+ * GET /api/whatif?scenario_id=... — a scenario preview. The backend echoes `scenario_id`; a result that does not name
+ * the scenario that was requested is not a result for it, so it is rejected as a contract violation.
+ */
+export async function fetchScenarioWhatIf(params: ScenarioWhatIfParams, signal?: AbortSignal): Promise<WhatIfResponse> {
+  const result = await callApi(WhatIfSchema, 'GET /api/whatif', buildUrl('/api/whatif', { ...params }), { signal }, toWhatIf);
+  if ((result as { scenario_id?: unknown }).scenario_id !== params.scenario_id) {
+    reportError('apiClient.contract', 'GET /api/whatif: scenario_id echo does not match the request', 'error');
+    throw new ApiError({ kind: 'contract' });
+  }
+  return result;
 }
 
 export interface FetchOptimizedParams {

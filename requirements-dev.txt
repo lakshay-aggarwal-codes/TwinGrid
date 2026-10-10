@@ -24,3 +24,4 @@ pyrefly>=0.30,<1
 # Dependency scan and lock generation
 pip-audit>=2.7,<3
 pip-tools>=7.4,<8
+fakeredis>=2.20,<3
