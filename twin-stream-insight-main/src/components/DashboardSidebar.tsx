@@ -75,7 +75,7 @@ export function DashboardSidebar({ config, onChange, onRunSim, simRunning, colla
             <Separator className="bg-border/50" />
 
             <Button onClick={onRunSim} disabled={simRunning} className="w-full gap-2">
-              {simRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {simRunning ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : <Play className="h-4 w-4" />}
               {simRunning ? 'Simulating…' : 'Run 24h Simulation'}
             </Button>
           </>

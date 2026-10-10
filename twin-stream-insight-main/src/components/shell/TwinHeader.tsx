@@ -58,7 +58,7 @@ export function TwinHeader({
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm shrink-0">
       <div className="flex flex-wrap items-center gap-3">
         <div className="h-8 w-8 rounded-md bg-primary/20 flex items-center justify-center">
-          <Boxes className="h-5 w-5 text-primary" />
+          <Boxes aria-hidden="true" className="h-5 w-5 text-primary" />
         </div>
         <h1 className="text-lg font-semibold tracking-tight text-foreground">Live Twin</h1>
         <ModeSwitcher mode={mode} onChange={onModeChange} />
@@ -67,11 +67,11 @@ export function TwinHeader({
           title="Simulation Lab"
           aria-label="Simulation Lab"
           aria-pressed={simulationOpen}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] uppercase tracking-wide transition-colors ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             simulationOpen ? "border-primary/40 bg-primary/20 text-primary" : "border-border text-muted-foreground hover:text-foreground"
           }`}
         >
-          <FlaskConical className="h-3.5 w-3.5" />
+          <FlaskConical aria-hidden="true" className="h-3.5 w-3.5" />
           <span className="hidden min-[1600px]:inline">Simulation Lab</span>
         </button>
         <button
@@ -79,11 +79,11 @@ export function TwinHeader({
           title="Operations"
           aria-label="Operations"
           aria-pressed={operationsOpen}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] uppercase tracking-wide transition-colors ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             operationsOpen ? "border-primary/40 bg-primary/20 text-primary" : "border-border text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Wrench className="h-3.5 w-3.5" />
+          <Wrench aria-hidden="true" className="h-3.5 w-3.5" />
           <span className="hidden min-[1600px]:inline">Operations</span>
         </button>
         <button
@@ -91,11 +91,11 @@ export function TwinHeader({
           title="Incidents"
           aria-label="Incidents"
           aria-pressed={incidentsOpen}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] uppercase tracking-wide transition-colors ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             incidentsOpen ? "border-primary/40 bg-primary/20 text-primary" : "border-border text-muted-foreground hover:text-foreground"
           }`}
         >
-          <AlertTriangle className="h-3.5 w-3.5" />
+          <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" />
           <span className="hidden min-[1600px]:inline">Incidents</span>
         </button>
       </div>
@@ -143,11 +143,11 @@ export function TwinHeader({
       <div className="flex items-center gap-4">
         <button
           onClick={onOpenSearch}
-          className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Search racks, zones and alerts"
           title="Search (Ctrl K)"
         >
-          <Search className="h-3.5 w-3.5" />
+          <Search aria-hidden="true" className="h-3.5 w-3.5" />
           <span className="hidden min-[1600px]:inline">Search</span>
           <kbd className="hidden min-[1600px]:inline font-mono text-[10px] rounded border border-border px-1 py-px text-muted-foreground">Ctrl K</kbd>
         </button>
@@ -157,7 +157,7 @@ export function TwinHeader({
           onPointerEnter={() => void loadAnalyticsPage()}
           onFocus={() => void loadAnalyticsPage()}
           onTouchStart={() => void loadAnalyticsPage()}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          className="rounded-sm text-sm text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           Analytics
         </RotateLink>
       </div>
