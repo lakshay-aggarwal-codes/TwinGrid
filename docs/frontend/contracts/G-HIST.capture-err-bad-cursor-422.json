@@ -1,0 +1,8 @@
+{
+  "type": "urn:twingrid:error:validation_error",
+  "title": "Unprocessable Entity",
+  "status": 422,
+  "detail": "'cursor' is not valid; use the next_cursor of a previous response",
+  "instance": "/api/telemetry/sensors/fac1.it_power_kw/samples",
+  "request_id": "<uuid>"
+}

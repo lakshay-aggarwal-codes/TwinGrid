@@ -1,0 +1,46 @@
+{
+  "external_id": "fac1.it_power_kw",
+  "unit": "kW",
+  "sampling_interval_s": 300.0,
+  "stream": "live",
+  "quality": "ok",
+  "items": [
+    {
+      "ts_event": "2026-03-01T12:00:00Z",
+      "ts_ingest": "2026-03-03T12:00:00Z",
+      "value": 300.0,
+      "origin": "simulated",
+      "stream_id": "live",
+      "quality": "ok",
+      "invalid_reason": null
+    },
+    {
+      "ts_event": "2026-03-01T12:05:00Z",
+      "ts_ingest": "2026-03-03T12:00:00Z",
+      "value": 300.0,
+      "origin": "simulated",
+      "stream_id": "live",
+      "quality": "ok",
+      "invalid_reason": null
+    },
+    {
+      "ts_event": "2026-03-01T12:10:00Z",
+      "ts_ingest": "2026-03-03T12:00:00Z",
+      "value": 300.0,
+      "origin": "simulated",
+      "stream_id": "live",
+      "quality": "ok",
+      "invalid_reason": null
+    },
+    {
+      "ts_event": "2026-03-01T12:15:00Z",
+      "ts_ingest": "2026-03-03T12:00:00Z",
+      "value": 300.0,
+      "origin": "simulated",
+      "stream_id": "live",
+      "quality": "ok",
+      "invalid_reason": null
+    }
+  ],
+  "next_cursor": "eyJ0IjoiMjAyNi0wMy0wMVQxMjoxNTowMFoiLCJpIjo0fQ"
+}

@@ -1,0 +1,18 @@
+{
+  "type": "urn:twingrid:error:validation_error",
+  "title": "Unprocessable Entity",
+  "status": 422,
+  "detail": "query.limit: Input should be less than or equal to 5000",
+  "instance": "/api/telemetry/sensors/fac1.it_power_kw/samples",
+  "request_id": "<uuid>",
+  "errors": [
+    {
+      "loc": [
+        "query",
+        "limit"
+      ],
+      "msg": "Input should be less than or equal to 5000",
+      "type": "less_than_equal"
+    }
+  ]
+}

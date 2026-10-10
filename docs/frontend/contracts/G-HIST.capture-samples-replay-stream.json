@@ -1,0 +1,19 @@
+{
+  "external_id": "fac1.it_power_kw",
+  "unit": "kW",
+  "sampling_interval_s": 300.0,
+  "stream": "replay:123e4567-e89b-12d3-a456-426614174000",
+  "quality": "ok",
+  "items": [
+    {
+      "ts_event": "2026-03-01T12:15:00Z",
+      "ts_ingest": "2026-03-03T12:00:00Z",
+      "value": 123.0,
+      "origin": "replay",
+      "stream_id": "replay:123e4567-e89b-12d3-a456-426614174000",
+      "quality": "ok",
+      "invalid_reason": null
+    }
+  ],
+  "next_cursor": null
+}

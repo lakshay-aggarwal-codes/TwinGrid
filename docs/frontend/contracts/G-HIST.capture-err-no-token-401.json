@@ -1,0 +1,8 @@
+{
+  "type": "urn:twingrid:error:unauthorized",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Not authenticated",
+  "instance": "/api/telemetry/sensors/fac1.it_power_kw/samples",
+  "request_id": "<uuid>"
+}
