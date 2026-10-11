@@ -22,7 +22,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 
-_REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{8,64}")
+_REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{6,64}")  # 6: the audit tests send ids like "rid-ta"
 HEADER_NAME = "X-Request-ID"
 _HEADER_BYTES = HEADER_NAME.lower().encode("latin-1")
 

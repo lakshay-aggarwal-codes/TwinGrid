@@ -181,6 +181,7 @@ def http_limit(scope: str):
                 headers={"Retry-After": str(retry_after)},
             )
 
+    _dependency.http_limit_scope = scope  # read by reports/postT9/T14_route_controls.py
     return _dependency
 
 

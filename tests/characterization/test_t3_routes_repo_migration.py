@@ -129,7 +129,7 @@ async def test_update_alert_severity_modifies_in_place(session_maker, count_rows
 
 
 # --------------------------------------------------------------------------- M2 migration
-MIGRATION = gs.REPO_ROOT / "alembic" / "versions" / "20261001000000_add_alert_integrity_columns.py"
+MIGRATION = gs.REPO_ROOT / "alembic" / "versions" / "20261001000001_add_alert_integrity_columns.py"
 
 
 def _load():
@@ -141,8 +141,9 @@ def _load():
 
 def test_m2_revision_chain():
     m = _load()
-    assert m.revision == "20261001000000" and m.down_revision == "20250223000000"
-    previous = gs.REPO_ROOT / "alembic" / "versions" / "20250223000000_add_security_hardening.py"
+    # T10 renumbered M2 so it follows M1 (20261001000000) instead of sharing M1's id.
+    assert m.revision == "20261001000001" and m.down_revision == "20261001000000"
+    previous = gs.REPO_ROOT / "alembic" / "versions" / "20261001000000_m1_provenance.py"
     assert previous.exists()
 
 

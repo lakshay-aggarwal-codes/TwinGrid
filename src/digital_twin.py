@@ -48,6 +48,7 @@ from .carbon_provider import load_diurnal_carbon_intensity
 from .logging_config import log_error, log_function_entry, log_function_exit, log_simulation_step
 from .physics import v2 as physics_v2
 from .physics.params import PhysicsParams, PhysicsParamsError
+from .timeutil import utc_now
 from .versions import PHYSICS_V1, PHYSICS_V2, active_physics_version, physics_identity, validate_physics_version
 
 # Matches DataCentreEnv.DROUGHT_THRESHOLD (src/optimizer.py) exactly --
@@ -374,7 +375,7 @@ class DigitalTwin:
             self._idle_power_fraction = idle_power_fraction
             self._air_flow_m3_s = air_flow_m3_s
             self._cooling_mode = initial_cooling_mode
-            self._time = start_time or datetime.now()
+            self._time = start_time if start_time is not None else utc_now()
             self._utilisation: float = 0.0
             self._outside_temp_C: float = 25.0
             self._water_consumed_cumulative_L: float = 0.0

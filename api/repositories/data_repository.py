@@ -15,27 +15,66 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.db_models import Alert, OptimizationResult, SensorReading, SimulationRun
 from src.timeutil import utc_now
+from src.versions import active_physics_version
+
+_SIMULATED = "simulated"  # every writer in this module stores simulator output
 
 
 async def save_sensor_reading(
-    session: AsyncSession, state_dict: dict[str, Any], source: str, simulation_run_id: int | None = None
+    session: AsyncSession,
+    state_dict: dict[str, Any],
+    source: str,
+    simulation_run_id: int | None = None,
+    *,
+    physics_version: str | None = None,
 ) -> None:
-    session.add(SensorReading.from_state_dict(state_dict, source, simulation_run_id=simulation_run_id))
+    """Store one simulator state, stamped origin='simulated' and the physics version that produced it."""
+    session.add(
+        SensorReading.from_state_dict(
+            state_dict,
+            source,
+            simulation_run_id=simulation_run_id,
+            origin=_SIMULATED,
+            physics_version=physics_version or active_physics_version(),
+        )
+    )
     await session.flush()
 
 
 async def save_sensor_readings_bulk(
-    session: AsyncSession, records: list[dict[str, Any]], source: str, simulation_run_id: int | None = None
+    session: AsyncSession,
+    records: list[dict[str, Any]],
+    source: str,
+    simulation_run_id: int | None = None,
+    *,
+    physics_version: str | None = None,
 ) -> None:
+    version = physics_version or active_physics_version()
     for record in records:
-        session.add(SensorReading.from_state_dict(record, source, simulation_run_id=simulation_run_id))
+        session.add(
+            SensorReading.from_state_dict(
+                record, source, simulation_run_id=simulation_run_id, origin=_SIMULATED, physics_version=version
+            )
+        )
     await session.flush()
 
 
 async def save_simulation_run(
-    session: AsyncSession, hours: int, utilisation: float, stress: float, result_snapshot: list[dict[str, Any]]
+    session: AsyncSession,
+    hours: int,
+    utilisation: float,
+    stress: float,
+    result_snapshot: list[dict[str, Any]],
+    *,
+    physics_version: str | None = None,
 ) -> SimulationRun:
-    run = SimulationRun(hours=hours, utilisation=utilisation, stress=stress, result_snapshot=result_snapshot)
+    run = SimulationRun(
+        hours=hours,
+        utilisation=utilisation,
+        stress=stress,
+        result_snapshot=result_snapshot,
+        physics_version=physics_version or active_physics_version(),
+    )
     session.add(run)
     await session.flush()
     return run

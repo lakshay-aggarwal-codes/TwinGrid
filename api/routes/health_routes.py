@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -19,6 +18,7 @@ from api.services.live_broadcast_service import BROADCAST_LOOP_NAME
 from api.supervisor import supervisor
 from database import get_db
 from models.db_models import User
+from src.timeutil import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ async def readiness(session: AsyncSession = Depends(get_db)) -> JSONResponse:
         "components": {"redis": redis_state, **models},
         "broadcast_heartbeat_age_s": None if age is None else round(age, 3),
         "broadcast_restarts": state.restarts if state else 0,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
     return JSONResponse(body, status_code=200 if ready else 503)
 
@@ -169,10 +169,10 @@ async def liveness_check(session: AsyncSession = Depends(get_db)) -> dict[str, s
         # Raw exception text (driver/DSN/host details) stays server-side only.
         logger.exception("Health check: database unreachable")
         raise HTTPException(status_code=503, detail="Service unavailable") from None
-    return {"status": "ok", "database": "ok", "timestamp": datetime.now().isoformat()}
+    return {"status": "ok", "database": "ok", "timestamp": utc_now().isoformat()}
 
 
 @router.get("/api/health")
 async def health_check(_user: Annotated[User, Depends(get_current_user)]) -> dict[str, str]:
     """Health check endpoint. Requires valid JWT."""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    return {"status": "healthy", "timestamp": utc_now().isoformat()}
