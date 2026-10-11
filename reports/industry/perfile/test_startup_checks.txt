@@ -1,0 +1,51 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 55 items
+
+tests\test_startup_checks.py ........................................... [ 78%]
+...FF.....F.                                                             [100%]
+
+================================== FAILURES ===================================
+____________________ test_auth_delegates_the_secret_check _____________________
+tests\test_startup_checks.py:215: in test_auth_delegates_the_secret_check
+    with pytest.raises(StartupConfigError) as info:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'api.startup_checks.StartupConfigError'>
+______________ test_config_cors_error_is_a_startup_config_error _______________
+tests\test_startup_checks.py:235: in test_config_cors_error_is_a_startup_config_error
+    importlib.reload(config_module)
+..\..\..\AppData\Local\Python\pythoncore-3.12-64\Lib\importlib\__init__.py:131: in reload
+    _bootstrap._exec(spec, module)
+<frozen importlib._bootstrap>:866: in _exec
+    ???
+<frozen importlib._bootstrap_external>:999: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+api\config.py:36: in <module>
+    class Settings:
+api\config.py:37: in Settings
+    CORS_ALLOW_ORIGINS: list[str] = _parse_origins(os.getenv("CORS_ALLOWED_ORIGINS"))
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api\config.py:23: in _parse_origins
+    raise RuntimeError(
+E   RuntimeError: CORS_ALLOWED_ORIGINS is not set and ENVIRONMENT=production. Set it explicitly to a comma-separated list of allowed frontend origins, e.g.: CORS_ALLOWED_ORIGINS=https://your-frontend.example.com
+_ test_env_example_contains_every_variable_read_by_startup_checks_and_config __
+tests\test_startup_checks.py:357: in test_env_example_contains_every_variable_read_by_startup_checks_and_config
+    assert sorted(read - declared) == []
+E   AssertionError: assert ['BROADCAST_M...CHECK_SCHEMA'] == []
+E
+E     Left contains 6 more items, first extra item: 'BROADCAST_MODE'
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/test_startup_checks.py::test_auth_delegates_the_secret_check - F...
+FAILED tests/test_startup_checks.py::test_config_cors_error_is_a_startup_config_error
+FAILED tests/test_startup_checks.py::test_env_example_contains_every_variable_read_by_startup_checks_and_config
+======================== 3 failed, 52 passed in 7.41s =========================

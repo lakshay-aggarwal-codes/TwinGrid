@@ -1,0 +1,22 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 72 items
+
+tests\test_external_register.py ............F........................... [ 55%]
+................................                                         [100%]
+
+================================== FAILURES ===================================
+__________________ test_data_licenses_doc_covers_every_entry __________________
+tests\test_external_register.py:153: in test_data_licenses_doc_covers_every_entry
+    assert "Get-FileHash" in doc and "No licence is verified" in doc
+E   AssertionError: assert ('Get-FileHash' in '# External data: sources, licences and claim boundaries\n\nThe authoritative record is `data/external/REGISTER.json` ...rms support the permitted use, and set `redistribution` from the terms. Then run `python scripts/check_register.py`.\n')
+=========================== short test summary info ===========================
+FAILED tests/test_external_register.py::test_data_licenses_doc_covers_every_entry
+======================== 1 failed, 71 passed in 2.36s =========================

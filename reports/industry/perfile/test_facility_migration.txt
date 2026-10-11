@@ -1,0 +1,342 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 5 items
+
+tests\test_facility_migration.py .FFFF                                   [100%]
+
+================================== FAILURES ===================================
+_________ test_upgrade_creates_schema_default_facility_and_backfills __________
+tests\test_facility_migration.py:72: in test_upgrade_creates_schema_default_facility_and_backfills
+    assert r.returncode == 0, r.stderr
+E   AssertionError: INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+E     INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+E     INFO  [alembic.runtime.migration] Running upgrade 20250223000000 -> 20261001000000, M1: minimal provenance columns (T1b).
+E     Traceback (most recent call last):
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+E         self.dialect.do_execute(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+E         cursor.execute(statement, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 213, in execute
+E         self._adapt_connection._handle_exception(error)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 373, in _handle_exception
+E         raise error
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 195, in execute
+E         self.await_(_cursor.execute(operation, parameters))
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+E         return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+E         value = await result
+E                 ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 40, in execute
+E         await self._execute(self._cursor.execute, sql, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 32, in _execute
+E         return await self._conn._execute(fn, *args, **kwargs)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 160, in _execute
+E         return await future
+E                ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 63, in _connection_worker_thread
+E         result = function()
+E                  ^^^^^^^^^^
+E     sqlite3.OperationalError: no such table: optimization_results
+E
+E     The above exception was the direct cause of the following exception:
+E
+E     Traceback (most recent call last):
+E       File "<frozen runpy>", line 198, in _run_module_as_main
+E       File "<frozen runpy>", line 88, in _run_code
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\__main__.py", line 4, in <module>
+E         main(prog="alembic")
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\config.py", line 1039, in main
+E         CommandLine(prog=prog).main(argv=argv)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\config.py", line 1029, in main
+E         self.run_cmd(cfg, options)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\config.py", line 963, in run_cmd
+E         fn(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\command.py", line 487, in upgrade
+E         script.run_env()
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\script\base.py", line 550, in run_env
+E         util.load_python_file(self.dir, "env.py")
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\util\pyfiles.py", line 114, in load_python_file
+E         module = load_module_py(module_id, path)
+E                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\util\pyfiles.py", line 132, in load_module_py
+E         spec.loader.exec_module(module)  # type: ignore
+E         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+E       File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\env.py", line 75, in <module>
+E         run_migrations_online()
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\env.py", line 69, in run_migrations_online
+E         asyncio.run(run_async_migrations())
+E       File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\asyncio\runners.py", line 195, in run
+E         return runner.run(main)
+E                ^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\asyncio\runners.py", line 118, in run
+E         return self._loop.run_until_complete(task)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\asyncio\base_events.py", line 691, in run_until_complete
+E         return future.result()
+E                ^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\env.py", line 64, in run_async_migrations
+E         await connection.run_sync(do_run_migrations)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py", line 888, in run_sync
+E         return await greenlet_spawn(
+E                ^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 203, in greenlet_spawn
+E         result = context.switch(value)
+E                  ^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\env.py", line 54, in do_run_migrations
+E         context.run_migrations()
+E       File "<string>", line 8, in run_migrations
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\runtime\environment.py", line 970, in run_migrations
+E         self.get_context().run_migrations(**kw)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\runtime\migration.py", line 616, in run_migrations
+E         step.migration_fn(**kw)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\versions\20261001000000_m1_provenance.py", line 45, in upgrade
+E         op.add_column("optimization_results", sa.Column("physics_version", sa.String(32), nullable=True))
+E       File "<string>", line 8, in add_column
+E       File "<string>", line 3, in add_column
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\operations\ops.py", line 2236, in add_column
+E         return operations.invoke(op)
+E                ^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\operations\base.py", line 448, in invoke
+E         return fn(self, operation)
+E                ^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\operations\toimpl.py", line 181, in add_column
+E         operations.impl.add_column(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\ddl\impl.py", line 384, in add_column
+E         self._exec(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\ddl\impl.py", line 252, in _exec
+E         return conn.execute(construct, params)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+E         return meth(
+E                ^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 188, in _execute_on_connection
+E         return connection._execute_ddl(
+E                ^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1532, in _execute_ddl
+E         ret = self._execute_context(
+E               ^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1848, in _execute_context
+E         return self._exec_single_context(
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1988, in _exec_single_context
+E         self._handle_dbapi_exception(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+E         raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+E         self.dialect.do_execute(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+E         cursor.execute(statement, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 213, in execute
+E         self._adapt_connection._handle_exception(error)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 373, in _handle_exception
+E         raise error
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 195, in execute
+E         self.await_(_cursor.execute(operation, parameters))
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+E         return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+E         value = await result
+E                 ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 40, in execute
+E         await self._execute(self._cursor.execute, sql, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 32, in _execute
+E         return await self._conn._execute(fn, *args, **kwargs)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 160, in _execute
+E         return await future
+E                ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 63, in _connection_worker_thread
+E         result = function()
+E                  ^^^^^^^^^^
+E     sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: optimization_results
+E     [SQL: ALTER TABLE optimization_results ADD COLUMN physics_version VARCHAR(32)]
+E     (Background on this error at: https://sqlalche.me/e/20/e3q8)
+E
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\.venv\\Scripts\\python.exe', '-m',...ation_results ADD COLUMN physics_version VARCHAR(32)]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)\n').returncode
+____________ test_downgrade_removes_everything_and_keeps_old_data _____________
+tests\test_facility_migration.py:87: in test_downgrade_removes_everything_and_keeps_old_data
+    assert _alembic(pre_m3_db, "upgrade", M3).returncode == 0
+E   AssertionError: assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\.venv\\Scripts\\python.exe', '-m',...ation_results ADD COLUMN physics_version VARCHAR(32)]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)\n').returncode
+E    +    where CompletedProcess(args=['C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\.venv\\Scripts\\python.exe', '-m',...ation_results ADD COLUMN physics_version VARCHAR(32)]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)\n') = _alembic(WindowsPath('C:/Users/Lakshay/AppData/Local/Temp/pytest-of-Lakshay/pytest-66/test_downgrade_removes_everyth0/m3.db'), 'upgrade', '20261002000000')
+_______________________________ test_up_down_up _______________________________
+tests\test_facility_migration.py:100: in test_up_down_up
+    assert r.returncode == 0, f"{args}: {r.stderr}"
+E   AssertionError: ('upgrade', '20261002000000'): INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+E     INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+E     INFO  [alembic.runtime.migration] Running upgrade 20250223000000 -> 20261001000000, M1: minimal provenance columns (T1b).
+E     Traceback (most recent call last):
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+E         self.dialect.do_execute(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+E         cursor.execute(statement, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 213, in execute
+E         self._adapt_connection._handle_exception(error)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 373, in _handle_exception
+E         raise error
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 195, in execute
+E         self.await_(_cursor.execute(operation, parameters))
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+E         return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+E         value = await result
+E                 ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 40, in execute
+E         await self._execute(self._cursor.execute, sql, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 32, in _execute
+E         return await self._conn._execute(fn, *args, **kwargs)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 160, in _execute
+E         return await future
+E                ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 63, in _connection_worker_thread
+E         result = function()
+E                  ^^^^^^^^^^
+E     sqlite3.OperationalError: no such table: optimization_results
+E
+E     The above exception was the direct cause of the following exception:
+E
+E     Traceback (most recent call last):
+E       File "<frozen runpy>", line 198, in _run_module_as_main
+E       File "<frozen runpy>", line 88, in _run_code
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\__main__.py", line 4, in <module>
+E         main(prog="alembic")
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\config.py", line 1039, in main
+E         CommandLine(prog=prog).main(argv=argv)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\config.py", line 1029, in main
+E         self.run_cmd(cfg, options)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\config.py", line 963, in run_cmd
+E         fn(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\command.py", line 487, in upgrade
+E         script.run_env()
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\script\base.py", line 550, in run_env
+E         util.load_python_file(self.dir, "env.py")
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\util\pyfiles.py", line 114, in load_python_file
+E         module = load_module_py(module_id, path)
+E                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\util\pyfiles.py", line 132, in load_module_py
+E         spec.loader.exec_module(module)  # type: ignore
+E         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+E       File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\env.py", line 75, in <module>
+E         run_migrations_online()
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\env.py", line 69, in run_migrations_online
+E         asyncio.run(run_async_migrations())
+E       File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\asyncio\runners.py", line 195, in run
+E         return runner.run(main)
+E                ^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\asyncio\runners.py", line 118, in run
+E         return self._loop.run_until_complete(task)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\asyncio\base_events.py", line 691, in run_until_complete
+E         return future.result()
+E                ^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\env.py", line 64, in run_async_migrations
+E         await connection.run_sync(do_run_migrations)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py", line 888, in run_sync
+E         return await greenlet_spawn(
+E                ^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 203, in greenlet_spawn
+E         result = context.switch(value)
+E                  ^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\env.py", line 54, in do_run_migrations
+E         context.run_migrations()
+E       File "<string>", line 8, in run_migrations
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\runtime\environment.py", line 970, in run_migrations
+E         self.get_context().run_migrations(**kw)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\runtime\migration.py", line 616, in run_migrations
+E         step.migration_fn(**kw)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\alembic\versions\20261001000000_m1_provenance.py", line 45, in upgrade
+E         op.add_column("optimization_results", sa.Column("physics_version", sa.String(32), nullable=True))
+E       File "<string>", line 8, in add_column
+E       File "<string>", line 3, in add_column
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\operations\ops.py", line 2236, in add_column
+E         return operations.invoke(op)
+E                ^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\operations\base.py", line 448, in invoke
+E         return fn(self, operation)
+E                ^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\operations\toimpl.py", line 181, in add_column
+E         operations.impl.add_column(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\ddl\impl.py", line 384, in add_column
+E         self._exec(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\alembic\ddl\impl.py", line 252, in _exec
+E         return conn.execute(construct, params)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+E         return meth(
+E                ^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 188, in _execute_on_connection
+E         return connection._execute_ddl(
+E                ^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1532, in _execute_ddl
+E         ret = self._execute_context(
+E               ^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1848, in _execute_context
+E         return self._exec_single_context(
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1988, in _exec_single_context
+E         self._handle_dbapi_exception(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+E         raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+E         self.dialect.do_execute(
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+E         cursor.execute(statement, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 213, in execute
+E         self._adapt_connection._handle_exception(error)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 373, in _handle_exception
+E         raise error
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 195, in execute
+E         self.await_(_cursor.execute(operation, parameters))
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+E         return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+E         value = await result
+E                 ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 40, in execute
+E         await self._execute(self._cursor.execute, sql, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 32, in _execute
+E         return await self._conn._execute(fn, *args, **kwargs)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 160, in _execute
+E         return await future
+E                ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 63, in _connection_worker_thread
+E         result = function()
+E                  ^^^^^^^^^^
+E     sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: optimization_results
+E     [SQL: ALTER TABLE optimization_results ADD COLUMN physics_version VARCHAR(32)]
+E     (Background on this error at: https://sqlalche.me/e/20/e3q8)
+E
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\.venv\\Scripts\\python.exe', '-m',...ation_results ADD COLUMN physics_version VARCHAR(32)]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)\n').returncode
+__________ test_migrated_schema_enforces_open_located_in_uniqueness ___________
+tests\test_facility_migration.py:105: in test_migrated_schema_enforces_open_located_in_uniqueness
+    assert _alembic(pre_m3_db, "upgrade", M3).returncode == 0
+E   AssertionError: assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\.venv\\Scripts\\python.exe', '-m',...ation_results ADD COLUMN physics_version VARCHAR(32)]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)\n').returncode
+E    +    where CompletedProcess(args=['C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\.venv\\Scripts\\python.exe', '-m',...ation_results ADD COLUMN physics_version VARCHAR(32)]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)\n') = _alembic(WindowsPath('C:/Users/Lakshay/AppData/Local/Temp/pytest-of-Lakshay/pytest-66/test_migrated_schema_enforces_0/m3.db'), 'upgrade', '20261002000000')
+=========================== short test summary info ===========================
+FAILED tests/test_facility_migration.py::test_upgrade_creates_schema_default_facility_and_backfills
+FAILED tests/test_facility_migration.py::test_downgrade_removes_everything_and_keeps_old_data
+FAILED tests/test_facility_migration.py::test_up_down_up - AssertionError: ('...
+FAILED tests/test_facility_migration.py::test_migrated_schema_enforces_open_located_in_uniqueness
+======================== 4 failed, 1 passed in 23.38s =========================

@@ -1,0 +1,103 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 12 items
+
+tests\test_load_harness.py .........+++++++++++++++++++++++++++++++++++ Timeout +++++++++++++++++++++++++++++++++++
+~ Stack of pytest_timeout tests/test_load_harness.py::test_locustfile_has_no_default_credentials (20500) ~
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\threading.py", line 1433, in run
+    self.function(*self.args, **self.kwargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pytest_timeout.py", line 534, in timeout_timer
+    dump_stacks(terminal)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pytest_timeout.py", line 558, in dump_stacks
+    terminal.write("".join(traceback.format_stack(frame)))
+~~~~~~~~~~~~~~~~~~~~~~~~~ Stack of <unknown> (16964) ~~~~~~~~~~~~~~~~~~~~~~~~~~
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_load_harness.py", line 112, in test_locustfile_has_no_default_credentials
+    pytest.importorskip("locust")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\outcomes.py", line 280, in importorskip
+    __import__(modname)
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\assertion\rewrite.py", line 186, in exec_module
+    exec(co, module.__dict__)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\locust\__init__.py", line 25, in <module>
+    from .contrib.fasthttp import FastHttpUser
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 471, in _lock_unlock_module
+  File "<frozen importlib._bootstrap>", line 365, in acquire
++++++++++++++++++++++++++++++++++++ Timeout +++++++++++++++++++++++++++++++++++
