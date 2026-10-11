@@ -128,6 +128,8 @@ class AnomalyDetector:
         self._scaler: Any = None
         self._threshold: float | None = None
         self._is_trained = False
+        self._fit_split_id: str | None = None  # T26: the split the threshold was fitted on
+        self._input_cadence_s: float | None = None
 
     @property
     def threshold(self) -> float | None:
@@ -306,6 +308,68 @@ class AnomalyDetector:
             log_error("AnomalyDetector.train", e)
             raise
 
+    def train_sequences(
+        self,
+        sequences: np.ndarray,
+        *,
+        epochs: int = 50,
+        batch_size: int = 32,
+        validation_split: float = 0.2,
+        patience: int = 10,
+        seed: int | None = None,
+    ) -> dict[str, Any]:
+        """Fit scaler and autoencoder on caller-built windows of shape (n, seq_len, 5).
+
+        T26: the caller builds the windows (never across a scenario boundary, normal rows only) and the
+        threshold is NOT set here -- it is chosen on the validation split with ``set_threshold``.
+        ``train()`` is unchanged and keeps its percentile-of-training-errors threshold.
+        """
+        sequences = np.asarray(sequences, dtype=np.float32)
+        if sequences.ndim != 3 or sequences.shape[1] != self._seq_len or sequences.shape[2] != N_FEATURES:
+            raise ShapeError(f"sequences must be (n, {self._seq_len}, {N_FEATURES}), got {sequences.shape}")
+        if len(sequences) == 0:
+            raise ValueError("No training sequences given.")
+        keras = _get_keras()
+        if seed is not None:
+            keras.utils.set_random_seed(int(seed))
+        MinMaxScaler = _get_sklearn()["MinMaxScaler"]
+        self._scaler = MinMaxScaler()
+        scaled = self._scaler.fit_transform(sequences.reshape(-1, N_FEATURES)).reshape(sequences.shape)
+        if self._model is None:
+            self._model = self._build_model()
+        history = self._model.fit(
+            scaled,
+            scaled,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_split=validation_split,
+            callbacks=[keras.callbacks.EarlyStopping(monitor="val_loss", patience=patience, restore_best_weights=True)],
+            verbose=self._verbose,
+        )
+        self._threshold = None
+        self._fit_split_id = None
+        self._is_trained = True
+        return dict(history.history)
+
+    def score_sequences(self, sequences: np.ndarray) -> np.ndarray:
+        """Reconstruction error per window, float32 (no threshold needed)."""
+        if not self._is_trained or self._model is None:
+            raise NotTrainedError("Detector must be trained before scoring.")
+        sequences = np.asarray(sequences, dtype=np.float32)
+        if sequences.ndim != 3 or sequences.shape[1] != self._seq_len or sequences.shape[2] != N_FEATURES:
+            raise ShapeError(f"sequences must be (n, {self._seq_len}, {N_FEATURES}), got {sequences.shape}")
+        return self._compute_errors(sequences).astype(np.float32)
+
+    def set_threshold(self, value: float, *, fit_split_id: str, input_cadence_s: float | None = None) -> None:
+        """Record an externally chosen threshold and where it was fitted (saved into config.json)."""
+        if not np.isfinite(value):
+            raise ValueError("threshold must be finite")
+        if not fit_split_id:
+            raise ValueError("fit_split_id is required")
+        self._threshold = float(value)
+        self._fit_split_id = str(fit_split_id)
+        self._input_cadence_s = None if input_cadence_s is None else float(input_cadence_s)
+
     def _compute_errors(self, sequences: np.ndarray) -> np.ndarray:
         """Compute reconstruction MSE per sample."""
         if self._scaler is None:
@@ -397,17 +461,17 @@ class AnomalyDetector:
 
         self._model.save(str(path / "model.keras"))
         scaler_io.dump_scaler_json(self._scaler, path / "scaler.json")
-        (path / "config.json").write_text(
-            json.dumps(
-                {
-                    "threshold": self._threshold,
-                    "seq_len": self._seq_len,
-                    "feature_columns": self._feature_columns,
-                    "percentile": self._percentile,
-                },
-                indent=2,
-            )
-        )
+        config: dict[str, Any] = {
+            "threshold": self._threshold,
+            "seq_len": self._seq_len,
+            "feature_columns": self._feature_columns,
+            "percentile": self._percentile,
+        }
+        if self._fit_split_id is not None:  # T26 artifacts only; legacy configs are written exactly as before
+            config["fit_split_id"] = self._fit_split_id
+        if self._input_cadence_s is not None:
+            config["input_cadence_s"] = self._input_cadence_s
+        (path / "config.json").write_text(json.dumps(config, indent=2))
         logger.info("Saved to %s", path)
 
     @classmethod
