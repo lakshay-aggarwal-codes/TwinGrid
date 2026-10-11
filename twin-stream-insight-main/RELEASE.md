@@ -4,8 +4,8 @@
 
 `npm run verify` runs, in order: `typecheck`, `lint:ci`, `test`, `build`. CI runs the same steps from a clean `npm ci`, then `npm audit --audit-level=high`.
 
-- `lint:ci` = `eslint . --max-warnings 7`. Zero errors are required. The 7 warnings are known (below); the cap is a ratchet, so a new warning fails the build.
-- `build` refuses to run in production mode if `VITE_API_BASE_URL`, `VITE_DEMO_USERNAME` or `VITE_DEMO_PASSWORD` is unset, or if the API URL is localhost (`vite.config.ts`). It warns on plain `http://` and on an unset `VITE_ERROR_REPORT_URL`.
+- `lint:ci` = `eslint . --max-warnings 0` (`package.json`). Zero errors and zero warnings are required; the IG-00 run passed with no output.
+- `build` refuses to run in production mode if `VITE_API_BASE_URL` is unset, or if the API URL is localhost (`vite.config.ts`). It warns on plain `http://` and on an unset `VITE_ERROR_REPORT_URL`.
 
 ## Manual steps before deploy
 
@@ -19,11 +19,11 @@
 - **Runtime errors reach an operator only if `VITE_ERROR_REPORT_URL` is set.** The frontend POSTs JSON reports (throttled, no tokens) to it; this repo has no receiving endpoint.
 - Do not use `npm install --legacy-peer-deps` to work around resolver errors; fix the dependency ranges instead.
 
-## Accepted lint warnings (7, `react-refresh/only-export-components`)
+## Previously accepted lint warnings (historical: `lint:ci` now allows 0 and passed in the IG-00 run, so none are currently reported)
 
 In vendor shadcn files `components/ui/{badge,button,form,navigation-menu,sidebar,sonner,toggle}.tsx`. They export a variants helper or hook next to a component, which only affects dev-server hot reload. No production impact; not worth diverging from upstream shadcn files.
 
-## Accepted vulnerabilities (`npm audit`: 2 moderate, 0 high/critical)
+## Accepted vulnerabilities (historical count 2 moderate; the IG-00 `npm audit` reports 13: 5 moderate, 6 high, 2 critical; only the moderate vitest item below was ever accepted)
 
 | Package | Advisory | Why accepted |
 |---|---|---|

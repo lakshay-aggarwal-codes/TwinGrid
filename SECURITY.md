@@ -16,8 +16,8 @@ Scoped to an explicit origin list (`CORS_ALLOWED_ORIGINS` env var), not a wildca
 
 ## Known simplifications (stated plainly, not hidden)
 
-- `/metrics` and `/healthz` are unauthenticated — standard practice for infrastructure endpoints, but this deployment has no network-level restriction on them either (no private network/VPC). Acceptable at this scale; would need addressing for a genuinely production-grade multi-tenant deployment.
-- No dependency vulnerability scanning is currently automated in CI (a reasonable Phase 15 follow-up: `pip-audit` or GitHub's Dependabot).
+- `/healthz` is unauthenticated. `/metrics` requires a bearer `METRICS_TOKEN` when one is configured and is refused in production without one (`api/routes/metrics_routes.py`); in development with no token configured it is open. This deployment has no network-level restriction on either endpoint (no private network/VPC).
+- CI runs `pip-audit` (strict, on `requirements.lock`) and `npm audit --audit-level=high` (`.github/workflows/ci.yml`, jobs `audit` and `frontend`). Dependabot is not configured. Whether those jobs pass is NOT VERIFIED (no CI log attached); a local `npm audit` reports 2 critical and 6 high findings (`reports/industry/IG00_reality_baseline.md`).
 
 ## Reporting
 

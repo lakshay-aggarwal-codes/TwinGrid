@@ -16,7 +16,7 @@
 ## PPO optimizer (`src/optimizer.py`)
 
 - **Objective:** `J = α·WUE + β·(PUE-1) + γ·Carbon`
-- **Carbon term:** real diurnal Electricity-Maps-derived intensity (Phase 7) — previously used raw cooling power as an undocumented proxy; fixed.
+- **Carbon term:** the flat 475 gCO2/kWh fallback, because `data/cleaned/carbon_intensity.csv` does not exist in this repository (`src/carbon_provider.py`, `is_fallback`). The term is present; the signal is an assumption, not Electricity Maps data. It previously used raw cooling power as an undocumented proxy; that was replaced.
 - **Water-stress handling:** `water_stress` is in the observation space (9 dims, was 8) and the environment enforces an automatic drought-mode override above `DROUGHT_THRESHOLD = 0.7`, matching `DigitalTwin.select_cooling_mode`'s identical rule. Previously a dead parameter — fixed in Phase 8.
 - **Retraining requirement:** any change to reward composition or observation shape requires retraining `models/optimizer/ppo_model.zip` — a stale checkpoint will either error (shape mismatch) or silently optimize against an outdated objective.
 

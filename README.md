@@ -7,8 +7,9 @@ optimizer. Postgres via SQLAlchemy/Alembic. React+Vite+Three.js dashboard
 (under active development — see that directory's own state, not covered by
 this document).
 
-> **This file replaces the previous `README.md`, `ARCHITECTURE.md`,
-> `FINAL_REVIEW.md`, and `DOCUMENTATION_SUMMARY.md`.** Those described a
+> **This file supersedes the previous `README.md`. `ARCHITECTURE.md`,
+> `FINAL_REVIEW.md`, and `DOCUMENTATION_SUMMARY.md` are still present in this
+> repository but are not authoritative for it (IG-00).** Those described a
 > different, more complete 20-phase build (real Electricity Maps carbon
 > data, a `src/digital_twin_documented.py` module, etc.) that doesn't match
 > what's actually in this repository — `data/cleaned/carbon_intensity.csv`
