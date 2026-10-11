@@ -1,15 +1,15 @@
 # G-EVAL: Contract Confirmation Record (BC-11 evaluation results)
 
-**STATUS: GATE NOT OPEN. THERE IS NO EVALUATION ENDPOINT IN THIS BACKEND SNAPSHOT.**
+**STATUS: GATE NOT SIGNED. `GET /api/evaluations` AND `GET /api/evaluations/{evaluation_id}` EXIST IN THIS BACKEND SNAPSHOT (`api/routes/evaluation_routes.py`, registered at `api/main.py:123`); NO REAL-STACK CAPTURE OF THEM IS RECORDED (IG-00).**
 This record (1) states exactly what exists today, from the code and from the one real evaluation report in the repo, (2) fixes the response shape the
 frontend needs, field by field, from keys that already exist, and (3) lists what the backend must add (prompt **BE-G2**). FE-17 starts only after BE-G2 is
-merged and the "To capture" runbook below is clean. **Nothing in the "Required shape" section exists yet; it is a specification, not a capture.**
+merged and the "To capture" runbook below is clean. **The "Required shape" section is a specification, not a capture; whether the route matches it is NOT VERIFIED on a real stack.**
 
 ## What exists today (facts)
 
 | Item | State |
 |---|---|
-| HTTP route that returns evaluation results | **None.** `grep` of `api/` finds no evaluation route; `api/services/optimization_service.py` mentions "evaluation" only in a gate comment. |
+| HTTP route that returns evaluation results | **Present:** `api/routes/evaluation_routes.py` (`GET /api/evaluations`, `GET /api/evaluations/{evaluation_id}`), registered at `api/main.py:123`. Not yet captured on a real stack. |
 | `POST /api/optimize` (FE-09 card) | Returns a simulator summary with **no** outcome, CI, baselines or claim. It is not BC-11. |
 | Evaluation artefacts (files only) | `reports/policy_evaluation/baselines_only_0fcafef9d28fd539/{results.json,REPORT.md}` (T8 harness, `src/policy_evaluation.py`, `schema_version` 1); `reports/policy_evaluation/PREREGISTRATION.{json,md}`. The T30 runner `scripts/eval_policies.py` writes `reports/runs/<run_id>/{manifest,status,PREREGISTRATION,results,decision}.json`, but **no `reports/runs/` directory exists in the repo**, so no T30 output exists to capture. |
 | Real data present | Exactly one report: baselines-only, outcome `NOT_EVALUATED`, `claim_allowed: "none"`, **no PPO row**, generated 2026-10-02. Captured unchanged as `G-EVAL.capture-results-baselines-only-v1.json` (sha256 `e17f1473bbad6a2db47bb31b3016eec212a1011e5a3a5aee9641504e8462c822`). |

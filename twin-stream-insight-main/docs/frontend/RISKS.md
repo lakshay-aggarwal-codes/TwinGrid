@@ -8,7 +8,7 @@
 | R-2 | **Refresh token is kept in `sessionStorage`**, readable by any script that runs in the page (XSS). | Tab-scoped and gone when the tab closes; the access token is memory-only; refresh tokens are single-use with reuse detection; one in-flight refresh. `PERSIST_REFRESH_TOKEN` in `src/authClient.ts` can be set to `false` so sign-in survives nothing but the page's own memory. |
 | R-3 | **`VITE_*` values are public.** | Only `VITE_API_BASE_URL` and flags are needed in production; `src/test/bundleScan.test.ts` asserts demo credentials are absent from the bundle. |
 | R-4 | **Runtime errors reach an operator only if `VITE_ERROR_REPORT_URL` is set**; this repo ships no receiver. | Documented in [RELEASE.md](../../RELEASE.md). |
-| R-5 | `vitest` / `@vitest/mocker` 3.x advisory (path traversal via redirect mocks), moderate. | Dev/test only, never in the bundle. Revisit with the test-toolchain upgrade; see RELEASE.md. |
+| R-5 | `vitest` / `@vitest/mocker` advisory (path traversal via redirect mocks), moderate. The IG-00 `npm audit` also reports `tinypool` (critical, prototype pollution to RCE, a transitive dependency of vitest) and other findings; see RELEASE.md. | Dev/test only, never in the bundle. Revisit with the test-toolchain upgrade; see RELEASE.md. |
 
 ## Known gaps (not accepted risks; owners named in [STATUS.md](STATUS.md))
 

@@ -2,7 +2,7 @@
 
 Last updated 2026-10-11. **TwinGrid is simulator-only.** "Done" below means code and tests exist; it does **not** mean a scientific claim is validated.
 
-> **Before merging this file:** it was written from the repository snapshot at FE-16 plus the FE-18, FE-19 and FE-20 deltas. FE-17's files were not in that snapshot, so FE-17 rows are marked **confirm**. Check every **confirm** against your tree and delete this note.
+> **IG-00 note (2026-10-11):** FE-17 and FE-18 are confirmed present in the tree at commit `0c5b98a`. The rest of this file was written from an earlier snapshot and has not been re-audited except where stated.
 
 ## Tasks
 
@@ -12,8 +12,8 @@ Last updated 2026-10-11. **TwinGrid is simulator-only.** "Done" below means code
 | FE-01…FE-14 | Contract layer, transport, provenance, telemetry store, stale propagation, anomaly and analytics honesty, simulation/optimisation panels, auth/config, report provenance, real-backend E2E and drift CI, alerts, facility topology | Code and tests present in the repository | tests under `src/**`, `e2e/**`; per-task sign-off records are not kept in-repo |
 | FE-15 | Scenario library | Done, committed | G-SCN real-backend run: [G-SCN.real-run.md](../../../docs/frontend/contracts/G-SCN.real-run.md) |
 | FE-16 | Run workflow | Done, committed; G-RUN passed on the real backend at `db92487705ba6ffe554b4c819b8006187966a446` | `G-RUN.real-run.md` (owner record) |
-| FE-17 | Evaluation + E2E-2 | Built against G-EVAL with owner-approved decisions (BE-G2 as specified; definitions and metrics verbatim from `PREREGISTRATION.json`; `ci_level` 0.95; T30 runs not served; static origin `simulated`; `NOT_EVALUATED` shows "definition not provided"). **Confirm** it is applied and committed. | [G-EVAL.md](../../../docs/frontend/contracts/G-EVAL.md) |
-| FE-18 | Telemetry history | Delivered as a delta that imports FE-17 files, so it needs FE-17 first. Real-stack runbook in [G-HIST.md](../../../docs/frontend/contracts/G-HIST.md) still pending; the simulator alone writes no stored telemetry (producer gap, backend BE-G1), so a simulator-only stack shows the empty state. **Confirm** applied. | tests under `src/telemetry/history/`, `src/pages/TelemetryHistory.test.tsx` |
+| FE-17 | Evaluation + E2E-2 | Built against G-EVAL with owner-approved decisions (BE-G2 as specified; definitions and metrics verbatim from `PREREGISTRATION.json`; `ci_level` 0.95; T30 runs not served; static origin `simulated`; `NOT_EVALUATED` shows "definition not provided"). Applied and committed: `src/pages/Evaluation.tsx` is built into `dist/assets/Evaluation-*.js` and its tests ran in the IG-00 run; `git status --short` at `0c5b98a` lists no frontend changes. A real-backend capture of `/api/evaluations` is not recorded. | [G-EVAL.md](../../../docs/frontend/contracts/G-EVAL.md) |
+| FE-18 | Telemetry history | Delivered as a delta that imports FE-17 files, so it needs FE-17 first. Real-stack runbook in [G-HIST.md](../../../docs/frontend/contracts/G-HIST.md) still pending; the simulator alone writes no stored telemetry (producer gap, backend BE-G1), so a simulator-only stack shows the empty state. Applied: `TelemetryHistory` is built and its tests ran in the IG-00 run (commit `0c5b98a`). | tests under `src/telemetry/history/`, `src/pages/TelemetryHistory.test.tsx` |
 | FE-19 | Accessibility sweep | **Not signed.** Fixes and tests written; none executed (no browser/backend where authored). Contrast, 200 % zoom/320 px reflow and screen-reader notes are pending. | [a11y/FE-19.md](a11y/FE-19.md) |
 | FE-20 | Performance measurement | **Not measured.** Harness only; every budget is unmeasured, not met. No breach list, so FE-20b has not started and no optimisation is allowed. | [perf/FE-20.md](perf/FE-20.md) |
 | FE-21 | Documentation closure | This change: README, RELEASE, docs set | docs diff |
@@ -39,7 +39,7 @@ The MR itself is not in this repository; copy this block into §25.
 | Real-backend E2E and drift CI (FE-11) | Present; advisory in CI until one recorded green run |
 | G-SCN / FE-15 | Closed (real-backend run recorded) |
 | G-RUN / FE-16 | Closed (real-backend run recorded) |
-| G-EVAL / FE-17 | Built; confirm applied |
+| G-EVAL / FE-17 | Built and applied at `0c5b98a` (IG-00); real-backend capture not recorded |
 | G-HIST / FE-18 | Delivered; real-stack runbook and producer (BE-G1) pending |
 | FE-19 accessibility | Written, **not signed** |
 | FE-20 performance | Harness only, **not measured** |

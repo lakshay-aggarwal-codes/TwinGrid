@@ -26,7 +26,7 @@
 | No established baseline for the thermal forecaster LSTM (unlike the RUL model and the anomaly detector, which both have one) | Phase 18 (ML_DOCUMENTATION.md) | P2 |
 | Model inference latency (LSTM forecaster, anomaly detector, PPO) never benchmarked — no models were loaded in this session | Phase 18 | P2 |
 | `/metrics` exists and is correct but nothing scrapes it | Phase 16, Phase 17 | P2 |
-| No dependency vulnerability scanning in CI (`pip-audit`/Dependabot) | Phase 12/15 | P2 |
+| ~~No dependency vulnerability scanning in CI~~ CI now runs `pip-audit` and `npm audit` (`.github/workflows/ci.yml`); Dependabot is not configured (IG-00) | Phase 12/15 | P2 |
 | `water_stress` is a per-episode constant in the RL environment, not time-varying within an episode (Claim 8 describes a real-time index) | Phase 8 | P3 |
 | `nixpacks.toml` saved as UTF-16LE instead of UTF-8 (works, but unusual) | Phase 17 | P3 (hygiene only) |
 
