@@ -20,7 +20,7 @@ from sqlalchemy import (
     Uuid,
     text,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, synonym
 
 from src.timeutil import parse_timestamp, utc_now
 
@@ -68,7 +68,7 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
@@ -100,7 +100,7 @@ class AuditLog(Base):
     __table_args__ = (CheckConstraint("outcome IN ('success', 'denied', 'failure')", name="ck_audit_logs_outcome"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True, nullable=True)
 
     # Denormalized username: the row still reads sensibly if the user is later deleted.
     user_id: Mapped[Optional[int]] = mapped_column(
@@ -118,6 +118,10 @@ class AuditLog(Base):
         String(16), nullable=False, default=AUDIT_OUTCOME_SUCCESS, server_default="success"
     )
     request_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+
+    # T15: ``target_type`` / ``target_id`` are the audit contract's names for the stored ``resource_*`` columns.
+    target_type = synonym("resource_type")
+    target_id = synonym("resource_id")
 
 
 class SensorReading(Base):
@@ -316,6 +320,8 @@ class Alert(Base):
     """
 
     __tablename__ = "alerts"
+    # M2 (T3): the unique index backs idempotent alert persistence (NULLs allowed for legacy rows).
+    __table_args__ = (Index("ux_alerts_dedupe_key", "dedupe_key", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
@@ -325,6 +331,11 @@ class Alert(Base):
     type: Mapped[str] = mapped_column(String(64), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     severity: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)  # INFO | WARNING | CRITICAL
+
+    # M2 (T3) identity and provenance. All NULL for alerts written before the migration ("unlabelled legacy").
+    dedupe_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    model_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    origin: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
 
     # Optional link to sensor reading that triggered the alert
     sensor_reading_id: Mapped[Optional[int]] = mapped_column(

@@ -1,11 +1,9 @@
 # syntax=docker/dockerfile:1
 
 # Base image: Python 3.12.10 (matches runtime.txt, so container behaviour matches the Railway/Nixpacks
-# deployment). T11 requires it pinned BY DIGEST. The digest could not be resolved when this file was written
-# (no registry access), so the default below is still the tag; the CI `docker` job fails until it reads
-#   ARG PYTHON_IMAGE=python:3.12.10-slim@sha256:<64 hex>
-# Get the value from the `bootstrap` job summary, or: docker buildx imagetools inspect python:3.12.10-slim
-ARG PYTHON_IMAGE=python:3.12.10-slim
+# deployment), pinned BY DIGEST (T11; the CI `docker` job enforces the `@sha256:<64 hex>` form). Refresh with:
+#   docker buildx imagetools inspect python:3.12.10-slim
+ARG PYTHON_IMAGE=python:3.12.10-slim@sha256:fd95fa221297a88e1cf49c55ec1828edd7c5a428187e67b5d1805692d11588db
 
 # ---- Builder stage: compile/install dependencies, discarded afterward ----
 FROM ${PYTHON_IMAGE} AS builder

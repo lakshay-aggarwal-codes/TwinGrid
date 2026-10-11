@@ -47,6 +47,9 @@ async def optimize(
         total_reward=summary["total_reward"],
         safety_violations=summary["safety_violations"],
         results_json=serialized_results,
+        # T29 lineage of the answer: the policy that produced it and the physics it ran under (None if unknown).
+        physics_version=summary.get("physics_version"),
+        model_version=summary.get("model_id"),
     )
     # Adjusting live cooling-optimization parameters is exactly the kind of
     # operator action worth a durable, who/when/what-params record.

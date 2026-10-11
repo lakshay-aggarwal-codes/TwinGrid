@@ -104,7 +104,7 @@ def frozen_environment() -> Iterator[None]:
     frozen = _frozen_datetime_class()
     patches = [
         mock.patch.object(timeutil, "datetime", frozen),
-        mock.patch.dict(os.environ, {"SITE_TIMEZONE": GOLDEN_SITE_TIMEZONE}),
+        mock.patch.dict(os.environ, {"SITE_TIMEZONE": GOLDEN_SITE_TIMEZONE, "PHYSICS_VERSION": "legacy-0"}),
         mock.patch.object(carbon_provider, "CLEANED_CARBON_PATH", REPO_ROOT / "data" / "cleaned" / "__t0_absent__.csv"),
     ]
     with contextlib.ExitStack() as stack:
@@ -166,6 +166,8 @@ def live_tick_environment(seed: int = TICK_SEED) -> Iterator[FakeSession]:
             mock.patch.object(lbs, "_water_stress_state", 0.2),
             mock.patch.object(lbs, "_tick_seq", 0),  # T1a: first tick in a run is seq=1
             mock.patch.object(lbs, "get_session", lambda: session),
+            # T17 rollback flags: the goldens pin the legacy sensor_readings write and the in-memory window.
+            mock.patch.dict(os.environ, {"TELEMETRY_STORE_ENABLED": "false", "TELEMETRY_WINDOW_SOURCE": "memory"}),
         ):
             yield session
     finally:

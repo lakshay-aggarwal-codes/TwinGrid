@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import random
+import time
 from collections import deque
 from dataclasses import dataclass, field
 
@@ -19,6 +20,8 @@ from models.db_models import SensorReading
 from src.carbon_provider import load_carbon_signal
 from src.digital_twin import INTERVAL_MINUTES
 from src.ingestion.water_stress_aqueduct import WATER_STRESS_KIND_SCENARIO, baseline_meta, load_country_baseline
+from src.telemetry import validation as telemetry_validation
+from src.telemetry.ingest import ingest_samples
 from src.timeutil import to_site_local, utc_now
 from src.versions import PHYSICS_V1
 
@@ -84,6 +87,44 @@ _tick_seq = 0
 # instead: moves a little each tick, stays in [0, 0.5].
 _water_stress_state = 0.2
 _WATER_STRESS_STEP = 0.02
+
+
+# T17: the live tick writes the five anomaly features to ``telemetry_sample`` (stream "live"). When the facility's
+# feature sensors are not seeded every sample is rejected; that is logged at most once per interval, not once per tick.
+_REJECT_LOG_INTERVAL_S = 60.0
+_last_reject_log = float("-inf")  # time.monotonic() of the last "feature sensors not seeded" warning
+
+
+async def _store_live_sample(state_dict: dict, tick_now) -> int:
+    """Write this tick's five feature values through ``ingest_samples`` and return how many rows were stored.
+
+    ``ts_event`` is the tick's wall-clock instant and ``sim_time`` the twin's own (simulated) clock, because
+    ``origin='simulated'`` requires one. Raises when the database is unavailable; the caller decides what to do.
+    """
+    global _last_reject_log
+    mapping = config.telemetry_feature_sensors()
+    samples = [
+        {
+            "external_id": mapping[feature],
+            "ts_event": tick_now,
+            "value": float(state_dict[feature]),
+            "sim_time": state_dict["timestamp"],
+        }
+        for feature in telemetry_window.FEATURE_ORDER
+    ]
+    async with get_session() as session:
+        result = await ingest_samples(session, samples, stream_id=telemetry_window.LIVE_STREAM, origin=WS_ORIGIN)
+        await session.commit()
+    unknown = result.counts.get(telemetry_validation.UNKNOWN_SENSOR, 0)
+    if unknown and time.monotonic() - _last_reject_log >= _REJECT_LOG_INTERVAL_S:
+        _last_reject_log = time.monotonic()
+        logger.warning(
+            "Live telemetry not stored: %d of %d feature sensors are not seeded (expected external_ids %s)",
+            unknown,
+            len(samples),
+            sorted(mapping.values()),
+        )
+    return result.stored
 
 
 class ConnectionLimitExceeded(Exception):
@@ -307,19 +348,30 @@ async def _tick() -> dict:
         state = twin.step(action)
     state_dict = state.to_dict()
 
-    # ONE write per tick, regardless of how many clients are connected --
-    # previously this was one write per tick PER CLIENT. Persistence is
-    # best-effort: a database outage must never stop the live stream.
+    # ONE write per tick, regardless of how many clients are connected. Persistence is best-effort: a database
+    # outage must never stop the live stream.
+    #   * T17 (default, TELEMETRY_STORE_ENABLED=true): the five features go to telemetry_sample.
+    #   * Legacy path (store disabled, or the store accepted nothing, e.g. the facility's sensors are not seeded):
+    #     one sensor_readings row stamped with origin and physics_version.
     reading_id: int | None = None
-    try:
-        async with get_session() as session:
-            reading = SensorReading.from_state_dict(state_dict, "ws")
-            session.add(reading)
-            await session.flush()  # assigns reading.id; the anomaly alert links to it (T3)
-            reading_id = reading.id
-            await session.commit()
-    except Exception:
-        logger.exception("Could not persist live sensor reading -- broadcasting anyway")
+    stored = 0
+    if config.telemetry_store_enabled():
+        try:
+            stored = await _store_live_sample(state_dict, tick_now)
+        except Exception:
+            logger.exception("Could not store live telemetry -- broadcasting anyway")
+    if stored == 0:
+        try:
+            async with get_session() as session:
+                reading = SensorReading.from_state_dict(
+                    state_dict, "ws", origin=WS_ORIGIN, physics_version=twin.physics_version
+                )
+                session.add(reading)
+                await session.flush()  # assigns reading.id; the anomaly alert links to it (T3)
+                reading_id = reading.id
+                await session.commit()
+        except Exception:
+            logger.exception("Could not persist live sensor reading -- broadcasting anyway")
 
     # T1a: additive provenance/time fields. Every pre-existing key and value is
     # unchanged. They are added to the BROADCAST payload only -- not to
