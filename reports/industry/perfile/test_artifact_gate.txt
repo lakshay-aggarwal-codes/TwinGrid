@@ -1,0 +1,1170 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 98 items
+
+tests\test_artifact_gate.py .....................................FFFF.FF [ 44%]
+...FF............................FFFFFFFFFFFF...F...F.                   [100%]
+
+================================== FAILURES ===================================
+_ test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_env_version-environment_version] _
+tests\test_artifact_gate.py:335: in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    authorize(world, PPO)
+tests\test_artifact_gate.py:97: in authorize
+    return loaders.authorize([world / r for r in rels], artifact="test")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:391: in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:297: in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:370: in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+src\artifacts\loaders.py:380: in _check_format
+    raise ArtifactFormatNotAllowed(
+E   src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 330, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    loaders.authorize([world / r for r in PPO], artifact="before")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('before', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:37 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 335, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    authorize(world, PPO)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 97, in authorize
+    return loaders.authorize([world / r for r in rels], artifact="test")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('test', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:37 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load test: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+------------------------------ Captured log call ------------------------------
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load test: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+_ test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_reward_version-reward_version] _
+tests\test_artifact_gate.py:335: in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    authorize(world, PPO)
+tests\test_artifact_gate.py:97: in authorize
+    return loaders.authorize([world / r for r in rels], artifact="test")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:391: in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:297: in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:370: in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+src\artifacts\loaders.py:380: in _check_format
+    raise ArtifactFormatNotAllowed(
+E   src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 330, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    loaders.authorize([world / r for r in PPO], artifact="before")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('before', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:40 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 335, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    authorize(world, PPO)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 97, in authorize
+    return loaders.authorize([world / r for r in rels], artifact="test")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('test', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:40 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load test: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+------------------------------ Captured log call ------------------------------
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load test: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+_ test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_safety_version-safety_envelope_version] _
+tests\test_artifact_gate.py:335: in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    authorize(world, PPO)
+tests\test_artifact_gate.py:97: in authorize
+    return loaders.authorize([world / r for r in rels], artifact="test")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:391: in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:297: in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:370: in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+src\artifacts\loaders.py:380: in _check_format
+    raise ArtifactFormatNotAllowed(
+E   src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 330, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    loaders.authorize([world / r for r in PPO], artifact="before")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('before', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:43 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 335, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    authorize(world, PPO)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 97, in authorize
+    return loaders.authorize([world / r for r in rels], artifact="test")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('test', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:43 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load test: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+------------------------------ Captured log call ------------------------------
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load test: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+_ test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_action_semantics-action_semantics_version] _
+tests\test_artifact_gate.py:335: in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    authorize(world, PPO)
+tests\test_artifact_gate.py:97: in authorize
+    return loaders.authorize([world / r for r in rels], artifact="test")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:391: in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:297: in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\artifacts\loaders.py:370: in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+src\artifacts\loaders.py:380: in _check_format
+    raise ArtifactFormatNotAllowed(
+E   src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 330, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    loaders.authorize([world / r for r in PPO], artifact="before")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('before', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:46 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 335, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    authorize(world, PPO)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 97, in authorize
+    return loaders.authorize([world / r for r in rels], artifact="test")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('test', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:46 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load test: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+------------------------------ Captured log call ------------------------------
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load test: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+_ test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_observation_schema-observation_schema_hash] _
+tests\test_artifact_gate.py:333: in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    sabotage(monkeypatch)
+tests\test_artifact_gate.py:294: in _sabotage_observation_schema
+    mp.setitem(versions.OBSERVATION_SCHEMA, "shape", [10])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'src.versions' has no attribute 'OBSERVATION_SCHEMA'
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 330, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    loaders.authorize([world / r for r in PPO], artifact="before")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('before', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:47 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+------------------------------ Captured log call ------------------------------
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+_ test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_action_schema-action_schema_hash] _
+tests\test_artifact_gate.py:333: in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    sabotage(monkeypatch)
+tests\test_artifact_gate.py:298: in _sabotage_action_schema
+    mp.setitem(versions.ACTION_SCHEMA, "high", [1.0, 2.0])
+               ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'src.versions' has no attribute 'ACTION_SCHEMA'
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 297, in authorize
+    grant = self._authorize(path_list, artifact)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 370, in _authorize
+    self._check_format(path, entry["files"][rel].get("format"), profile)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 380, in _check_format
+    raise ArtifactFormatNotAllowed(
+src.model_registry.ArtifactFormatNotAllowed: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_artifact_gate.py", line 330, in test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value
+    loaders.authorize([world / r for r in PPO], artifact="before")
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 391, in authorize
+    return get_gate().authorize(paths, artifact=artifact)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\artifacts\loaders.py", line 300, in authorize
+    logger.error("Refusing to load %s: %s", artifact, exc.reason)
+Message: 'Refusing to load %s: %s'
+Arguments: ('before', "ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)")
+2026-10-11 12:49:47 - src.artifacts.loaders - ERROR - authorize:300 - Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+------------------------------ Captured log call ------------------------------
+ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+_______ test_cadence_constant_matches_the_code_that_defines_the_cadence _______
+tests\test_artifact_gate.py:356: in test_cadence_constant_matches_the_code_that_defines_the_cadence
+    assert "INTERVAL_MIN = 5" in optimizer_source
+E   assert 'INTERVAL_MIN = 5' in '"""\nJoint Water and Energy Optimisation for Data Centre Cooling Systems.\n\nPATENT CLAIM: Method and system for join...er._model = PPO.load(str(path / "ppo_model"))\n        logger.info("Loaded from %s", path)\n        return optimizer\n'
+_____________ test_declared_schemas_match_the_environment_source ______________
+tests\test_artifact_gate.py:361: in test_declared_schemas_match_the_environment_source
+    assert f"np.zeros({versions.OBSERVATION_SCHEMA['shape'][0]}, dtype=np.float32)" in source
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'src.versions' has no attribute 'OBSERVATION_SCHEMA'
+_ test_shipped_scalers_are_json_and_equal_the_legacy_pickles_when_both_are_present _
+tests\test_artifact_gate.py:662: in test_shipped_scalers_are_json_and_equal_the_legacy_pickles_when_both_are_present
+    assert not (ROOT / "models" / directory / "scaler.joblib").exists()
+E   AssertionError: assert not True
+E    +  where True = exists()
+E    +    where exists = (((WindowsPath('C:/Users/Lakshay/Desktop/data center/DigitalTwin-main') / 'models') / 'anomaly') / 'scaler.joblib').exists
+_______ test_quarantine_appends_history_and_never_alters_prior_entries ________
+tests\test_artifact_gate.py:686: in test_quarantine_appends_history_and_never_alters_prior_entries
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+____________________________ test_transition_rules ____________________________
+tests\test_artifact_gate.py:713: in test_transition_rules
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+_____ test_promote_requires_integrity_compat_api_format_and_an_evaluation _____
+tests\test_artifact_gate.py:725: in test_promote_requires_integrity_compat_api_format_and_an_evaluation
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+_ test_required_audit_failure_exits_nonzero_and_leaves_the_registry_unchanged _
+tests\test_artifact_gate.py:749: in test_required_audit_failure_exits_nonzero_and_leaves_the_registry_unchanged
+    monkeypatch.setattr(cli, "_audit_backend", down)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+_____ test_a_commit_failure_after_the_write_is_reported_as_audit_failure ______
+tests\test_artifact_gate.py:766: in test_a_commit_failure_after_the_write_is_reported_as_audit_failure
+    monkeypatch.setattr(cli, "_audit_backend", late)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+___________________ test_audit_row_describes_the_transition ___________________
+tests\test_artifact_gate.py:774: in test_audit_row_describes_the_transition
+    monkeypatch.setattr(cli, "_audit_backend", lambda row, apply: (rows.append(row), apply())[1])
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+__________ test_unreachable_database_is_detected_by_the_real_backend __________
+tests\test_artifact_gate.py:789: in test_unreachable_database_is_detected_by_the_real_backend
+    monkeypatch.setattr(cli, "AUDIT_TIMEOUT_S", 0.5)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute 'AUDIT_TIMEOUT_S'
+____________________________ test_list_and_dry_run ____________________________
+tests\test_artifact_gate.py:798: in test_list_and_dry_run
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+_ test_migration_quarantines_ppo_and_promotes_data_models_under_a_named_waiver _
+tests\test_artifact_gate.py:837: in test_migration_quarantines_ppo_and_promotes_data_models_under_a_named_waiver
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+____ test_migration_refuses_a_model_file_that_changed_since_it_was_logged _____
+tests\test_artifact_gate.py:864: in test_migration_refuses_a_model_file_that_changed_since_it_was_logged
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+__________________ test_migration_needs_the_converted_scaler __________________
+tests\test_artifact_gate.py:874: in test_migration_needs_the_converted_scaler
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+______ test_no_pickle_or_unsafe_loader_exists_outside_the_loaders_module ______
+tests\test_artifact_gate.py:991: in test_no_pickle_or_unsafe_loader_exists_outside_the_loaders_module
+    assert offenders == {}
+E   AssertionError: assert {'src/optimiz... ['PPO.load']} == {}
+E
+E     Left contains 1 more item:
+E     {'src/optimizer.py': ['PPO.load']}
+E     Use -v to get more diff
+___________ test_joint_optimizer_load_is_refused_in_the_api_profile ___________
+tests\test_artifact_gate.py:1057: in test_joint_optimizer_load_is_refused_in_the_api_profile
+    JointOptimizer.load(world / "models/optimizer")
+src\optimizer.py:376: in load
+    assert_current_safety_envelope_version(config.get("safety_envelope_version"))
+src\versions.py:59: in assert_current_safety_envelope_version
+    raise SafetyEnvelopeVersionError(
+E   src.versions.SafetyEnvelopeVersionError: artifact safety_envelope_version=None but the current envelope is '2'; retrain or re-evaluate under the current envelope
+=========================== short test summary info ===========================
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_env_version-environment_version]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_reward_version-reward_version]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_safety_version-safety_envelope_version]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_action_semantics-action_semantics_version]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_observation_schema-observation_schema_hash]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_action_schema-action_schema_hash]
+FAILED tests/test_artifact_gate.py::test_cadence_constant_matches_the_code_that_defines_the_cadence
+FAILED tests/test_artifact_gate.py::test_declared_schemas_match_the_environment_source
+FAILED tests/test_artifact_gate.py::test_shipped_scalers_are_json_and_equal_the_legacy_pickles_when_both_are_present
+FAILED tests/test_artifact_gate.py::test_quarantine_appends_history_and_never_alters_prior_entries
+FAILED tests/test_artifact_gate.py::test_transition_rules - AttributeError: <...
+FAILED tests/test_artifact_gate.py::test_promote_requires_integrity_compat_api_format_and_an_evaluation
+FAILED tests/test_artifact_gate.py::test_required_audit_failure_exits_nonzero_and_leaves_the_registry_unchanged
+FAILED tests/test_artifact_gate.py::test_a_commit_failure_after_the_write_is_reported_as_audit_failure
+FAILED tests/test_artifact_gate.py::test_audit_row_describes_the_transition
+FAILED tests/test_artifact_gate.py::test_unreachable_database_is_detected_by_the_real_backend
+FAILED tests/test_artifact_gate.py::test_list_and_dry_run - AttributeError: <...
+FAILED tests/test_artifact_gate.py::test_migration_quarantines_ppo_and_promotes_data_models_under_a_named_waiver
+FAILED tests/test_artifact_gate.py::test_migration_refuses_a_model_file_that_changed_since_it_was_logged
+FAILED tests/test_artifact_gate.py::test_migration_needs_the_converted_scaler
+FAILED tests/test_artifact_gate.py::test_no_pickle_or_unsafe_loader_exists_outside_the_loaders_module
+FAILED tests/test_artifact_gate.py::test_joint_optimizer_load_is_refused_in_the_api_profile
+======================= 22 failed, 76 passed in 41.70s ========================

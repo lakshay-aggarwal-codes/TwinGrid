@@ -1,0 +1,84 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 138 items
+
+tests\test_telemetry_ingest.py .s.s.s.s.s.s.s....ssss.....sssss.s.s.s... [ 29%]
+.....ssssssss......ssssss.s.s.s.s.s.s.s.s.s.s........ssssssss....ssss.s. [ 81%]
+s.s.s.s.sssssss.sEE.s.s..                                                [100%]
+
+=================================== ERRORS ====================================
+_________________ ERROR at setup of test_migration_up_down_up _________________
+tests\test_telemetry_ingest.py:531: in t9_db
+    assert r.returncode == 0, r.stderr[-2000:]
+E   AssertionError: lite.py", line 213, in execute
+E         self._adapt_connection._handle_exception(error)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 373, in _handle_exception
+E         raise error
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 195, in execute
+E         self.await_(_cursor.execute(operation, parameters))
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+E         return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+E         value = await result
+E                 ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 40, in execute
+E         await self._execute(self._cursor.execute, sql, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 32, in _execute
+E         return await self._conn._execute(fn, *args, **kwargs)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 160, in _execute
+E         return await future
+E                ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 63, in _connection_worker_thread
+E         result = function()
+E                  ^^^^^^^^^^
+E     sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: optimization_results
+E     [SQL: ALTER TABLE optimization_results ADD COLUMN physics_version VARCHAR(32)]
+E     (Background on this error at: https://sqlalche.me/e/20/e3q8)
+E
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\.venv\\Scripts\\python.exe', '-m',...ation_results ADD COLUMN physics_version VARCHAR(32)]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)\n').returncode
+_ ERROR at setup of test_migration_and_orm_define_the_same_columns_and_constraints _
+tests\test_telemetry_ingest.py:531: in t9_db
+    assert r.returncode == 0, r.stderr[-2000:]
+E   AssertionError: lite.py", line 213, in execute
+E         self._adapt_connection._handle_exception(error)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 373, in _handle_exception
+E         raise error
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 195, in execute
+E         self.await_(_cursor.execute(operation, parameters))
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+E         return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+E         value = await result
+E                 ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 40, in execute
+E         await self._execute(self._cursor.execute, sql, parameters)
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\cursor.py", line 32, in _execute
+E         return await self._conn._execute(fn, *args, **kwargs)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 160, in _execute
+E         return await future
+E                ^^^^^^^^^^^^
+E       File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\aiosqlite\core.py", line 63, in _connection_worker_thread
+E         result = function()
+E                  ^^^^^^^^^^
+E     sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: optimization_results
+E     [SQL: ALTER TABLE optimization_results ADD COLUMN physics_version VARCHAR(32)]
+E     (Background on this error at: https://sqlalche.me/e/20/e3q8)
+E
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\.venv\\Scripts\\python.exe', '-m',...ation_results ADD COLUMN physics_version VARCHAR(32)]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)\n').returncode
+=========================== short test summary info ===========================
+ERROR tests/test_telemetry_ingest.py::test_migration_up_down_up - AssertionEr...
+ERROR tests/test_telemetry_ingest.py::test_migration_and_orm_define_the_same_columns_and_constraints
+================== 66 passed, 70 skipped, 2 errors in 19.32s ==================

@@ -1,0 +1,210 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 78 items
+
+tests\test_time_contract.py ............................................ [ 56%]
+..............F...F.............Fs                                       [100%]
+
+================================== FAILURES ===================================
+_ test_digital_twin_default_start_is_the_single_clock_and_explicit_start_is_untouched _
+tests\test_time_contract.py:284: in test_digital_twin_default_start_is_the_single_clock_and_explicit_start_is_untouched
+    assert twin._time.tzinfo is not None and twin._time.utcoffset() == timedelta(0)
+E   assert (None is not None)
+E    +  where None = datetime.datetime(2026, 10, 11, 13, 3, 58, 883216).tzinfo
+E    +    where datetime.datetime(2026, 10, 11, 13, 3, 58, 883216) = <src.digital_twin.DigitalTwin object at 0x00000224BCD53EC0>._time
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_time_contract.py", line 283, in test_digital_twin_default_start_is_the_single_clock_and_explicit_start_is_untouched
+    twin = DigitalTwin(start_time=None)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\digital_twin.py", line 387, in __init__
+    self._carbon_intensity_by_hour, self.carbon_data_is_real = load_diurnal_carbon_intensity()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\carbon_provider.py", line 318, in load_diurnal_carbon_intensity
+    sig = load_carbon_signal(zone)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\carbon_provider.py", line 235, in load_carbon_signal
+    logger.warning(
+Message: '%s not found -- using the flat assumed intensity of %.0f gCO2/kWh (is_fallback=True).'
+Arguments: (WindowsPath('C:/Users/Lakshay/Desktop/data center/DigitalTwin-main/data/cleaned/carbon_intensity.csv'), 475.0)
+2026-10-11 13:03:58 - src.carbon_provider - WARNING - load_carbon_signal:235 - C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\data\cleaned\carbon_intensity.csv not found -- using the flat assumed intensity of 475 gCO2/kWh (is_fallback=True).
+------------------------------ Captured log call ------------------------------
+WARNING  src.carbon_provider:carbon_provider.py:235 C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\data\cleaned\carbon_intensity.csv not found -- using the flat assumed intensity of 475 gCO2/kWh (is_fallback=True).
+____________ test_ast_guard_no_naive_clock_outside_the_allow_list _____________
+tests\test_time_contract.py:422: in test_ast_guard_no_naive_clock_outside_the_allow_list
+    assert not unexpected, f"naive clock calls (use src.timeutil.utc_now): {unexpected}"
+E   AssertionError: naive clock calls (use src.timeutil.utc_now): {'api/routes/health_routes.py': [(145, 'now() without tz'), (172, 'now() without tz'), (178, 'now() without tz')], 'src/digital_twin.py': [(377, 'now() without tz')]}
+E   assert not {'api/routes/health_routes.py': [(145, 'now() without tz'), (172, 'now() without tz'), (178, 'now() without tz')], 'src/digital_twin.py': [(377, 'now() without tz')]}
+_______ test_golden_support_freezes_the_one_clock_not_a_module_datetime _______
+tests\test_time_contract.py:460: in test_golden_support_freezes_the_one_clock_not_a_module_datetime
+    assert DigitalTwin()._time == gs.FIXED_NOW_UTC
+E   AssertionError: assert datetime.datetime(2026, 10, 11, 13, 4, 0, 72060) == datetime.datetime(2026, 1, 1, 12, 30, tzinfo=datetime.timezone.utc)
+E    +  where datetime.datetime(2026, 10, 11, 13, 4, 0, 72060) = <src.digital_twin.DigitalTwin object at 0x00000224BEF676B0>._time
+E    +    where <src.digital_twin.DigitalTwin object at 0x00000224BEF676B0> = <class 'src.digital_twin.DigitalTwin'>()
+E    +  and   datetime.datetime(2026, 1, 1, 12, 30, tzinfo=datetime.timezone.utc) = <module 'tests.characterization.golden_support' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\tests\\characterization\\golden_support.py'>.FIXED_NOW_UTC
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 74, in emit
+    self.doRollover()
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 179, in doRollover
+    self.rotate(self.baseFilename, dfn)
+  File "C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\Lib\logging\handlers.py", line 115, in rotate
+    os.rename(source, dest)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log' -> 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\logs\\digital_twin.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Scripts\pytest.exe\__main__.py", line 5, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201, in console_main
+    code = main()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 336, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 289, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 343, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\main.py", line 367, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 117, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 136, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 245, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 344, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 246, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\runner.py", line 178, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 1671, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\_pytest\python.py", line 157, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\tests\test_time_contract.py", line 460, in test_golden_support_freezes_the_one_clock_not_a_module_datetime
+    assert DigitalTwin()._time == gs.FIXED_NOW_UTC
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\digital_twin.py", line 387, in __init__
+    self._carbon_intensity_by_hour, self.carbon_data_is_real = load_diurnal_carbon_intensity()
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\carbon_provider.py", line 318, in load_diurnal_carbon_intensity
+    sig = load_carbon_signal(zone)
+  File "C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\src\carbon_provider.py", line 235, in load_carbon_signal
+    logger.warning(
+Message: '%s not found -- using the flat assumed intensity of %.0f gCO2/kWh (is_fallback=True).'
+Arguments: (WindowsPath('C:/Users/Lakshay/Desktop/data center/DigitalTwin-main/data/cleaned/__t0_absent__.csv'), 475.0)
+2026-10-11 13:04:00 - src.carbon_provider - WARNING - load_carbon_signal:235 - C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\data\cleaned\__t0_absent__.csv not found -- using the flat assumed intensity of 475 gCO2/kWh (is_fallback=True).
+------------------------------ Captured log call ------------------------------
+WARNING  src.carbon_provider:carbon_provider.py:235 C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\data\cleaned\__t0_absent__.csv not found -- using the flat assumed intensity of 475 gCO2/kWh (is_fallback=True).
+=========================== short test summary info ===========================
+FAILED tests/test_time_contract.py::test_digital_twin_default_start_is_the_single_clock_and_explicit_start_is_untouched
+FAILED tests/test_time_contract.py::test_ast_guard_no_naive_clock_outside_the_allow_list
+FAILED tests/test_time_contract.py::test_golden_support_freezes_the_one_clock_not_a_module_datetime
+=================== 3 failed, 74 passed, 1 skipped in 1.53s ===================

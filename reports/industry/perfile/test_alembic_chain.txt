@@ -1,0 +1,41 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 5 items
+
+tests\test_alembic_chain.py ....F                                        [100%]
+
+================================== FAILURES ===================================
+______________ test_orm_matches_migrations_no_autogenerate_diff _______________
+tests\test_alembic_chain.py:115: in test_orm_matches_migrations_no_autogenerate_diff
+    assert check.returncode == 0, f"alembic check reported drift:\n{check.stdout}\n{check.stderr}"
+E   AssertionError: alembic check reported drift:
+E     FAILED: New upgrade operations detected: [('remove_index', Index('ux_alerts_dedupe_key', Column('dedupe_key', VARCHAR(length=128), table=<alerts>), unique=True)), ('remove_column', None, 'alerts', Column('origin', VARCHAR(length=16), table=<alerts>)), ('remove_column', None, 'alerts', Column('dedupe_key', VARCHAR(length=128), table=<alerts>)), ('remove_column', None, 'alerts', Column('model_version', VARCHAR(length=64), table=<alerts>)), [('modify_nullable', None, 'audit_logs', 'created_at', {'existing_type': DATETIME(), 'existing_server_default': False, 'existing_comment': None}, True, False)], [('modify_nullable', None, 'refresh_tokens', 'created_at', {'existing_type': DATETIME(), 'existing_server_default': False, 'existing_comment': None}, True, False)]]
+E
+E     INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+E     INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+E     INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.schemas
+E     INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.tables
+E     INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.types
+E     INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.constraints
+E     INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.defaults
+E     INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.comments
+E     INFO  [alembic.autogenerate.compare.constraints] Detected removed index 'ux_alerts_dedupe_key' on 'alerts'
+E     INFO  [alembic.autogenerate.compare.tables] Detected removed column 'alerts.origin'
+E     INFO  [alembic.autogenerate.compare.tables] Detected removed column 'alerts.dedupe_key'
+E     INFO  [alembic.autogenerate.compare.tables] Detected removed column 'alerts.model_version'
+E     INFO  [alembic.autogenerate.compare.constraints] Detected NOT NULL on column 'audit_logs.created_at'
+E     INFO  [alembic.autogenerate.compare.constraints] Detected NOT NULL on column 'refresh_tokens.created_at'
+E     ERROR [alembic.util.messaging] New upgrade operations detected: [('remove_index', Index('ux_alerts_dedupe_key', Column('dedupe_key', VARCHAR(length=128), table=<alerts>), unique=True)), ('remove_column', None, 'alerts', Column('origin', VARCHAR(length=16), table=<alerts>)), ('remove_column', None, 'alerts', Column('dedupe_key', VARCHAR(length=128), table=<alerts>)), ('remove_column', None, 'alerts', Column('model_version', VARCHAR(length=64), table=<alerts>)), [('modify_nullable', None, 'audit_logs', 'created_at', {'existing_type': DATETIME(), 'existing_server_default': False, 'existing_comment': None}, True, False)], [('modify_nullable', None, 'refresh_tokens', 'created_at', {'existing_type': DATETIME(), 'existing_server_default': False, 'existing_comment': None}, True, False)]]
+E
+E   assert 4294967295 == 0
+E    +  where 4294967295 = CompletedProcess(args=['C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\.venv\\Scripts\\python.exe', '-m',...ated_at', {'existing_type': DATETIME(), 'existing_server_default': False, 'existing_comment': None}, True, False)]]\n").returncode
+=========================== short test summary info ===========================
+FAILED tests/test_alembic_chain.py::test_orm_matches_migrations_no_autogenerate_diff
+======================== 1 failed, 4 passed in 23.34s =========================

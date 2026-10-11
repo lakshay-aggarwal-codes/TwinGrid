@@ -1,0 +1,22 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 13 items
+
+tests\test_auth_security.py F............                                [100%]
+
+================================== FAILURES ===================================
+________ TestJWTSecretEnforcement.test_missing_secret_raises_at_import ________
+tests\test_auth_security.py:17: in test_missing_secret_raises_at_import
+    with pytest.raises(RuntimeError, match="JWT_SECRET_KEY"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'RuntimeError'>
+=========================== short test summary info ===========================
+FAILED tests/test_auth_security.py::TestJWTSecretEnforcement::test_missing_secret_raises_at_import
+======================== 1 failed, 12 passed in 1.87s =========================

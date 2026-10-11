@@ -1,0 +1,34 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 84 items
+
+tests\test_repro_framework.py .......................................... [ 50%]
+............F........................F....                               [100%]
+
+================================== FAILURES ===================================
+___________ test_a_changed_version_constant_fails_verify_naming_it ____________
+tests\test_repro_framework.py:549: in test_a_changed_version_constant_fails_verify_naming_it
+    assert names(verify_run(world, "r1")) == ["reward_version"]
+E   AssertionError: assert [] == ['reward_version']
+E
+E     Right contains one more item: 'reward_version'
+E     Use -v to get more diff
+_______________ test_the_shipped_toy_reference_run_round_trips ________________
+tests\test_repro_framework.py:807: in test_the_shipped_toy_reference_run_round_trips
+    assert rep.failures == [], [str(f) for f in rep.failures]
+E   AssertionError: ["FAIL lock_sha256: requirements.lock: sha256 recorded '6401578cd33f47b1da01a69d88fe3c2890d66ed813a68554013fed39b8a5bc...273'", "FAIL action_semantics_version: recorded '1' but now '2'", "FAIL reward_version: recorded '1' but now '2'", ...]
+E   assert [Finding(leve...ow '2'"), ...] == []
+E
+E     Left contains 7 more items, first extra item: Finding(level='FAIL', field='lock_sha256', message="requirements.lock: sha256 recorded '6401578cd33f47b1da01a69d88fe3c2890d66ed813a68554013fed39b8a5bc0f' but now 'bf7fb04b5c794a8c4d31771ee42781884a0e255542b6e182786565ca9ae79c20'")
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/test_repro_framework.py::test_a_changed_version_constant_fails_verify_naming_it
+FAILED tests/test_repro_framework.py::test_the_shipped_toy_reference_run_round_trips
+======================== 2 failed, 82 passed in 42.69s ========================
