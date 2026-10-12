@@ -14,12 +14,14 @@ from api import config
 from api.middleware.metrics import WS_CONNECTIONS, WS_DROPPED_MESSAGES
 from api.serialization import to_jsonable
 from api.services import anomaly_service, telemetry_window
+from api.services.telemetry_metrics import TELEMETRY_PERSIST_FAILURES_TOTAL
 from api.services.twin_service import get_twin
 from database import get_session
 from models.db_models import SensorReading
 from src.carbon_provider import load_carbon_signal
 from src.digital_twin import INTERVAL_MINUTES
 from src.ingestion.water_stress_aqueduct import WATER_STRESS_KIND_SCENARIO, baseline_meta, load_country_baseline
+from src.telemetry import retention as telemetry_retention
 from src.telemetry import validation as telemetry_validation
 from src.telemetry.ingest import ingest_samples
 from src.timeutil import to_site_local, utc_now
@@ -125,6 +127,39 @@ async def _store_live_sample(state_dict: dict, tick_now) -> int:
             sorted(mapping.values()),
         )
     return result.stored
+
+
+# IG-04: bounded growth. The first run is one interval after import (never at start-up, never in a unit test that
+# calls ``broadcast_once`` once); after that every TELEMETRY_RETENTION_INTERVAL_S of the monotonic clock. The purge
+# runs as its own task so a slow DELETE can never delay a tick, and nothing in it can raise into the loop.
+_retention_last_run = time.monotonic()
+_retention_task: asyncio.Task | None = None
+
+
+async def _run_retention() -> None:
+    try:
+        await telemetry_retention.purge_expired(get_session)
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:  # logged by type only: a database error message can carry row values
+        logger.error("Telemetry retention failed (%s) -- continuing", type(exc).__name__)
+
+
+def maybe_schedule_retention() -> None:
+    """Start a retention run when one is due and none is running. Never raises."""
+    global _retention_last_run, _retention_task
+    try:
+        if not config.telemetry_store_enabled():
+            return
+        now = time.monotonic()
+        if now - _retention_last_run < telemetry_retention.retention_interval_s():
+            return
+        if _retention_task is not None and not _retention_task.done():
+            return
+        _retention_last_run = now
+        _retention_task = asyncio.get_running_loop().create_task(_run_retention(), name="telemetry-retention")
+    except Exception as exc:
+        logger.error("Could not schedule telemetry retention (%s)", type(exc).__name__)
 
 
 class ConnectionLimitExceeded(Exception):
@@ -358,8 +393,10 @@ async def _tick() -> dict:
     if config.telemetry_store_enabled():
         try:
             stored = await _store_live_sample(state_dict, tick_now)
-        except Exception:
-            logger.exception("Could not store live telemetry -- broadcasting anyway")
+        except Exception as exc:
+            # IG-04: counted, and logged by type only (a database error message can carry row values).
+            TELEMETRY_PERSIST_FAILURES_TOTAL.inc()
+            logger.error("Could not store live telemetry (%s) -- broadcasting anyway", type(exc).__name__)
     if stored == 0:
         try:
             async with get_session() as session:
@@ -370,8 +407,9 @@ async def _tick() -> dict:
                 await session.flush()  # assigns reading.id; the anomaly alert links to it (T3)
                 reading_id = reading.id
                 await session.commit()
-        except Exception:
-            logger.exception("Could not persist live sensor reading -- broadcasting anyway")
+        except Exception as exc:
+            TELEMETRY_PERSIST_FAILURES_TOTAL.inc()
+            logger.error("Could not persist live sensor reading (%s) -- broadcasting anyway", type(exc).__name__)
 
     # T1a: additive provenance/time fields. Every pre-existing key and value is
     # unchanged. They are added to the BROADCAST payload only -- not to
@@ -442,6 +480,7 @@ async def broadcast_once() -> None:
     No clients -> no tick and no database write, but the iteration still returns normally, so the supervisor
     keeps refreshing the heartbeat that /readyz reports. A failing tick raises: the supervisor restarts it.
     """
+    maybe_schedule_retention()
     if manager.has_connections():
         payload = await _tick()
         await manager.broadcast(payload)

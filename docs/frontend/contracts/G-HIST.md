@@ -11,7 +11,7 @@ simulator, a real JWT login, rate limiting (disabled by the fixture). Repeat the
 |---|---|
 | Does a telemetry read API exist? | **Yes** (T17): two endpoints, tested (`tests/api/test_telemetry_routes.py`, 32 tests pass in the sandbox). |
 | Is it the API the FE roadmap named for BC-12? | **No.** BC-12 / FE-18 assumed `/api/telemetry` and `/api/sensors/{id}/latest`. Neither exists. The real paths are below. FE-18 must use the real paths. |
-| Is there anything to chart on the running stack? | **Not from the live simulator, in this snapshot.** `api/services/live_broadcast_service.py` writes only the legacy `sensor_readings` row each tick; no code path in `api/` calls `ingest_samples()`. Only the MQTT path (`src/sensor_ingestion.py`) writes `telemetry_sample`. With the simulator alone the endpoints return `items: []`. See "Producer gap" and backend prompt BE-G1. |
+| Is there anything to chart on the running stack? | **Yes, from the live simulator, when its five feature sensors are seeded.** `api/services/live_broadcast_service.py` `_store_live_sample` calls `ingest_samples(..., stream_id="live", origin="simulated")` every tick while `TELEMETRY_STORE_ENABLED` is true (default). If the sensors are not seeded every sample is rejected and the loop falls back to one legacy `sensor_readings` row, so the endpoints return `items: []` until `scripts/seed_facility.py --seed-sensors` has run. The MQTT path (`src/sensor_ingestion.py`) also writes `telemetry_sample`. Rows older than `TELEMETRY_RETENTION_DAYS` (default 30) are deleted from the `live` stream only (IG-04). |
 | Per-rack history? | **No.** No per-rack sensors exist (`scripts/seed_facility.py`: "per-rack telemetry does not exist"). Only five facility-level sensors, and only after `seed_facility.py --seed-sensors`. |
 
 **FE-18 may start** when (a) the real-stack runbook below is clean and (b) either BE-G1 is merged or the owner accepts that FE-18 ships against an
@@ -78,10 +78,10 @@ The five measurands (units from the backend response, not from the FE table): `w
 `sampling_interval_s` is the sensor's **declared** interval (300 s in the fixtures). It does not guarantee spacing. The roadmap rule is that a simulated sample's `ts_event` is the wall-clock UTC of the tick (`be` pack, section 9.3 rule 6); the simulator ticks every `BROADCAST_INTERVAL_SECONDS = 3`, so a producer that writes every tick yields about 1200 points per hour per sensor, 28,800 per day, and one 5000-point page covers about 4.2 hours. A 168 h window can hold far more than one page. FE-18 therefore (a) never assumes 300 s spacing, (b) follows `next_cursor` up to a stated cap and says so when more data exists, and (c) never downsamples. Gap detection uses the declared interval (> 450 s), so a 3 s producer shows a gap only after an outage longer than 450 s. Owner decision D1 in BE-G1 (write every tick vs once per declared interval) decides which of the two densities FE-18 will see.
 
 ## Producer gap (blocks real data, not the contract)
-- Simulator: `live_broadcast_service.py` lines ~313-320 persist `SensorReading` only. No `ingest_samples` call exists under `api/`. The module docstring of `src/sensor_ingestion.py` says the store is "the same path the live simulator uses"; the code does not do that.
+- Simulator: `live_broadcast_service.py` `_store_live_sample` writes the five features through `ingest_samples()` each tick (stream `live`, origin `simulated`, `sim_time` required). Corrected by IG-04; an earlier version of this document said no such call exists.
 - MQTT: `src/sensor_ingestion.py` writes the store through `ingest_samples()` when `TELEMETRY_STORE_ENABLED` is true (default).
 - Also affects the anomaly window: with `TELEMETRY_WINDOW_SOURCE=store` (default) and no producer, the window can never become scorable. Verify on the real stack that anomaly status is not stuck in `warming_up`. This is a backend defect or an unfinished T17 half, not a frontend task.
-- Remedy: backend prompt **BE-G1** (in `TwinGrid_Backend_Gate_Closing_Prompts_PostFE16.docx`).
+- Status: the producer exists. What remains is verifying it on the real stack with the runbook below (results are empty until you run it).
 
 ## CAPTURE 1: backend content hash (sandbox copy of the supplied snapshot)
 | file | sha256 |
@@ -140,8 +140,26 @@ To get data without the simulator: `python scripts/seed_facility.py --seed-senso
 - Capture script: temporary test file, deleted after use; no repo file was modified.
 - **Not run:** Postgres, docker compose, rate limiting, real login, MQTT end to end, the full suite.
 
+## Real-stack runbook (IG-04) -- result fields are intentionally empty
+```powershell
+docker compose up -d
+# log in, then open one WebSocket client (the tick only runs while a client is connected), wait 2 minutes
+$h = @{ Authorization = "Bearer $env:TOKEN" }
+$u = "http://localhost:8000/api/telemetry/sensors/fac1.it_power_kw/samples?limit=5000"
+(Invoke-RestMethod $u -Headers $h).items.Count      # A: count before restart
+docker compose restart api
+# reconnect a client, wait 2 minutes
+(Invoke-RestMethod $u -Headers $h).items.Count      # B: count after restart (B >= A, no doubling)
+docker compose exec api python scripts/telemetry_retention.py --dry-run
+```
+| field | result |
+|---|---|
+| A (count before restart) | |
+| B (count after restart) | |
+| retention dry-run line | |
+
 ## Open decisions for you
-1. **Producer (blocks real data):** approve BE-G1 (simulator writes `ingest_samples`, origin `simulated`, stream `live`), or accept an MQTT-only history for now.
+1. **Producer:** done (simulator writes the `live` stream every tick). Density is one row per sensor per tick (about 28,800 per sensor per day while a client is connected).
 2. **Sensor discovery:** frontend derives `fac<id>.<measurand>`. If you prefer, add `GET /api/telemetry/sensors` (list: external_id, measurand, unit, sampling_interval_s). Not required; FE-18 works without it using the convention and handles the 404.
 3. **`origin` alias:** `replay` (telemetry store) vs `replayed` (rest of the stack). FE-18 aliases at the edge. If you would rather change the backend value, say so before FE-18.
 4. **Per-rack history:** out of scope (no sensors). FE-18 stays facility-wide (MR Stage C gate).
