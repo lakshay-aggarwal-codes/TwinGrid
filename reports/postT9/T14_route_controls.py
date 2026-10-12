@@ -12,45 +12,64 @@ one row per HTTP method:
   none; ``exempt (probe)`` for the infrastructure probes in ``config.HTTP_LIMIT_EXEMPT_PATHS``.
 * ``auth`` is ``operator`` (``require_operator``), ``user`` (``get_current_user``) or ``public``.
 
-WebSocket routes are not HTTP routes and are not listed (their caps live in ConnectionManager).
+Routes are found by shape, not by class: anything with ``methods``, ``path`` and a FastAPI ``dependant`` is an
+HTTP route, and anything with ``routes`` is walked into. WebSocket routes have no ``methods`` and are skipped
+(their caps live in ConnectionManager).
 """
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-
-from fastapi.routing import APIRoute  # noqa: E402
 
 from api import config  # noqa: E402
 
 _SKIPPED_METHODS = {"HEAD", "OPTIONS"}
 
 
-def _calls(dependant: Any) -> list[Any]:
-    """Every dependency callable under ``dependant`` (outermost first, depth-first)."""
+def _walk(routes: Any, prefix: str = "") -> Iterator[tuple[str, Any]]:
+    """Yield ``(full_path, route)`` for every HTTP route under ``routes``, descending into nested routers."""
+    for route in list(routes or []):
+        path = getattr(route, "path", "") or ""
+        if getattr(route, "dependant", None) is not None and getattr(route, "methods", None):
+            yield (path if path.startswith(prefix) else prefix + path), route
+        children = getattr(route, "routes", None)
+        if children and getattr(route, "dependant", None) is None:
+            yield from _walk(children, prefix + path if not path.startswith(prefix) else path)
+
+
+def _dependency_calls(dependant: Any) -> list[Any]:
     found: list[Any] = []
-    for sub in dependant.dependencies:
-        if sub.call is not None:
+    for sub in getattr(dependant, "dependencies", None) or []:
+        if getattr(sub, "call", None) is not None:
             found.append(sub.call)
-        found.extend(_calls(sub))
+        found.extend(_dependency_calls(sub))
     return found
 
 
-def _limit(route: APIRoute) -> str:
-    if route.path in config.HTTP_LIMIT_EXEMPT_PATHS:
+def _all_calls(route: Any) -> list[Any]:
+    declared = [getattr(d, "dependency", None) for d in getattr(route, "dependencies", None) or []]
+    return [c for c in declared if c is not None] + _dependency_calls(route.dependant)
+
+
+def _limit(path: str, route: Any) -> str:
+    if path in config.HTTP_LIMIT_EXEMPT_PATHS:
         return "exempt (probe)"
-    scopes = [s for s in (getattr(c, "http_limit_scope", None) for c in _calls(route.dependant)) if s]
+    scopes: list[str] = []
+    for call in _all_calls(route):
+        scope = getattr(call, "http_limit_scope", None)
+        if scope and scope not in scopes:
+            scopes.append(scope)
     return " + ".join(scopes) if scopes else "NONE"
 
 
-def _auth(route: APIRoute) -> str:
-    names = {getattr(c, "__name__", "") for c in _calls(route.dependant)}
+def _auth(route: Any) -> str:
+    names = {getattr(c, "__name__", "") for c in _all_calls(route)}
     if "require_operator" in names:
         return "operator"
     if "get_current_user" in names:
@@ -61,17 +80,18 @@ def _auth(route: APIRoute) -> str:
 def rows(app: Any) -> list[dict[str, str]]:
     """The route table of ``app`` (HTTP routes only), sorted by path then method."""
     table: list[dict[str, str]] = []
-    for route in app.routes:
-        if not isinstance(route, APIRoute):
-            continue
-        limit, auth = _limit(route), _auth(route)
-        for method in sorted(route.methods - _SKIPPED_METHODS):
-            table.append({"methods": method, "path": route.path, "limit": limit, "auth": auth})
+    for path, route in _walk(getattr(app, "routes", [])):
+        limit, auth = _limit(path, route), _auth(route)
+        for method in sorted(set(route.methods) - _SKIPPED_METHODS):
+            table.append({"methods": method, "path": path, "limit": limit, "auth": auth})
     return sorted(table, key=lambda r: (r["path"], r["methods"]))
 
 
 if __name__ == "__main__":
     from api.main import app
 
-    for row in rows(app):
+    table = rows(app)
+    for row in table:
         print(f'{row["methods"]:<7} {row["path"]:<45} {row["auth"]:<9} {row["limit"]}')
+    if not table:  # diagnostic: what does the app expose?
+        print("no HTTP routes found; app.routes types:", sorted({type(r).__name__ for r in app.routes}))

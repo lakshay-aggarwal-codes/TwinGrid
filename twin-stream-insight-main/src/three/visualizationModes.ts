@@ -24,7 +24,7 @@ export const MODE_LABELS: Record<VisualizationMode, string> = {
 
 export interface ModeColor {
   /** Uniform tint applied to every rack's idle face -- facility-wide only,
-   * never varied per rack (see the Stage 0 audit + Stage 6's FloorHeatmap
+   * never varied per rack (see the Stage 0 audit + Stage 6's heat-map
    * fix: there is no per-rack backend data to justify spatial variation). */
   base: string;
   /** Slightly brighter variant used for hover/selected so those states

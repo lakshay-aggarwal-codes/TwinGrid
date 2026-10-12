@@ -117,7 +117,12 @@ def _clean(value: Any, depth: int) -> Any:
                 out["..."] = "[truncated]"
                 break
             key = str(k)
-            out[key] = _REDACTED if _SECRET_KEY_RE.search(key) else _clean(v, depth + 1)
+            # A secret-looking key is redacted unless its value is a bool: a flag such as ``admin_key_supplied`` is
+            # useful evidence and cannot carry a secret.
+            if _SECRET_KEY_RE.search(key) and not isinstance(v, bool):
+                out[key] = _REDACTED
+            else:
+                out[key] = _clean(v, depth + 1)
         return out
     if isinstance(value, (list, tuple, set, frozenset)):
         return [_clean(v, depth + 1) for v in list(value)[:_MAX_ITEMS]]
