@@ -8,6 +8,10 @@ import { signIn } from "./helpers";
  * FE-19: the signed-in sections below cover every route and every open panel (0 serious/critical) and the Section 13
  * keyboard flows. They need the real backend + seeded E2E_VIEWER_* account (see helpers.ts); the login tests above do not.
  *
+ * IG-06: the sweep also covers /evaluation, /telemetry and /runs/:id. /runs/:id scans a REAL run when E2E_RUN_ID names one
+ * that exists on the backend under test (optional; the account in E2E_VIEWER_* must be allowed to read it); without it the
+ * test scans the page's unknown-run state and labels the axe attachment accordingly. Nothing is intercepted.
+ *
  * Runs against the REAL backend (FE-11 rule: nothing in e2e/** intercepts a request). A fresh browser context has no
  * session, so the app's own refresh attempt is rejected by the backend and it lands on the login screen.
  */
@@ -53,25 +57,58 @@ async function scan(page: Page, testInfo: TestInfo, label: string) {
   ).toEqual([]);
 }
 
+/**
+ * IG-06: `signIn(page, role, path)` from helpers.ts waits for the "Live Twin" <h1> after submitting the form, and only the
+ * `/` page renders that heading, so signing in at any other path times out (20 s) before a single axe scan. The session lives
+ * in memory (a full page.goto drops it), so: sign in at `/`, then move to the route client-side, as evaluation.spec.ts does.
+ */
+async function signInAndGo(page: Page, path: string) {
+  await signIn(page, "viewer", "/");
+  if (path === "/") return;
+  await page.evaluate((to) => {
+    window.history.pushState({}, "", to);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, path);
+  await expect(page).toHaveURL((url) => url.pathname === path);
+}
+
 const ROUTES: ReadonlyArray<{ path: string; heading: RegExp }> = [
   { path: "/", heading: /^Live Twin$/ },
   { path: "/analytics", heading: /Analytics/ },
   { path: "/runs", heading: /./ },
+  // IG-06: the routes added by FE-17 / FE-18 / FE-16 detail. The page <h1> renders before the data does, so each scan
+  // waits for the network to settle first (bounded; a never-idle page fails here rather than being scanned half-loaded).
+  { path: "/evaluation", heading: /^Policy evaluation$/ },
+  { path: "/telemetry", heading: /^Telemetry history$/ },
 ];
 
 for (const colorScheme of ["light", "dark"] as const) {
   for (const route of ROUTES) {
     test(`route ${route.path} has no serious/critical axe violations (${colorScheme})`, async ({ page }, testInfo) => {
       await page.emulateMedia({ colorScheme });
-      await signIn(page, "viewer", route.path);
+      await signInAndGo(page, route.path);
       await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible();
+      await page.waitForLoadState("networkidle", { timeout: 30_000 });
       await scan(page, testInfo, `route${route.path.replace(/\//g, "-") || "-root"}-${colorScheme}`);
     });
   }
 }
 
+// IG-06: /runs/:id. A real run when E2E_RUN_ID is set; otherwise the unknown-run state (labelled in the attachment name,
+// so a clean result here is never read as "a live run was scanned").
+for (const colorScheme of ["light", "dark"] as const) {
+  const runId = process.env.E2E_RUN_ID?.trim();
+  test(`route /runs/:id (${runId ? "real run" : "unknown-run state"}) has no serious/critical axe violations (${colorScheme})`, async ({ page }, testInfo) => {
+    await page.emulateMedia({ colorScheme });
+    await signInAndGo(page, `/runs/${encodeURIComponent(runId || "a11y-no-such-run")}`);
+    await expect(page.getByRole("heading", { level: 1, name: /^Run$/ })).toBeVisible();
+    await page.waitForLoadState("networkidle", { timeout: 30_000 });
+    await scan(page, testInfo, `route-runs-id-${runId ? "real-run" : "unknown-run-state"}-${colorScheme}`);
+  });
+}
+
 test("analytics: every chart has a title, a text summary and a data table", async ({ page }, testInfo) => {
-  await signIn(page, "viewer", "/analytics");
+  await signInAndGo(page, "/analytics");
   await page.getByRole("tab", { name: /24h Simulation/ }).click();
   await page.getByRole("button", { name: /Run 24h Simulation/ }).click();
   const frames = page.getByTestId("chart-frame");
