@@ -127,35 +127,47 @@ class AlertManager:
         severity: str,
         message: str,
         *,
+        origin: str,
         score: float = 0.0,
         sensor_reading_id: int | None = None,
+        dedupe_key: str | None = None,
+        model_version: str | None = None,
     ) -> bool:
         """
         Record an alert in PostgreSQL and send via enabled channels (subject to cooldown).
+
+        The row is written by ``data_repository.save_alert``, the single alert-write path (ADR 006), so it always
+        carries ``origin`` and, when given, ``dedupe_key`` / ``model_version``. ``origin`` is required: an alert
+        without provenance is not written.
 
         Args:
             session: AsyncSession from get_db() for inserting Alert.
             alert_type: One of AlertType.* constants.
             severity: One of Severity.* constants.
             message: Human-readable description.
+            origin: Where the value came from (``simulated`` | ``measured`` | ``replay``).
             score: Optional numeric value (e.g. anomaly score, PUE value).
             sensor_reading_id: Optional FK to sensor_readings.
+            dedupe_key: Idempotency key for one episode; a repeat returns the existing row.
+            model_version: Detector model version, when a model raised the alert.
 
         Returns:
             True if alert was sent to any channel (not in cooldown), False if cooldown only.
         """
-        from models.db_models import Alert
+        from api.repositories import data_repository  # lazy: src/ must not import api/ at module load
 
-        alert_row = Alert(
-            score=score,
-            alert=True,
-            type=alert_type,
-            message=message,
-            severity=severity,
+        await data_repository.save_alert(
+            session,
+            score,
+            True,
+            alert_type,
+            message,
+            severity,
+            dedupe_key=dedupe_key,
+            model_version=model_version,
+            origin=origin,
             sensor_reading_id=sensor_reading_id,
         )
-        session.add(alert_row)
-        await session.flush()
 
         sent = False
         if not self._in_cooldown(alert_type):

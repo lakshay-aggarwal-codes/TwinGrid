@@ -1,6 +1,6 @@
 /** GET /api/state, each element of GET /api/simulate/{hours}, and the base of every /ws/live frame. */
 import { z } from 'zod';
-import { isoString, lenientEnum, num } from './common';
+import { isoString, lenientEnum, num, utilisationFraction } from './common';
 
 /** Backend CoolingMode enum values (src/digital_twin.py). `auto` is a request value, never a response value. */
 export const CoolingMode = lenientEnum(['free_air', 'closed_loop', 'evaporative', 'hybrid'] as const);
@@ -9,7 +9,7 @@ export const StateResponse = z
   .object({
     // Always present in DigitalTwinState.to_dict(): required.
     timestamp: isoString, // SIMULATED clock, offset-less; interpret with parseInstant(..., 'sim')
-    server_utilisation: num, // unit unverified (UQ-1), see units.ts
+    server_utilisation: utilisationFraction, // fraction of capacity, 0-1 (UQ-1, ADR 004), see units.ts
     outside_temp_C: num,
     server_inlet_temp_C: num,
     server_outlet_temp_C: num,

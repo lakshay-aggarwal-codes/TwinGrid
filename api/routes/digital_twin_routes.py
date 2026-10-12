@@ -22,7 +22,9 @@ router = APIRouter(tags=["digital-twin"])
 @router.get("/api/state", dependencies=[Depends(http_limit("state"))])
 async def get_state(
     _user: Annotated[User, Depends(get_current_user)],
-    utilisation: float = Query(0.5, ge=0, le=1, description="Server utilisation [0-1]"),
+    utilisation: float = Query(
+        0.5, ge=0, le=1, description="Server utilisation as a fraction of capacity, 0-1 (not a percentage)"
+    ),
     outside_temp: float = Query(25.0, ge=-10, le=50, description="Outside temp (°C)"),
     water_stress: float = Query(0.0, ge=0, le=1, description="Water stress [0-1]"),
     mode: Literal["auto", "free_air", "closed_loop", "evaporative", "hybrid"] = Query(
@@ -36,6 +38,8 @@ async def get_state(
     live state is what the WebSocket broadcasts). It runs on a throwaway twin
     (``live=False``), so it does not advance the shared live twin, does not
     touch its clock/thermal state/cumulative counters, and persists nothing.
+    ``server_utilisation`` in the response is a fraction of capacity in [0, 1], never a percentage (ADR 004).
+
     Because the twin is fresh on every call, cumulative fields such as
     ``water_consumed_L`` reflect a single step, not the live accumulator.
     """
@@ -78,6 +82,8 @@ async def simulate(
     ``utilisation``/``outside_temp`` are the run's means; compute_simulation
     builds a diurnal curve around each rather than holding them flat for the
     whole period.
+
+    ``server_utilisation`` in each element is a fraction of capacity in [0, 1] (ADR 004).
 
     T14: this GET writes NOTHING by default. ``persist=true`` (operator only) stores one SimulationRun plus one
     SensorReading per simulated hour (<= 168 rows). Concurrency and time are bounded (api/rate_limit.py

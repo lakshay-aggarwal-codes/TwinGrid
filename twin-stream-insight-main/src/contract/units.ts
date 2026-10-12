@@ -4,7 +4,7 @@
  * `source` says how much we know about the unit:
  *  - `field-name`  the unit is encoded in the backend field name (`_kw`, `_C`, `_lpm`, ...);
  *  - `documented`  stated in a backend docstring/parameter description, not in the name;
- *  - `unverified`  nobody has confirmed it. The UI must show the value WITHOUT a unit (UQ-1).
+ *  - `unverified`  nobody has confirmed it. The UI must show the value WITHOUT a unit.
  *
  * `precision` is a display cap (decimal places), deliberately conservative: it must not imply accuracy the
  * simulator does not have.
@@ -18,18 +18,29 @@ export interface UnitInfo {
   readonly precision: number;
   readonly label: string;
   readonly source: UnitSource;
+  /** Inclusive [min, max] the API guarantees for this field, when it guarantees one (UQ-1 / ADR 004). */
+  readonly range?: readonly [number, number];
 }
 
-const u = (label: string, unit: string | null, precision: number, source: UnitSource): UnitInfo => ({
+const u = (
+  label: string,
+  unit: string | null,
+  precision: number,
+  source: UnitSource,
+  range?: readonly [number, number],
+): UnitInfo => ({
   unit,
   precision,
   label,
   source,
+  ...(range ? { range } : {}),
 });
 
 export const UNITS: Readonly<Record<string, UnitInfo>> = {
   // --- state / live frame ---
-  server_utilisation: u('Server utilisation', null, 2, 'unverified'), // UQ-1: 0-1 vs 0-100 unconfirmed
+  // UQ-1 / ADR 004: a FRACTION of capacity in [0, 1] at the API boundary (every backend producer and request bound
+  // is 0-1). The UI shows percent only through `utilisationToPercent`; the raw field is never labelled '%'.
+  server_utilisation: u('Server utilisation', null, 2, 'documented', [0, 1]),
   outside_temp_C: u('Outside temperature', '°C', 1, 'field-name'),
   server_inlet_temp_C: u('Server inlet temperature', '°C', 1, 'field-name'),
   server_outlet_temp_C: u('Server outlet temperature', '°C', 1, 'field-name'),
@@ -76,6 +87,18 @@ export const UNITS: Readonly<Record<string, UnitInfo>> = {
   z: u('Z position', null, 2, 'documented'),
   rotation_deg: u('Rotation', '°', 0, 'field-name'),
 };
+
+/** Fraction (API) -> percent (display). `null` when the value is not a finite fraction in [0, 1]: show no number. */
+export function utilisationToPercent(fraction: number): number | null {
+  if (!Number.isFinite(fraction) || fraction < 0 || fraction > 1) return null;
+  return fraction * 100;
+}
+
+/** Percent (a 10-100 slider) -> fraction (what every request parameter expects). `null` outside [0, 100]. */
+export function percentToUtilisation(percent: number): number | null {
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) return null;
+  return percent / 100;
+}
 
 export function unitFor(field: string): UnitInfo | undefined {
   return Object.prototype.hasOwnProperty.call(UNITS, field) ? UNITS[field] : undefined;

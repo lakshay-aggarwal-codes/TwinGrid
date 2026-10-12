@@ -1,6 +1,6 @@
 /** GET /api/whatif: an isolated 24 h run at constant inputs. A preview, never live state. */
 import { z } from 'zod';
-import { lenientEnum, num } from './common';
+import { lenientEnum, num, utilisationFraction } from './common';
 import { CoolingMode } from './state';
 
 export const WhatIfResponse = z
@@ -19,7 +19,7 @@ export const WhatIfResponse = z
     // Echo of the request. Optional: older backends do not send it.
     inputs: z
       .object({
-        utilisation: num,
+        utilisation: utilisationFraction,
         outside_temp_C: num,
         water_stress: num,
         mode: lenientEnum(['auto', 'free_air', 'closed_loop', 'evaporative', 'hybrid'] as const),
