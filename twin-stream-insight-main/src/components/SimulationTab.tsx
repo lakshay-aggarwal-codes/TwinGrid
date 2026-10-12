@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ProvenanceStrip, buildProvenance } from '@/provenance';
 import { StateNotice } from '@/state/StateBoundary';
@@ -6,14 +7,63 @@ import { ChartFrame } from '@/components/charts/ChartFrame';
 
 // Backend `cooling_mode` vocabulary -> display label + colour. A value not listed here is shown as unrecognised;
 // it is never mapped to a known mode.
-const MODES: Record<string, { label: string; color: string }> = {
-  evaporative: { label: 'Evaporative', color: '#00E5FF' },
-  closed_loop: { label: 'Closed-Loop', color: '#3B82F6' },
-  free_air: { label: 'Free Air', color: '#22C55E' },
-  hybrid: { label: 'Hybrid', color: '#F59E0B' },
+// WCAG 1.4.1: the water bar chart must not rely on colour alone, so every mode also has its own fill pattern.
+type PatternKind = 'diagonal' | 'dots' | 'horizontal' | 'cross' | 'vertical';
+interface ModeStyle {
+  label: string;
+  color: string;
+  pattern: PatternKind;
+}
+const MODES: Record<string, ModeStyle> = {
+  evaporative: { label: 'Evaporative', color: '#00E5FF', pattern: 'diagonal' },
+  closed_loop: { label: 'Closed-Loop', color: '#3B82F6', pattern: 'dots' },
+  free_air: { label: 'Free Air', color: '#22C55E', pattern: 'horizontal' },
+  hybrid: { label: 'Hybrid', color: '#F59E0B', pattern: 'cross' },
 };
-const UNRECOGNISED = { label: 'Unrecognised mode', color: '#64748b' };
-const modeOf = (raw: string) => (Object.prototype.hasOwnProperty.call(MODES, raw) ? MODES[raw] : UNRECOGNISED);
+const UNRECOGNISED: ModeStyle = { label: 'Unrecognised mode', color: '#64748b', pattern: 'vertical' };
+const modeOf = (raw: string): ModeStyle => (Object.prototype.hasOwnProperty.call(MODES, raw) ? MODES[raw] : UNRECOGNISED);
+
+const PATTERN_INK = 'rgba(2, 6, 23, 0.8)';
+const PATTERN_SIZE = 8;
+
+/** One SVG <pattern>: the mode colour as the base, with a mode-specific dark mark over it. */
+function ModePattern({ id, style }: { id: string; style: ModeStyle }) {
+  const marks = {
+    diagonal: <path d="M-2,2 l4,-4 M0,8 l8,-8 M6,10 l4,-4" stroke={PATTERN_INK} strokeWidth={1.5} />,
+    dots: <circle cx={4} cy={4} r={1.7} fill={PATTERN_INK} />,
+    horizontal: <path d="M0,4 H8" stroke={PATTERN_INK} strokeWidth={2} />,
+    cross: <path d="M0,0 L8,8 M8,0 L0,8" stroke={PATTERN_INK} strokeWidth={1.3} />,
+    vertical: <path d="M4,0 V8" stroke={PATTERN_INK} strokeWidth={2} />,
+  }[style.pattern];
+  return (
+    <pattern id={id} width={PATTERN_SIZE} height={PATTERN_SIZE} patternUnits="userSpaceOnUse">
+      <rect width={PATTERN_SIZE} height={PATTERN_SIZE} fill={style.color} />
+      {marks}
+    </pattern>
+  );
+}
+
+const patternId = (uid: string, style: ModeStyle) => `${uid}-pat-${style.pattern}`;
+const ALL_MODE_STYLES: ModeStyle[] = [...Object.values(MODES), UNRECOGNISED];
+
+/** Legend for the water chart: swatch (same pattern as the bars) plus the mode's name in text. */
+function ModeLegend({ uid, styles }: { uid: string; styles: ModeStyle[] }) {
+  return (
+    <ul data-testid="mode-legend" className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+      {styles.map((m) => (
+        <li key={m.pattern} className="flex items-center gap-1.5">
+          <svg width={14} height={14} aria-hidden="true" focusable="false">
+            <defs>
+              <ModePattern id={`${uid}-sw-${m.pattern}`} style={m} />
+            </defs>
+            <rect width={14} height={14} rx={2} fill={`url(#${uid}-sw-${m.pattern})`} stroke="hsl(200,15%,55%)" strokeWidth={0.5} />
+          </svg>
+          <span>{m.label}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 const LINE_COLUMNS = [
   { key: 'step', header: 'Step' },
@@ -49,6 +99,8 @@ function inputsLine(i: SimInputs, steps: number): string {
 }
 
 export function SimulationTab({ data, inputs, failed = false }: Props) {
+  // Unique per instance so two mounted tabs never share SVG pattern ids (useId output has characters url() dislikes).
+  const uid = `sim${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const failure = failed ? (
     <StateNotice kind="error" text="The last simulation request failed. Run it again from the sidebar." block />
   ) : null;
@@ -86,7 +138,9 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
     value,
     color: (Object.values(MODES).find((m) => m.label === name) ?? UNRECOGNISED).color,
   }));
-  const barData = data.map((d) => ({ ...d, modeColor: modeOf(d.coolingMode).color }));
+  const barData = data.map((d) => ({ ...d, modeStyle: modeOf(d.coolingMode) }));
+  // Legend lists only the modes that occur in this run, in the fixed vocabulary order.
+  const presentStyles = ALL_MODE_STYLES.filter((m) => barData.some((d) => d.modeStyle === m));
 
   // FE-19 text alternatives: only backend values as provided (first/last step), counts of the rows returned, and the
   // simulated-not-live origin. Nothing is derived beyond the counts the pie already shows.
@@ -104,7 +158,7 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
   }));
   const waterSummary =
     `Simulated run result, not live. ${data.length} steps. At step ${last.step}: ${formatBackendNumber('water_consumed_L', last.waterConsumedL)} L. ` +
-    `Bars are coloured by cooling mode; the data table names the mode of every step.`;
+    `Bars are coloured and patterned by cooling mode, named in the legend; the data table names the mode of every step.`;
   const waterRows = data.map((d) => ({
     step: d.step,
     water: formatBackendNumber('water_consumed_L', d.waterConsumedL),
@@ -187,6 +241,11 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
         >
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={barData} margin={{ bottom: 20 }}>
+              <defs>
+                {presentStyles.map((m) => (
+                  <ModePattern key={m.pattern} id={patternId(uid, m)} style={m} />
+                ))}
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,30%,22%)" />
               <XAxis
                 dataKey="step"
@@ -198,11 +257,12 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
               <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#e2e8f0' }} labelStyle={{ color: '#94a3b8' }} />
               <Bar dataKey="waterConsumedL" name="Water consumed (L)">
                 {barData.map((d, i) => (
-                  <Cell key={i} fill={d.modeColor} fillOpacity={0.8} />
+                  <Cell key={i} fill={`url(#${patternId(uid, d.modeStyle)})`} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          <ModeLegend uid={uid} styles={presentStyles} />
         </ChartFrame>
 
         {/* Pie chart */}

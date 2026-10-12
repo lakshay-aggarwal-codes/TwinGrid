@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { cloneElement, type ReactElement } from "react";
 import type { HourlyData, SimInputs } from "@/hooks/useSimulation";
 
@@ -67,5 +67,52 @@ describe("SimulationTab charts (FE-19, Section 13 Charts)", () => {
     const table = within(frame).getByRole("table");
     expect(within(table).getAllByRole("row")).toHaveLength(4);
     expect(table).toHaveTextContent("Unrecognised mode");
+  });
+  describe("water chart: cooling mode has a non-colour cue (WCAG 1.4.1)", () => {
+    // recharts animates bars in, so they are not in the DOM on the first synchronous render.
+    const barFills = async (container: HTMLElement, expected: number) => {
+      const sel = ".recharts-bar-rectangle path, .recharts-bar-rectangle rect";
+      await waitFor(() => expect(container.querySelectorAll(sel)).toHaveLength(expected));
+      return Array.from(container.querySelectorAll(sel)).map((el) => el.getAttribute("fill") ?? "");
+    };
+
+    it("every bar is filled with a pattern, never a bare colour", async () => {
+      const { container } = render(<SimulationTab data={rows(["hybrid", "free_air", "plasma", "hybrid"])} inputs={inputs} />);
+      const fills = await barFills(container, 4);
+      for (const f of fills) expect(f).toMatch(/^url\(#[\w-]+\)$/);
+    });
+
+    it("different modes get different patterns, same mode gets the same one, and each referenced pattern exists", async () => {
+      const { container } = render(<SimulationTab data={rows(["hybrid", "free_air", "plasma", "hybrid"])} inputs={inputs} />);
+      const fills = await barFills(container, 4);
+      expect(fills[0]).toBe(fills[3]);
+      expect(new Set(fills).size).toBe(3);
+      for (const f of fills) {
+        const id = /^url\(#([\w-]+)\)$/.exec(f)![1];
+        expect(container.querySelector(`pattern[id="${id}"]`)).not.toBeNull();
+      }
+    });
+
+    it("the legend names, in text, exactly the modes present in the run", () => {
+      render(<SimulationTab data={rows(["hybrid", "hybrid", "free_air"])} inputs={inputs} />);
+      const legend = screen.getByTestId("mode-legend");
+      const items = within(legend).getAllByRole("listitem").map((li) => li.textContent);
+      expect(items).toEqual(["Free Air", "Hybrid"]);
+    });
+
+    it("an unrecognised mode is named 'Unrecognised mode' in the legend, never mapped to a known mode", () => {
+      render(<SimulationTab data={rows(["plasma", "hybrid", "hybrid"])} inputs={inputs} />);
+      const legend = screen.getByTestId("mode-legend");
+      expect(legend).toHaveTextContent("Unrecognised mode");
+      expect(legend).toHaveTextContent("Hybrid");
+    });
+
+    it("two mounted tabs never share pattern ids", () => {
+      const a = render(<SimulationTab data={rows()} inputs={inputs} />);
+      const b = render(<SimulationTab data={rows()} inputs={inputs} />);
+      const ids = (c: HTMLElement) => Array.from(c.querySelectorAll("pattern")).map((p) => p.id);
+      const shared = ids(a.container).filter((id) => ids(b.container).includes(id));
+      expect(shared).toEqual([]);
+    });
   });
 });
