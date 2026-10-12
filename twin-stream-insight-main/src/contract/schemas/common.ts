@@ -34,3 +34,6 @@ export const num = z.number().finite();
 
 /** Timestamps stay strings at the schema layer; interpret them only through `time.ts`. */
 export const isoString = z.string().min(1);
+
+/** UQ-1 / ADR 004: a fraction of capacity in [0, 1]. A percentage (0-100) fails here instead of being displayed as 5000 %. */
+export const utilisationFraction = num.min(0).max(1);

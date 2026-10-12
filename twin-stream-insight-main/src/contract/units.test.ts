@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { UNITS, unitFor } from './units';
+import { UNITS, percentToUtilisation, unitFor, utilisationToPercent } from './units';
 import { StateResponse } from './schemas/state';
 import { LiveFrame, AnomalyStatusPayload } from './schemas/live';
 import { WhatIfResponse } from './schemas/whatif';
@@ -48,10 +48,11 @@ describe('unit table completeness vs schema numeric fields', () => {
 });
 
 describe('unit table content', () => {
-  it('server_utilisation is unverified and shown without a unit (UQ-1)', () => {
+  it('server_utilisation is a documented 0-1 fraction, shown without a unit (UQ-1, ADR 004)', () => {
     const info = unitFor('server_utilisation');
-    expect(info?.source).toBe('unverified');
+    expect(info?.source).toBe('documented');
     expect(info?.unit).toBeNull();
+    expect(info?.range).toEqual([0, 1]);
   });
   it('an unverified entry never carries a unit', () => {
     for (const [field, info] of Object.entries(UNITS)) {
@@ -68,5 +69,69 @@ describe('unit table content', () => {
   it('unitFor does not resolve inherited object keys', () => {
     expect(unitFor('constructor')).toBeUndefined();
     expect(unitFor('toString')).toBeUndefined();
+  });
+});
+
+describe('server_utilisation unit boundary (UQ-1, ADR 004)', () => {
+  const OK_STATE = {
+    timestamp: '2026-01-01T12:35:00',
+    server_utilisation: 0.5,
+    outside_temp_C: 20,
+    server_inlet_temp_C: 22,
+    server_outlet_temp_C: 30,
+    it_power_kw: 100,
+    cooling_power_kw: 20,
+    total_power_kw: 120,
+    pue: 1.2,
+    water_flow_lpm: 50,
+    water_consumed_L: 10,
+    wue: 0.5,
+    humidity_pct: 40,
+    water_pressure_bar: 2,
+    cooling_mode: 'hybrid',
+    anomaly: 0,
+  };
+  const OK_WHATIF = {
+    hours: 24,
+    basis: 'b',
+    mean_pue: 1.3,
+    wue: 0.4,
+    total_water_L: 1000,
+    total_energy_kwh: 5000,
+    total_co2_kg: 100,
+    max_outlet_temp_C: 33,
+    final_cooling_mode: 'free_air',
+    drought_override_active: false,
+    carbon_data_is_real: false,
+    inputs: { utilisation: 0.65, outside_temp_C: 22, water_stress: 0.4, mode: 'auto', chilled_water_temp_C: 18 },
+  };
+  const state = (u: number) => ({ ...OK_STATE, server_utilisation: u });
+
+  it('the response schema accepts a fraction and rejects a percentage', () => {
+    for (const ok of [0, 0.5, 1]) expect(StateResponse.safeParse(state(ok)).success).toBe(true);
+    for (const bad of [65, 100, 1.01, -0.01]) expect(StateResponse.safeParse(state(bad)).success).toBe(false);
+  });
+
+  it('the what-if echo of the request uses the same unit', () => {
+    const inputs = (u: number) => ({ ...OK_WHATIF, inputs: { ...OK_WHATIF.inputs, utilisation: u } });
+    expect(WhatIfResponse.safeParse(inputs(0.65)).success).toBe(true);
+    expect(WhatIfResponse.safeParse(inputs(65)).success).toBe(false);
+  });
+
+  it('fraction -> percent for display, and null (no number shown) outside [0, 1]', () => {
+    expect(utilisationToPercent(0.65)).toBeCloseTo(65, 9);
+    expect(utilisationToPercent(0)).toBe(0);
+    expect(utilisationToPercent(1)).toBe(100);
+    for (const bad of [65, -0.1, 1.0001, Number.NaN, Number.POSITIVE_INFINITY]) expect(utilisationToPercent(bad)).toBeNull();
+  });
+
+  it('percent -> fraction for requests, and null outside [0, 100]', () => {
+    expect(percentToUtilisation(65)).toBeCloseTo(0.65, 9);
+    expect(percentToUtilisation(100)).toBe(1);
+    for (const bad of [-1, 100.5, Number.NaN]) expect(percentToUtilisation(bad)).toBeNull();
+  });
+
+  it('round trip: the slider percent sent as a fraction comes back as the same percent', () => {
+    for (const pct of [10, 25, 65, 100]) expect(utilisationToPercent(percentToUtilisation(pct) as number)).toBeCloseTo(pct, 9);
   });
 });
