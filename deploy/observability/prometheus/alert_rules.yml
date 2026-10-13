@@ -1,0 +1,84 @@
+# Alert rules (Task 7). CONFIGURED, NOT VERIFIED: no rule here has been fired against a running stack, and every
+# threshold is a starting hypothesis, not a tuned or measured value (see docs/SLO.md).
+# Only metrics the API really exports are used (tests/test_task7_observability.py checks every name against the registry).
+# Not covered by a metric today, so no rule: migration failure, model artifact load failure (runbooks only).
+groups:
+  - name: twingrid-api
+    rules:
+      - alert: ApiDown
+        expr: up{job="twingrid-api"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: The API is not answering Prometheus scrapes
+          runbook: docs/runbooks/api-down.md
+
+      - alert: HighServerErrorRatio
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 0.001) > 0.05
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: More than 5% of requests answered 5xx for 10 minutes
+          runbook: docs/runbooks/high-5xx.md
+
+      - alert: SlowRequestsP95
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 2
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: p95 request latency above 2 s for 10 minutes
+          runbook: docs/runbooks/high-5xx.md
+
+  - name: twingrid-feed
+    rules:
+      - alert: LiveFeedStale
+        expr: time() - background_loop_last_success_timestamp{loop="broadcast"} > 60
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: The live broadcast loop has not completed a tick for over a minute
+          runbook: docs/runbooks/stale-feed.md
+
+      - alert: BackgroundLoopRestarting
+        expr: increase(background_loop_restarts_total[15m]) >= 3
+        labels: {severity: warning}
+        annotations:
+          summary: A supervised background loop restarted 3 or more times in 15 minutes
+          runbook: docs/runbooks/stale-feed.md
+
+      - alert: TelemetryPersistFailures
+        expr: increase(telemetry_persist_failures_total[10m]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: Live telemetry writes to the database are failing
+          runbook: docs/runbooks/database-down.md
+
+      - alert: WebSocketFramesDropped
+        expr: increase(ws_dropped_messages_total[10m]) > 0
+        labels: {severity: info}
+        annotations:
+          summary: Slow WebSocket clients are losing live frames
+          runbook: docs/runbooks/stale-feed.md
+
+  - name: twingrid-pipeline
+    rules:
+      - alert: AnomalyScoringErrors
+        expr: increase(anomaly_scoring_errors_total[15m]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: Anomaly scoring attempts are failing
+          runbook: docs/runbooks/artifact-load-failure.md
+
+      - alert: AuditWriteFailures
+        expr: increase(audit_write_failures_total[15m]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: Best-effort audit rows could not be written
+          runbook: docs/runbooks/database-down.md
+
+      - alert: BrowserErrorBurst
+        expr: sum(increase(client_errors_received_total{outcome="accepted"}[10m])) > 20
+        labels: {severity: info}
+        annotations:
+          summary: More than 20 browser error reports accepted in 10 minutes
+          runbook: docs/runbooks/README.md

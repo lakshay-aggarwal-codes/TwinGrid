@@ -92,6 +92,12 @@ def enqueue(func_path: str, *args: Any, **kwargs: Any) -> str:
     """Enqueue a job by import path (e.g. 'src.task_jobs.train_optimizer_job')
     -- RQ needs an importable reference, not a closure, since the worker
     process re-imports it. Returns the job id."""
+    # Task 7: the enqueuing request's id travels with the job (job.meta), see src/log_context.py.
+    from src.log_context import job_meta
+
+    meta = job_meta()
+    if meta:
+        kwargs.setdefault("meta", meta)
     job = _get_queue().enqueue(func_path, *args, job_timeout=JOB_TIMEOUT_SECONDS, **kwargs)
     return job.id
 

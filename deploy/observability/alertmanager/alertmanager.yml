@@ -1,0 +1,12 @@
+# Alertmanager (optional, compose profile "alerting"). The only receiver delivers nowhere: alerts are grouped and
+# visible at http://127.0.0.1:9093, nothing is sent. Add a real receiver (email, Slack, webhook) with its credentials
+# supplied from your own secret store; never commit them here.
+route:
+  receiver: nowhere
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: nowhere

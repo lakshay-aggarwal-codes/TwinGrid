@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from fastapi import Request
 
 from api.middleware.request_id import request_id_var
+from src.log_redaction import redact
 
 route_var: ContextVar[str | None] = ContextVar("route", default=None)
 user_id_var: ContextVar[str | None] = ContextVar("user_id", default=None)
@@ -41,7 +42,7 @@ class JSONFormatter(logging.Formatter):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
-            "message": record.getMessage(),
+            "message": redact(record.getMessage()),
             "request_id": getattr(record, "request_id", None) or request_id_var.get(),
             "route": getattr(record, "route", None) or route_var.get(),
             "user_id": getattr(record, "user_id", None) or user_id_var.get(),
@@ -51,7 +52,7 @@ class JSONFormatter(logging.Formatter):
             if value is not None:
                 payload[key] = value
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            payload["exception"] = redact(self.formatException(record.exc_info))
         return json.dumps(payload, default=str)
 
 
