@@ -10,4 +10,4 @@
 
 -r requirements.txt
 stable-baselines3==2.9.0
-torch==2.14.0
+torch==2.14.1+cpu
