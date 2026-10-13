@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  # <OWNER MUST FILL>: replace OWNER and REPOSITORY with this repository's path.
+  - name: Security vulnerability
+    url: https://github.com/OWNER/REPOSITORY/security/advisories/new
+    about: Report security problems privately (see SECURITY.md). Do not open a public issue.

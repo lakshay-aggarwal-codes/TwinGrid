@@ -1,0 +1,45 @@
+# Dependabot version updates (configured; whether it is enabled on the repository is a GitHub setting).
+# Weekly, one grouped PR per ecosystem so reviewers get few, reviewable PRs.
+#
+# Python note: CI and the Dockerfile install the hash-pinned requirements.lock. Dependabot edits requirements*.txt,
+# NOT the lock. After merging a Python update PR, regenerate the lock with the `bootstrap` job of ci.yml
+# (see the header of requirements.txt) and commit it.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      python-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: "/twin-stream-insight-main"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      docker-images:
+        patterns: ["*"]

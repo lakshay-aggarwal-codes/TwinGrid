@@ -1,0 +1,31 @@
+# gitleaks configuration (used by .github/workflows/secret-scan.yml).
+# Start from the default ruleset; the allowlist below holds ONLY documented, non-secret placeholders:
+#   - values written in ci.yml and compose files so CI can start the stack (the CI bundle/stack is never deployed)
+#   - test-suite values set in tests/conftest-style fixtures
+#   - the "change-me" examples in .env.example, which the production startup checks reject
+# Adding anything here needs a line in the comment above saying why it is not a secret.
+title = "TwinGrid gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "documented placeholders only"
+regexes = [
+  '''ci-test-secret-not-for-production''',
+  '''ci-placeholder-not-a-real-password''',
+  '''ci_pg_password_not_secret''',
+  '''ci_redis_password_not_secret''',
+  '''ci-operator-registration-key-not-secret''',
+  '''ci-e2e-viewer-password-1''',
+  '''ci-e2e-operator-password-1''',
+  '''test-secret-for-suite-only''',
+  '''gen-api-reference-placeholder-not-a-secret''',
+  '''your-secret-key-here-change-in-production''',
+  '''change-me-to-a-long-random-string''',
+  '''change-me-to-a-long-random-metrics-token''',
+  '''change-me-url-safe-postgres-password''',
+  '''change-me-url-safe-redis-password''',
+  '''your_electricity_maps_api_key_here''',
+  '''your_nrel_nsrdb_api_key_here''',
+]

@@ -1,0 +1,11 @@
+# Code owners (review is requested automatically from the matching owner).
+# <OWNER MUST FILL>: replace the placeholder with a GitHub user or team (e.g. @your-user), then remove the
+# leading "# " from the rules below. Left commented on purpose: an unknown handle makes GitHub report errors.
+#
+# *                                  @<OWNER MUST FILL>
+# /api/                              @<OWNER MUST FILL>
+# /src/                              @<OWNER MUST FILL>
+# /alembic/                          @<OWNER MUST FILL>
+# /twin-stream-insight-main/         @<OWNER MUST FILL>
+# /.github/                          @<OWNER MUST FILL>
+# /SECURITY.md                       @<OWNER MUST FILL>
