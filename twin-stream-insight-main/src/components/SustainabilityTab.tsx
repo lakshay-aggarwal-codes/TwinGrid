@@ -54,13 +54,13 @@ export function SustainabilityTab({ feed, equipmentHealth, onRetryEquipment }: P
                 {liveState.carbon_intensity_gco2_per_kwh.toFixed(0)} <span className="text-sm font-normal">gCO2/kWh</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Cooling emitted ~{liveState.carbon_gco2?.toFixed(0)} gCO2 this step
+                Cooling emitted ~{liveState.carbon_gco2?.toFixed(0)} gCO2 this step{liveState.carbon_data_is_real === true ? '' : ' (modelled from the assumed intensity)'}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 {liveState.carbon_data_is_real === true
-                  ? 'Real diurnal average from Electricity Maps data, not a live grid feed.'
+                  ? 'Hour-of-day average of a loaded carbon series, not a live grid feed. Its source and average/marginal basis are in the backend carbon label.'
                   : liveState.carbon_data_is_real === false
-                  ? `Flat fallback ${liveState.carbon_intensity_gco2_per_kwh.toFixed(0)} gCO2/kWh — not real grid data (no Electricity Maps data loaded on the backend).`
+                  ? `ASSUMPTION: a flat ${liveState.carbon_intensity_gco2_per_kwh.toFixed(0)} gCO2/kWh world-average figure, the same at every hour and place. Not real grid data: no carbon-intensity dataset is loaded on the backend.`
                   : 'Data source not reported by the backend.'}
               </p>
             </>

@@ -390,7 +390,7 @@ export function buildSustainabilityReport(s: StateResponse | LiveStatePayload, c
     // Deliberately omitted rather than shown: a flat fallback constant would
     // read as live grid data in a document someone may forward.
     caveats.push(
-      "Carbon intensity and emissions are omitted from this report: the backend reported them from a flat 475 gCO₂/kWh fallback (carbon_data_is_real is not true), not real grid data.",
+      "Carbon intensity and emissions are omitted from this report: the backend reported them from a flat 475 gCO₂/kWh assumption (carbon_data_is_real is not true), not measured grid data.",
     );
   }
 
@@ -401,7 +401,7 @@ export function buildSustainabilityReport(s: StateResponse | LiveStatePayload, c
       rows,
     },
   ];
-  if (carbonRows.length > 0) sections.push({ title: "Carbon (real grid data)", rows: carbonRows });
+  if (carbonRows.length > 0) sections.push({ title: "Carbon (loaded intensity series)", rows: carbonRows });
 
   const seed: ProvenanceSeed = {
     usesLiveFeed: true,

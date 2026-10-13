@@ -19,7 +19,7 @@ The authoritative record is `data/external/REGISTER.json` (schema in roadmap 14.
 | `nasa-cmapss` | Proxy run-to-failure trajectories for the RUL model | A structural analogue only; not data-centre failure rates or RUL; keep the proxy caveat wherever it is mentioned |
 | `numenta-nab` | Offline sanity check of a univariate autoencoder (`src/anomaly_detector_nab_validation.py`) | Not training data; no performance statement for the production detector |
 | `electricity-maps-coverage-2026-09-06` | Zone and signal catalogue read into `data/cleaned/carbon_electricity_maps.csv` | Has no intensity column; not the source of the carbon term |
-| `nrel-nsrdb-psm3` | Optional on-demand API fetch to `data/cleaned/solar_nsrdb.csv` | Nothing downstream reads it; no raw copy exists; no solar feature or figure |
+| `nrel-nsrdb-psm3` | Optional on-demand API fetch to `data/cleaned/solar_nsrdb.csv` (dormant code) | Nothing downstream reads it; no raw copy exists; no solar feature or figure |
 
 ## Datasets held for reference only
 
@@ -35,6 +35,10 @@ No code reads these. They must not be cited as calibration or validation.
 | `cluster-trace-docs-source-unconfirmed` | Not attributable to Alibaba; source unconfirmed. |
 | `electricity-maps-download-scripts` | Records that local scripts exist; they are not run by this repository. |
 | `wri-aqueduct-4-0-country-rankings`, `wri-aqueduct-water-stress-country-rankings-xlsx` | Country ranking workbooks. |
+
+## What is real, fallback or synthetic
+
+See `docs/model_cards/DATA_TRUTH.md`. In short: carbon intensity is a flat assumed 475 gCO2/kWh (no carbon-intensity file exists), `server_utilisation` is synthetic, and the Electricity Maps entry is a catalogue with no intensity column.
 
 ## Claims
 

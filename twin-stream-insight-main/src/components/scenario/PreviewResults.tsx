@@ -100,7 +100,7 @@ export function PreviewResults({ a, b, liveState = null, compact = false }: Prop
 
       {fallbackCarbon && (
         <p className="text-[11px] text-muted-foreground" data-testid="fallback-carbon">
-          CO₂ uses a fallback carbon intensity (a flat constant); the backend reports it is not real grid data.
+          CO₂ is modelled from a flat assumed carbon intensity (a constant, not measured grid data), so absolute CO₂ figures are illustrative.
         </p>
       )}
 
