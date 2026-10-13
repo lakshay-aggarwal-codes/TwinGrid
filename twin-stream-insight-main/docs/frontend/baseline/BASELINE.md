@@ -8,7 +8,7 @@ Evidence only. Nothing under `src/**` (or any other pre-existing file) was chang
 |---|---|
 | Frontend root | `twin-stream-insight-main/` (nested inside the supplied `TwinGrid-main` archive) |
 | Node / npm | v22.22.2 / 10.9.7. Satisfies `engines` (`>=22.20.0 <23`); `.nvmrc` pins 22.20.0. `engines` not touched. |
-| Git | Not a git repository (supplied as a ZIP), so `git status` is unavailable. A `T0b.diff` file is present at the frontend root; left untouched. |
+| Git | Not a git repository (supplied as a ZIP), so `git status` is unavailable. A `T0b.diff` file was present at the frontend root when this baseline was taken; it was an old patch file and was removed in Task 4. |
 | Sandbox | Linux container, no IPv6 support, Playwright browser download blocked |
 | Backend roadmap | `TwinGrid_Backend_Roadmap_PostT9.md` not supplied and not present in the archive (see `BACKEND_RECONCILIATION.md`) |
 

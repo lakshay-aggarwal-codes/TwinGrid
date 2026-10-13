@@ -7,19 +7,15 @@ optimizer. Postgres via SQLAlchemy/Alembic. React+Vite+Three.js dashboard
 (under active development — see that directory's own state, not covered by
 this document).
 
-> **This file supersedes the previous `README.md`. `ARCHITECTURE.md`,
-> `FINAL_REVIEW.md`, and `DOCUMENTATION_SUMMARY.md` are still present in this
-> repository but are not authoritative for it (IG-00).** Those described a
-> different, more complete 20-phase build (real Electricity Maps carbon
-> data, a `src/digital_twin_documented.py` module, etc.) that doesn't match
-> what's actually in this repository — `data/cleaned/carbon_intensity.csv`
-> doesn't exist, `digital_twin_documented.py` doesn't exist, and the code
-> falls back to a flat 475 gCO2/kWh carbon figure at runtime. Whether that
-> older doc set described a different branch, a planned-but-unbuilt state,
-> or something else isn't known — what's below is grounded in the actual
-> code, verified by reading it and running what could be run. If you find
-> a specific claim below that's wrong, that's a bug in this document; open
-> an issue against it the same as you would against code.
+> **Architecture documents:** `docs/architecture/system.md` and
+> `docs/architecture/data_flow.md` are the single description of how the system
+> is built, verified against the code. An older document set (a 20-phase build
+> with real Electricity Maps carbon data and a `src/digital_twin_documented.py`
+> module) described a state this repository does not have and was removed (Task 4):
+> `data/cleaned/carbon_intensity.csv` does not exist, `digital_twin_documented.py`
+> does not exist, and the code uses a flat 475 gCO2/kWh carbon assumption at
+> runtime. If you find a claim in the docs that is wrong, that is a bug in the
+> docs; open an issue against it as you would against code.
 
 ## What's actually true right now
 

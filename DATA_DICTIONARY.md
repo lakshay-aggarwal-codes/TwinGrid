@@ -19,7 +19,7 @@
 | `water_pressure_bar` | float | synthetic, ±0.1 bar noise | |
 | `anomaly` | int {0,1} | synthetic injected events (5 total) | thin — see `ML_DOCUMENTATION.md`'s NAB validation section |
 
-**Known gap:** `carbon_intensity_gco2_per_kwh`, `carbon_gco2`, `drought_override_active` are **not present** in this file — see `ARCHITECTURE.md`'s "Known architectural gap."
+**Known gap:** `carbon_intensity_gco2_per_kwh`, `carbon_gco2`, `drought_override_active` are **not present** in this file — see the training-time section of `docs/architecture/data_flow.md`.
 
 ## `data/cleaned/*.csv` (real-world, via `src/ingestion/*.py`)
 
