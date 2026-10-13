@@ -168,6 +168,15 @@ def _mqtt_credentials_missing() -> bool:
     return _mqtt_in_use() and not (_secret("MQTT_USERNAME") and _secret("MQTT_PASSWORD"))
 
 
+def _ws_ticket_store_missing() -> bool:
+    """Task 6: with ``?token=`` switched off (WS_ALLOW_QUERY_TOKEN=false) tickets are the ONLY way onto /ws/live, and
+    the in-memory ticket store is refused in production, so Redis must be configured. While ``?token=`` is allowed
+    (the default) a missing Redis only turns ticket requests into 503 and the frontend falls back to the token."""
+    from src import ws_tickets  # lazy; reads the environment only
+
+    return not ws_tickets.query_token_allowed() and not ws_tickets.redis_configured()
+
+
 RULES: tuple[Rule, ...] = (
     Rule(
         "R01-env-name",
@@ -246,6 +255,13 @@ RULES: tuple[Rule, ...] = (
         True,
         _mqtt_credentials_missing,
         "MQTT_BROKER is set, so MQTT_USERNAME and MQTT_PASSWORD (or _FILE) are required.",
+    ),
+    Rule(
+        "R13-ws-ticket-store",
+        ("REDIS_URL", "WS_ALLOW_QUERY_TOKEN"),
+        True,
+        _ws_ticket_store_missing,
+        "WS_ALLOW_QUERY_TOKEN is off, so WebSocket tickets are the only way in and REDIS_URL is required for them.",
     ),
 )
 

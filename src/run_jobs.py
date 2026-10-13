@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.log_context import with_request_id
+
 FAILURE_INVALID_INPUT = "invalid_input"
 FAILURE_INTERNAL = "internal_error"
 
@@ -27,6 +29,7 @@ class RunFailed(Exception):
         self.code = code
 
 
+@with_request_id
 def run_whatif_job(run_id: str, scenario_id: str, parameters: dict[str, Any]) -> dict[str, Any]:
     """Compute one what-if run. ``parameters`` is fully resolved (all five descriptor names present)."""
     from api.serialization import to_jsonable

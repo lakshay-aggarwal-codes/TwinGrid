@@ -13,7 +13,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from src.log_context import with_request_id
 
+
+@with_request_id
 def train_optimizer_job(alpha: float, beta: float, gamma: float, water_stress: float) -> dict[str, Any]:
     """Train a *candidate* optimizer as a queued job.
 

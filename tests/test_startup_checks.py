@@ -42,6 +42,8 @@ MANAGED = (
     "MQTT_USERNAME_FILE",
     "MQTT_PASSWORD",
     "MQTT_PASSWORD_FILE",
+    "REDIS_URL",
+    "WS_ALLOW_QUERY_TOKEN",
 )
 
 
@@ -80,6 +82,8 @@ BAD = {
     "R11-mock-sensors": _set("MOCK_SENSORS", "true"),
     # T17: a configured broker without credentials (valid_env sets neither a broker nor credentials)
     "R12-mqtt-credentials": _set("MQTT_BROKER", "broker.internal"),
+    # Task 6: ?token= switched off but no Redis for tickets (valid_env clears REDIS_URL)
+    "R13-ws-ticket-store": _set("WS_ALLOW_QUERY_TOKEN", "false"),
 }
 ALL_ENVIRONMENT_RULES = {"R01-env-name", "R02-jwt-missing"}
 PRODUCTION_ONLY = sorted(set(BAD) - ALL_ENVIRONMENT_RULES)

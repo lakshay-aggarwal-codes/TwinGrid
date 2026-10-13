@@ -11,6 +11,7 @@ from fastapi import APIRouter, Query, WebSocket
 from api.auth import decode_token
 from api.config import load_ws_limits, normalize_origin
 from api.services.live_broadcast_service import ConnectionLimitExceeded, manager
+from src import ws_tickets
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["live"])
@@ -35,10 +36,10 @@ _RATE_WINDOW_SECONDS = 60.0
 
 
 # -----------------------------------------------------------------------------
-# Log redaction (accepted risk R-1 / D-6: the access token travels in the query
-# string, and ASGI servers log the request path including it).
+# Log redaction (accepted risk R-1 / D-6: the access token may travel in the query
+# string, and ASGI servers log the request path including it; Task 6: so may a ticket).
 # -----------------------------------------------------------------------------
-_TOKEN_QS = re.compile(r"""(?i)([?&]token=)[^&\s"']+""")
+_TOKEN_QS = re.compile(r"""(?i)([?&](?:token|ticket|access_token|refresh_token)=)[^&\s"']+""")
 REDACTED = "[REDACTED]"
 
 
@@ -99,11 +100,17 @@ def origin_allowed(origin: str | None, allowed: tuple[str, ...]) -> bool:
 
 
 @router.websocket("/ws/live")
-async def websocket_live(websocket: WebSocket, token: str = Query(..., alias="token")):
+async def websocket_live(
+    websocket: WebSocket,
+    token: str | None = Query(None, alias="token"),
+    ticket: str | None = Query(None, alias="ticket"),
+):
     """Live state updates, broadcast from ONE shared simulation loop (see
     api/services/live_broadcast_service.py) to every connected client --
-    not one independent loop per connection. Requires JWT:
-    /ws/live?token=<access_token>.
+    not one independent loop per connection. Requires either a single-use ticket
+    (``/ws/live?ticket=<ticket>``, from ``POST /auth/ws-ticket``; Task 6) or, while
+    ``WS_ALLOW_QUERY_TOKEN`` is on (default), the JWT (``/ws/live?token=<access_token>``).
+    A ticket takes precedence; an invalid ticket is never retried as a token.
 
     Session controls (limits from api/config.py ``load_ws_limits``):
     * Origin allowlist (WS_ALLOWED_ORIGINS), checked before the handshake.
@@ -121,9 +128,17 @@ async def websocket_live(websocket: WebSocket, token: str = Query(..., alias="to
         return
 
     try:
-        payload = decode_token(token)
-        user_id = str(payload["sub"])
-        expires_at = float(payload["exp"])
+        if ticket:
+            redeemed = await asyncio.to_thread(ws_tickets.redeem_ticket, ticket)
+            if redeemed is None:
+                raise ValueError("invalid ticket")
+            user_id, expires_at = redeemed["sub"], float(redeemed["exp"])
+        elif token and ws_tickets.query_token_allowed():
+            payload = decode_token(token)
+            user_id = str(payload["sub"])
+            expires_at = float(payload["exp"])
+        else:
+            raise ValueError("no usable credential")
     except Exception:
         await websocket.close(code=WS_CLOSE_INVALID_TOKEN)
         return

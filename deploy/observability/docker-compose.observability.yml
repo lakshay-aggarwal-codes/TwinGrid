@@ -1,0 +1,61 @@
+# Observability overlay (Task 7). Opt-in: nothing starts unless you pass a profile, and docker-compose.yml is untouched.
+#
+#   docker compose -f docker-compose.yml -f deploy/observability/docker-compose.observability.yml --profile observability up -d
+#   (add `--profile alerting` to also start Alertmanager)
+#
+# Prometheus scrapes the API's /metrics (backend:8000). In production /metrics needs the bearer METRICS_TOKEN: put that
+# value, with no trailing newline, in deploy/observability/secrets/metrics_token (the directory is git-ignored; it is
+# mounted read-only). Grafana needs GRAFANA_ADMIN_PASSWORD set in the environment. Everything binds to 127.0.0.1.
+#
+# Status: CONFIGURED, NOT VERIFIED. Images are pinned by tag, not by digest. Thresholds in alert_rules.yml are
+# starting hypotheses (docs/SLO.md). Metrics are process-local: with several API replicas, scrape each one.
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["observability"]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./deploy/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/observability/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - ./deploy/observability/secrets/metrics_token:/etc/prometheus/secrets/metrics_token:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    profiles: ["observability"]
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - ./deploy/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+  alertmanager:
+    # Optional: only with `--profile alerting`. Ships with a receiver that delivers nowhere; add yours (see the file).
+    image: prom/alertmanager:v0.27.0
+    profiles: ["alerting"]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ./deploy/observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+volumes:
+  prometheus_data:
+  grafana_data:

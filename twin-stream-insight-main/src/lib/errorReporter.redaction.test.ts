@@ -12,6 +12,11 @@ describe('redactSecrets', () => {
     expect(redactSecrets(msg)).not.toContain('SECRET');
   });
 
+  it('redacts a WebSocket ticket in a URL query', () => {
+    expect(redactSecrets('wss://h/ws/live?ticket=abc_DEF-123')).toBe('wss://h/ws/live?ticket=[redacted]');
+    expect(redactSecrets('wss://h/ws/live?a=1&ticket=abc&b=2')).toBe('wss://h/ws/live?a=1&ticket=[redacted]&b=2');
+  });
+
   it('redacts bearer tokens', () => {
     expect(redactSecrets('Authorization: Bearer abc.def-ghi_jkl')).toBe('Authorization: Bearer [redacted]');
   });

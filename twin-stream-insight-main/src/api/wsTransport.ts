@@ -9,6 +9,12 @@
  *   1009  message too big                  -> stop (client bug)
  *   other (1006, ...)                      -> exponential backoff
  *
+ * Credential (Task 6): before each connect the client asks `POST /auth/ws-ticket` (access token in the
+ * Authorization header) for a single-use ticket and opens `/ws/live?ticket=...`, so the access token is not carried
+ * in the URL. If the ticket request fails for ANY reason (network, 4xx/5xx, malformed body, timeout) it falls back to
+ * the previous `?token=` flow, which the backend keeps accepting while WS_ALLOW_QUERY_TOKEN is on (the default).
+ * Close codes 4001/4002 are handled exactly as before.
+ *
  * The backoff is reset ONLY when a frame passes the contract layer, never merely because the socket opened
  * (a cap rejection opens and then closes). An open socket is therefore not "live": consumers must still require a
  * fresh valid frame.
@@ -61,6 +67,33 @@ export async function probeHealthz(signal?: AbortSignal): Promise<BackendProbe> 
     return 'unknown'; // e.g. 404: the probe route itself is gone, which says nothing about the backend
   } catch {
     return 'unreachable';
+  }
+}
+
+const TICKET_TIMEOUT_MS = 5000;
+
+/**
+ * Exchange the access token for a single-use WebSocket ticket. Resolves to null on ANY failure so the caller can
+ * fall back to the token flow; never throws and never logs the token or the ticket.
+ */
+export async function requestWsTicket(token: string): Promise<string | null> {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), TICKET_TIMEOUT_MS);
+  try {
+    const response = await fetch(new URL('/auth/ws-ticket', API_BASE_URL).toString(), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+      signal: abort.signal,
+    });
+    if (!response.ok) return null;
+    const body: unknown = await response.json();
+    const ticket = (body as { ticket?: unknown } | null)?.ticket;
+    return typeof ticket === 'string' && ticket.length > 0 ? ticket : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -216,9 +249,14 @@ export function connectWebSocket(
     }
     if (stopped) return;
 
+    const ticket = await requestWsTicket(token);
+    if (stopped) return;
+
     let sock: WebSocket;
     try {
-      sock = new WebSocket(`${WS_LIVE_URL}?token=${encodeURIComponent(token)}`);
+      sock = new WebSocket(
+        ticket ? `${WS_LIVE_URL}?ticket=${encodeURIComponent(ticket)}` : `${WS_LIVE_URL}?token=${encodeURIComponent(token)}`
+      );
     } catch (e) {
       reportError('apiClient.websocket.construct', e, 'warning'); // errorReporter redacts `token=`
       onStatus?.('closed');

@@ -15,7 +15,7 @@ vi.mock("../config", () => ({
   assertApiConfigured: () => {},
 }));
 
-import { connectWebSocket, probeHealthz } from "./wsTransport.ts";
+import { connectWebSocket, probeHealthz, requestWsTicket } from "./wsTransport.ts";
 import { validState } from "./testFixtures";
 
 class FakeWS {
@@ -43,6 +43,8 @@ const flush = async () => {
   for (let i = 0; i < 5; i++) await Promise.resolve();
 };
 const last = () => FakeWS.instances[FakeWS.instances.length - 1];
+/** Task 6: the transport now also POSTs /auth/ws-ticket; the probe tests only care about the /healthz probe. */
+const healthzCalls = () => fetchMock.mock.calls.filter((c) => String(c[0]).endsWith("/healthz"));
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -307,9 +309,9 @@ describe("backend-unavailable probe", () => {
     await vi.advanceTimersByTimeAsync(3001);
     FakeWS.instances[1].serverClose(1006); // second consecutive failure
     await vi.advanceTimersByTimeAsync(1);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.com/healthz");
-    expect(fetchMock.mock.calls[0][1]?.headers).toBeUndefined(); // no Authorization
+    expect(healthzCalls()).toHaveLength(1);
+    expect(healthzCalls()[0][0]).toBe("https://api.example.com/healthz");
+    expect(healthzCalls()[0][1]?.headers).toBeUndefined(); // no Authorization
     expect(conn.getState().backend).toBe("unavailable");
   });
 
@@ -318,7 +320,7 @@ describe("backend-unavailable probe", () => {
     await flush();
     FakeWS.instances[0].serverClose(1006);
     await vi.advanceTimersByTimeAsync(1);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(healthzCalls()).toHaveLength(0);
   });
 
   it("probeHealthz maps outcomes", async () => {
@@ -339,5 +341,104 @@ describe("secrets", () => {
     await flush();
     FakeWS.instances[0].serverClose(1006);
     expect(JSON.stringify(reportError.mock.calls)).not.toContain("tok-1");
+  });
+});
+
+describe("WebSocket ticket (Task 6)", () => {
+  const ticketResponse = (ticket: unknown) => ({ ok: true, status: 200, json: async () => ({ ticket, expires_in: 30 }) });
+  const ticketCalls = () => fetchMock.mock.calls.filter((c) => String(c[0]).endsWith("/auth/ws-ticket"));
+
+  it("asks for a ticket with the access token in the Authorization header, then connects with ?ticket= and no token in the URL", async () => {
+    fetchMock.mockResolvedValue(ticketResponse("tkt_abc-123"));
+    connectWebSocket(() => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(ticketCalls()).toHaveLength(1);
+    const [url, init] = ticketCalls()[0];
+    expect(url).toBe("https://api.example.com/auth/ws-ticket");
+    expect(init.method).toBe("POST");
+    expect(init.headers).toEqual({ Authorization: "Bearer tok-1" });
+    expect(FakeWS.instances).toHaveLength(1);
+    expect(FakeWS.instances[0].url).toBe("wss://api.example.com/ws/live?ticket=tkt_abc-123");
+    expect(FakeWS.instances[0].url).not.toContain("tok-1");
+  });
+
+  it.each([
+    ["a 503", { ok: false, status: 503, json: async () => ({}) }],
+    ["a 401", { ok: false, status: 401, json: async () => ({}) }],
+    ["a body without a ticket", { ok: true, status: 200, json: async () => ({}) }],
+    ["an empty ticket", ticketResponse("")],
+    ["a non-string ticket", ticketResponse(42)],
+    ["a body that is not JSON", { ok: true, status: 200, json: async () => Promise.reject(new SyntaxError("x")) }],
+  ])("falls back to the existing ?token= flow when the ticket request returns %s", async (_name, response) => {
+    fetchMock.mockResolvedValue(response);
+    connectWebSocket(() => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(FakeWS.instances).toHaveLength(1);
+    expect(FakeWS.instances[0].url).toBe("wss://api.example.com/ws/live?token=tok-1");
+  });
+
+  it("falls back to ?token= when the ticket request rejects (network error)", async () => {
+    fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
+    connectWebSocket(() => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(FakeWS.instances[0].url).toBe("wss://api.example.com/ws/live?token=tok-1");
+  });
+
+  it("falls back to ?token= when the ticket request hangs past its timeout", async () => {
+    fetchMock.mockImplementation(
+      (_url: string, init: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => init.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError"))))
+    );
+    connectWebSocket(() => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(FakeWS.instances).toHaveLength(0); // still waiting for the ticket
+    await vi.advanceTimersByTimeAsync(5001);
+    expect(FakeWS.instances[0].url).toBe("wss://api.example.com/ws/live?token=tok-1");
+  });
+
+  it("requests a NEW ticket on every connect (a ticket is single-use): 4002 -> refresh -> fresh ticket", async () => {
+    fetchMock.mockResolvedValueOnce(ticketResponse("first")).mockResolvedValueOnce(ticketResponse("second"));
+    connectWebSocket(() => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(FakeWS.instances[0].url).toContain("ticket=first");
+    getToken.mockResolvedValue("tok-2");
+    FakeWS.instances[0].serverClose(4002);
+    await vi.advanceTimersByTimeAsync(10);
+    expect(forceRefresh).toHaveBeenCalledTimes(1);
+    expect(ticketCalls()).toHaveLength(2);
+    expect(ticketCalls()[1][1].headers).toEqual({ Authorization: "Bearer tok-2" });
+    expect(FakeWS.instances[1].url).toContain("ticket=second");
+  });
+
+  it("keeps the 4001 contract with tickets: one refresh, then a second 4001 stops as 'unauthenticated'", async () => {
+    fetchMock.mockResolvedValue(ticketResponse("t"));
+    const conn = connectWebSocket(() => {});
+    await vi.advanceTimersByTimeAsync(0);
+    FakeWS.instances[0].serverClose(4001);
+    await vi.advanceTimersByTimeAsync(10);
+    FakeWS.instances[1].serverClose(4001);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(FakeWS.instances).toHaveLength(2);
+    expect(conn.getState()).toMatchObject({ status: "closed", reason: "unauthenticated", lastCloseCode: 4001 });
+  });
+
+  it("disconnect() while the ticket request is in flight never opens a socket", async () => {
+    let release: (v: unknown) => void = () => {};
+    fetchMock.mockImplementation(() => new Promise((resolve) => (release = resolve)));
+    const conn = connectWebSocket(() => {});
+    await vi.advanceTimersByTimeAsync(0);
+    conn.disconnect();
+    release(ticketResponse("late"));
+    await vi.advanceTimersByTimeAsync(10);
+    expect(FakeWS.instances).toHaveLength(0);
+  });
+
+  it("requestWsTicket never throws and does not put the token anywhere but the header", async () => {
+    fetchMock.mockResolvedValueOnce(ticketResponse("abc"));
+    await expect(requestWsTicket("secret-token")).resolves.toBe("abc");
+    expect(String(fetchMock.mock.calls[0][0])).not.toContain("secret-token");
+    fetchMock.mockRejectedValueOnce(new Error("boom secret-token"));
+    await expect(requestWsTicket("secret-token")).resolves.toBeNull();
+    expect(reportError).not.toHaveBeenCalled();
   });
 });
