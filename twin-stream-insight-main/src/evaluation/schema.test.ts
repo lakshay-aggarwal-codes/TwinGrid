@@ -36,8 +36,8 @@ describe('evaluation contract (mutations fail with the path)', () => {
     ['decision.claim_allowed missing', (r: Record<string, any>) => delete r.decision.claim_allowed, 'decision.claim_allowed'],
     ['schema_version is not 1', (r: Record<string, any>) => (r.schema_version = 2), 'schema_version'],
     ['policies is not an array', (r: Record<string, any>) => (r.policies = {}), 'policies'],
-    ['a metric is a string', (r: Record<string, any>) => (r.policies[0].metrics.mean_pue = '1.2'), 'policies.0.metrics.mean_pue'],
-    ['a metric is not finite', (r: Record<string, any>) => (r.policies[0].metrics.mean_pue = null), 'policies.0.metrics.mean_pue'],
+    ['a metric is a string', (r: Record<string, any>) => (r.policies[0].metrics.mean_pue = '1.2'), 'policies[0].metrics.mean_pue'],
+    ['a metric is not finite', (r: Record<string, any>) => (r.policies[0].metrics.mean_pue = null), 'policies[0].metrics.mean_pue'],
     ['evaluation_id missing', (r: Record<string, any>) => delete r.evaluation_id, 'evaluation_id'],
   ])('%s', (_name, fn, path) => {
     const r = mutate(fn);

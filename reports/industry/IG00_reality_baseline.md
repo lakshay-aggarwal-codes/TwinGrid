@@ -174,7 +174,7 @@ Severity: P0 = blocks everything downstream; P1 = serious and gating; P2 = must 
 | F-16 | P2 | `index.css` `.pulse-dot`, `.scan-line` have no reduced-motion guard and no users | STATUS item 4 verified | IG-02 |
 | F-17 | P3 | Postgres restarted 2026-10-11 04:11 after an unclean stop ("not properly shut down; automatic recovery"). Recovery completed. Relevant to any durability claim | `ig00_db_logs.txt` | IG-12 |
 | F-18 | P3 | `/readyz` `degraded: {optimizer}`; PPO not promoted (consistent with F-21) | `ig00_health.txt` | IG-15 |
-| F-19 | P2 | `ARCHITECTURE.md`, `FINAL_REVIEW.md`, `DOCUMENTATION_SUMMARY.md`, repo maps describe another build (a) | README; tree | IG-17 |
+| F-19 | P2 | `ARCHITECTURE.md`, `FINAL_REVIEW.md`, `DOCUMENTATION_SUMMARY.md`, repo maps describe another build (a) | README; tree | IG-17 (resolved in Task 4: files removed; `docs/architecture/` is the reference) |
 | F-20 | P2 | G-EVAL gate unsigned: no real-stack capture of `/api/evaluations`; only a baselines-only `NOT_EVALUATED` report exists | (c) | IG-03 (capture), IG-15 (decision) |
 | F-21 | P1 | PPO: 5 candidates (s0-s4) + 1 quarantined; no PPO evaluation; waivers on 2 promoted models expired after T26 | (f) | IG-15 (PPO), IG-14 (waivers) |
 | F-22 | P2 | Carbon is a flat 475 gCO2/kWh assumption; no cleaned data | README, `src/carbon_provider.py` | IG-13 |

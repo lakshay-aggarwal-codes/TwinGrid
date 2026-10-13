@@ -14,11 +14,13 @@ import { describeInputs, inputsOf, physicsVersionOf, useWhatIf, whatIfFailure, w
 
 const cfg: SimConfig = { serverUtil: 50, outsideTemp: 20, waterStress: 0.2, chilledWaterSetpoint: 7, coolingMode: "Hybrid", aiOptimizer: true };
 const wrapper = () => {
-  const client = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
+  const client = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity, retryDelay: 0 } } });
   return ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 };
 
-beforeEach(() => fetchWhatIf.mockReset());
+beforeEach(() => {
+  fetchWhatIf.mockReset(); // braces: a returned mock would be run by vitest as the hook's teardown
+});
 
 describe("useWhatIf requests", () => {
   it("makes NO request while disabled", async () => {

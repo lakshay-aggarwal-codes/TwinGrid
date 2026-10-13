@@ -1,14 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = vi.hoisted(() => ({
+  AuthRequiredError: class AuthRequiredError extends Error {},
   getToken: vi.fn(async () => "tok1"),
   forceRefresh: vi.fn(async () => "tok2"),
 }));
 
-vi.mock("../authClient", () => {
-  class AuthRequiredError extends Error {}
-  return { AuthRequiredError, getToken: auth.getToken, forceRefresh: auth.forceRefresh };
-});
+// The error class lives in vi.hoisted: a class declared inside a vi.mock factory breaks module loading here.
+vi.mock("../authClient", () => ({ AuthRequiredError: auth.AuthRequiredError, getToken: auth.getToken, forceRefresh: auth.forceRefresh }));
 vi.mock("../config", () => ({ API_BASE_URL: "https://api.example.com", assertApiConfigured: () => {} }));
 vi.mock("@/lib/errorReporter", () => ({ reportError: vi.fn() }));
 
@@ -16,8 +15,22 @@ import { AuthRequiredError } from "../authClient";
 import { ApiError } from "./apiError";
 import { ESG_REPORT_FILENAME, esgErrorKind, fetchEsgReportPdf } from "./esgReport.ts";
 
-const pdf = (status = 200, type = "application/pdf") =>
-  new Response(status === 200 ? new Blob(["%PDF-1.4 x"]) : "backend says: <b>secret detail</b>", { status, headers: { "Content-Type": type } });
+// jsdom's Blob has no text(); read it the way a browser page without text() would.
+const readText = (b: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(r.error);
+    r.readAsText(b);
+  });
+
+// Node's Response.blob() returns a Node Blob, which jsdom's Blob constructor stringifies ("[object Blob]") when
+// esgReport.ts re-wraps it. Hand back a jsdom Blob so the test exercises the code, not the environment mismatch.
+const pdf = (status = 200, type = "application/pdf") => {
+  const response = new Response(status === 200 ? "%PDF-1.4 x" : "backend says: <b>secret detail</b>", { status, headers: { "Content-Type": type } });
+  if (status === 200) Object.defineProperty(response, "blob", { value: async () => new Blob(["%PDF-1.4 x"]) });
+  return response;
+};
 
 beforeEach(() => {
   auth.getToken.mockClear();
@@ -35,7 +48,7 @@ describe("fetchEsgReportPdf", () => {
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer tok1");
     expect(file.filename).toBe(ESG_REPORT_FILENAME);
     expect(file.blob.type).toBe("application/pdf");
-    expect(await file.blob.text()).toBe("%PDF-1.4 x");
+    expect(await readText(file.blob)).toBe("%PDF-1.4 x");
   });
 
   it("on 401 refreshes once and retries once with the new token", async () => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { X, ShieldAlert, Sparkles, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusMessage } from "./StatusMessage";
@@ -7,6 +7,8 @@ import { fetchOptimized, type OptimizeSummary } from "@/api/apiClient";
 import type { StateResponse } from "@/api/apiClient";
 import type { EventItem, LatestAnomaly } from "@/hooks/useSimulation";
 import { usePanelFocus } from "./usePanelFocus.ts";
+import { SimulationContext } from "@/hooks/simulationContext";
+import { toAnomalyView } from "@/telemetry/anomalyView";
 
 interface OperationsConsoleProps {
   open: boolean;
@@ -40,6 +42,31 @@ function wueBand(wue: number): { label: string; ok: boolean } {
   if (wue <= 1.8) return { label: "within a good range", ok: true };
   if (wue <= 2.5) return { label: "in a fair range", ok: true };
   return { label: "in a poor range", ok: false };
+}
+
+/**
+ * The detector as the backend reports it (FE-07 contract in telemetry/anomalyView.ts). A number appears only for a scored
+ * state, beside the backend threshold; unavailable/error are announced as alerts, the rest as status.
+ */
+function AnomalyStatusBlock() {
+  const view = toAnomalyView(useContext(SimulationContext)?.anomalyStatus ?? null);
+  const role = view.kind === "unavailable" || view.kind === "error" ? "alert" : "status";
+  return (
+    <div className="space-y-1.5" data-anomaly-kind={view.kind}>
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Anomaly detector</p>
+      <p role={role} className="text-xs font-medium text-foreground">{view.label}</p>
+      {view.readout && <p className="font-mono text-xs text-foreground">{view.readout}</p>}
+      {view.flagged && view.message && (
+        <p className="text-xs text-foreground">{view.type ? `${view.type} — ` : ""}{view.message}</p>
+      )}
+      <p className="text-[11px] text-muted-foreground">{view.explanation}</p>
+      <ul className="text-[10px] text-muted-foreground space-y-0.5">
+        <li>{view.provenance.trainedOnText}</li>
+        <li>{view.provenance.modelVersionText}</li>
+        <li>{view.provenance.originText}</li>
+      </ul>
+    </div>
+  );
 }
 
 /**
@@ -115,14 +142,8 @@ export function OperationsConsole({
           )}
         </div>
 
-        {/* Real anomaly detector output (autoencoder), already wired since Stage 6. */}
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Anomaly detector</p>
-          <p className="text-xs text-foreground">
-            Gauge: <span className="font-mono">{Math.round(anomalyScore)}</span> / 100 (50 marks the alert threshold).
-            {latestAnomaly ? ` Last alert: ${latestAnomaly.type} — ${latestAnomaly.message}` : " No active alert."}
-          </p>
-        </div>
+        {/* FE-07: the backend's own detector state (fail-closed: never "No active alert" or a /100 gauge by default). */}
+        <AnomalyStatusBlock />
 
         {events.length > 0 && (
           <div className="space-y-1.5">

@@ -41,7 +41,7 @@ export function ScenarioPicker({ scenarios, selectedId, onSelect, idPrefix = 'sc
               <p data-scenario-kind>{kind.supported ? `Type: ${kind.text}` : UNSUPPORTED_SCENARIO_TEXT}</p>
               {s.description && <p>{s.description}</p>}
               <p data-scenario-weather-plant>{weatherPlantText(s)}</p>
-              {!kind.supported && <StateNotice kind="unsupported_scenario" text={kind.raw ? `Scenario type "${kind.raw}" is not supported by this app.` : undefined} />}
+              {kind.supported === false && <StateNotice kind="unsupported_scenario" text={kind.raw ? `Scenario type "${kind.raw}" is not supported by this app.` : undefined} />}
             </div>
           </div>
         );

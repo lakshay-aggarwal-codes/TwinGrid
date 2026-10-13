@@ -113,7 +113,6 @@ outlet_temps = twin.compute_batch_outlet_temp(inlets, powers)
 - `src/digital_twin_optimized.py` - Optimized implementation
 - `src/digital_twin_fast.py` - Drop-in replacement wrapper
 - `benchmark_performance.py` - Performance testing script
-- `example_optimized_usage.py` - Usage examples
 
 ### Key Optimized Functions
 ```python
