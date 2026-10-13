@@ -40,7 +40,7 @@ let sentThisMinute = 0;
  */
 export function redactSecrets(text: string): string {
   return text
-    .replace(/([?&;]token=)[^&\s"'`)<>]*/gi, '$1[redacted]')
+    .replace(/([?&;](?:token|ticket)=)[^&\s"'`)<>]*/gi, '$1[redacted]')
     .replace(/(\bBearer\s+)[A-Za-z0-9._~+/=-]+/gi, '$1[redacted]');
 }
 

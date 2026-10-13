@@ -11,3 +11,17 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Task 6: security headers for the frontend. Netlify does not expand environment variables in this file, so the API
+# origin below is written out; it is the Railway origin documented in DEPLOYMENT.md. If the API moves, change BOTH
+# the https:// and the wss:// entry of connect-src (and VITE_API_BASE_URL). Details and the reason for every
+# non-'self' allowance: docs/security/THREAT_MODEL.md, section "Frontend headers (CSP)".
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://function-bun-production-6ce5.up.railway.app wss://function-bun-production-6ce5.up.railway.app; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
