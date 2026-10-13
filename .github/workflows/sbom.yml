@@ -1,0 +1,32 @@
+name: SBOM
+
+# Software bill of materials for the repository (configured): one SPDX JSON, uploaded as a workflow artifact.
+# It lists what the lockfiles and manifests declare; it is not a vulnerability scan (see ci.yml `audit`).
+# The release image gets its own SBOM from buildx in release.yml.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "11 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbom-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: twingrid-sbom.spdx.json
+          artifact-name: twingrid-sbom.spdx.json
+          upload-artifact: true

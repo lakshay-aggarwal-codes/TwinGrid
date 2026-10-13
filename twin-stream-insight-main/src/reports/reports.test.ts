@@ -204,11 +204,11 @@ describe("incident counts", () => {
 describe("carbon fallback logic is kept", () => {
   it("sustainability omits carbon rows on fallback and says so; real carbon is shown", () => {
     const fb = buildSustainabilityReport(captureIn("live", { carbon_data_is_real: false, carbon_intensity_gco2_per_kwh: 475 }).liveState);
-    expect(fb.sections.map((s) => s.title)).not.toContain("Carbon (real grid data)");
+    expect(fb.sections.map((s) => s.title)).not.toContain("Carbon (loaded intensity series)");
     expect(fb.caveats.join(" ")).toMatch(/omitted from this report/);
     expect(row(fb, "Fallback inputs").value).toBe("carbon");
     const real = buildSustainabilityReport(captureIn("live", { carbon_data_is_real: true, carbon_intensity_gco2_per_kwh: 100, carbon_gco2: 5 }).liveState);
-    expect(real.sections.map((s) => s.title)).toContain("Carbon (real grid data)");
+    expect(real.sections.map((s) => s.title)).toContain("Carbon (loaded intensity series)");
     expect(row(real, "Fallback inputs").value).toBe("none");
   });
 });

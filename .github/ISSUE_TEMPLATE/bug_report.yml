@@ -1,0 +1,30 @@
+name: Bug report
+description: Something behaves differently from what the docs or tests say
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste secrets, tokens or passwords. For a security problem use the private route in SECURITY.md instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log lines or request id
+      description: The `X-Request-ID` response header helps. Remove anything sensitive first.
+      render: text

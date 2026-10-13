@@ -21,14 +21,14 @@
 
 **Known gap:** `carbon_intensity_gco2_per_kwh`, `carbon_gco2`, `drought_override_active` are **not present** in this file — see the training-time section of `docs/architecture/data_flow.md`.
 
-## `data/cleaned/*.csv` (real-world, via `src/ingestion/*.py`)
+## `data/cleaned/*.csv` (derived from external sources by `src/ingestion/*.py`; none are committed to this repository)
 
 | File | Columns | Source |
 |---|---|---|
 | `weather_open_meteo.csv` | `city`, `timestamp_utc`, `outside_temp_C`, `humidity_pct` | Open-Meteo, 24 Indian cities |
-| `carbon_intensity.csv` | `timestamp_utc`, `zone`, `carbon_intensity_gco2_per_kwh`, `source_file` | Electricity Maps |
+| `carbon_intensity.csv` | `timestamp_utc`, `zone`, `carbon_intensity_gco2_per_kwh`, `source_file` | **Does not exist, and no code here produces it.** Expected input format only; until a file with a `carbon_intensity.meta.json` sidecar is supplied the twin uses a flat assumed 475 gCO2/kWh (`docs/model_cards/DATA_TRUTH.md`) |
 | `water_stress_aqueduct.csv` | `country`, `region`, `water_stress_score`, `water_stress_category` | WRI Aqueduct 4.0 baseline annual |
-| `solar_nsrdb.csv` | `timestamp_utc`, `ghi_w_m2`, `dni_w_m2`, `dhi_w_m2`, `air_temperature_c`, `relative_humidity_pct`, `wind_speed_m_s` | NREL NSRDB (fetched, not pre-downloaded) |
+| `solar_nsrdb.csv` | `timestamp_utc`, `ghi_w_m2`, `dni_w_m2`, `dhi_w_m2`, `air_temperature_c`, `relative_humidity_pct`, `wind_speed_m_s` | NREL NSRDB (fetched, not pre-downloaded). Dormant: nothing reads this file |
 
 ## `realData/` external sources — full provenance
 

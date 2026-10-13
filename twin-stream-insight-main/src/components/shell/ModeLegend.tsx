@@ -89,7 +89,7 @@ export function ModeLegend({ mode, feed, onGenerateReport }: ModeLegendProps) {
       )}
       {readout.mode !== "none" && isCarbonDataFallback(readout.state) && (
         <p className="text-[10px] text-warning mt-1 leading-snug">
-          Carbon intensity is a flat fallback figure, not live grid data.
+          Carbon intensity is a flat fallback figure (an assumption), not live or measured grid data.
         </p>
       )}
     </div>

@@ -55,7 +55,7 @@ function Result({ descriptor, data }: { descriptor: ScenarioDescriptor; data: Wh
       </div>
       {!data.carbon_data_is_real && (
         <p className="text-[11px] text-muted-foreground" data-testid="scenario-fallback-carbon">
-          CO₂ uses a fallback carbon intensity (a flat constant); the backend reports it is not real grid data.
+          CO₂ is modelled from a flat assumed carbon intensity (a constant, not measured grid data), so absolute CO₂ figures are illustrative.
         </p>
       )}
       <p className="text-[11px] text-muted-foreground" data-testid="scenario-inputs">

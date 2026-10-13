@@ -1,6 +1,9 @@
 """
 NREL NSRDB Solar Irradiance Ingestion Module.
 
+DORMANT: nothing in the twin, reward, API, reports or UI reads data/cleaned/solar_nsrdb.csv. See
+docs/model_cards/DATA_TRUTH.md.
+
 Fetches high-resolution solar irradiance and meteorological data from the
 National Renewable Energy Laboratory (NREL) National Solar Radiation Database (NSRDB)
 API (Physical Solar Model - PSM v3 download service) for a configurable facility location.

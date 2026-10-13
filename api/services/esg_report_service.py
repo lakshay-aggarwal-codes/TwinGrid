@@ -16,7 +16,42 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from src.carbon_provider import FALLBACK_FLAT_INTENSITY_GCO2_PER_KWH
 from src.facility_benchmarking import benchmark_pue
+
+SIMULATED_NOTICE = (
+    "SIMULATED DATA: every figure in this report comes from the TwinGrid simulator. "
+    "None of it is a measurement from a real facility."
+)
+
+
+def carbon_report_section(state: dict[str, Any]) -> dict[str, Any]:
+    """The carbon wording of the report, as plain data (no reportlab needed, so it is unit-testable).
+
+    ``carbon_data_is_real`` False (or missing) means the flat assumed intensity: the table says ASSUMPTION, never
+    "Real", and ``warning`` is a paragraph the report must print. When it is True the report still does not claim
+    a live grid feed: the series' source and average/marginal basis live in the backend carbon label.
+    """
+    if state.get("carbon_data_is_real") is True:
+        return {
+            "value": "Loaded series",
+            "note": "Hour-of-day mean of a loaded series, not a live grid feed. Source and "
+            "average/marginal basis: see the backend carbon label.",
+            "warning": None,
+        }
+    shown = state.get("carbon_intensity_gco2_per_kwh")
+    intensity = float(shown) if isinstance(shown, (int, float)) else FALLBACK_FLAT_INTENSITY_GCO2_PER_KWH
+    return {
+        "value": "ASSUMPTION",
+        "note": f"Flat {intensity:.0f} gCO2/kWh world-average assumption (IEA/Ember). "
+        "Not measured grid data; not specific to any site.",
+        "warning": (
+            "CARBON FIGURES ARE ASSUMED, NOT MEASURED. This report's carbon numbers use a flat "
+            f"{intensity:.0f} gCO2/kWh world-average assumption, the same value at every hour and for every place. "
+            "No grid carbon-intensity dataset is loaded. Treat every carbon number here as illustrative; "
+            "it supports no emissions-reduction claim."
+        ),
+    }
 
 
 def generate_report(state: dict[str, Any], output_path: str | Path) -> Path:
@@ -43,10 +78,13 @@ def generate_report(state: dict[str, Any], output_path: str | Path) -> Path:
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     story.append(Paragraph("TwinGrid Sustainability Report", styles["Title"]))
     story.append(Paragraph(f"Generated {generated_at}", styles["Normal"]))
+    story.append(Spacer(1, 0.1 * inch))
+    story.append(Paragraph(SIMULATED_NOTICE, styles["Italic"]))
     story.append(Spacer(1, 0.3 * inch))
 
     pue = float(state.get("pue", 0.0))
     bm = benchmark_pue(pue)
+    carbon = carbon_report_section(state)
 
     rows = [
         ["Metric", "Value", "Note"],
@@ -55,15 +93,9 @@ def generate_report(state: dict[str, Any], output_path: str | Path) -> Path:
         ["IT power (kW)", f"{state.get('it_power_kw', 0.0):.1f}", ""],
         ["Cooling power (kW)", f"{state.get('cooling_power_kw', 0.0):.1f}", ""],
         ["Water consumed (L, cumulative)", f"{state.get('water_consumed_L', 0.0):.1f}", ""],
-        [
-            "Carbon intensity data",
-            "Real" if state.get("carbon_data_is_real") else "Flat fallback",
-            ""
-            if state.get("carbon_data_is_real")
-            else "Not yet backed by a real grid-carbon API -- see model limitations",
-        ],
+        ["Carbon intensity data", carbon["value"], Paragraph(carbon["note"], styles["BodyText"])],
     ]
-    table = Table(rows, colWidths=[2.1 * inch, 1.3 * inch, 3.0 * inch])
+    table = Table(rows, colWidths=[2.0 * inch, 1.2 * inch, 3.3 * inch])
     table.setStyle(
         TableStyle(
             [
@@ -88,17 +120,9 @@ def generate_report(state: dict[str, Any], output_path: str | Path) -> Path:
             styles["Italic"],
         )
     )
-    if not state.get("carbon_data_is_real"):
+    if carbon["warning"]:
         story.append(Spacer(1, 0.1 * inch))
-        story.append(
-            Paragraph(
-                "This report's carbon figures use a flat regional-average fallback, "
-                "not live grid carbon intensity. Treat carbon numbers here as "
-                "illustrative until a real Electricity Maps (or equivalent) "
-                "integration is wired in.",
-                styles["Normal"],
-            )
-        )
+        story.append(Paragraph(f"<b>{carbon['warning']}</b>", styles["Normal"]))
 
     doc.build(story)
     return output_path

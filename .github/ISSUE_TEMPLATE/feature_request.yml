@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+  - type: textarea
+    id: honesty
+    attributes:
+      label: Data and claims
+      description: Which data does it show or use, and is it simulated or from an external source?
