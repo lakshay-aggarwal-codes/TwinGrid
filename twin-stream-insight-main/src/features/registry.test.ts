@@ -37,8 +37,9 @@ describe("feature registration", () => {
     expect(r.slotWidgets("settings", "viewer")).toHaveLength(0);
   });
 
-  it("ships no feature of its own yet (the example lives under src/test)", () => {
-    expect(featureRegistry.features).toEqual([]);
+  it("ships exactly the features listed here (the example lives under src/test)", () => {
+    // Task 5 added the first shipped feature. Add an id to this list when a later task ships another one.
+    expect(featureRegistry.features.map((f) => f.id)).toEqual(["simulated-data"]);
   });
 
   it("filters nav by role and sorts by group, order, label", () => {
