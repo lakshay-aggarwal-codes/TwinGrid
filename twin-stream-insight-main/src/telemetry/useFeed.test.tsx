@@ -30,7 +30,8 @@ beforeEach(() => {
 });
 afterEach(() => store.stop());
 
-const ui = (
+// A function, not a constant: `store` is created in beforeEach, so the element must be built per test.
+const ui = () => (
   <FeedStoreContext.Provider value={store}>
     <Counter id="mode" sel={(v) => v.frame?.value.cooling_mode} />
     <Counter id="pue" sel={(v) => v.frame?.value.pue} />
@@ -40,7 +41,7 @@ const ui = (
 
 describe('useFeed selector isolation', () => {
   it('a tick that changes pue does not re-render a cooling_mode subscriber', () => {
-    render(ui);
+    render(ui());
     send({ seq: 1, pue: 1.2, cooling_mode: 'hybrid' });
     const before = { mode: renders('mode'), pue: renders('pue'), state: renders('state') };
 
@@ -59,7 +60,7 @@ describe('useFeed selector isolation', () => {
     let commits = 0;
     render(
       <Profiler id="feed" onRender={() => void (commits += 1)}>
-        {ui}
+        {ui()}
       </Profiler>,
     );
     send({ seq: 1, pue: 1.2 });
@@ -84,7 +85,7 @@ describe('useFeed selector isolation', () => {
   });
 
   it('re-renders a freshness subscriber on a state transition', () => {
-    render(ui);
+    render(ui());
     send({ seq: 1 });
     expect(screen.getByTestId('state')).toHaveTextContent('live');
     act(() => t.h.onStatus!('closed'));
@@ -104,7 +105,7 @@ describe('subscription lifecycle', () => {
         off();
       };
     };
-    const { unmount } = render(ui);
+    const { unmount } = render(ui());
     expect(active).toBe(3);
     unmount();
     expect(active).toBe(0);

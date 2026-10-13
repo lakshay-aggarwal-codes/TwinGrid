@@ -31,7 +31,9 @@ function Harness() {
 }
 
 describe("SimulationProvider", () => {
-  beforeEach(() => connectWebSocket.mockClear());
+  beforeEach(() => {
+    connectWebSocket.mockClear();
+  });
 
   it("opens exactly one WebSocket however many times the page swaps", () => {
     render(<Harness />);

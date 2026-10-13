@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const auth = vi.hoisted(() => ({ getToken: vi.fn(async () => "tok1"), forceRefresh: vi.fn(async () => "tok2") }));
-vi.mock("../authClient", () => {
-  class AuthRequiredError extends Error {}
-  return { AuthRequiredError, getToken: auth.getToken, forceRefresh: auth.forceRefresh };
-});
+const auth = vi.hoisted(() => ({ AuthRequiredError: class AuthRequiredError extends Error {}, getToken: vi.fn(async () => "tok1"), forceRefresh: vi.fn(async () => "tok2") }));
+// The error class lives in vi.hoisted: a class declared inside a vi.mock factory breaks module loading here.
+vi.mock("../authClient", () => ({ AuthRequiredError: auth.AuthRequiredError, getToken: auth.getToken, forceRefresh: auth.forceRefresh }));
 vi.mock("../config", () => ({
   API_BASE_URL: "https://api.example.com",
   WS_LIVE_URL: "wss://api.example.com/ws/live",
