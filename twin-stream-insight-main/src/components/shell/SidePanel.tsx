@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { RackInspectorContent } from "./RackInspectorContent";
 import type { LiveFeed } from "@/three/visualizationModes";
 import { useTopology } from "@/three/facilityTopology.ts";
+import { Slot } from "@/features/Slot";
 
 interface SidePanelProps {
   selectedRackId: string | null;
@@ -60,6 +61,7 @@ export function SidePanel({ selectedRackId, onDeselect, feed }: SidePanelProps) 
             )}
           </div>
         )}
+        <Slot name="facility-inspector" context={{ rackId: selectedRackId }} className="mt-4 space-y-4 border-t border-border pt-4" />
       </div>
     </aside>
   );

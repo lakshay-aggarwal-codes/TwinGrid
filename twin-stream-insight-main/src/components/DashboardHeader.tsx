@@ -3,6 +3,7 @@ import { Activity, Boxes } from "lucide-react";
 import { RotateLink } from "@/components/transition/RotateLink";
 import { FreshnessChip, ProvenanceStrip } from "@/provenance";
 import { feedProvenance, type LiveFeed } from "@/three/visualizationModes";
+import { Slot } from "@/features/Slot";
 
 interface Props {
   /** FE-08: the stamped live feed (frame + CURRENT freshness) from the feed store. */
@@ -29,6 +30,7 @@ export function DashboardHeader({ feed }: Props) {
         </h1>
       </div>
       <div className="flex flex-wrap items-center gap-4">
+        <Slot name="header-actions" className="flex items-center gap-2" />
         <RotateLink
           to="/"
           direction={-1}

@@ -13,6 +13,7 @@ import { useFeed } from '@/telemetry/useFeed';
 import { useApiQuery } from '@/state/useApiQuery';
 import { fetchEquipmentHealth } from '@/api/apiClient';
 import type { LiveFeed } from '@/three/visualizationModes';
+import { Slot } from '@/features/Slot';
 
 const Index = () => {
   usePageTitle('TwinGrid — Analytics');
@@ -74,6 +75,7 @@ const Index = () => {
               <SustainabilityTab feed={feed} equipmentHealth={equipment.state} onRetryEquipment={equipment.refetch} />
             </TabsContent>
           </Tabs>
+          <Slot name="dashboard" className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
         </main>
       </div>
     </div>

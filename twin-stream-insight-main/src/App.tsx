@@ -12,6 +12,7 @@ import { RotateTransition } from "@/components/transition/RotateTransition";
 import { AuthGate } from "@/components/AuthGate";
 import { AppErrorBoundary, RouteErrorBoundary } from "@/state/AppErrorBoundary";
 import { createAppQueryClient } from "@/state/queryClient";
+import { featureRouteElements } from "@/features/FeatureRoutes";
 
 // The Analytics view (KPI cards, 24h simulation, what-if, sustainability --
 // and recharts with it) is only needed on /analytics,
@@ -62,6 +63,8 @@ const App = () => (
           <Route path="/telemetry" element={<TelemetryHistory />} />
           {/* Old bookmarks/links keep working. */}
           <Route path="/legacy" element={<Navigate to="/analytics" replace />} />
+          {/* Task 1: pages registered by src/features/<name>/index.ts. */}
+          {featureRouteElements()}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
