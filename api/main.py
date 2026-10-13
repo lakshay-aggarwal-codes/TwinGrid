@@ -36,6 +36,7 @@ from api.logging_config import bind_log_context, setup_api_logging
 from api.middleware.body_limit import BodyLimitMiddleware
 from api.middleware.metrics import MetricsMiddleware
 from api.middleware.request_id import RequestIDMiddleware
+from api.plugins import load_plugins
 from api.rate_limit import http_limit, limiter
 from api.routes import (
     anomaly_routes,
@@ -130,6 +131,10 @@ app.include_router(esg_report_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(metrics_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(facility_routes.router, dependencies=_GENERAL_LIMIT)
 app.include_router(telemetry_routes.router, dependencies=_GENERAL_LIMIT)  # plus its own telemetry_read class
+
+# Task 1: extension point. Every module in api/plugins/ (router and/or setup(app)) is loaded here, once, with the same
+# default dependencies as the core routers; a broken plugin is logged and skipped. See api/plugins/__init__.py.
+load_plugins(app, dependencies=_GENERAL_LIMIT)
 
 # Middleware: the LAST one added is the outermost. Request flow:
 # Metrics -> RequestID -> CORS -> ErrorBoundary -> BodyLimit -> routes.

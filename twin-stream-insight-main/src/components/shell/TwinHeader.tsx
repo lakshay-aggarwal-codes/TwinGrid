@@ -4,6 +4,8 @@ import { Boxes, FlaskConical, Wrench, AlertTriangle, Search } from "lucide-react
 import { ModeSwitcher } from "./ModeSwitcher";
 import { feedProvenance, toReadout, type LiveFeed, type VisualizationMode } from "@/three/visualizationModes";
 import { FreshnessChip, ProvenanceStrip, formatAge } from "@/provenance";
+import { FeatureNav } from "@/features/FeatureNav";
+import { Slot } from "@/features/Slot";
 
 interface TwinHeaderProps {
   /** Stage 11: opens the command palette (replaces the Stage 4 Locate
@@ -141,6 +143,8 @@ export function TwinHeader({
       </div>
 
       <div className="flex items-center gap-4">
+        <FeatureNav orientation="horizontal" />
+        <Slot name="header-actions" className="flex items-center gap-2" />
         <button
           onClick={onOpenSearch}
           className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

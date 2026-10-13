@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Play, ChevronLeft, ChevronRight, Cpu, Thermometer, Droplets, Gauge, Loader2 } from 'lucide-react';
 import type { SimConfig, CoolingMode } from '@/hooks/useSimulation';
+import { FeatureNav } from '@/features/FeatureNav';
 
 interface Props {
   config: SimConfig;
@@ -80,6 +81,8 @@ export function DashboardSidebar({ config, onChange, onRunSim, simRunning, colla
             </Button>
           </>
         )}
+
+        <FeatureNav orientation="vertical" collapsed={collapsed} />
       </div>
     </aside>
   );

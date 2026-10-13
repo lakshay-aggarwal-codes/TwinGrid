@@ -1,4 +1,5 @@
 import { useAuth, useRole } from "@/hooks/useAuth.ts";
+import { Slot } from "@/features/Slot";
 
 const ROLE_LABEL: Record<string, string> = { viewer: "Viewer", operator: "Operator" };
 
@@ -13,6 +14,7 @@ export function AccountMenu() {
       aria-label="Account"
       className="fixed bottom-2 right-2 z-50 flex items-center gap-2 rounded-md border border-border bg-card/85 backdrop-blur-sm px-2.5 py-1 text-xs text-muted-foreground"
     >
+      <Slot name="settings" className="flex items-center gap-2" />
       <span>{username}</span>
       <span
         data-testid="account-role"
