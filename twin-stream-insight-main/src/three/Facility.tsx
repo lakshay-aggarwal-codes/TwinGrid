@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
 import type { FacilityLayout } from "./facilityLayout.ts";
 import { ZoneOutline } from "./ZoneOutline";
 import { Rack, type RackVisualState } from "./Rack";
 import { computeThermalColors } from "./thermalMapping";
+import { inspectorBridge } from "./inspectorBridge";
 import { currentState, getModeColor, type LiveFeed, type VisualizationMode } from "./visualizationModes";
 
 const FLOOR_COLOR = "#0d0d0f";
@@ -41,6 +42,12 @@ export function Facility({
 }: FacilityProps) {
   const liveState = currentState(feed);
   const [hoveredRackId, setHoveredRackId] = useState<string | null>(null);
+
+  // Task 13: publish the hovered rack for the inspector tooltip (pointer events only, never per frame).
+  useEffect(() => {
+    inspectorBridge.publish({ hoveredRackId });
+  }, [hoveredRackId]);
+  useEffect(() => () => inspectorBridge.publish({ hoveredRackId: null }), []);
 
   const thermalColors = useMemo(
     () =>

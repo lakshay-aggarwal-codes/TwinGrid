@@ -18,6 +18,9 @@ import { currentState, type LiveFeed, type VisualizationMode } from "@/three/vis
 import { useFeed } from "@/telemetry/useFeed";
 import { describeRack, isNavKey, nextRackId } from "@/three/rackNavigation.ts";
 import { useSceneCommands } from "@/features/command-palette/useSceneCommands";
+import { useInspectorHost } from "@/features/facility-inspector/useInspectorHost";
+import { useTopology } from "@/three/facilityTopology";
+import type { CameraPresetId } from "@/three/cameraPresets";
 
 type LeftPanel = "none" | "simulation" | "operations" | "incidents";
 
@@ -139,6 +142,24 @@ export default function LiveTwin() {
   const handleFocusZone = useCallback((zoneId: string) => {
     setFocusRequest((prev) => ({ type: "zone", zoneId, nonce: (prev?.nonce ?? 0) + 1 }));
   }, []);
+
+  // Task 13: camera presets (overview / hot aisle / top-down) are one more kind of focus request.
+  const handleFocusPreset = useCallback((preset: CameraPresetId) => {
+    setFocusRequest((prev) => ({ type: "preset", preset, nonce: (prev?.nonce ?? 0) + 1 }));
+  }, []);
+
+  // Task 13: the facility inspector (readings, view controls, rack list, tooltip, `?rack=<id>`) talks to this page through one hook.
+  const topology = useTopology();
+  useInspectorHost({
+    layout: topology.layout,
+    topologyLoading: topology.status === "loading",
+    selectedRackId,
+    mode,
+    onFocusRack: handleRequestFocus,
+    onDeselect: handleDeselect,
+    onSetMode: setMode,
+    onFocusPreset: handleFocusPreset,
+  });
 
   // Task 12: racks, zones and recent alerts become Ctrl+K palette commands while this page is mounted.
   useSceneCommands(events, {

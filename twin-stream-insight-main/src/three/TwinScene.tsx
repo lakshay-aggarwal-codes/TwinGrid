@@ -9,6 +9,7 @@ import type { FacilityLayout } from "./facilityLayout";
 import { useFacilityTopology } from "./facilityTopology";
 import { TopologyBadge } from "./TopologyBadge";
 import { DEFAULT_CAMERA_POSITION, DEFAULT_CAMERA_TARGET } from "./cameraDefaults";
+import type { CameraPresetId } from "./cameraPresets";
 
 /** `nonce` is bumped on every request so re-selecting the *same* already-
  * focused rack/zone still re-triggers the camera tween (an unchanged id
@@ -20,7 +21,9 @@ import { DEFAULT_CAMERA_POSITION, DEFAULT_CAMERA_TARGET } from "./cameraDefaults
 export type FocusRequest =
   | { type: "rack"; rackId: string; nonce: number }
   | { type: "zone"; zoneId: string; nonce: number }
-  | { type: "overview"; nonce: number };
+  | { type: "overview"; nonce: number }
+  /** Task 13: a named framing (overview / hot aisle / top-down). */
+  | { type: "preset"; preset: CameraPresetId; nonce: number };
 
 export interface TwinSceneProps {
   selectedRackId: string | null;
@@ -50,7 +53,7 @@ function SceneContents({
 }: SceneContentsProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const isInteractingRef = useRef(false);
-  const { focusOnRack, focusOnZone, focusOnOverview } = useCameraFocus(controlsRef, layout);
+  const { focusOnRack, focusOnZone, focusOnOverview, focusOnPreset } = useCameraFocus(controlsRef, layout);
 
   useEffect(() => {
     if (!focusRequest) return;
@@ -58,6 +61,8 @@ function SceneContents({
       focusOnRack(focusRequest.rackId);
     } else if (focusRequest.type === "zone") {
       focusOnZone(focusRequest.zoneId);
+    } else if (focusRequest.type === "preset") {
+      focusOnPreset(focusRequest.preset);
     } else {
       focusOnOverview();
     }
