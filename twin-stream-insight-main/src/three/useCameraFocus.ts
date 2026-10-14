@@ -5,6 +5,7 @@ import type { Vector3 } from "three";
 import { findRack, type FacilityLayout } from "./facilityLayout";
 import { DEFAULT_CAMERA_POSITION, DEFAULT_CAMERA_TARGET } from "./cameraDefaults";
 import { MOTION, motionDuration } from "./motion";
+import { presetPose, type CameraPresetId } from "./cameraPresets";
 
 /** The subset of OrbitControls' API this hook needs -- kept structural
  * rather than importing the concrete drei/three-stdlib type, so this file
@@ -145,5 +146,40 @@ export function useCameraFocus(controlsRef: React.MutableRefObject<FocusableCont
     [camera, controlsRef, invalidate],
   );
 
-  return { focusOnRack, focusOnZone, focusOnOverview };
+  /** Task 13: fly to a named preset (overview / hot aisle / top-down). Instant under reduced motion (duration 0). */
+  const focusOnPreset = useCallback(
+    (preset: CameraPresetId, options: FocusOptions = {}) => {
+      const controls = controlsRef.current;
+      if (!controls) return;
+      const { durationSeconds = motionDuration(MOTION.camera) } = options;
+      const { position, target } = presetPose(preset, layout);
+
+      activeTweens.current.forEach((tween) => tween.kill());
+
+      const positionTween = gsap.to(camera.position, {
+        x: position[0],
+        y: position[1],
+        z: position[2],
+        duration: durationSeconds,
+        ease: "power2.inOut",
+        onUpdate: invalidate,
+      });
+      const targetTween = gsap.to(controls.target, {
+        x: target[0],
+        y: target[1],
+        z: target[2],
+        duration: durationSeconds,
+        ease: "power2.inOut",
+        onUpdate: () => {
+          controls.update();
+          invalidate();
+        },
+      });
+
+      activeTweens.current = [positionTween, targetTween];
+    },
+    [camera, controlsRef, invalidate, layout],
+  );
+
+  return { focusOnRack, focusOnZone, focusOnOverview, focusOnPreset };
 }
