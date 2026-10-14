@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import appSource from "../App.tsx?raw";
 import { Beaker } from "lucide-react";
 import example from "@/test/fixtures/exampleFeature";
 import { CORE_ROUTE_PATHS, createFeatureRegistry, featureRegistry } from "./registry";
@@ -129,8 +128,7 @@ describe("failure isolation: a bad module is rejected alone", () => {
 
 describe("CORE_ROUTE_PATHS", () => {
   it("covers every path App.tsx declares (so a feature can never shadow a core page)", () => {
-    const app = readFileSync(resolve(__dirname, "../App.tsx"), "utf8");
-    const declared = [...app.matchAll(/<Route path="([^"]+)"/g)].map((m) => m[1]).filter((p) => p !== "*");
+    const declared = [...appSource.matchAll(/<Route path="([^"]+)"/g)].map((m) => m[1]).filter((p) => p !== "*");
     expect(declared.length).toBeGreaterThan(3);
     for (const p of declared) {
       const base = p === "/" ? "/" : "/" + p.split("/")[1];
