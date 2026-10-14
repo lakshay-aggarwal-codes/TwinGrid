@@ -17,6 +17,7 @@ import { useSharedSimulation } from "@/hooks/simulationContext";
 import { currentState, type LiveFeed, type VisualizationMode } from "@/three/visualizationModes";
 import { useFeed } from "@/telemetry/useFeed";
 import { describeRack, isNavKey, nextRackId } from "@/three/rackNavigation.ts";
+import { useSceneCommands } from "@/features/command-palette/useSceneCommands";
 
 type LeftPanel = "none" | "simulation" | "operations" | "incidents";
 
@@ -138,6 +139,13 @@ export default function LiveTwin() {
   const handleFocusZone = useCallback((zoneId: string) => {
     setFocusRequest((prev) => ({ type: "zone", zoneId, nonce: (prev?.nonce ?? 0) + 1 }));
   }, []);
+
+  // Task 12: racks, zones and recent alerts become Ctrl+K palette commands while this page is mounted.
+  useSceneCommands(events, {
+    onFocusRack: handleRequestFocus,
+    onFocusZone: handleFocusZone,
+    onOpenIncidents: () => setLeftPanel("incidents"),
+  });
 
   // Stage 21: keyboard traversal of the 3D scene. Only reacts when the scene
   // wrapper itself has focus (never while typing in a panel or the palette).
