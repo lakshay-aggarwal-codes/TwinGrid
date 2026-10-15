@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.db_models import Alert, OptimizationResult, SensorReading, SimulationRun
+from models.db_models import Alert, AlertEvent, OptimizationResult, SensorReading, SimulationRun
+from src import alert_workflow
 from src.timeutil import utc_now
 from src.versions import active_physics_version
 
@@ -177,3 +178,88 @@ async def acknowledge_alert(session: AsyncSession, alert_id: int, acknowledged_b
     alert.acknowledged_at = utc_now()
     await session.flush()
     return alert
+
+
+# ----------------------------------------------------------------------------- Task 17: incident workflow
+# Same rule as every other write in this module (ADR 006): the plugin api/plugins/alerts_workflow.py never touches
+# an Alert/AlertEvent row itself, it calls these.
+
+UNCHANGED: Any = object()  # "leave the assignee as it is" (None means "unassign")
+
+
+async def apply_alert_workflow(
+    session: AsyncSession,
+    alert_id: int,
+    *,
+    actor: str,
+    status: Optional[str] = None,
+    assignee: Any = UNCHANGED,
+    note: Optional[str] = None,
+) -> Optional[tuple[Alert, list[AlertEvent]]]:
+    """Apply one operator action to an alert and append its timeline events. ``None`` if the alert does not exist.
+
+    Raises ``alert_workflow.InvalidTransition`` (nothing is changed) for a status move the lifecycle does not allow.
+    Only the legacy ``acknowledged*`` columns are kept consistent: acknowledging sets them, re-opening clears them,
+    so ``POST /api/alerts/{id}/acknowledge`` and this path never disagree.
+    """
+    alert = await session.get(Alert, alert_id)
+    if alert is None:
+        return None
+    now = utc_now()
+    events: list[AlertEvent] = []
+    current = alert_workflow.effective_status(alert.status, bool(alert.acknowledged))
+
+    if status is not None:
+        alert_workflow.check_transition(current, status)  # raises before any change
+        if status == alert_workflow.ACKNOWLEDGED:
+            alert.acknowledged, alert.acknowledged_by, alert.acknowledged_at = True, actor, now
+            alert.resolved_by = alert.resolved_at = None
+        elif status == alert_workflow.RESOLVED:
+            alert.resolved_by, alert.resolved_at = actor, now
+        else:  # re-open: the episode is live again, so the previous acknowledgement no longer applies
+            alert.acknowledged, alert.acknowledged_by, alert.acknowledged_at = False, None, None
+            alert.resolved_by = alert.resolved_at = None
+        alert.status = status
+        events.append(
+            AlertEvent(
+                alert_id=alert.id, created_at=now, actor=actor, kind="status", from_status=current, to_status=status
+            )
+        )
+
+    if assignee is not UNCHANGED and (assignee or None) != alert.assignee:
+        alert.assignee = assignee or None
+        events.append(
+            AlertEvent(alert_id=alert.id, created_at=now, actor=actor, kind="assigned", assignee=alert.assignee)
+        )
+
+    if note is not None:
+        events.append(AlertEvent(alert_id=alert.id, created_at=now, actor=actor, kind="note", note=note))
+
+    session.add_all(events)
+    await session.flush()
+    return alert, events
+
+
+async def list_alert_inbox(
+    session: AsyncSession, limit: int, *, severity: Optional[str] = None, status: Optional[str] = None
+) -> list[Alert]:
+    """Newest first. ``status`` is the DERIVED lifecycle state (src.alert_workflow.effective_status), applied in SQL
+    so the limit counts matching rows."""
+    stmt = select(Alert).order_by(Alert.created_at.desc(), Alert.id.desc()).limit(limit)
+    if severity is not None:
+        stmt = stmt.where(Alert.severity == severity)
+    not_resolved = or_(Alert.status.is_(None), Alert.status != alert_workflow.RESOLVED)
+    if status == alert_workflow.RESOLVED:
+        stmt = stmt.where(Alert.status == alert_workflow.RESOLVED)
+    elif status == alert_workflow.ACKNOWLEDGED:
+        stmt = stmt.where(not_resolved, Alert.acknowledged.is_(True))
+    elif status == alert_workflow.OPEN:
+        stmt = stmt.where(not_resolved, Alert.acknowledged.is_(False))
+    return list((await session.execute(stmt)).scalars().all())
+
+
+async def list_alert_events(session: AsyncSession, alert_id: int) -> list[AlertEvent]:
+    result = await session.execute(
+        select(AlertEvent).where(AlertEvent.alert_id == alert_id).order_by(AlertEvent.created_at, AlertEvent.id)
+    )
+    return list(result.scalars().all())
