@@ -2,6 +2,8 @@ import { useContext } from 'react';
 import { SimulationContext } from '@/hooks/simulationContext';
 import { ANOMALY_ICONS, gaugeGeometry, toAnomalyView, type AnomalyView } from '@/telemetry/anomalyView';
 import type { AnomalyStatusPayload } from '@/api/apiClient';
+import { LiveWhy } from '@/features/explainability/LiveWhy';
+import { ModelPassportButton } from '@/features/explainability/ModelPassportButton';
 
 interface Props {
   /** Defaults to the shared live feed's `anomaly_status`. `undefined` = read the shared feed; `null` = none received. */
@@ -33,7 +35,8 @@ function useStatus(prop: Props['status']): AnomalyStatusPayload | null {
 
 /** Text first, drawing second: every fact the arc shows is also in the DOM (no canvas-only status). */
 export function AnomalyGauge({ status }: Props) {
-  const view: AnomalyView = toAnomalyView(useStatus(status));
+  const raw = useStatus(status);
+  const view: AnomalyView = toAnomalyView(raw);
   const geometry = gaugeGeometry(view);
   const Icon = ANOMALY_ICONS[view.icon];
   const marker = geometry ? { a: point(geometry.markerFraction, R - 12), b: point(geometry.markerFraction, R + 12) } : null;
@@ -79,6 +82,9 @@ export function AnomalyGauge({ status }: Props) {
         <li>{view.provenance.modelVersionText}</li>
         <li>{view.provenance.originText}</li>
       </ul>
+      {/* Task 18: the detector's own per-signal breakdown, only while it is flagging, and the model's passport. */}
+      {view.kind === 'anomalous' && <LiveWhy explanation={(raw as { explanation?: unknown } | null)?.explanation} />}
+      <ModelPassportButton kind="anomaly" label="Detector passport" />
     </section>
   );
 }
