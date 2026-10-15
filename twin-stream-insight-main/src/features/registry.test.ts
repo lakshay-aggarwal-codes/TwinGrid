@@ -38,7 +38,7 @@ describe("feature registration", () => {
 
   it("ships exactly the features listed here (the example lives under src/test)", () => {
     // Task 5 added the first shipped feature. Add an id to this list when a later task ships another one.
-    expect(featureRegistry.features.map((f) => f.id)).toEqual(["command-palette", "facility-inspector", "simulated-data"]);
+    expect(featureRegistry.features.map((f) => f.id)).toEqual(["command-palette", "executive-dashboard", "facility-inspector", "replay", "simulated-data", "what-if-lab"]);
   });
 
   it("filters nav by role and sorts by group, order, label", () => {
