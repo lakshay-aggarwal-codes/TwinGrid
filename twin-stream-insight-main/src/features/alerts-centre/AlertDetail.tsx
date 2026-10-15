@@ -5,6 +5,7 @@ import { SeverityBadge, StatusBadge } from "./badges";
 import { changeErrorText } from "./errors";
 import { ACTION_LABEL, MAX_ASSIGNEE_CHARS, MAX_NOTE_CHARS, formatUtc, nextStatuses, replayHref, type AlertPatch, type InboxAlert } from "./model";
 import { Timeline } from "./Timeline";
+import { AlertExplanation } from "../explainability/AlertExplanation";
 
 interface Props {
   alert: InboxAlert;
@@ -176,6 +177,8 @@ export function AlertDetail({ alert, isOperator, apply }: Props) {
       ) : (
         <p className="text-xs text-muted-foreground">Read-only: changing, assigning or annotating alerts needs the operator role.</p>
       )}
+
+      <AlertExplanation alertId={alert.id} />
 
       <Timeline alertId={alert.id} />
     </article>

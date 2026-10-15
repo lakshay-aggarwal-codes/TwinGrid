@@ -5,6 +5,7 @@ import { StatusMessage } from '@/components/shell/StatusMessage';
 import { fetchOptimized, type OptimizeSummary } from '@/api/apiClient';
 import { safeMessageFor } from '@/api/apiError';
 import { useAuth } from '@/hooks/useAuth';
+import { ModelPassportButton } from '@/features/explainability/ModelPassportButton';
 import { INITIAL_RUN, isModelUnavailable, optimizeReducer, optionalFlag, optionalText } from './optimizeRun';
 
 interface Props {
@@ -60,6 +61,7 @@ export function OptimizationCard({ onSummaryChange }: Props) {
         Runs the backend's trained policy inside the simulator via POST /api/optimize. The result is simulated, not measured,
         and has no evaluation status or baseline comparison. It is a backend request that is recorded in the audit log.
       </p>
+      <ModelPassportButton kind="ppo" label="Optimizer passport (stored decision)" />
 
       {run.status === 'idle' && (
         <>

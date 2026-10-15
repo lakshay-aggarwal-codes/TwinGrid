@@ -379,6 +379,32 @@ class AlertEvent(Base):
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
+class OptimizerProposal(Base):
+    """Task 19: a recorded request to change the chilled-water setpoint / cooling mode, and its approval decision.
+
+    Nothing is applied to equipment: ``approved`` is a recorded decision. ``predicted`` is a twin simulation
+    (origin ``simulated``), computed by the server when the proposal was made.
+    """
+
+    __tablename__ = "optimizer_proposals"
+    __table_args__ = (Index("ix_optimizer_proposals_status", "status"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    proposer: Mapped[str] = mapped_column(String(64), nullable=False)  # username, kept if the account is deleted
+    source: Mapped[str] = mapped_column(String(48), nullable=False)  # e.g. "baseline:pid" or "manual"
+    chilled_water_temp_c: Mapped[float] = mapped_column(Float, nullable=False)
+    cooling_mode: Mapped[str] = mapped_column(String(16), nullable=False)
+    context: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    predicted: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    rationale: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="simulated")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    decided_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    decided_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
 # =============================================================================
 # T9 -- Facility / asset model (migration M3)
 #
