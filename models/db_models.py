@@ -353,6 +353,31 @@ class Alert(Base):
     acknowledged_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Task 17 incident workflow (additive, all nullable; see src/alert_workflow.py for how they combine with
+    # ``acknowledged``). Written only through data_repository.apply_alert_workflow (ADR 006).
+    # NULL (legacy) | open | acknowledged | resolved
+    status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    assignee: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # username, like acknowledged_by
+    resolved_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AlertEvent(Base):
+    """Task 17: one line of an alert's incident timeline (status change, assignment or note). Append-only."""
+
+    __tablename__ = "alert_events"
+    __table_args__ = (Index("ix_alert_events_alert_id", "alert_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    alert_id: Mapped[int] = mapped_column(ForeignKey("alerts.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    actor: Mapped[str] = mapped_column(String(64), nullable=False)  # username, kept if the account is deleted
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)  # status | assigned | note
+    from_status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    to_status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    assignee: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # NULL on an "assigned" row = unassigned
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
 
 # =============================================================================
 # T9 -- Facility / asset model (migration M3)
