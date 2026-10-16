@@ -43,6 +43,7 @@ describe("feature registration", () => {
       "app-states",
       "command-palette",
       "design-polish",
+      "economics",
       "executive-dashboard",
       "explainability",
       "facility-inspector",
