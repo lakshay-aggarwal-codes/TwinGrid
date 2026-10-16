@@ -321,7 +321,11 @@ class Alert(Base):
 
     __tablename__ = "alerts"
     # M2 (T3): the unique index backs idempotent alert persistence (NULLs allowed for legacy rows).
-    __table_args__ = (Index("ux_alerts_dedupe_key", "dedupe_key", unique=True),)
+    __table_args__ = (
+        Index("ux_alerts_dedupe_key", "dedupe_key", unique=True),
+        # T24: serves ORDER BY created_at DESC, id DESC (alert inbox, recent alerts).
+        Index("ix_alerts_created_at_id", "created_at", "id"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
@@ -387,7 +391,11 @@ class OptimizerProposal(Base):
     """
 
     __tablename__ = "optimizer_proposals"
-    __table_args__ = (Index("ix_optimizer_proposals_status", "status"),)
+    __table_args__ = (
+        Index("ix_optimizer_proposals_status", "status"),
+        # T24: serves WHERE status = ? ORDER BY created_at DESC, id DESC.
+        Index("ix_optimizer_proposals_status_created", "status", "created_at", "id"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
