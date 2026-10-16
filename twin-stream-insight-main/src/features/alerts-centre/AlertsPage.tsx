@@ -9,6 +9,9 @@ import { AlertList } from "./AlertList";
 import { alertsInboxKey } from "./api";
 import { runBulk, type BulkResult } from "./bulk";
 import { Filters } from "./Filters";
+import { ExportButtons } from "../reports-export/ExportButtons";
+import { ShareLinkButton } from "../reports-export/ShareLinkButton";
+import { ALERT_EXPORT_COLUMNS } from "./exportColumns";
 import {
   BULK_MAX,
   INBOX_LIMIT,
@@ -84,6 +87,11 @@ function Inbox({ alerts }: { alerts: readonly InboxAlert[] }) {
       </p>
 
       <Filters value={filters} onChange={setFilters} />
+
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Export and share">
+        <ExportButtons label="alerts" columns={ALERT_EXPORT_COLUMNS} rows={visible} />
+        <ShareLinkButton />
+      </div>
 
       {isOperator ? (
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Bulk acknowledge">

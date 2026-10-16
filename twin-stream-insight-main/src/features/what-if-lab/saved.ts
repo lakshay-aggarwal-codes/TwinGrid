@@ -1,5 +1,6 @@
 /** Task 15: saved scenarios and CSV export. PURE (storage access lives in `useSavedScenarios`). */
 import { modeLabel, normalise, type LabInputs } from "./model";
+import { csvCell } from "../reports-export/exportTable";
 import { ESTIMATE_LABEL, METRICS, type MetricId, type MetricValues } from "./metrics";
 
 export const MAX_SAVED = 8;
@@ -63,12 +64,7 @@ export const removeSaved = (list: readonly SavedScenario[], id: string): SavedSc
 
 // ---------------------------------------------------------------------------------------------------- CSV
 /** A spreadsheet would run a cell that starts with = + - @ (or a tab/CR) as a formula: prefix such TEXT with an apostrophe. Numbers are never prefixed. */
-export function csvCell(v: string | number | boolean): string {
-  if (typeof v === "number") return Number.isFinite(v) ? String(v) : "";
-  if (typeof v === "boolean") return v ? "true" : "false";
-  const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
-  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-}
+export { csvCell };
 
 export interface CsvRow {
   readonly name: string;

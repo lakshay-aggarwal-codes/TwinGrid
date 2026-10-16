@@ -49,6 +49,7 @@ describe("feature registration", () => {
       "guided-tour",
       "optimizer-approvals",
       "replay",
+      "reports-export",
       "simulated-data",
       "what-if-lab",
     ]);

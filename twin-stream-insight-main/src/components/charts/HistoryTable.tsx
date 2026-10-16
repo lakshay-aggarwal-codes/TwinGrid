@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { ExportButtons } from '@/features/reports-export/ExportButtons';
+import { ShareLinkButton } from '@/features/reports-export/ShareLinkButton';
+import { historyExportColumns } from '@/features/reports-export/historyColumns';
 import { classifyOrigin } from '@/provenance';
 import { originForProvenance } from '@/telemetry/history/origin';
 import { NOT_REPORTED, formatValue, qualityLabel, reasonLabel, type Series } from '@/telemetry/history/model';
@@ -19,6 +22,10 @@ export function HistoryTable({ series, gaps }: { series: Series; gaps: readonly 
 
   return (
     <div className="space-y-3" data-testid="history-table">
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Export and share">
+        <ExportButtons label="telemetry history" columns={historyExportColumns(series)} rows={rows} />
+        <ShareLinkButton />
+      </div>
       <table className="w-full text-left text-xs">
         <caption className="pb-1 text-left text-muted-foreground">
           Stored samples, backend order (event time ascending). Times are UTC event time from the backend.
