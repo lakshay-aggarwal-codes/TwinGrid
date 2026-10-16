@@ -27,6 +27,24 @@ import { toLiveState, type LiveStatePayload } from './models';
 
 const DEFAULT_RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_DELAY_MS = 30000;
+/** Total relative spread of the retry wait: a wait of `base` becomes `base * [1 - spread/2, 1 + spread/2]` (+-25%). */
+export const JITTER_SPREAD = 0.5;
+
+/**
+ * Task 23: spread reconnect attempts so clients that dropped together do not retry together. `random` is a
+ * uniform [0, 1) source; 0.5 (the transport default) leaves the wait exactly at `base`, so the schedule is
+ * deterministic unless a caller opts in with `Math.random` (the feed store does).
+ */
+export function jitteredDelay(base: number, random: () => number): number {
+  const r = Math.min(Math.max(random(), 0), 1);
+  return Math.round(base * (1 - JITTER_SPREAD / 2 + JITTER_SPREAD * r));
+}
+
+export interface ConnectOptions {
+  /** Uniform [0, 1) source for retry jitter. Defaults to 0.5 (no jitter). */
+  random?: () => number;
+}
+
 /** Probe /healthz once this many consecutive reconnect attempts have failed without a valid frame. */
 const PROBE_AFTER_ATTEMPTS = 2;
 
@@ -100,8 +118,10 @@ export async function requestWsTicket(token: string): Promise<string | null> {
 export function connectWebSocket(
   onMessage: (state: LiveStatePayload) => void,
   onStatus?: (status: SocketStatus) => void,
-  onTransport?: (state: TransportState) => void
+  onTransport?: (state: TransportState) => void,
+  options: ConnectOptions = {}
 ): WsConnection {
+  const random = options.random ?? (() => 0.5);
   let ws: WebSocket | null = null;
   let stopped = false;
   let delay = DEFAULT_RECONNECT_DELAY_MS;
@@ -144,7 +164,7 @@ export function connectWebSocket(
 
   function scheduleReconnect(): void {
     if (stopped || timer) return;
-    const wait = delay;
+    const wait = jitteredDelay(delay, random);
     delay = Math.min(delay * 1.5, MAX_RECONNECT_DELAY_MS);
     const attempt = state.attempt + 1;
     setState({ status: 'reconnecting', attempt, nextRetryAt: Date.now() + wait });

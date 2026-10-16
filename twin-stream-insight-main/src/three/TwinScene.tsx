@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
+import { usePageVisible } from "@/components/alerts/usePageVisible";
+import { sceneFrameloop } from "./frameloop";
 import { OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Facility } from "./Facility.tsx";
@@ -112,7 +114,19 @@ function SceneContents({
  * from Stage 2 -- only `ref`, `onStart`/`onEnd` (for hover-drag gating) and
  * `target` were added on top of it; the control scheme itself is untouched.
  */
+/** Task 23: draw the newest state as soon as the tab is visible again (frames were not rendered while hidden). */
+function InvalidateWhenVisible({ visible }: { visible: boolean }) {
+  const { invalidate } = useThree();
+  useEffect(() => {
+    if (!visible) return;
+    const id = setTimeout(invalidate, 0);
+    return () => clearTimeout(id);
+  }, [visible, invalidate]);
+  return null;
+}
+
 export function TwinScene(props: TwinSceneProps) {
+  const tabVisible = usePageVisible();
   // FE-14: the one place the topology is fetched. Until it resolves (or if it fails) the built-in layout is used and flagged.
   const topology = useFacilityTopology();
   return (
@@ -123,10 +137,12 @@ export function TwinScene(props: TwinSceneProps) {
       // camera move, tween frame) instead of 60x/s while the scene is idle.
       // Every animation here calls invalidate(); OrbitControls invalidates
       // itself on input and damping.
-      frameloop="demand"
+      // Task 23: "never" while the tab is hidden (see three/frameloop.ts).
+      frameloop={sceneFrameloop(tabVisible)}
       camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}
       onPointerMissed={props.onDeselect}
     >
+      <InvalidateWhenVisible visible={tabVisible} />
       <SceneContents {...props} layout={topology.layout} />
     </Canvas>
     <TopologyBadge topology={topology} />
