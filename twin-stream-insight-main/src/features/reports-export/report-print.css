@@ -1,0 +1,16 @@
+/* Task 22: "Print -> Save as PDF" prints only the report sheet, black on white, with the provenance footer on every page. */
+.report-print-footer { display: none; }
+
+@media print {
+  @page { margin: 14mm; }
+  body * { visibility: hidden !important; }
+  .report-print-root, .report-print-root * { visibility: visible !important; }
+  .report-print-root { position: absolute; left: 0; top: 0; width: 100%; margin: 0 !important; padding: 0 !important; background: #fff !important; color: #111 !important; overflow: visible !important; height: auto !important; max-width: none !important; }
+  .report-print-root * { color: #111 !important; background: transparent !important; border-color: #999 !important; box-shadow: none !important; }
+  .no-print { display: none !important; }
+  .report-sheet table { break-inside: avoid; }
+  .report-sheet h2 { break-after: avoid; }
+  .report-boundary, .report-banner { border: 1px solid #555 !important; }
+  .report-print-footer { display: block; position: fixed; left: 0; right: 0; bottom: 0; padding-top: 4px; border-top: 1px solid #555; font-size: 9px; }
+  .report-print-root { padding-bottom: 16mm !important; }
+}

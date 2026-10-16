@@ -7,7 +7,9 @@ import { DeltaCards } from "./DeltaCards";
 import { SavedPanel } from "./SavedPanel";
 import { Tornado } from "./Tornado";
 import { downloadText } from "./exportCsv";
-import { ESTIMATE_LABEL, deltasOf, readMetrics } from "./metrics";
+import { ExportButtons } from "../reports-export/ExportButtons";
+import { WHATIF_EXPORT_COLUMNS } from "./exportColumns";
+import { CARBON_FALLBACK_LABEL, ESTIMATE_LABEL, deltasOf, readMetrics } from "./metrics";
 import { DEFAULT_INPUTS, WATER_STRESS_HELD, describeInputs, inputsEqual, type LabInputs } from "./model";
 import { addSaved, removeSaved, toCsv, type CsvRow, type Snapshot } from "./saved";
 import { useDebouncedInputs, useRun, useSavedScenarios, useSweep } from "./useLab";
@@ -60,12 +62,12 @@ export default function LabPage() {
       say("Could not copy; copy the address bar instead.");
     }
   };
+  const exportRows: CsvRow[] = [];
+  if (baseSnap) exportRows.push({ name: "Baseline", kind: "baseline", snap: baseSnap });
+  if (curSnap) exportRows.push({ name: "Current", kind: "current", snap: curSnap });
+  for (const s of saved.list) exportRows.push({ name: s.name, kind: "saved", snap: s });
   const exportCsv = () => {
-    const rows: CsvRow[] = [];
-    if (baseSnap) rows.push({ name: "Baseline", kind: "baseline", snap: baseSnap });
-    if (curSnap) rows.push({ name: "Current", kind: "current", snap: curSnap });
-    for (const s of saved.list) rows.push({ name: s.name, kind: "saved", snap: s });
-    downloadText("twingrid-whatif.csv", toCsv(rows));
+    downloadText("twingrid-whatif.csv", toCsv(exportRows));
     say("CSV downloaded.");
   };
   const save = (name: string) => {
@@ -88,6 +90,16 @@ export default function LabPage() {
       <p className="rounded border border-dashed border-border px-2 py-1 text-xs text-foreground" data-testid="lab-estimate-label">
         <strong>Results are a {ESTIMATE_LABEL}.</strong> Each figure is one isolated 24 h run of the twin at constant inputs (water stress held at {WATER_STRESS_HELD}); it is not a forecast, is not a measurement, and nothing is stored or changed on the facility.
       </p>
+
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Export what-if results">
+        <ExportButtons
+          label="what-if results"
+          formats={["json"]}
+          columns={WHATIF_EXPORT_COLUMNS}
+          rows={exportRows}
+          notes={[`Results are a ${ESTIMATE_LABEL}.`, ...(exportRows.some((r) => !r.snap.carbonIsReal) ? [CARBON_FALLBACK_LABEL] : [])]}
+        />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
         <div className="space-y-3">
