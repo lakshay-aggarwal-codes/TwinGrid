@@ -17,7 +17,9 @@ class AnomalyScoreResponse(BaseModel):
     """Response for anomaly detection."""
 
     score: float = Field(description="Reconstruction error score")
-    threshold: float = Field(description="Model's trained alert threshold (95th percentile of training error)")
+    threshold: float = Field(
+        description="Model's trained alert threshold (reconstruction error at the configured percentile; see threshold_percentile in the Model Passport)"
+    )
     alert: bool = Field(description="True if anomaly detected")
     type: str = Field(description="Anomaly type or 'normal'")
     message: str = Field(description="Human-readable message")

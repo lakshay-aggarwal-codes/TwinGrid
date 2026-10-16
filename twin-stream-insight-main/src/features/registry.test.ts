@@ -41,6 +41,7 @@ describe("feature registration", () => {
     expect(featureRegistry.features.map((f) => f.id)).toEqual([
       "alerts-centre",
       "app-states",
+      "capacity",
       "command-palette",
       "design-polish",
       "economics",

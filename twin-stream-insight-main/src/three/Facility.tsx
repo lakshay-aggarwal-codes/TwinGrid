@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
 import type { FacilityLayout } from "./facilityLayout.ts";
+import { HeadroomOverlay } from "./HeadroomOverlay";
 import { ZoneOutline } from "./ZoneOutline";
 import { Rack, type RackVisualState } from "./Rack";
 import { computeThermalColors } from "./thermalMapping";
@@ -87,6 +88,7 @@ export function Facility({
       {layout.zones.map((zone) => (
         <ZoneOutline key={zone.zoneId} zone={zone} />
       ))}
+      <HeadroomOverlay zones={layout.zones} />
 
       {layout.racks.map((rack) => {
         const state: RackVisualState =
