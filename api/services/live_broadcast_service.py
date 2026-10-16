@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import random
@@ -178,6 +179,36 @@ _SERIAL = "serial"
 _CONCURRENT = "concurrent"
 
 
+class _Frame(dict):
+    """A broadcast payload plus its JSON text, serialised ONCE per broadcast (not once per client).
+
+    It is a ``dict`` so everything that inspects queued payloads (``frame["seq"]``) and every socket that only
+    offers ``send_json`` keeps working; ``text`` is ``None`` when the payload could not be encoded, in which
+    case the socket's own ``send_json`` is used (and fails or succeeds exactly as before).
+    """
+
+    text: str | None = None
+
+
+def _encode_once(payload: dict) -> _Frame:
+    frame = _Frame(payload)
+    try:
+        # Same encoding Starlette's ``send_json`` applies, so clients see byte-identical frames.
+        frame.text = json.dumps(payload, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+    except (TypeError, ValueError):
+        frame.text = None
+    return frame
+
+
+async def _send_frame(ws, frame: dict) -> None:
+    text = getattr(frame, "text", None)
+    send_text = getattr(ws, "send_text", None)
+    if text is not None and send_text is not None:
+        await send_text(text)
+    else:
+        await ws.send_json(frame)
+
+
 @dataclass
 class _Channel:
     """Per-client outbound state: a bounded queue (drop-oldest) drained by one writer task."""
@@ -271,6 +302,7 @@ class ConnectionManager:
     async def broadcast(self, payload: dict) -> None:
         if not self._connections:
             return
+        payload = _encode_once(payload)  # T23: serialise once; every client below shares this one frame
         if self._mode == _SERIAL:
             await self._broadcast_serial(payload)
             return
@@ -294,7 +326,7 @@ class ConnectionManager:
     async def _broadcast_serial(self, payload: dict) -> None:
         for ws in list(self._connections):
             try:
-                await ws.send_json(payload)
+                await _send_frame(ws, payload)
             except Exception:
                 self._evict(ws, WS_CLOSE_SEND_FAILED)
 
@@ -307,7 +339,7 @@ class ConnectionManager:
                 continue
             frame = channel.pending.popleft()
             try:
-                await asyncio.wait_for(ws.send_json(frame), self._send_timeout)
+                await asyncio.wait_for(_send_frame(ws, frame), self._send_timeout)
             except asyncio.CancelledError:
                 raise
             except asyncio.TimeoutError:

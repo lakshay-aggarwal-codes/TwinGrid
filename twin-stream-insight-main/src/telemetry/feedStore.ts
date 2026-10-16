@@ -60,6 +60,8 @@ export interface FeedStoreOptions {
   connect?: typeof connectWebSocket;
   clock?: Clock;
   checkIntervalMs?: number;
+  /** Uniform [0, 1) source for reconnect jitter (Task 23). Defaults to `Math.random`; tests pass a constant. */
+  random?: () => number;
 }
 
 const INITIAL_SEQ: SeqState = { last: null, gapFrames: 0, restarted: false, restartCount: 0, unordered: false };
@@ -181,7 +183,7 @@ export function createFeedStore(options: FeedStoreOptions = {}): FeedStore {
       if (connection) return;
       reset();
       listeners.forEach((l) => l());
-      connection = connect(handleFrame, handleSocket, handleTransport);
+      connection = connect(handleFrame, handleSocket, handleTransport, { random: options.random ?? Math.random });
       timer = setInterval(recheck, checkMs);
     },
     stop() {

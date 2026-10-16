@@ -48,6 +48,7 @@ describe("feature registration", () => {
       "facility-inspector",
       "guided-tour",
       "optimizer-approvals",
+      "realtime-resilience",
       "replay",
       "reports-export",
       "simulated-data",

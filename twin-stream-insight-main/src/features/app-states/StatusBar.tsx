@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Clock, Database, Loader2, ServerOff, Wifi, WifiOff, type LucideIcon } from "lucide-react";
+import { Clock, Database, History, Loader2, ServerOff, Wifi, WifiOff, type LucideIcon } from "lucide-react";
 import { useFeed, shallowEqual } from "@/telemetry/useFeed";
 import { useActiveFeedStore } from "@/telemetry/activeFeed";
 import { monotonicClock, type Clock as FeedClock } from "@/telemetry/freshness";
 import type { FeedStore } from "@/telemetry/feedStore";
+import { backfillLine } from "../realtime-resilience/backfillText";
+import { useBackfillState } from "../realtime-resilience/backfillState";
 import { connectionView, lastUpdateText, originChip, type ConnectionIcon } from "./statusModel";
 
 const ICON: Record<ConnectionIcon, LucideIcon> = { live: Wifi, connecting: Loader2, stale: Clock, offline: WifiOff, unavailable: ServerOff };
@@ -31,6 +33,7 @@ function Bar({ store, clock }: { store: FeedStore; clock: FeedClock }) {
   const conn = connectionView(feed.state);
   const Icon = ICON[conn.icon];
   const origin = originChip(feed.hasFrame, feed.origin);
+  const backfill = backfillLine(useBackfillState()); // Task 23: only present after a gap
 
   const bar = (
     <div
@@ -51,6 +54,12 @@ function Bar({ store, clock }: { store: FeedStore; clock: FeedClock }) {
         <Database aria-hidden="true" className="h-3.5 w-3.5" />
         {origin.text}
       </span>
+      {backfill && (
+        <span data-testid="status-backfill" data-state={backfill.state} role="status" className="inline-flex items-center gap-1">
+          <History aria-hidden="true" className="h-3.5 w-3.5" />
+          {backfill.text}
+        </span>
+      )}
       {/* One live region that changes only when the connection state changes, so assistive tech hears transitions, not ticks. */}
       <span className="sr-only" role="status" aria-live={conn.assertive ? "assertive" : "polite"} data-testid="status-announcement">
         Connection: {conn.label}
