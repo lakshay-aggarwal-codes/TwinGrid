@@ -42,6 +42,7 @@ describe("feature registration", () => {
       "alerts-centre",
       "app-states",
       "capacity",
+      "carbon-scheduling",
       "command-palette",
       "design-polish",
       "economics",
