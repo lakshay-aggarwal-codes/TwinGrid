@@ -31,7 +31,7 @@ const Index = () => {
     queryKey: ['equipment-health'],
     queryFn: ({ signal }) => fetchEquipmentHealth(signal),
   });
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -45,9 +45,9 @@ const Index = () => {
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(p => !p)}
         />
-        <main className="flex-1 overflow-y-auto p-5">
+        <main className="min-w-0 flex-1 overflow-y-auto p-3 sm:p-5">
           <Tabs defaultValue="live" className="space-y-4">
-            <TabsList className="bg-muted/50 border border-border">
+            <TabsList className="h-auto max-w-full flex-wrap justify-start bg-muted/50 border border-border">
               <TabsTrigger value="live" className="gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Monitor className="h-3.5 w-3.5" />Live Monitor
               </TabsTrigger>
@@ -66,12 +66,15 @@ const Index = () => {
               <LiveMonitor previewKpi={previewKpi} onRetryPreview={retryPreview} events={events} />
             </TabsContent>
             <TabsContent value="sim">
+              <h2 className="sr-only">24-hour simulation</h2>
               <SimulationTab data={hourlyData} inputs={simInputs} failed={simError} />
             </TabsContent>
             <TabsContent value="whatif">
+              <h2 className="sr-only">What-if scenarios</h2>
               <WhatIfTab baseConfig={config} />
             </TabsContent>
             <TabsContent value="sustainability">
+              <h2 className="sr-only">Sustainability</h2>
               <SustainabilityTab feed={feed} equipmentHealth={equipment.state} onRetryEquipment={equipment.refetch} />
             </TabsContent>
           </Tabs>

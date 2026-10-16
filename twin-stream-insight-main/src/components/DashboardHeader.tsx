@@ -19,7 +19,7 @@ export function DashboardHeader({ feed }: Props) {
   const view = useMemo(() => feedProvenance(feed), [feed]);
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
+    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-gutter py-3 border-b border-border bg-card/80 backdrop-blur-sm">
       <div className="flex items-center gap-3">
         <div className="h-8 w-8 rounded-md bg-primary/20 flex items-center justify-center">
           <Activity className="h-5 w-5 text-primary" />

@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { useEffect } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Play, ChevronLeft, ChevronRight, Cpu, Thermometer, Droplets, Gauge, Loader2 } from 'lucide-react';
 import type { SimConfig, CoolingMode } from '@/hooks/useSimulation';
 import { FeatureNav } from '@/features/FeatureNav';
@@ -20,8 +22,8 @@ function SliderControl({ icon: Icon, label, value, min, max, step, unit, onChang
   icon: React.ElementType; label: string; value: number; min: number; max: number; step: number; unit: string; onChange: (v: number) => void; collapsed: boolean;
 }) {
   if (collapsed) return (
-    <div className="flex flex-col items-center gap-1 py-2" title={`${label}: ${value}${unit}`}>
-      <Icon className="h-4 w-4 text-primary" />
+    <div role="img" aria-label={`${label}: ${value}${unit}`} className="flex flex-col items-center gap-1 py-2" title={`${label}: ${value}${unit}`}>
+      <Icon aria-hidden="true" className="h-4 w-4 text-primary" />
       <span className="text-[10px] font-mono text-muted-foreground">{value}</span>
     </div>
   );
@@ -33,20 +35,45 @@ function SliderControl({ icon: Icon, label, value, min, max, step, unit, onChang
         </Label>
         <span className="font-mono text-xs text-foreground">{value}{unit}</span>
       </div>
-      <Slider min={min} max={max} step={step} value={[value]} onValueChange={([v]) => onChange(v)} className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary [&_.range]:bg-primary" />
+      <Slider aria-label={label} min={min} max={max} step={step} value={[value]} onValueChange={([v]) => onChange(v)} className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary [&_.range]:bg-primary" />
     </div>
   );
 }
 
 export function DashboardSidebar({ config, onChange, onRunSim, simRunning, collapsed, onToggle }: Props) {
   const set = (partial: Partial<SimConfig>) => onChange({ ...config, ...partial });
+  // Task 21: on phones an open sidebar is an overlay (a 288px column would leave ~70px for the page at 360px), a
+  // closed one is a slim rail, and Escape closes the overlay.
+  const mobile = useIsMobile();
+  const overlay = mobile && !collapsed;
+  useEffect(() => {
+    if (!overlay) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onToggle();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [overlay, onToggle]);
+
+  const width = overlay ? 'fixed inset-y-0 left-0 z-40 w-72 max-w-[85vw] shadow-elevation-3' : collapsed ? (mobile ? 'w-12' : 'w-16') : 'w-72';
 
   return (
-    <aside className={`${collapsed ? 'w-16' : 'w-72'} transition-all duration-300 border-r border-border bg-sidebar flex flex-col shrink-0`}>
+    <>
+    {/* Keeps the page column where it was while the overlay floats above it. */}
+    {overlay && <div aria-hidden="true" className="w-12 shrink-0" />}
+    {overlay && <div aria-hidden="true" data-testid="sidebar-backdrop" className="fixed inset-0 z-30 bg-background/60" onClick={onToggle} />}
+    <aside id="controls-sidebar" aria-label="Simulation controls" className={`${width} transition-all duration-300 motion-reduce:transition-none border-r border-border bg-sidebar flex flex-col shrink-0`}>
       <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between px-4'} py-3 border-b border-border`}>
         {!collapsed && <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Controls</span>}
-        <button onClick={onToggle} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={collapsed ? 'Expand controls sidebar' : 'Collapse controls sidebar'}
+          aria-expanded={!collapsed}
+          aria-controls="controls-sidebar"
+          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {collapsed ? <ChevronRight aria-hidden="true" className="h-4 w-4" /> : <ChevronLeft aria-hidden="true" className="h-4 w-4" />}
         </button>
       </div>
 
@@ -62,7 +89,7 @@ export function DashboardSidebar({ config, onChange, onRunSim, simRunning, colla
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Cooling Mode</Label>
               <Select value={config.coolingMode} onValueChange={(v) => set({ coolingMode: v as CoolingMode })}>
-                <SelectTrigger className="bg-muted border-border text-foreground text-sm">
+                <SelectTrigger aria-label="Cooling mode" className="bg-muted border-border text-foreground text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -85,5 +112,6 @@ export function DashboardSidebar({ config, onChange, onRunSim, simRunning, colla
         <FeatureNav orientation="vertical" collapsed={collapsed} />
       </div>
     </aside>
+    </>
   );
 }

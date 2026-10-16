@@ -12,7 +12,7 @@ export function AccountMenu() {
     <div
       role="group"
       aria-label="Account"
-      className="fixed bottom-2 right-2 z-50 flex items-center gap-2 rounded-md border border-border bg-card/85 backdrop-blur-sm px-2.5 py-1 text-xs text-muted-foreground"
+      className="fixed bottom-[4.75rem] right-2 z-50 flex max-w-[calc(100vw-1rem)] flex-wrap items-center gap-2 rounded-md sm:bottom-2 border border-border bg-card/85 backdrop-blur-sm px-2.5 py-1 text-xs text-muted-foreground"
     >
       <Slot name="settings" className="flex items-center gap-2" />
       <span>{username}</span>

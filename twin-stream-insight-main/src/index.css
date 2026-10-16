@@ -65,6 +65,73 @@
 
     --glow-cyan: 0 0 20px hsl(187 100% 50% / 0.3);
     --glow-cyan-strong: 0 0 40px hsl(187 100% 50% / 0.5);
+
+    /* Task 21 design tokens. Spacing uses Tailwind's 4px scale; --gutter is the one page-edge padding
+       (1rem on phones, 1.5rem from 640px). Type scale: see tailwind `text-caption .. text-display`. */
+    --gutter: 1rem;
+    --card-grad-from: 0 0% 7%;
+    --card-grad-to: 0 0% 10%;
+    --glow-border-alpha: 0.2;
+    --elevation-1: 0 1px 2px hsl(0 0% 0% / 0.35);
+    --elevation-2: 0 4px 12px hsl(0 0% 0% / 0.4);
+    --elevation-3: 0 12px 32px hsl(0 0% 0% / 0.5);
+    --radius-pill: 9999px;
+    color-scheme: dark;
+  }
+
+  /* Task 21: light theme. Same token names as the dark set, so every component using the tokens works in both.
+     Applied by features/design-polish/theme.ts (data-theme="light" + .light). Dark stays the default. */
+  :root[data-theme="light"] {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 187 100% 24%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 92%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 36%;
+    --accent: 187 100% 24%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 69% 26%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 30%;
+    --warning-foreground: 0 0% 100%;
+    --border: 0 0% 82%;
+    --input: 0 0% 82%;
+    --ring: 187 100% 30%;
+    --sidebar-background: 0 0% 96%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 187 100% 24%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 90%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 86%;
+    --sidebar-ring: 187 100% 30%;
+    --chart-cyan: 187 100% 28%;
+    --chart-blue: 210 100% 38%;
+    --chart-green: 152 69% 28%;
+    --chart-orange: 30 90% 34%;
+    --chart-red: 0 72% 42%;
+    --chart-purple: 270 60% 42%;
+    --glow-cyan: 0 0 0 transparent;
+    --glow-cyan-strong: 0 0 0 transparent;
+    --card-grad-from: 0 0% 100%;
+    --card-grad-to: 0 0% 96%;
+    --glow-border-alpha: 0.35;
+    --elevation-1: 0 1px 2px hsl(0 0% 0% / 0.12);
+    --elevation-2: 0 4px 12px hsl(0 0% 0% / 0.14);
+    --elevation-3: 0 12px 32px hsl(0 0% 0% / 0.18);
+    color-scheme: light;
+  }
+
+  @media (min-width: 640px) {
+    :root { --gutter: 1.5rem; }
   }
 }
 
@@ -86,14 +153,14 @@
 
 @layer components {
   .glow-border {
-    box-shadow: inset 0 0 0 1px hsl(187 100% 50% / 0.2), var(--glow-cyan);
+    box-shadow: inset 0 0 0 1px hsl(var(--primary) / var(--glow-border-alpha)), var(--glow-cyan);
   }
   .glow-text {
-    text-shadow: 0 0 10px hsl(187 100% 50% / 0.5);
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
   }
     .card-grid-glow {
-    background: linear-gradient(135deg, hsl(0 0% 7%) 0%, hsl(0 0% 10%) 100%);
-    border: 1px solid hsl(187 100% 50% / 0.12);
+    background: linear-gradient(135deg, hsl(var(--card-grad-from)) 0%, hsl(var(--card-grad-to)) 100%);
+    border: 1px solid hsl(var(--primary) / 0.12);
   }
   .gauge-ring {
     filter: drop-shadow(0 0 8px hsl(187 100% 50% / 0.4));
@@ -113,4 +180,28 @@
    an interactive control, so it gets no focus ring. */
 h1[tabindex="-1"]:focus {
   outline: none;
+}
+
+/* Task 21: reduced motion, everywhere. GSAP tweens already collapse to duration 0 (three/motion.ts); this covers CSS
+   transitions/animations (Tailwind animate-*, Radix open/close, the anomaly flash). The anomaly border stays visible
+   as a static border, so the alert is still shown, just not pulsing. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .anomaly-flash-border {
+    animation: none;
+    border-color: hsl(0 72% 51% / 0.7);
+  }
+}
+
+/* Task 21: on phones the bottom navigation (2.75rem, fixed) must never cover page content. The nav sets
+   data-mobile-nav on <html> while it is mounted (signed in only). */
+@media (max-width: 639px) {
+  html[data-mobile-nav] .app-shell {
+    padding-bottom: calc(2.75rem + env(safe-area-inset-bottom, 0px));
+  }
 }

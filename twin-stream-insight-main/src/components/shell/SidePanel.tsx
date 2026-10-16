@@ -23,7 +23,7 @@ export function SidePanel({ selectedRackId, onDeselect, feed }: SidePanelProps) 
   // FE-19: clearing the selection removes the button that had focus; focus goes to the inspector heading instead of <body>.
   const headingRef = useRef<HTMLHeadingElement>(null);
   return (
-    <aside aria-label="Rack inspector" className="w-80 border-l border-border bg-sidebar flex flex-col shrink-0">
+    <aside aria-label="Rack inspector" className="w-80 max-sm:fixed max-sm:right-0 max-sm:top-0 max-sm:bottom-11 max-sm:z-40 max-sm:w-[min(20rem,calc(100vw-2rem))] max-sm:shadow-elevation-3 border-l border-border bg-sidebar flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h2 ref={headingRef} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground focus:outline-none">Inspector</h2>
         {selectedRackId && (
