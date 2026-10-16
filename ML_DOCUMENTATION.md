@@ -11,7 +11,7 @@
 
 - **Problem:** detect water leaks / thermal spikes, trained on normal data only
 - **Real-world validation:** `src/anomaly_detector_nab_validation.py` trains a **separate**, matching-architecture, 1-feature model on real NAB data and evaluates against real labels — this validates the *methodology*, not the production 5-feature model directly, since NAB's feature space doesn't match. See that file's module docstring for the full reasoning.
-- **Threshold:** 95th percentile of training reconstruction error, exposed via `AnomalyDetector.threshold` (Phase 3) so the frontend gauge normalizes against a real, model-derived value rather than an arbitrary scale.
+- **Threshold:** the registered model's threshold is the 99.5th percentile of held-out reconstruction errors, chosen by an F1 search on those same rows (see `docs/model_cards/anomaly_detector.md`); the code default is the 95th percentile of training errors. Exposed via `AnomalyDetector.threshold` so the frontend gauge normalizes against a model-derived value rather than an arbitrary scale.
 
 ## PPO optimizer (`src/optimizer.py`)
 
