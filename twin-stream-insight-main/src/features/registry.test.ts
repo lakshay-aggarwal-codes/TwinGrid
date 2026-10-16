@@ -42,6 +42,7 @@ describe("feature registration", () => {
       "alerts-centre",
       "app-states",
       "command-palette",
+      "design-polish",
       "executive-dashboard",
       "explainability",
       "facility-inspector",

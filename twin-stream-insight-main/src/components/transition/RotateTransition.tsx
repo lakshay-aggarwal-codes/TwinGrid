@@ -258,7 +258,7 @@ export function RotateTransition({ children }: { children: ReactNode }) {
   return (
     <RotateContext.Provider value={value}>
       {/* Outer: perspective (for rotate/flip) + clipping so nothing causes a scrollbar. */}
-      <div className="h-screen overflow-hidden bg-background" style={{ perspective: "1600px" }}>
+      <div className="app-shell h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden bg-background" style={{ perspective: "1600px" }}>
         <div ref={pageRef} className="h-full" style={{ transformOrigin: "50% 50%" }}>
           {children}
         </div>

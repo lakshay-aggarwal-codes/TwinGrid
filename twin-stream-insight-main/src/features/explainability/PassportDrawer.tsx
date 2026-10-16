@@ -50,7 +50,7 @@ export function ModelCard({ model }: { model: PassportModel }) {
       {model.data_origin_basis ? <p className="text-[11px] text-muted-foreground">{model.data_origin_basis}</p> : null}
 
       <section aria-label="Headline metrics" className="space-y-1">
-        <h4 className="text-xs font-semibold">Headline metrics ({model.metrics_label})</h4>
+        <h3 className="text-xs font-semibold">Headline metrics ({model.metrics_label})</h3>
         {model.headline_metrics.length === 0 ? (
           <p className="text-xs text-muted-foreground" data-testid="passport-no-metrics">
             NOT MEASURED: the registry holds no headline metric for this model.
@@ -70,7 +70,7 @@ export function ModelCard({ model }: { model: PassportModel }) {
 
       {model.evaluation ? (
         <section aria-label="Stored evaluation decision" className="space-y-1 rounded border border-border p-2" data-testid="passport-evaluation">
-          <h4 className="text-xs font-semibold">Evaluation decision (as stored)</h4>
+          <h3 className="text-xs font-semibold">Evaluation decision (as stored)</h3>
           <p className="text-xs">
             Outcome <span className="font-mono">{model.evaluation.outcome}</span>; claim allowed:{" "}
             <span className="font-mono">{model.evaluation.claim_allowed}</span>.
@@ -85,7 +85,7 @@ export function ModelCard({ model }: { model: PassportModel }) {
 
       {model.detector ? (
         <section aria-label="Detector settings" className="space-y-1">
-          <h4 className="text-xs font-semibold">Detector</h4>
+          <h3 className="text-xs font-semibold">Detector</h3>
           <dl className="space-y-1">
             <Row label="Alert threshold">
               <span className="font-mono">{model.detector.threshold.toFixed(4)}</span>
@@ -98,7 +98,7 @@ export function ModelCard({ model }: { model: PassportModel }) {
       ) : null}
 
       <section aria-label="Limitations" className="space-y-1">
-        <h4 className="text-xs font-semibold">Limitations</h4>
+        <h3 className="text-xs font-semibold">Limitations</h3>
         <ul className="list-disc space-y-1 pl-4 text-xs">
           {model.limitations.map((l) => (
             <li key={l}>{l}</li>
@@ -108,7 +108,7 @@ export function ModelCard({ model }: { model: PassportModel }) {
       </section>
 
       <section aria-label="Claim boundary" className="space-y-1">
-        <h4 className="text-xs font-semibold">Claim boundary</h4>
+        <h3 className="text-xs font-semibold">Claim boundary</h3>
         <p className="text-xs" data-testid="passport-boundary">
           {model.claim_boundary}
         </p>

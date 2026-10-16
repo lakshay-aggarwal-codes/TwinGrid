@@ -57,7 +57,7 @@ export function TwinHeader({
   const state = readout.mode === "none" ? null : readout.state;
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm shrink-0">
+    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-gutter py-3 border-b border-border bg-card/80 backdrop-blur-sm shrink-0">
       <div className="flex flex-wrap items-center gap-3">
         <div className="h-8 w-8 rounded-md bg-primary/20 flex items-center justify-center">
           <Boxes aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -105,7 +105,7 @@ export function TwinHeader({
       {/* Real facility-wide telemetry from the live WebSocket feed. Facility-wide
           only -- never implies anything about a specific rack (see RackInspectorContent
           for how the same distinction is kept in the inspector). */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {/* Origin + freshness + source/time context (FE-05 strip). Mounted once here, so this is the one place
             freshness transitions are announced (polite; "Disconnected" assertive). */}
         <div data-testid="liveness" data-liveness={feed.freshness.state}>
@@ -120,7 +120,7 @@ export function TwinHeader({
         <div
           data-testid="live-readings"
           data-readout={readout.mode}
-          className={`flex items-center gap-4 ${
+          className={`flex flex-wrap items-center gap-x-4 gap-y-1 ${
             lastKnown ? "rounded border border-dashed border-muted-foreground/60 px-2 py-0.5 text-muted-foreground" : "text-foreground"
           }`}
         >
@@ -143,7 +143,10 @@ export function TwinHeader({
       </div>
 
       <div className="flex items-center gap-4">
-        <FeatureNav orientation="horizontal" />
+        {/* Phones get the bottom navigation instead (design-polish). */}
+        <div className="hidden sm:block">
+          <FeatureNav orientation="horizontal" />
+        </div>
         <Slot name="header-actions" className="flex items-center gap-2" />
         <button
           onClick={onOpenSearch}

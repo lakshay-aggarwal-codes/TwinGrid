@@ -53,7 +53,7 @@ export function SimulationPanel({ open, onClose, baseConfig, liveState, onGenera
     JSON.stringify(whatIfParams(cfgB)) === JSON.stringify(b.params);
 
   return (
-    <aside aria-label="Simulation Lab" className="w-80 border-r border-border bg-sidebar flex flex-col shrink-0">
+    <aside aria-label="Simulation Lab" className="w-80 max-sm:fixed max-sm:left-0 max-sm:top-0 max-sm:bottom-11 max-sm:z-40 max-sm:w-[min(20rem,calc(100vw-2rem))] max-sm:shadow-elevation-3 border-r border-border bg-sidebar flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h2 ref={headingRef} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground focus:outline-none">Simulation Lab</h2>
         <button onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Close simulation lab">

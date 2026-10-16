@@ -79,7 +79,24 @@ export default {
           purple: "hsl(var(--chart-purple))",
         },
       },
+      // Task 21 tokens. Type scale (new names only; Tailwind's own sizes are untouched), elevation and the page gutter.
+      fontSize: {
+        caption: ["0.6875rem", { lineHeight: "1rem" }],
+        meta: ["0.75rem", { lineHeight: "1rem" }],
+        body: ["0.875rem", { lineHeight: "1.375rem" }],
+        title: ["1.125rem", { lineHeight: "1.5rem" }],
+        display: ["1.5rem", { lineHeight: "2rem" }],
+      },
+      boxShadow: {
+        "elevation-1": "var(--elevation-1)",
+        "elevation-2": "var(--elevation-2)",
+        "elevation-3": "var(--elevation-3)",
+      },
+      spacing: {
+        gutter: "var(--gutter)",
+      },
       borderRadius: {
+        pill: "var(--radius-pill)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",

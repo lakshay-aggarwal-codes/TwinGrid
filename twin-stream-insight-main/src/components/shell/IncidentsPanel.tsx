@@ -64,7 +64,7 @@ export function IncidentsPanel({ open, onClose, onFocusFacility, latestAnomaly, 
   if (!open) return null;
 
   return (
-    <aside aria-label="Incidents" className="w-80 border-r border-border bg-sidebar flex flex-col shrink-0">
+    <aside aria-label="Incidents" className="w-80 max-sm:fixed max-sm:left-0 max-sm:top-0 max-sm:bottom-11 max-sm:z-40 max-sm:w-[min(20rem,calc(100vw-2rem))] max-sm:shadow-elevation-3 border-r border-border bg-sidebar flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h2 ref={headingRef} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground focus:outline-none">Incidents</h2>
         <button

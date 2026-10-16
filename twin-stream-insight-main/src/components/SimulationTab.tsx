@@ -4,6 +4,7 @@ import { ProvenanceStrip, buildProvenance } from '@/provenance';
 import { StateNotice } from '@/state/StateBoundary';
 import { formatBackendNumber, type HourlyData, type SimInputs } from '@/hooks/useSimulation';
 import { ChartFrame } from '@/components/charts/ChartFrame';
+import { CB, CHART_CHROME, MODE_COLORS } from '@/features/design-polish/chartPalette';
 
 // Backend `cooling_mode` vocabulary -> display label + colour. A value not listed here is shown as unrecognised;
 // it is never mapped to a known mode.
@@ -15,12 +16,12 @@ interface ModeStyle {
   pattern: PatternKind;
 }
 const MODES: Record<string, ModeStyle> = {
-  evaporative: { label: 'Evaporative', color: '#00E5FF', pattern: 'diagonal' },
-  closed_loop: { label: 'Closed-Loop', color: '#3B82F6', pattern: 'dots' },
-  free_air: { label: 'Free Air', color: '#22C55E', pattern: 'horizontal' },
-  hybrid: { label: 'Hybrid', color: '#F59E0B', pattern: 'cross' },
+  evaporative: { label: 'Evaporative', color: MODE_COLORS.evaporative, pattern: 'diagonal' },
+  closed_loop: { label: 'Closed-Loop', color: MODE_COLORS.closed_loop, pattern: 'dots' },
+  free_air: { label: 'Free Air', color: MODE_COLORS.free_air, pattern: 'horizontal' },
+  hybrid: { label: 'Hybrid', color: MODE_COLORS.hybrid, pattern: 'cross' },
 };
-const UNRECOGNISED: ModeStyle = { label: 'Unrecognised mode', color: '#64748b', pattern: 'vertical' };
+const UNRECOGNISED: ModeStyle = { label: 'Unrecognised mode', color: MODE_COLORS.unrecognised, pattern: 'vertical' };
 const modeOf = (raw: string): ModeStyle => (Object.prototype.hasOwnProperty.call(MODES, raw) ? MODES[raw] : UNRECOGNISED);
 
 const PATTERN_INK = 'rgba(2, 6, 23, 0.8)';
@@ -56,7 +57,7 @@ function ModeLegend({ uid, styles }: { uid: string; styles: ModeStyle[] }) {
             <defs>
               <ModePattern id={`${uid}-sw-${m.pattern}`} style={m} />
             </defs>
-            <rect width={14} height={14} rx={2} fill={`url(#${uid}-sw-${m.pattern})`} stroke="hsl(200,15%,55%)" strokeWidth={0.5} />
+            <rect width={14} height={14} rx={2} fill={`url(#${uid}-sw-${m.pattern})`} stroke={CHART_CHROME.axis} strokeWidth={0.5} />
           </svg>
           <span>{m.label}</span>
         </li>
@@ -83,7 +84,7 @@ const MODE_COLUMNS = [
 
 const RUN_VIEW = buildProvenance({ source: { kind: 'run-result' } });
 const STEP_AXIS = 'step (hours from start of simulated run)';
-const TOOLTIP_STYLE = { backgroundColor: 'hsl(213,50%,14%)', border: '1px solid hsl(213,30%,22%)', borderRadius: 8, color: '#e2e8f0' };
+const TOOLTIP_STYLE = CHART_CHROME.tooltip;
 
 interface Props {
   data: HourlyData[];
@@ -208,20 +209,20 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
       >
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data} margin={{ bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,30%,22%)" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_CHROME.grid} />
             <XAxis
               dataKey="step"
-              stroke="hsl(200,15%,55%)"
+              stroke={CHART_CHROME.axis}
               tick={{ fontSize: 11 }}
-              label={{ value: STEP_AXIS, position: 'insideBottom', offset: -12, style: { fill: 'hsl(200,15%,55%)', fontSize: 11 } }}
+              label={{ value: STEP_AXIS, position: 'insideBottom', offset: -12, style: { fill: CHART_CHROME.axis, fontSize: 11 } }}
             />
-            <YAxis yAxisId="power" stroke="hsl(200,15%,55%)" tick={{ fontSize: 11 }} label={{ value: 'kW', angle: -90, position: 'insideLeft', style: { fill: 'hsl(200,15%,55%)', fontSize: 11 } }} />
-            <YAxis yAxisId="temp" orientation="right" stroke="hsl(200,15%,55%)" tick={{ fontSize: 11 }} label={{ value: '°C', angle: 90, position: 'insideRight', style: { fill: 'hsl(200,15%,55%)', fontSize: 11 } }} />
+            <YAxis yAxisId="power" stroke={CHART_CHROME.axis} tick={{ fontSize: 11 }} label={{ value: 'kW', angle: -90, position: 'insideLeft', style: { fill: CHART_CHROME.axis, fontSize: 11 } }} />
+            <YAxis yAxisId="temp" orientation="right" stroke={CHART_CHROME.axis} tick={{ fontSize: 11 }} label={{ value: '°C', angle: 90, position: 'insideRight', style: { fill: CHART_CHROME.axis, fontSize: 11 } }} />
             <Tooltip contentStyle={TOOLTIP_STYLE} />
             <Legend verticalAlign="top" wrapperStyle={{ fontSize: 12 }} />
-            <Line yAxisId="power" type="monotone" dataKey="itPowerKw" name="IT Power" stroke="#F59E0B" strokeWidth={2} dot={false} />
-            <Line yAxisId="power" type="monotone" dataKey="coolingPowerKw" name="Cooling Power" stroke="#00E5FF" strokeWidth={2} strokeDasharray="6 3" dot={false} />
-            <Line yAxisId="temp" type="monotone" dataKey="outsideTempC" name="Outside Temp" stroke="#EF4444" strokeWidth={1.5} strokeDasharray="2 4" dot={false} />
+            <Line yAxisId="power" type="monotone" dataKey="itPowerKw" name="IT Power" stroke={CB.vermillion} strokeWidth={2} dot={false} />
+            <Line yAxisId="power" type="monotone" dataKey="coolingPowerKw" name="Cooling Power" stroke={CB.bluishGreen} strokeWidth={2} strokeDasharray="6 3" dot={false} />
+            <Line yAxisId="temp" type="monotone" dataKey="outsideTempC" name="Outside Temp" stroke={CB.reddishPurple} strokeWidth={1.5} strokeDasharray="2 4" dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </ChartFrame>
@@ -246,18 +247,18 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
                   <ModePattern key={m.pattern} id={patternId(uid, m)} style={m} />
                 ))}
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,30%,22%)" />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_CHROME.grid} />
               <XAxis
                 dataKey="step"
-                stroke="hsl(200,15%,55%)"
+                stroke={CHART_CHROME.axis}
                 tick={{ fontSize: 10 }}
-                label={{ value: STEP_AXIS, position: 'insideBottom', offset: -12, style: { fill: 'hsl(200,15%,55%)', fontSize: 10 } }}
+                label={{ value: STEP_AXIS, position: 'insideBottom', offset: -12, style: { fill: CHART_CHROME.axis, fontSize: 10 } }}
               />
-              <YAxis stroke="hsl(200,15%,55%)" tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#e2e8f0' }} labelStyle={{ color: '#94a3b8' }} />
+              <YAxis stroke={CHART_CHROME.axis} tick={{ fontSize: 10 }} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: CHART_CHROME.tooltipText }} labelStyle={{ color: CHART_CHROME.tooltipLabel }} />
               <Bar dataKey="waterConsumedL" name="Water consumed (L)">
                 {barData.map((d, i) => (
-                  <Cell key={i} fill={`url(#${patternId(uid, d.modeStyle)})`} />
+                  <Cell key={i} fill={`url(#${patternId(uid, d.modeStyle)})`} stroke={CHART_CHROME.outline} strokeWidth={1} />
                 ))}
               </Bar>
             </BarChart>
@@ -276,11 +277,11 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
             <PieChart>
               <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
                 {pieData.map((d, i) => (
-                  <Cell key={i} fill={d.color} />
+                  <Cell key={i} fill={d.color} stroke={CHART_CHROME.outline} strokeWidth={1} />
                 ))}
               </Pie>
               <Tooltip contentStyle={TOOLTIP_STYLE} />
-              <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />
+              <Legend wrapperStyle={{ fontSize: 11, color: CHART_CHROME.tooltipLabel }} />
             </PieChart>
           </ResponsiveContainer>
         </ChartFrame>
