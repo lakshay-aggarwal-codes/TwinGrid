@@ -23,8 +23,11 @@ assumption" -- see :func:`format_carbon_reduction`.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import threading
+from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -224,7 +227,7 @@ def _read_meta(path: Path) -> dict[str, Any]:
         return {}
 
 
-def load_carbon_signal(zone: str | None = None, *, path: Path | None = None) -> CarbonSignal:
+def _load_carbon_signal_uncached(zone: str | None = None, *, path: Path | None = None) -> CarbonSignal:
     """Load the cleaned carbon file as a :class:`CarbonSignal`, or the labelled flat fallback if it is absent.
 
     The file's semantic/license/version come ONLY from the sidecar ``carbon_intensity.meta.json``
@@ -310,10 +313,60 @@ def load_carbon_signal(zone: str | None = None, *, path: Path | None = None) -> 
     return sig
 
 
+# Task 24: every DigitalTwin() (one per /api/state call) reads and parses the cleaned carbon file. The result is a
+# pure function of the file bytes, the sidecar bytes, the zone and the site time zone, so it is memoised under
+# exactly that key (content hashes, not mtimes: a same-size rewrite within one clock tick is still seen). A missing
+# file is never cached (the labelled fallback and its warning behave as before). CarbonSignal is frozen; the curve
+# is handed out as a fresh copy, so no caller can corrupt the cached one.
+_LOAD_CACHE_MAX = 8
+_load_cache: "OrderedDict[tuple, tuple[CarbonSignal, np.ndarray]]" = OrderedDict()
+_load_cache_lock = threading.Lock()
+
+
+def _content_key(src: Path, zone: str | None) -> tuple | None:
+    try:
+        data = src.read_bytes()
+        meta_path = src.with_name(CARBON_META_FILENAME)
+        meta = meta_path.read_bytes() if meta_path.exists() else b""
+    except OSError:
+        return None
+    return (str(src), zone, site_timezone_name(), hashlib.sha256(data).digest(), hashlib.sha256(meta).digest())
+
+
+def _signal_and_curve(zone: str | None, path: Path | None) -> tuple[CarbonSignal, np.ndarray]:
+    src = Path(path) if path is not None else CLEANED_CARBON_PATH
+    key = _content_key(src, zone) if src.exists() else None
+    if key is not None:
+        with _load_cache_lock:
+            hit = _load_cache.get(key)
+            if hit is not None:
+                _load_cache.move_to_end(key)
+                return hit
+    sig = _load_carbon_signal_uncached(zone, path=path)
+    curve = sig.curve_by_site_local_hour
+    if key is not None:
+        with _load_cache_lock:
+            _load_cache[key] = (sig, curve)
+            while len(_load_cache) > _LOAD_CACHE_MAX:
+                _load_cache.popitem(last=False)
+    return sig, curve
+
+
+def clear_carbon_cache() -> None:
+    """Drop the memoised signals (tests, or an operator who wants a forced re-read)."""
+    with _load_cache_lock:
+        _load_cache.clear()
+
+
+def load_carbon_signal(zone: str | None = None, *, path: Path | None = None) -> CarbonSignal:
+    """Same contract as before (see :func:`_load_carbon_signal_uncached`); repeat loads of an unchanged file are memoised."""
+    return _signal_and_curve(zone, path)[0]
+
+
 def load_diurnal_carbon_intensity(zone: str | None = None) -> tuple[np.ndarray, bool]:
     """Backward-compatible ``(curve_by_site_local_hour, is_real)``. ``is_real == (not is_fallback)``.
 
     Prefer :func:`load_carbon_signal`: this tuple cannot say whether the data is average or marginal.
     """
-    sig = load_carbon_signal(zone)
-    return sig.curve_by_site_local_hour, not sig.is_fallback
+    sig, curve = _signal_and_curve(zone, None)
+    return curve.copy(), not sig.is_fallback
