@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useSimulation } from "@/hooks/useSimulation";
+import { clearActiveFeed, setActiveFeed } from "@/telemetry/activeFeed";
 import { createFeedStore } from "@/telemetry/feedStore";
 import { FeedStoreContext } from "@/telemetry/useFeed";
 import { SimulationContext } from "./simulationContext.ts";
@@ -15,7 +16,11 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [feed] = useState(() => createFeedStore());
   useEffect(() => {
     feed.start();
-    return () => feed.stop();
+    setActiveFeed(feed); // Task 20: lets the status bar (mounted outside this provider) read the same feed
+    return () => {
+      clearActiveFeed(feed);
+      feed.stop();
+    };
   }, [feed]);
 
   const value = useSimulation(feed);
