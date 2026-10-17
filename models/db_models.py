@@ -413,6 +413,52 @@ class OptimizerProposal(Base):
     decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
+class WorkOrder(Base):
+    """Task 28: a maintenance work order -- a RECORD that someone should look at an asset. Nothing is dispatched.
+
+    ``asset_external_id`` is a soft reference (the asset's ``external_id``), checked when the order is made. ``origin`` is
+    ``simulated`` when the order was raised from an alert or a health row (the data behind it is simulated), else
+    ``manual``.
+    """
+
+    __tablename__ = "work_orders"
+    __table_args__ = (
+        Index("ix_work_orders_status_created", "status", "created_at", "id"),
+        Index("ix_work_orders_asset_external_id", "asset_external_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    created_by: Mapped[str] = mapped_column(String(64), nullable=False)  # username, kept if the account is deleted
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    priority: Mapped[str] = mapped_column(String(16), nullable=False, default="medium")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="open")
+    assignee: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    asset_external_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    source_kind: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")  # manual | alert | health
+    source_ref: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)  # alert id, or "<asset>:<measurand>"
+    origin: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")
+
+
+class WorkOrderEvent(Base):
+    """Task 28: append-only history of one work order (created, status changes, edits)."""
+
+    __tablename__ = "work_order_events"
+    __table_args__ = (Index("ix_work_order_events_work_order_id", "work_order_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    work_order_id: Mapped[int] = mapped_column(ForeignKey("work_orders.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    actor: Mapped[str] = mapped_column(String(64), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)  # created | status | edit
+    from_status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    to_status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    assignee: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
 # =============================================================================
 # T9 -- Facility / asset model (migration M3)
 #
