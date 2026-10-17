@@ -46,10 +46,6 @@ async def list_proposals(session: AsyncSession, limit: int, status: Optional[str
     return list((await session.execute(stmt.limit(limit))).scalars().all())
 
 
-async def get_proposal(session: AsyncSession, proposal_id: int) -> Optional[OptimizerProposal]:
-    return await session.get(OptimizerProposal, proposal_id)
-
-
 async def decide(
     session: AsyncSession, proposal_id: int, *, decider: str, decision: str, note: Optional[str]
 ) -> Optional[OptimizerProposal]:

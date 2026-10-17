@@ -49,6 +49,7 @@ describe("feature registration", () => {
       "executive-dashboard",
       "explainability",
       "facility-inspector",
+      "fleet-view",
       "guided-tour",
       "maintenance",
       "optimizer-approvals",

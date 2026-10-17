@@ -53,6 +53,20 @@ def register(url: str) -> list[str]:
         return urls
 
 
+def replace(old: str, new: str) -> list[str]:
+    """Swap ``old`` for ``new`` in place (same position), atomically. ``KeyError`` if ``old`` is not registered,
+    ``ValueError`` if ``new`` already is (or equals ``old``). The caller validates ``new``."""
+    with _lock:
+        urls = _load()
+        if old not in urls:
+            raise KeyError(old)
+        if new == old or new in urls:
+            raise ValueError("new URL is already registered")
+        urls[urls.index(old)] = new
+        _save(urls)
+        return urls
+
+
 def unregister(url: str) -> list[str]:
     with _lock:
         urls = [u for u in _load() if u != url]

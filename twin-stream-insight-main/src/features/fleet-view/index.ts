@@ -8,6 +8,6 @@ const FleetPage = lazy(() => import("./FleetPage"));
 const feature: FeatureModule = {
   id: "fleet-view",
   route: { path: "/fleet", component: FleetPage },
-  nav: { label: "Fleet view", icon: Network, group: "Explore", order: 40, minRole: "viewer" },
+  nav: { label: "Fleet view", icon: Network, group: "Explore", order: 50, minRole: "viewer" },
 };
 export default feature;

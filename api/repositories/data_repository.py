@@ -21,27 +21,6 @@ from src.versions import active_physics_version
 _SIMULATED = "simulated"  # every writer in this module stores simulator output
 
 
-async def save_sensor_reading(
-    session: AsyncSession,
-    state_dict: dict[str, Any],
-    source: str,
-    simulation_run_id: int | None = None,
-    *,
-    physics_version: str | None = None,
-) -> None:
-    """Store one simulator state, stamped origin='simulated' and the physics version that produced it."""
-    session.add(
-        SensorReading.from_state_dict(
-            state_dict,
-            source,
-            simulation_run_id=simulation_run_id,
-            origin=_SIMULATED,
-            physics_version=physics_version or active_physics_version(),
-        )
-    )
-    await session.flush()
-
-
 async def save_sensor_readings_bulk(
     session: AsyncSession,
     records: list[dict[str, Any]],

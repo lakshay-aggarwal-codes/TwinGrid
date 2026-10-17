@@ -4,7 +4,7 @@ The authoritative record is `data/external/REGISTER.json` (schema in roadmap 14.
 
 ## Licence policy
 
-- Every entry is `license_status: unverified` and `redistribution: not_permitted` until a person records `terms_url`, `terms_retrieved_at` and `terms_sha256` (roadmap A-4). No tool or script sets `verified`.
+- Every entry is `license_status: unverified` and `redistribution: not_permitted` until a person records `terms_url`, `terms_retrieved_at` and `terms_sha256` (roadmap A-4). No tool or script sets `verified`. **No licence is verified** today.
 - Unknown redistribution is treated as `not_permitted`.
 - No entry has any licence evidence recorded yet, so **this repository makes no licence, reuse or redistribution statement about any dataset below.** Licence wordings in earlier manifests (for example "CC BY 4.0", "open data", AGPL-3.0, "free for research/education use") are unverified claims and are not repeated here.
 - `retrieved_at` in the register is the earliest file modification time in the manifest scan, not a recorded download time.
@@ -48,3 +48,5 @@ Not allowed: any licence statement not backed by recorded evidence; RP-1043 as c
 ## Closing a licence gap
 
 For one dataset: open the dataset's terms page, then record `terms_url`, `terms_retrieved_at` and the SHA-256 of the saved terms text in its register entry. Set `license_status` to `verified` only if the terms support the permitted use, and set `redistribution` from the terms. Then run `python scripts/check_register.py`.
+
+To compute the SHA-256 of the saved terms text on Windows PowerShell: `Get-FileHash -Algorithm SHA256 .\terms.txt` (use the `Hash` value, lower-case, as `terms_sha256`).

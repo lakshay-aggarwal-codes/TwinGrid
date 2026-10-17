@@ -57,10 +57,6 @@ def next_statuses(current: str) -> tuple[str, ...]:
     return TRANSITIONS.get(current, ())
 
 
-def can_read(role: str | None) -> bool:
-    return role in ("viewer", "operator", "admin")
-
-
 def can_write(role: str | None) -> bool:
     """Create and update: operator or admin. A viewer reads only."""
     return role in ("operator", "admin")

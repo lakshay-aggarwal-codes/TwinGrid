@@ -14,6 +14,14 @@ from src.digital_twin import CoolingMode, DigitalTwin
 from src.lstm_model import DataPipeline
 
 
+@pytest.fixture(autouse=True)
+def _isolated_webhook_delivery_log(tmp_path, monkeypatch):
+    """Task 29: a real webhook delivery is logged to a file (src/webhook_deliveries.py). Keep it out of the repo's data/."""
+    from src import webhook_deliveries
+
+    monkeypatch.setattr(webhook_deliveries, "LOG_PATH", tmp_path / "webhook_deliveries.json")
+
+
 @pytest.fixture
 def sample_sensor_data():
     """Create sample sensor data for testing."""
