@@ -1,12 +1,14 @@
 # Digital Twin Performance Optimization
 
+> **Status (Task 33):** the timings below are from an earlier session on one machine and were not re-measured for this repository state. They time the *simulator only*. They say nothing about a real facility, and nothing here supports calling the system "production-ready" or "real-time" for monitoring one. The "accuracy" below means identical output to the unoptimised simulator, not agreement with reality. See `docs/CLAIMS.md` (C-20) for the performance claims that are backed by a script.
+
 ## Overview
 
-The DigitalTwin simulation has been optimized from **45 seconds** to **0.003 seconds** for a 24-hour simulation (288 steps), achieving a **1,360x speedup** that enables real-time dashboard performance.
+The DigitalTwin simulation has been optimized from **45 seconds** to **0.003 seconds** for a 24-hour simulation (288 steps), achieving a **1,360x speedup** that is fast enough to step the simulator once per second in the dashboard (earlier session, one machine).
 
 ## Performance Results
 
-| Implementation | 24-hour Simulation | Speedup | Real-time Ready |
+| Implementation | 24-hour Simulation | Speedup | Fast enough for 1 s steps (earlier session) |
 |----------------|-------------------|---------|----------------|
 | Original | 3.844 seconds | 1x | ❌ No |
 | Optimized (single steps) | 0.003 seconds | 1,360x | ✅ Yes |
@@ -49,7 +51,7 @@ The DigitalTwin simulation has been optimized from **45 seconds** to **0.003 sec
 
 ## Usage
 
-### For Maximum Performance (Real-time Dashboard)
+### For maximum speed (per-second dashboard stepping)
 ```python
 from src.digital_twin_optimized import DigitalTwinOptimized
 
@@ -87,9 +89,9 @@ twin = DigitalTwin()  # Same API, much faster
 - **Individual IT Power (1000 values)**: 0.001066 seconds
 - **Speedup**: >1000x
 
-### Real-time Simulation
+### Per-second stepping
 - **Single step processing**: 0.000 ms (sub-millisecond)
-- **10 steps with 1-second intervals**: Real-time capable
+- **10 steps with 1-second intervals**: Fast enough for 1 s steps (simulator only)
 - **288 steps (24 hours)**: 0.005 seconds total
 
 ## API Compatibility
@@ -145,7 +147,7 @@ def _compute_water_consumption_fast(cooling_power_kw, evap_rate, outside_temp_C,
 
 ### Production Dashboard
 ```python
-# Recommended configuration for production
+# Suggested configuration for the demo dashboard
 twin = DigitalTwinOptimized(
     enable_logging=False,  # Maximum performance
     max_it_power_kw=500.0,
@@ -155,7 +157,7 @@ twin = DigitalTwinOptimized(
 # Use batch processing for historical data
 historical_states = twin.step_batch(historical_actions)
 
-# Use single steps for real-time updates
+# Use single steps for per-second updates
 current_state = twin.step(real_time_action)
 ```
 
@@ -178,7 +180,7 @@ Potential further improvements:
 
 ## Validation
 
-All optimizations maintain **physics accuracy**:
+All optimizations reproduce the unoptimised simulator's output (this is agreement with the simulator, not with a real facility):
 - Energy balance: Q = ṁ·cp·ΔT ✓
 - PUE calculations ✓
 - WUE calculations ✓
@@ -191,9 +193,9 @@ All optimizations maintain **physics accuracy**:
 
 The DigitalTwin optimization successfully achieves:
 - ✅ **Sub-2 second** 24-hour simulation target
-- ✅ **Real-time dashboard** capability
+- ✅ Fast enough to step once per second in the simulated dashboard
 - ✅ **100% API compatibility**
-- ✅ **Maintained physics accuracy**
+- ✅ Output matches the unoptimised simulator (not validated against any facility)
 - ✅ **Reduced resource usage**
 
-The system is now ready for production deployment in real-time monitoring dashboards.
+This is a speed result for the simulator. It is not evidence that the system is ready for production use or for monitoring a real facility.

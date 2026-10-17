@@ -1,6 +1,0 @@
-﻿py : C:\Users\Lakshay\AppData\Local\Python\pythoncore-3.12-64\python.exe: No module named pytest
-At line:1 char:1
-+ py -3.12 -m pytest -q tests\test_ig05_*.py tests\api 2>&1 | Out-File  ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (C:\Users\Laksha...le named pytest:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
