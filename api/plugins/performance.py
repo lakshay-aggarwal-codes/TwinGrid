@@ -23,10 +23,6 @@ _cache: ResponseCache | None = None
 _originals: dict[str, Any] = {}
 
 
-def get_cache() -> ResponseCache | None:
-    return _cache
-
-
 def _flag(name: str, default: str = "1") -> bool:
     return os.getenv(name, default).strip().lower() not in ("0", "false", "no", "off", "")
 

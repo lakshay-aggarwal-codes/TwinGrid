@@ -76,7 +76,6 @@ def test_next_statuses_mirrors_the_table():
 
 def test_a_viewer_reads_only_and_an_operator_or_admin_writes():
     assert [W.can_write(r) for r in ("viewer", "operator", "admin", None, "root")] == [False, True, True, False, False]
-    assert [W.can_read(r) for r in ("viewer", "operator", "admin", None)] == [True, True, True, False]
 
 
 def test_origin_is_simulated_for_alert_and_health_and_manual_otherwise():

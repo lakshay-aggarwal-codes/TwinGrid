@@ -20,10 +20,14 @@ def _parse_origins(raw: str | None) -> list[str]:
             # different frontend, and requests from it will be silently
             # rejected by the browser with a confusing CORS error) or, worse,
             # masks someone forgetting to set CORS_ALLOWED_ORIGINS at all.
-            raise RuntimeError(
-                "CORS_ALLOWED_ORIGINS is not set and ENVIRONMENT=production. Set it "
-                "explicitly to a comma-separated list of allowed frontend origins, e.g.: "
-                "CORS_ALLOWED_ORIGINS=https://your-frontend.example.com"
+            # Task 32: a StartupConfigError (names only; still a RuntimeError, so older callers keep working), as
+            # tests/test_startup_checks.py expects. Imported here, not at module level, to keep config import-light.
+            from api.startup_checks import StartupConfigError
+
+            raise StartupConfigError(
+                ["CORS_ALLOWED_ORIGINS"],
+                "It is not set and ENVIRONMENT=production. Set it explicitly to a comma-separated list of "
+                "allowed frontend origins, e.g.: CORS_ALLOWED_ORIGINS=https://your-frontend.example.com",
             )
         # Fallback to the one known deployed frontend rather than "*" --
         # still a single hardcoded default, but a scoped one, not a

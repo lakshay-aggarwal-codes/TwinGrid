@@ -172,19 +172,9 @@ async def get_open_pose(session: AsyncSession, asset_id: int) -> Optional[AssetP
     return (await session.execute(stmt)).scalars().first()
 
 
-async def get_pose_as_of(session: AsyncSession, asset_id: int, as_of: datetime) -> Optional[AssetPose]:
-    stmt = select(AssetPose).where(AssetPose.asset_id == asset_id, _in_force(AssetPose, utc(as_of)))
-    return (await session.execute(stmt)).scalars().first()
-
-
 async def get_pose_by_valid_from(session: AsyncSession, asset_id: int, valid_from: datetime) -> Optional[AssetPose]:
     stmt = select(AssetPose).where(AssetPose.asset_id == asset_id, AssetPose.valid_from == utc(valid_from))
     return (await session.execute(stmt)).scalars().first()
-
-
-async def list_poses(session: AsyncSession, asset_id: int) -> list[AssetPose]:
-    stmt = select(AssetPose).where(AssetPose.asset_id == asset_id).order_by(AssetPose.valid_from)
-    return list((await session.execute(stmt)).scalars().all())
 
 
 async def latest_closed_pose_end(session: AsyncSession, asset_id: int) -> Optional[datetime]:
@@ -361,12 +351,3 @@ async def insert_sensor(
     session.add(row)
     await session.flush()
     return row
-
-
-async def list_sensors_for_asset(
-    session: AsyncSession, asset_id: int, *, include_retired: bool = False
-) -> Sequence[Sensor]:
-    stmt = select(Sensor).where(Sensor.asset_id == asset_id)
-    if not include_retired:
-        stmt = stmt.where(Sensor.retired_at.is_(None))
-    return list((await session.execute(stmt.order_by(Sensor.id))).scalars().all())

@@ -39,7 +39,6 @@ describe("feature registration", () => {
   it("ships exactly the features listed here (the example lives under src/test)", () => {
     // Task 5 added the first shipped feature. Add an id to this list when a later task ships another one.
     expect(featureRegistry.features.map((f) => f.id)).toEqual([
-      "admin-console",
       "alerts-centre",
       "app-states",
       "capacity",
@@ -50,6 +49,7 @@ describe("feature registration", () => {
       "executive-dashboard",
       "explainability",
       "facility-inspector",
+      "fleet-view",
       "guided-tour",
       "maintenance",
       "optimizer-approvals",

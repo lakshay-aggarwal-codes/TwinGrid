@@ -149,6 +149,3 @@ async def edit_order(
         )
         await session.flush()
     return row, changed
-
-
-UNSET = _UNSET
