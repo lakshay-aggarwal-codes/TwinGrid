@@ -109,10 +109,10 @@ celerybeat.pid
 .venv
 .venv/
 .venv*/
-env/
+/env/
 venv/
 ENV/
-env*/
+/env*/
 venv*/
 ENV*/
 digital_twin/venv/
@@ -242,7 +242,7 @@ secrets.json
 .streamlit/
 
 # TensorBoard
-runs/
+/runs/
 tensorboard_logs/
 
 # Weights & Biases
@@ -264,7 +264,7 @@ mlartifacts/
 *.pyo
 *.pyd
 .Python
-env/
+/env/
 pip-log.txt
 pip-delete-this-directory.txt
 .tox/
@@ -308,7 +308,7 @@ wheels/
 
 # Virtual environments
 venv*/
-env*/
+/env*/
 ENV*/
 
 # PyCharm

@@ -1,0 +1,149 @@
+{
+  "experiment": "toy",
+  "figures": {
+    "mean_pue_by_policy": {
+      "series": {
+        "mean_pue": [
+          1.09251284287,
+          1.10097289234
+        ]
+      },
+      "title": "Mean PUE by policy",
+      "type": "bar",
+      "x": [
+        "constant",
+        "rule"
+      ],
+      "x_label": "policy",
+      "y_label": "mean PUE"
+    },
+    "pue_by_seed": {
+      "series": {
+        "constant": [
+          1.07473195106,
+          1.10126930828,
+          1.10153726928
+        ],
+        "rule": [
+          1.07638767384,
+          1.11074531248,
+          1.1157856907
+        ]
+      },
+      "title": "Mean PUE per seed",
+      "type": "line",
+      "x": [
+        "11",
+        "22",
+        "33"
+      ],
+      "x_label": "seed",
+      "y_label": "mean PUE"
+    }
+  },
+  "notes": [
+    "Synthetic scenarios and a made-up cooling formula; this experiment only exercises the reproducibility framework."
+  ],
+  "schema": "twingrid-results/1",
+  "seeds": [
+    11,
+    22,
+    33
+  ],
+  "summary": {
+    "episodes_total": 18,
+    "mean_pue_constant": 1.09251284287,
+    "mean_pue_difference_rule_minus_constant": 0.00846004946613,
+    "mean_pue_rule": 1.10097289234
+  },
+  "tables": {
+    "paired_difference": {
+      "columns": [
+        "episodes",
+        "mean_difference",
+        "std_difference",
+        "episodes_rule_better"
+      ],
+      "rows": [
+        [
+          18,
+          0.00846004946613,
+          0.010356433403,
+          2
+        ]
+      ],
+      "title": "Paired PUE difference, rule minus constant"
+    },
+    "per_seed": {
+      "columns": [
+        "seed",
+        "policy",
+        "mean_pue",
+        "mean_water"
+      ],
+      "rows": [
+        [
+          11,
+          "constant",
+          1.07473195106,
+          0.2
+        ],
+        [
+          11,
+          "rule",
+          1.07638767384,
+          0.17791677309
+        ],
+        [
+          22,
+          "constant",
+          1.10126930828,
+          0.2
+        ],
+        [
+          22,
+          "rule",
+          1.11074531248,
+          0.191001065126
+        ],
+        [
+          33,
+          "constant",
+          1.10153726928,
+          0.2
+        ],
+        [
+          33,
+          "rule",
+          1.1157856907,
+          0.198120011551
+        ]
+      ],
+      "title": "Mean PUE and water per seed"
+    },
+    "policy_summary": {
+      "columns": [
+        "policy",
+        "mean_pue",
+        "std_pue_across_seeds",
+        "mean_water"
+      ],
+      "rows": [
+        [
+          "constant",
+          1.09251284287,
+          0.0153992868684,
+          0.2
+        ],
+        [
+          "rule",
+          1.10097289234,
+          0.0214400578298,
+          0.189012616589
+        ]
+      ],
+      "title": "Policy summary across seeds"
+    }
+  },
+  "title": "Toy dummy-policy experiment"
+}
