@@ -1,0 +1,55 @@
+# Claims ledger
+
+Every public claim about TwinGrid (README, demo script, slides) is one row here, with a status, the file that backs it and
+the boundary of what it means. A claim with no evidence is not in the README. `tests/test_task33_claims.py` checks that
+every evidence path exists, every README claim id is in this table, and the overclaim words below are not used.
+
+**Statuses:** `fact` (true of the code or files, checkable by reading them) · `result` (a number from a run, with its limits) ·
+`assumption` (something the simulator takes as given) · `hypothesis` (a target nobody has measured) · `future` (not built).
+
+| ID | Claim | Status | Evidence | Boundary |
+|---|---|---|---|---|
+| C-01 | TwinGrid is a simulation-based data-centre digital-twin platform: every number it shows comes from its own simulator. | fact | `docs/model_cards/DATA_TRUTH.md`, `src/digital_twin.py` | Not a twin of any real facility; no real measurements are used. |
+| C-02 | It is not connected to any real facility (no BACnet, Modbus or SNMP) and controls no equipment. | fact | `docs/architecture/system.md`, `docs/architecture/extension_points.md` | Approvals and recommendations are records in a database; nothing is sent anywhere. |
+| C-03 | The physics uses engineering values that are not calibrated to any facility. | assumption | `docs/PHYSICS_V2.md`, `docs/architecture/system.md` | Results describe the simulator's own behaviour. Two parameter generations exist (`legacy-0` and `1`). |
+| C-04 | Carbon is a flat assumed 475 gCO2/kWh unless a carbon file is loaded; none ships. | assumption | `docs/model_cards/DATA_TRUTH.md`, `src/carbon_provider.py` | Carbon figures and anything ranked by them reflect energy use, not a real grid. |
+| C-05 | The interface labels data as simulated (origin badges, simulated wording, report banner). | fact | `twin-stream-insight-main/src/provenance/labels.ts`, `twin-stream-insight-main/docs/frontend/PROVENANCE_AND_FRESHNESS.md`, `api/services/esg_report_service.py` | The label shows what the backend declares; an unknown origin reads "Unverified source". |
+| C-06 | The thermal forecaster scored an RMSE of 0.523 °C and MAE of 0.421 °C, 30 minutes ahead, on held-out simulator data. | result | `docs/model_cards/forecaster.md`, `models/registry.json` | One run, no seed on file, no baseline, no evaluation record; says nothing about real hardware. |
+| C-07 | The anomaly detector scored F1 0.96 on held-out simulator rows. | result | `docs/model_cards/anomaly_detector.md`, `models/registry.json` | The threshold was tuned on the same rows, so the figure is optimistic; the event-level evaluation has not been run. |
+| C-08 | The one PPO policy that was scored was worse than the rule baseline and is quarantined; five newer candidates are trained but not evaluated. No claim is made that the optimizer saves energy. | result | `docs/model_cards/ppo_optimizer.md`, `models/registry.json`, `reports/policy_evaluation/baselines_only_0fcafef9d28fd539/results.json` | The only decision report is `NOT_EVALUATED` with no claim allowed; a fixed setting beat the rule baseline there. |
+| C-09 | A Model Passport shows each model's registry status, whether the API may load it, and its limitations. | fact | `api/plugins/explainability.py`, `src/model_passport.py`, `docs/model_cards/LIMITATIONS.md` | It reports what the registry and cards say; it does not re-evaluate anything. |
+| C-10 | The live dashboard has an interactive 3D facility view with hover and click inspection of racks. | fact | `twin-stream-insight-main/src/features/facility-inspector/index.ts` | A simulated facility layout; not exercised in a real browser session by the author. |
+| C-11 | Replay lets a user scrub back through stored telemetry and alerts, at several speeds. | fact | `twin-stream-insight-main/src/features/replay/index.ts` | Only shows data that was stored; the simulator alone writes little stored telemetry. |
+| C-12 | The what-if lab runs the simulator under changed load, ambient temperature, setpoint or cooling mode and shows the differences, with a one-at-a-time sensitivity sweep. | fact | `src/whatif_sweep.py`, `twin-stream-insight-main/src/features/what-if-lab/index.ts` | Differences between two simulated runs, not forecasts of a real site. |
+| C-13 | An executive dashboard shows PUE, energy, carbon and a comparison against a baseline controller, with plain-language insights. | fact | `twin-stream-insight-main/src/features/executive-dashboard/index.ts` | Simulated figures; the savings line carries the evaluation caveat. |
+| C-14 | An alerts centre supports an incident workflow: status, assignee and notes, with an audit trail. | fact | `api/plugins/alerts_workflow.py`, `src/alert_workflow.py`, `twin-stream-insight-main/src/features/alerts-centre/index.ts` | Works on simulator-raised alerts. |
+| C-15 | The optimizer page shows a rule-based baseline recommendation and a sandbox, and records proposals that an admin (never the proposer) approves or rejects. | fact | `api/plugins/optimizer_proposals.py`, `src/baseline_recommendation.py`, `twin-stream-insight-main/src/features/optimizer-approvals/index.ts` | An approval is a stored decision; no equipment is changed. The PPO panel states when no policy is promoted. |
+| C-16 | A command palette (Ctrl or Cmd + K) and a guided Story Mode tour are available, and a status bar shows connection state, last-update age and data origin. | fact | `twin-stream-insight-main/src/features/command-palette/index.ts`, `twin-stream-insight-main/src/features/guided-tour/index.ts`, `twin-stream-insight-main/src/features/app-states/index.ts` | Layout at small widths was not checked in a browser. |
+| C-17 | A fleet view ranks five simulated sites by PUE, carbon and simulated alert conditions. | fact | `api/plugins/fleet.py`, `src/fleet/ranking.py`, `twin-stream-insight-main/src/features/fleet-view/index.ts` | The sites are parameter sets of the same simulator; "alert conditions" are rule checks, not recorded alerts. |
+| C-18 | A printable report page and CSV or file export are available for alerts, telemetry history and what-if results; the PDF report opens with a simulated-data banner. | fact | `twin-stream-insight-main/src/features/reports-export/index.ts`, `api/services/esg_report_service.py` | Run exports are not done (`docs/tasks/Task22_REPORT.md`). |
+| C-19 | The live feed reconnects with jitter, back-fills gaps from the history API and pauses rendering in a hidden tab. | fact | `twin-stream-insight-main/src/features/realtime-resilience/index.ts`, `docs/tasks/Task23_REPORT.md` | Unit-tested; not load-tested or run against a flaky network. |
+| C-20 | Backend performance work is in place: ETag/304 and gzip on read-only GETs, a memoised carbon-file load, two list indexes, and an opt-in Redis response cache. | fact | `api/plugins/performance.py`, `scripts/bench_task24.py`, `docs/tasks/Task24_REPORT.md` | Micro-benchmarks only (the carbon load went from about 30 ms to 0.2 ms on a synthetic file); no Redis, HTTP or database timing; no SLO claim. |
+| C-21 | Sign-in uses short-lived tokens with rotating refresh tokens and three roles: viewer, operator, admin. | fact | `api/auth.py` | Not penetration-tested; see C-22. |
+| C-22 | Security headers, single-use WebSocket tickets and login lockout are configured and unit-tested. | fact | `api/plugins/security.py`, `api/plugins/ws_tickets.py`, `api/plugins/login_lockout.py`, `docs/security/THREAT_MODEL.md` | No independent security audit. |
+| C-23 | Logs are structured with request ids and secret redaction, and the browser can report its own errors to the API. | fact | `src/log_redaction.py`, `api/plugins/client_errors.py` | Configured and tested; no production log pipeline exists. |
+| C-24 | Seven runbooks cover common failures (API down, database down, stale feed, high 5xx and others). | fact | `docs/runbooks/README.md` | Written, never used in a real incident. |
+| C-25 | The availability, error, latency and freshness targets in `docs/SLO.md` are hypotheses that have not been measured. | hypothesis | `docs/SLO.md` | Nothing in the repository claims they are met. |
+| C-26 | One command starts a demo with seeded simulated data and three demo accounts (viewer, operator, admin). | fact | `scripts/demo.ps1`, `scripts/demo.sh`, `scripts/demo_seed.py`, `docker-compose.demo.yml` | Needs Docker; the run time was not measured; demo passwords are printed once. |
+| C-27 | A release pipeline, code scanning, secret scanning and an SBOM job are configured. | fact | `.github/workflows/release.yml`, `.github/workflows/codeql.yml`, `.github/workflows/secret-scan.yml`, `.github/workflows/sbom.yml`, `docs/release/RELEASE_PROCESS.md` | Configured, never run on a real release tag; "scanning configured", not "scanning passing". |
+| C-28 | The database schema is managed by Alembic migrations with a single head, checked by a test. | fact | `tests/test_alembic_chain.py`, `audit_alembic_graph.py`, `alembic/versions` | Not run against a managed Postgres. |
+| C-29 | The API reference can be regenerated from the code. | fact | `scripts/gen_api_reference.py` | The generated files are checked by a test when `docs/api/` is committed. |
+| C-30 | Accessibility fixes were applied in code (focus, labels, reduced motion, contrast tokens). The product is not claimed to be WCAG-compliant. | fact | `docs/tasks/Task21_REPORT.md`, `twin-stream-insight-main/docs/frontend/STATUS.md` | No axe run or screen-reader sign-off has been recorded. |
+| C-31 | The frontend performance budgets have not been measured. | hypothesis | `twin-stream-insight-main/docs/frontend/perf/FE-20.md` | Harness only. |
+| C-32 | Backend and frontend automated tests exist and CI is configured to run them. | fact | `tests`, `twin-stream-insight-main/package.json`, `.github/workflows/ci.yml` | A green run of the whole suite on the current tree was not seen by the author of this ledger. |
+| C-33 | Real facility integration, multi-tenancy, SOC 2, Kubernetes, multi-region and real 3D facility import are not built. | future | `docs/architecture/system.md` | Each needs infrastructure, hardware or a product decision this repository does not have. |
+| C-34 | These have not been confirmed by a recorded run: the full test suite on this tree, the PDF report render, an asynchronous optimize job through the worker, migrations on a managed PostgreSQL, and any real deployment. | fact | `twin-stream-insight-main/docs/frontend/STATUS.md`, `docs/tasks/Task24_REPORT.md` | Absence of a recorded run, not a known failure. |
+
+## Words this project does not use without new evidence
+
+<!-- banned-terms:start -->
+production-ready · validated (without "simulator-") · real-time (about monitoring a real facility) · calibrated ·
+digital twin of a real facility · optimal · AI-optimized · state-of-the-art
+<!-- banned-terms:end -->
+
+Allowed: "simulated", "simulator result", "uncalibrated", "not evaluated", "candidate", and at most "simulator-validated
+candidate" after a passing decision gate (`reports/policy_evaluation/PREREGISTRATION.md`).

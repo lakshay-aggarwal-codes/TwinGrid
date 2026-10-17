@@ -1,92 +1,107 @@
 # TwinGrid
 
-A data-centre digital twin: FastAPI backend simulating IT/cooling power,
-water use, and carbon impact, with an LSTM thermal forecaster, an
-autoencoder anomaly detector, and a PPO reinforcement-learning cooling
-optimizer. Postgres via SQLAlchemy/Alembic. React+Vite+Three.js dashboard
-(under active development — see that directory's own state, not covered by
-this document).
+**A simulation-based data-centre digital-twin platform.** [C-01] Every number it shows comes from its own simulator. See the
+[claims ledger](docs/CLAIMS.md): each `[C-nn]` tag below is a row there with its evidence and its boundary.
 
-> **Architecture documents:** `docs/architecture/system.md` and
-> `docs/architecture/data_flow.md` are the single description of how the system
-> is built, verified against the code. An older document set (a 20-phase build
-> with real Electricity Maps carbon data and a `src/digital_twin_documented.py`
-> module) described a state this repository does not have and was removed (Task 4):
-> `data/cleaned/carbon_intensity.csv` does not exist, `digital_twin_documented.py`
-> does not exist, and the code uses a flat 475 gCO2/kWh carbon assumption at
-> runtime. If you find a claim in the docs that is wrong, that is a bug in the
-> docs; open an issue against it as you would against code.
+## What it is, and what it is not
 
-## What's actually true right now
+- It simulates a data centre's IT and cooling power, water use and carbon with a FastAPI backend, and shows it in a React and Three.js dashboard. [C-01]
+- Its physics uses engineering values that are not calibrated to any facility. [C-03]
+- Carbon uses a flat assumed 475 gCO2/kWh unless a carbon file is loaded; none ships. [C-04]
+- The interface labels data as simulated. [C-05]
+- It is not connected to any real facility and controls no equipment. [C-02]
+- It does not claim that its machine-learning models work on real hardware: they are trained and scored on simulator data. [C-06] [C-07] [C-08]
+- Real facility integration, multi-tenancy, SOC 2, Kubernetes, multi-region and real 3D facility import are not built. [C-33]
 
-**Physics** (`src/digital_twin.py`): chiller COP depends on the
-chilled-water setpoint for `CLOSED_LOOP`/`HYBRID` modes; airflow scales
-with IT load (`effective_air_flow_m3_s`). Both `DigitalTwin.step()` (live)
-and `src/data_generator.py` (historical dataset) call the same physics
-methods — keeping these in sync matters; see `docs/architecture/system.md`.
+## Architecture
 
-**ML models** (`models/`): forecaster (LSTM), anomaly detector
-(autoencoder, evaluated on a held-out chronological split, not the
-training set), PPO cooling optimizer (trained across 3 seeds, reports
-mean ± 95% CI PUE improvement vs. the rule-based baseline). Retrain with
-`python notebooks/train_all.py`; it should also write
-`models/registry.json` with lineage/metrics for each run — if that file
-is missing after a run, something didn't complete, check the console
-output. See `docs/model_cards/` for intended use, training data, and
-known limitations of each model — in particular, **all three are trained
-on synthetic data from this repo's own simulator, not real facility
-data**, so their metrics measure fit to the simulator, not real-world
-generalization.
+```mermaid
+flowchart LR
+  subgraph Browser
+    UI[React + Three.js dashboard]
+  end
+  subgraph API[FastAPI backend]
+    R[Routes and plugins]
+    SIM[Digital twin simulator]
+    ML[Model registry: forecaster, anomaly detector, PPO]
+  end
+  DB[(PostgreSQL)]
+  RQ[(Redis and worker)]
+  UI -- REST + WebSocket --> R
+  R --> SIM
+  R --> ML
+  R --> DB
+  R --> RQ
+```
 
-**Carbon intensity**: flat 475 gCO2/kWh fallback everywhere. Real
-Electricity Maps ingestion exists as code (`src/ingestion/carbon_electricity_maps.py`,
-`scripts/run_ingestion.py`) but hasn't been run to produce
-`data/cleaned/carbon_intensity.csv` in this repo state — until it has,
-treat carbon figures anywhere in the product (including the ESG report)
-as illustrative.
+Details: [system](docs/architecture/system.md), [data flow](docs/architecture/data_flow.md), [extension points](docs/architecture/extension_points.md).
 
-**API** (`api/`): FastAPI, JWT auth with short-lived access tokens +
-rotating refresh tokens (`api/auth.py`, `api/secrets.py` for
-file-based-secret support), audit logging on sensitive actions
-(`api/services/audit_service.py`), rate limiting, Prometheus `/metrics`.
-Swagger UI at `/docs`, ReDoc at `/redoc`. Endpoints span live state,
-simulation, optimization (sync + async via RQ/Redis), anomaly scoring +
-webhooks, shadow-mode PPO-vs-baseline logging, an ESG PDF report, and
-PUE industry benchmarking. See `docs/architecture/data_flow.md` for the
-live-request sequence and `docs/adr/` for why some of these were built
-the way they were.
+## Quickstart (not timed)
 
-**Deployment**: `docker compose up` locally only (`db`, `redis`, `worker`,
-`backend` services). **Never deployed to an actual platform.** Migrations:
-5 revisions, chain verified intact (`alembic/versions/`), never run
-against a live/managed Postgres.
+Needs Docker Desktop. On Windows PowerShell, from the repository root:
 
-## Setup
+```powershell
+.\scripts\demo.ps1 -WithFrontend
+```
 
-See `CONTRIBUTING.md` for local setup, training the models, and
-pre-PR checks.
+It creates `.env.demo` with random local secrets, starts the database, cache and API, seeds simulated data, and prints the
+URLs and three demo logins (the passwords are printed once). The API is on `http://localhost:8000` and the dashboard on
+`http://localhost:8080`. [C-26] On macOS or Linux use `scripts/demo.sh`. The first run builds an image; how long it takes was
+not measured.
 
-## Status / what's unverified
+Without Docker, the manual path is in [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`DEPLOYMENT.md`](DEPLOYMENT.md): install
+`requirements.txt`, run `alembic upgrade head`, start `uvicorn api.main:app`, then in `twin-stream-insight-main` run `npm ci`
+and `npm run dev` with `VITE_API_BASE_URL` set (see `twin-stream-insight-main/.env.example`).
 
-This codebase has had a lot of code written and reviewed, but large parts
-have not been run end-to-end by anyone yet:
+## Feature tour
 
-- `pytest tests/ -q` (including `tests/test_security_hardening.py`) —
-  needs to actually be run and confirmed green.
-- `pip install reportlab` and `/api/esg_report` — untested render.
-- `redis`+`rq` + `docker compose up` + confirming a
-  `POST /api/optimize/train_async` job actually gets picked up by the
-  `worker` service.
-- `alembic upgrade head` against a real (not local docker) Postgres.
-- Any real deploy.
+<!-- screenshots: add images under docs/img/ and link them next to each bullet -->
 
-Don't treat anything in this repo as "done" until one of the above has
-actually confirmed it.
+- **Live twin and 3D inspector:** hover and click racks in a simulated facility. [C-10] <!-- screenshot: live twin -->
+- **Story Mode, command palette and status bar:** a guided tour, Ctrl or Cmd + K, and a bar showing connection, last update and data origin. [C-16] <!-- screenshot: story mode -->
+- **What-if lab:** change load, ambient temperature, setpoint or cooling mode and see the simulated difference and a sensitivity sweep. [C-12] <!-- screenshot: what-if lab -->
+- **Replay:** scrub back through stored telemetry and alerts. [C-11] <!-- screenshot: replay -->
+- **Executive dashboard:** PUE, energy, carbon and a baseline comparison with plain-language insights. [C-13] <!-- screenshot: executive dashboard -->
+- **Alerts centre:** incident workflow with status, assignee, notes and an audit trail. [C-14] <!-- screenshot: alerts centre -->
+- **Model Passport:** each model's status and limitations. [C-09] <!-- screenshot: model passport -->
+- **Optimizer and approvals:** a rule-based recommendation, a sandbox, and admin approval of proposals; nothing is applied to equipment. [C-15] <!-- screenshot: optimizer -->
+- **Fleet view:** five simulated sites ranked by PUE, carbon and simulated alert conditions. [C-17] <!-- screenshot: fleet view -->
+- **Reports and export:** a printable report, exports, and a PDF that opens with a simulated-data banner. [C-18] <!-- screenshot: report -->
+- **Live feed resilience:** reconnect with jitter and gap back-fill. [C-19]
 
-## Not built (scope, not bugs)
+## What the machine-learning results show
 
-Real facility integration (BACnet/Modbus/SNMP), multi-tenancy/RBAC, fleet
-management, SOC 2 posture, real 3D/CAD facility import, Kubernetes/Helm,
-multi-region deployment, cost/FinOps monitoring. Each needs real
-infrastructure, hardware, or a product decision this repo's history
-didn't have — see the phase-4 handoff notes in `docs/` for reasoning.
+- The thermal forecaster: RMSE 0.523 °C, 30 minutes ahead, on held-out simulator data, with no baseline to compare against. [C-06]
+- The anomaly detector: F1 0.96, with a threshold tuned on the rows it is scored on. [C-07]
+- The PPO optimizer: the one scored policy was worse than the rule baseline; newer candidates are not evaluated. [C-08]
+
+Read [`docs/model_cards/LIMITATIONS.md`](docs/model_cards/LIMITATIONS.md) before quoting any of these.
+
+## Engineering
+
+- Performance work (ETag, gzip, a memoised carbon load, list indexes): micro-benchmarks only. [C-20]
+- Sign-in with refresh rotation and three roles. [C-21]
+- Security headers, single-use WebSocket tickets and login lockout, unit-tested, not audited. [C-22]
+- Structured logs with secret redaction. [C-23]
+- Migrations with a single head. [C-28]
+- Automated tests and CI configured; a green run of the whole suite on this tree was not seen. [C-32]
+- Release pipeline and scanning configured, never run on a real tag. [C-27]
+- Accessibility fixes applied; not claimed WCAG-compliant. [C-30]
+- Seven runbooks cover common failures; none has been used in a real incident. [C-24]
+- The API reference can be regenerated from the code. [C-29]
+- The service targets and the frontend performance budgets are unmeasured hypotheses. [C-25] [C-31]
+
+## Links
+
+[Claims ledger](docs/CLAIMS.md) · [Judges pack](docs/JUDGES.md) · [Demo checklist](docs/DEMO_CHECKLIST.md) ·
+[Model cards](docs/model_cards/) · [Data truth](docs/model_cards/DATA_TRUTH.md) · [Security](SECURITY.md) ·
+[Threat model](docs/security/THREAT_MODEL.md) · [Runbooks](docs/runbooks/README.md) · [SLO hypotheses](docs/SLO.md) ·
+[Architecture decisions](docs/adr/) · [Operations](docs/OPERATIONS.md) · [Release process](docs/release/RELEASE_PROCESS.md) ·
+[Frontend status](twin-stream-insight-main/docs/frontend/STATUS.md) · [Contributing](CONTRIBUTING.md)
+
+## Status
+
+- Not confirmed by a recorded run: the full test suite on this tree, the PDF report render, an asynchronous optimize job through the worker, migrations on a managed PostgreSQL, and any real deployment. [C-34]
+
+What has and has not been run is recorded in [`twin-stream-insight-main/docs/frontend/STATUS.md`](twin-stream-insight-main/docs/frontend/STATUS.md)
+and the per-task reports in [`docs/tasks/`](docs/tasks/).

@@ -1,6 +1,6 @@
 # Frontend status (FE-00 … FE-21)
 
-Last updated 2026-10-11. **TwinGrid is simulator-only.** "Done" below means code and tests exist; it does **not** mean a scientific claim is validated.
+Last updated 2026-10-17 (Task 33). **TwinGrid is simulator-only.** "Done" below means code and tests exist; it does **not** mean a scientific claim is validated.
 
 > **IG-00 note (2026-10-11):** FE-17 and FE-18 are confirmed present in the tree at commit `0c5b98a`. The rest of this file was written from an earlier snapshot and has not been re-audited except where stated.
 
@@ -18,11 +18,36 @@ Last updated 2026-10-11. **TwinGrid is simulator-only.** "Done" below means code
 | FE-20 | Performance measurement | **Not measured.** Harness only; every budget is unmeasured, not met. No breach list, so FE-20b has not started and no optimisation is allowed. | [perf/FE-20.md](perf/FE-20.md) |
 | FE-21 | Documentation closure | This change: README, RELEASE, docs set | docs diff |
 
+## Roadmap tasks (T1 to T24, T30), as the repository stands on 2026-10-17
+
+Each row is code and tests that exist, taken from the task's own report in [`docs/tasks/`](../../../docs/tasks/). "Done" means code
+and tests exist; none of it has been run in a browser by the author, and none of it is a scientific claim.
+
+| Task | Scope | Report |
+|---|---|---|
+| T1 | Extension points: backend plugins, frontend feature modules, shared command registry | [Task1](../../../docs/tasks/Task1_REPORT.md) |
+| T2, T3 | Frontend green; dependency security | [Task2](../../../docs/tasks/Task2_REPORT.md), [Task3](../../../docs/tasks/Task3_REPORT.md) |
+| T4, T9 | One truthful architecture; API reference generator | [Task4](../../../docs/tasks/Task4_REPORT.md), [Task9](../../../docs/tasks/Task9_REPORT.md) |
+| T5 | One-command demo with seeded simulated data | [Task5](../../../docs/tasks/Task5_REPORT.md) |
+| T6, T7 | Security headers, WebSocket tickets, lockout; observability | [Task6](../../../docs/tasks/Task6_REPORT.md), [Task7](../../../docs/tasks/Task7_REPORT.md) |
+| T8, T10 | Release pipeline (never run on a real tag); supply-chain scanning configured | [Task8](../../../docs/tasks/Task8_REPORT.md), [Task10](../../../docs/tasks/Task10_REPORT.md) |
+| T11 | Data-truth labelling | [Task11](../../../docs/tasks/Task11_REPORT.md) |
+| T12 to T19 | Command palette, 3D inspector, replay, what-if lab, executive dashboard, alerts centre, Model Passport, optimizer approvals | [Task12](../../../docs/tasks/Task12_REPORT.md) to [Task19](../../../docs/tasks/Task19_REPORT.md) |
+| T20 | Story Mode tour, status bar, standard empty/loading/error states | [Task20](../../../docs/tasks/Task20_REPORT.md) |
+| T21 | Design polish and accessibility fixes in code (not signed off, not claimed WCAG-compliant) | [Task21](../../../docs/tasks/Task21_REPORT.md) |
+| T22, T23 | Reports and export; realtime resilience | [Task22](../../../docs/tasks/Task22_REPORT.md), [Task23](../../../docs/tasks/Task23_REPORT.md) |
+| T24 | Backend performance (micro-benchmarks only) | [Task24](../../../docs/tasks/Task24_REPORT.md) |
+| T30 | Fleet view of five simulated sites | [Task30](../../../docs/tasks/Task30_REPORT.md) |
+| T31 | ML honesty pass: model cards and limitations | [Task31](../../../docs/tasks/Task31_REPORT.md) |
+| T33 | README, claims ledger, judges pack | [Task33](../../../docs/tasks/Task33_REPORT.md) |
+
+Tasks 25 to 29 were not present in the snapshot this table was written from; add them when they are merged.
+
 ## Open items
 
 1. **FE-19 evidence run:** `npm run verify`, then `e2e/a11y.spec.ts` with a real backend; zero serious/critical axe findings; record screen-reader notes. Sweep `/evaluation` and `/telemetry` (not swept at FE-19).
 2. **FE-20 numbers:** run the three commands in [perf/FE-20.md](perf/FE-20.md), fill Measured/Verdict, list or waive breaches. S4 needs ≥ 5,000 stored samples (not fabricated).
-3. **`src/components/FloorHeatmap.tsx` still exists** in the snapshot and contains a `useFrame` loop; `components/analyticsGate.test.ts` ("FloorHeatmap is deleted") should therefore fail. Deleting it is a code change outside FE-21; also needs `src/three/visualizationModes.ts` checked for the reference.
+3. *(Part resolved 2026-10-17: `src/components/FloorHeatmap.tsx` no longer exists in the tree. The rest of this note was not re-audited.)* **`src/components/FloorHeatmap.tsx` still exists** in the snapshot and contains a `useFrame` loop; `components/analyticsGate.test.ts` ("FloorHeatmap is deleted") should therefore fail. Deleting it is a code change outside FE-21; also needs `src/three/visualizationModes.ts` checked for the reference.
 4. `index.css` keyframes `.pulse-dot` / `.scan-line` have no reduced-motion guard (unused; add a guard or delete).
 5. Analytics bar chart encodes cooling mode by colour; the summary and data table carry it in text. A pattern/legend is a design decision.
 6. `src/contract/fixtures/` held only a README in the snapshot: commit a real capture set before making `frontend-contract` blocking.
