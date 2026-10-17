@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="380" viewBox="0 0 640 380">
+<rect x="0" y="0" width="640" height="380" fill="#ffffff"/>
+<text x="320.00" y="22.00" font-family="sans-serif" font-size="14" text-anchor="middle" font-weight="bold">Mean test reward by baseline</text>
+<line x1="70" y1="310.00" x2="620" y2="310.00" stroke="#dddddd"/>
+<text x="64.00" y="314.00" font-family="sans-serif" font-size="10" text-anchor="end">-92.2006</text>
+<line x1="70" y1="242.50" x2="620" y2="242.50" stroke="#dddddd"/>
+<text x="64.00" y="246.50" font-family="sans-serif" font-size="10" text-anchor="end">-69.1505</text>
+<line x1="70" y1="175.00" x2="620" y2="175.00" stroke="#dddddd"/>
+<text x="64.00" y="179.00" font-family="sans-serif" font-size="10" text-anchor="end">-46.1003</text>
+<line x1="70" y1="107.50" x2="620" y2="107.50" stroke="#dddddd"/>
+<text x="64.00" y="111.50" font-family="sans-serif" font-size="10" text-anchor="end">-23.0502</text>
+<line x1="70" y1="40.00" x2="620" y2="40.00" stroke="#dddddd"/>
+<text x="64.00" y="44.00" font-family="sans-serif" font-size="10" text-anchor="end">0</text>
+<line x1="70" y1="40" x2="70" y2="310" stroke="#444444"/>
+<line x1="70" y1="40.00" x2="620" y2="40.00" stroke="#444444"/>
+<text x="138.75" y="326.00" font-family="sans-serif" font-size="10" text-anchor="middle">rule</text>
+<text x="276.25" y="326.00" font-family="sans-serif" font-size="10" text-anchor="middle">constant</text>
+<text x="413.75" y="326.00" font-family="sans-serif" font-size="10" text-anchor="middle">lookup</text>
+<text x="551.25" y="326.00" font-family="sans-serif" font-size="10" text-anchor="middle">pid</text>
+<rect x="83.75" y="40.00" width="110.00" height="270.00" fill="#1f6fb2"/>
+<rect x="221.25" y="40.00" width="110.00" height="214.09" fill="#1f6fb2"/>
+<rect x="358.75" y="40.00" width="110.00" height="214.09" fill="#1f6fb2"/>
+<rect x="496.25" y="40.00" width="110.00" height="266.74" fill="#1f6fb2"/>
+<text x="345.00" y="352.00" font-family="sans-serif" font-size="11" text-anchor="middle">baseline</text>
+<text x="14.00" y="175.00" font-family="sans-serif" font-size="11" text-anchor="middle" transform="rotate(-90 14 175.00)">mean total reward (higher is better)</text>
+<rect x="78" y="362" width="10" height="10" fill="#1f6fb2"/>
+<text x="92.00" y="371.00" font-family="sans-serif" font-size="10" text-anchor="start">total_reward</text>
+</svg>

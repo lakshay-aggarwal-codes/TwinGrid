@@ -1,0 +1,102 @@
+{
+  "action_schema_hash": "8a9f75c4a98717d8e50af4e08e10d474fe7ad83273ed72cdfa249b8c221db273",
+  "action_semantics_version": "2",
+  "artifacts": [
+    {
+      "files": {
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s0/policy.npz": "da3d97a0a6f6a80c29ae2635feb0767cf92ce875011bd4ca5d90fbbed5465045",
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s0/policy_spec.json": "6404b77135293c4657f50eeee41f01f2e6b84596551974f4ab1917e1be504bd3"
+      },
+      "model_id": "ppo-p1-e2-cd2345024-s0",
+      "status": "candidate"
+    },
+    {
+      "files": {
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s1/policy.npz": "c1c478ee39bc36847a5a88872ce139e863a17bc42a5dbfae4313f0110535fe98",
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s1/policy_spec.json": "94ba01ad33a9c69bd224f71858df7f6096ca0d55d5d2e18e5f9fe02d69ee33e0"
+      },
+      "model_id": "ppo-p1-e2-cd2345024-s1",
+      "status": "candidate"
+    },
+    {
+      "files": {
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s2/policy.npz": "451cce191905568305f7a2b4997e1b972c5934928718649b7d0dbfe28965e94f",
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s2/policy_spec.json": "f8ac18c7b3a4de246f701e05c4412df3f9614ab0bc1476158195813dfa526726"
+      },
+      "model_id": "ppo-p1-e2-cd2345024-s2",
+      "status": "candidate"
+    },
+    {
+      "files": {
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s3/policy.npz": "6f670d855ef74d91d328a29c089230bf021cb4fa009d2dfa63ccc58b6d022a8c",
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s3/policy_spec.json": "ca96385c2836f08c8b7bee7f45597f87d25483745e621ab3296835f39d9b6a42"
+      },
+      "model_id": "ppo-p1-e2-cd2345024-s3",
+      "status": "candidate"
+    },
+    {
+      "files": {
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s4/policy.npz": "70bb33427d1cd54cc72cc02e467caa2aebc94319aa3bb1aae361f058c36f2240",
+        "models/candidates/ppo/ppo-p1-e2-cd2345024-s4/policy_spec.json": "87c14d063af1e6a457bb755a0aeea266eee30314a5bb96da79d01586a4f043d5"
+      },
+      "model_id": "ppo-p1-e2-cd2345024-s4",
+      "status": "candidate"
+    }
+  ],
+  "code_revision": "unknown",
+  "code_revision_source": "unknown",
+  "command": [
+    "scripts/train_ppo.py",
+    "--config",
+    "configs/ppo/ppo_v2_baseline.json"
+  ],
+  "config_files": {
+    "configs/ppo/ppo_v2_baseline.json": "087ecbed860f9115d9a6d860694163638a2a33124d701cf83ed30d37764b0b85"
+  },
+  "dataset_manifest_path": null,
+  "dataset_manifest_sha256": null,
+  "determinism": {
+    "checked_in_run": false,
+    "float_sig_digits": 12,
+    "level": "L1"
+  },
+  "dirty": true,
+  "dirty_diff_sha256": null,
+  "environment_version": "2",
+  "experiment": "ppo_training",
+  "input_cadence_s": 300,
+  "lock_path": "requirements.lock",
+  "lock_sha256": "0b584e82913512afbf7b81ad1db6a4d88f474f5e8c7d87ca2374086d5f41e6db",
+  "manifest_version": 1,
+  "observation_schema_hash": "a585b2fef4a5b153973d14cc7ddebb84b37a6d1a4eb206ddb154a099cff4a4eb",
+  "physics_params_hash": "14ed372364a00dbaa218da884426291e20963343eb1dd01af1a1c0f82c69afad",
+  "physics_version": "1",
+  "platform": {
+    "arch": "x86_64",
+    "numpy": "2.5.3",
+    "os": "Linux",
+    "os_release": "6.18.44-fc-v70",
+    "python": "3.12.3",
+    "python_implementation": "CPython",
+    "tensorflow": null,
+    "torch": "2.14.0"
+  },
+  "prereg_path": null,
+  "prereg_sha256": null,
+  "primary_config": "configs/ppo/ppo_v2_baseline.json",
+  "result_sha256": "57c709ea9376782014d35cd22d4222aa8c6bc2f6fbc9643a47a0867668ac8eef",
+  "results_schema": "twingrid-results/1",
+  "reward_version": "2",
+  "run_id": "ppo-train-cd2345024-20261006T032326Z",
+  "safety_envelope_version": "2",
+  "scenario_set_id": "ff8a128b25abfd0f99a627275fd4bd0c28e3c87e7b3600532727ab475c264905",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "split_id": "9750a1bae82e251b0bc59c7ef2cb7bc9b17d89f4050d7eff156a70484d57de43",
+  "started_at_utc": "2026-10-06T03:23:26Z"
+}

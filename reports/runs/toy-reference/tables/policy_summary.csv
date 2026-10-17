@@ -1,0 +1,3 @@
+policy,mean_pue,std_pue_across_seeds,mean_water
+constant,1.09251284287,0.0153992868684,0.2
+rule,1.10097289234,0.0214400578298,0.189012616589

@@ -1,0 +1,64 @@
+{
+  "action_schema_hash": "4eac7196a367fb0061a3a133f0541fa465297aa4be4cad086300e992ff7c1007",
+  "action_semantics_version": "1",
+  "artifacts": [],
+  "code_revision": "unknown",
+  "code_revision_source": "unknown",
+  "command": [
+    "scripts/run_experiment.py",
+    "--experiment",
+    "toy",
+    "--config",
+    "src/repro/toy_config.json",
+    "--run-id",
+    "toy-reference",
+    "--check-determinism"
+  ],
+  "config_files": {
+    "src/repro/toy_config.json": "e934042eb8a7388bca518c277c7c877b9e26e1f8c098a013eec221ed14adf5e7"
+  },
+  "dataset_manifest_path": null,
+  "dataset_manifest_sha256": null,
+  "determinism": {
+    "checked_in_run": true,
+    "float_sig_digits": 12,
+    "level": "L1"
+  },
+  "dirty": true,
+  "dirty_diff_sha256": null,
+  "environment_version": "1",
+  "experiment": "toy",
+  "input_cadence_s": 300,
+  "lock_path": "requirements.lock",
+  "lock_sha256": "6401578cd33f47b1da01a69d88fe3c2890d66ed813a68554013fed39b8a5bc0f",
+  "manifest_version": 1,
+  "observation_schema_hash": "9fb575882c20162b7e79bc378c1e753ff4fa7a75d11326d078053961a4884626",
+  "physics_params_hash": "14ed372364a00dbaa218da884426291e20963343eb1dd01af1a1c0f82c69afad",
+  "physics_version": "1",
+  "platform": {
+    "arch": "x86_64",
+    "numpy": "2.4.4",
+    "os": "Linux",
+    "os_release": "6.18.44-fc-v64",
+    "python": "3.12.3",
+    "python_implementation": "CPython",
+    "tensorflow": null,
+    "torch": null
+  },
+  "prereg_path": null,
+  "prereg_sha256": null,
+  "primary_config": "src/repro/toy_config.json",
+  "result_sha256": "1d3aa7ee2c0ad587ede0f2113cdb17a9663e9b8d238edeea4cd6c18939c2d8b5",
+  "results_schema": "twingrid-results/1",
+  "reward_version": "1",
+  "run_id": "toy-reference",
+  "safety_envelope_version": "1",
+  "scenario_set_id": null,
+  "seeds": [
+    11,
+    22,
+    33
+  ],
+  "split_id": null,
+  "started_at_utc": "2026-10-04T18:15:57Z"
+}

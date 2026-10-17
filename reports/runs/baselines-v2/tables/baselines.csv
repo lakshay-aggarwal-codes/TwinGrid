@@ -1,0 +1,5 @@
+baseline,status,validation_reward,validation_violation_steps,parameters
+rule,feasible,-92.1649125764,0,production mode rule at 12 C
+constant,feasible,-73.1079186602,0,"15 C, closed_loop"
+lookup,feasible,-73.1079186602,0,"5 x 5 bins (25 cells, 7 fallback)"
+pid,feasible,-91.0515249402,0,"target inlet 22 C, kp=1, ki=0, kd=0, mode rule production_rule"
