@@ -32,6 +32,7 @@ from urllib.parse import urlsplit
 
 from fastapi import Request
 from prometheus_client import Counter
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api import rate_limit
@@ -358,3 +359,64 @@ __all__ = [
     "set_session_factory",
     "url_fingerprint",
 ]
+
+
+# ----------------------------------------------------------------------------- read side (Task 29: admin console)
+# Read helpers only: this module still exposes no update or delete.
+
+
+def _iso(value: Optional[datetime]) -> Optional[str]:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).isoformat()
+
+
+def row_to_dict(row: AuditLog) -> dict[str, Any]:
+    """One audit row as JSON-safe fields. ``details`` was scrubbed of secret-looking keys when it was written."""
+    return {
+        "id": row.id,
+        "created_at": _iso(row.created_at),
+        "username": row.username,
+        "action": row.action,
+        "outcome": row.outcome,
+        "resource_type": row.resource_type,
+        "resource_id": row.resource_id,
+        "client_ip": row.client_ip,
+        "request_id": row.request_id,
+        "details": row.details,
+    }
+
+
+def apply_filters(stmt: Any, filters: Any) -> Any:
+    """Add the set filters of an ``AuditFilters`` (src.admin_console.rules) to a ``select(AuditLog)``. All exact matches
+    and bound parameters; nothing is interpolated into SQL."""
+    if filters.action is not None:
+        stmt = stmt.where(AuditLog.action == filters.action)
+    if filters.outcome is not None:
+        stmt = stmt.where(AuditLog.outcome == filters.outcome)
+    if filters.username is not None:
+        stmt = stmt.where(AuditLog.username == filters.username)
+    if filters.resource_type is not None:
+        stmt = stmt.where(AuditLog.resource_type == filters.resource_type)
+    if filters.since is not None:
+        stmt = stmt.where(AuditLog.created_at >= filters.since)
+    if filters.until is not None:
+        stmt = stmt.where(AuditLog.created_at <= filters.until)
+    if filters.before_id is not None:
+        stmt = stmt.where(AuditLog.id < filters.before_id)
+    return stmt
+
+
+async def query_logs(session: AsyncSession, filters: Any, limit: int) -> tuple[list[AuditLog], bool]:
+    """Newest first (by id). Returns ``(rows, has_more)``; one extra row is fetched to know whether there is more."""
+    stmt = apply_filters(select(AuditLog), filters).order_by(AuditLog.id.desc()).limit(limit + 1)
+    rows = list((await session.execute(stmt)).scalars().all())
+    return rows[:limit], len(rows) > limit
+
+
+async def list_actions(session: AsyncSession, limit: int = 200) -> list[str]:
+    """The distinct action names in the log (for a filter picker), alphabetical, bounded."""
+    stmt = select(AuditLog.action).distinct().order_by(AuditLog.action).limit(limit)
+    return [a for (a,) in (await session.execute(stmt)).all()]

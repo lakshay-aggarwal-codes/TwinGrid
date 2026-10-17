@@ -9,11 +9,15 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from typing import Any
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Any, Optional
 
 import requests
 
 from api.services.webhook_security import WebhookURLError, validate_webhook_url
+from src import webhook_deliveries
 from src.webhook_registry import list_subscribers
 
 logger = logging.getLogger(__name__)
@@ -32,18 +36,79 @@ def webhook_allowed_for_origin(origin: str | None) -> bool:
     return origin != "simulated" or webhook_on_simulated()
 
 
-def _post_one(url: str, payload: dict[str, Any]) -> None:
+@dataclass(frozen=True)
+class DeliveryResult:
+    """Outcome of one delivery attempt. ``ok`` = the subscriber answered 2xx; ``error_kind`` is a kind, never text."""
+
+    ok: bool
+    status_code: Optional[int]
+    error_kind: Optional[str]
+    duration_ms: int
+
+
+def deliver(url: str, payload: dict[str, Any]) -> DeliveryResult:
+    """POST ``payload`` to ``url`` once. Never raises. Redirects are refused (a public URL cannot bounce us to an internal
+    one) and the URL is re-validated at send time (DNS can change after registration)."""
+    start = time.monotonic()
+
+    def done(ok: bool, status: Optional[int] = None, error: Optional[str] = None) -> DeliveryResult:
+        return DeliveryResult(ok, status, error, int((time.monotonic() - start) * 1000))
+
     try:
-        # Re-validate at send time: DNS can change after registration.
         validate_webhook_url(url)
-        # Redirects are refused so a public URL can't bounce us to an internal one.
         resp = requests.post(url, json=payload, timeout=WEBHOOK_TIMEOUT_SECONDS, allow_redirects=False)
         if resp.status_code >= 400:
             logger.warning("Webhook %s returned %d", url, resp.status_code)
+            return done(False, resp.status_code, "http_error")
+        if resp.status_code >= 300:
+            return done(False, resp.status_code, "redirect_refused")
+        return done(True, resp.status_code)
     except WebhookURLError as e:
         logger.warning("Webhook %s blocked: %s", url, e)
+        return done(False, None, "blocked_url")
+    except requests.Timeout as e:
+        logger.warning("Webhook %s failed: %s", url, e)
+        return done(False, None, "timeout")
+    except requests.ConnectionError as e:
+        logger.warning("Webhook %s failed: %s", url, e)
+        return done(False, None, "connection")
     except requests.RequestException as e:
         logger.warning("Webhook %s failed: %s", url, e)
+        return done(False, None, "request_error")
+
+
+def _record(kind: str, url: str, result: DeliveryResult) -> None:
+    webhook_deliveries.record(
+        webhook_deliveries.make_record(
+            kind,
+            url,
+            ok=result.ok,
+            status_code=result.status_code,
+            error_kind=result.error_kind,
+            duration_ms=result.duration_ms,
+        )
+    )
+
+
+def _post_one(url: str, payload: dict[str, Any]) -> None:
+    _record("alert", url, deliver(url, payload))
+
+
+def build_test_payload() -> dict[str, Any]:
+    """What an admin test-fire sends: clearly not an alert."""
+    return {
+        "event": "test",
+        "origin": "admin_console",
+        "note": "This is a test event from TwinGrid. It is not an alert.",
+        "sent_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def send_test(url: str) -> DeliveryResult:
+    """Deliver the test payload to one subscriber and record it in the delivery log (blocking: run in a thread)."""
+    result = deliver(url, build_test_payload())
+    _record("test", url, result)
+    return result
 
 
 async def dispatch_alert(alert: dict[str, Any]) -> None:
