@@ -105,6 +105,11 @@ def load_baselines(
     for name in bcfg.BASELINE_NAMES:
         cfg = bcfg.load_config(Path(root) / paths[name], name)
         bcfg.check_lineage(cfg)
+        # Amendment A2 (TG-A-12): a config is only as safe as the feasibility rule it was tuned under. One tuned before
+        # the PUE limit was counted could pick a set-point that breaches it unseen, so it is stale until re-tuned.
+        recorded_rule = cfg["tuning"].get("feasibility_rule")
+        if recorded_rule != tuning.FEASIBILITY_RULE:
+            raise bcfg.BaselineConfigStale("tuning.feasibility_rule", tuning.FEASIBILITY_RULE, recorded_rule)
         bcfg.check_tuning_scenarios(cfg, ids, val_set, eval_sha, carbon_sha)
         out[name] = cfg
     return out

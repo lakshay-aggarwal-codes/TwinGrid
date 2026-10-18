@@ -35,7 +35,16 @@ logger = logging.getLogger(__name__)
 
 SOURCE: Final[str] = "policy_evaluation_v1"
 ORIGIN: Final[str] = "simulated"
-SUPPORTED_SCHEMA_VERSION: Final[int] = 1
+# 1: the nine-metric results (incl. the frozen legacy-0 report). 2: adds the counted ``pue_over_max_steps`` hard
+# constraint (amendment A2). A schema-1 file still loads; its PUE limit is reported as NOT MEASURED, never as zero.
+SUPPORTED_SCHEMA_VERSIONS: Final[tuple[int, ...]] = (1, 2)
+SUPPORTED_SCHEMA_VERSION: Final[int] = SUPPORTED_SCHEMA_VERSIONS[-1]  # the version new reports are written in
+_HARD_CONSTRAINTS: Final[tuple[str, ...]] = (
+    "outlet_violation_steps",
+    "inlet_over_max_steps",
+    "inlet_under_min_steps",
+    "pue_over_max_steps",
+)  # == src.policy_evaluation.HARD_CONSTRAINT_METRICS (pinned by tests/test_pue_hard_constraint.py)
 MAX_REPORT_BYTES: Final[int] = 5_000_000
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -73,7 +82,7 @@ def _load_report(evaluation_id: str) -> dict[str, Any] | None:
     if evaluation_id not in known:
         return None
     results = _read_json(base / evaluation_id / "results.json")
-    if results is None or results.get("schema_version") != SUPPORTED_SCHEMA_VERSION:
+    if results is None or results.get("schema_version") not in SUPPORTED_SCHEMA_VERSIONS:
         return None
     return results
 
@@ -114,6 +123,22 @@ def _policies(results: dict[str, Any]) -> list[dict[str, Any]]:
         item["metrics"] = dict(metrics)
         out.append(item)
     return out
+
+
+def _hard_constraints(results: dict[str, Any]) -> dict[str, Any]:
+    """Which envelope limits this report actually counted. A limit absent from the policies' metrics is NOT MEASURED."""
+    policies = _policies(results)
+    counted = [m for m in _HARD_CONSTRAINTS if policies and all(m in p["metrics"] for p in policies)]
+    return {
+        "counted": counted,
+        "not_measured": [m for m in _HARD_CONSTRAINTS if m not in counted],
+        "note": (
+            "Limits listed under not_measured were not counted when this report was produced (older schema); "
+            "that is not the same as zero violations."
+            if len(counted) < len(_HARD_CONSTRAINTS)
+            else None
+        ),
+    }
 
 
 def _preregistration_for(results: dict[str, Any]) -> dict[str, Any] | None:
@@ -179,6 +204,7 @@ def get_evaluation(evaluation_id: str) -> dict[str, Any]:
         if key in results:
             detail[key] = results[key]
     detail["policies"] = _policies(results)
+    detail["hard_constraints"] = _hard_constraints(results)
     if "selection" in results:
         detail["selection"] = results["selection"]
     prereg = _preregistration_for(results)

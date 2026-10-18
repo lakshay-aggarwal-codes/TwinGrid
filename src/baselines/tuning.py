@@ -53,9 +53,10 @@ OBJECTIVE = (
     "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates"
 )
 FEASIBILITY_RULE = (
-    "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode"
+    "zero outlet_violation_steps, inlet_over_max_steps, inlet_under_min_steps and pue_over_max_steps in every "
+    "validation episode"
 )
-_ENVELOPE_METRICS = ("outlet_violation_steps", "inlet_over_max_steps", "inlet_under_min_steps")
+_ENVELOPE_METRICS = pe.HARD_CONSTRAINT_METRICS  # amendment A2: includes the PUE limit
 Progress = Callable[[str], None]
 
 

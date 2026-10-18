@@ -21,7 +21,7 @@ REPO_REPORTS = Path(__file__).resolve().parents[1] / "reports" / "policy_evaluat
 DETAIL_KEYS = {
     "evaluation_id", "source", "origin", "schema_version", "generated_at_utc", "physics_version",
     "scenario_inputs", "carbon", "scenario_set_id", "scenario_sets", "preregistration_sha256", "decision",
-    "policies", "selection", "metrics", "outcome_definitions", "ci_level",
+    "policies", "selection", "metrics", "outcome_definitions", "ci_level", "hard_constraints",
 }  # fmt: skip
 
 
@@ -203,7 +203,7 @@ def test_list_skips_unreadable_wrong_version_and_non_directories(reports):
     (reports / "corrupt_x").mkdir()
     (reports / "corrupt_x" / "results.json").write_text("{not json", encoding="utf-8")
     raw = _results(reports)
-    raw["schema_version"] = 2
+    raw["schema_version"] = 99  # 1 and 2 are supported (2 = amendment A2, the PUE hard constraint)
     _write(reports, "v2_x", raw)
     (reports / "empty_dir").mkdir()
     (reports / "stray.json").write_text("{}", encoding="utf-8")
