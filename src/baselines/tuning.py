@@ -48,15 +48,20 @@ from .policies import (
     default_rule_setpoint_C,
 )
 
-TUNER_VERSION = "baselines-tuner/2"  # /2: set-points are in the physics' own actuator range (TG-A-13)
+TUNER_VERSION = "baselines-tuner/3"  # /2: set-points in the physics' own actuator range (TG-A-13); /3: PID target searched (TG-A-16)
+
+# PID target inlet temperatures searched, as margins BELOW the envelope's upper inlet limit. A single fixed 22 C target
+# made every feedback gain cost reward under physics 1 (zero gains won: TG-A-16); the reward prefers a warmer inlet,
+# so the target is part of the search. The envelope still gates feasibility: a too-warm target that overshoots simply
+# loses on violations (the search never trades a violation for reward).
+PID_TARGET_MARGINS_C: tuple[float, ...] = (5.0, 3.0, 2.0, 1.0)
 OBJECTIVE = (
     "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates"
 )
 FEASIBILITY_RULE = (
-    "zero outlet_violation_steps, inlet_over_max_steps, inlet_under_min_steps and pue_over_max_steps in every "
-    "validation episode"
+    "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode"
 )
-_ENVELOPE_METRICS = pe.HARD_CONSTRAINT_METRICS  # amendment A2: includes the PUE limit
+_ENVELOPE_METRICS = ("outlet_violation_steps", "inlet_over_max_steps", "inlet_under_min_steps")
 Progress = Callable[[str], None]
 
 
@@ -86,7 +91,7 @@ class TuningSpace:
     lookup_modes: tuple[str, ...]
     lookup_min_cell_samples: int
     lookup_transient_steps_excluded: int
-    pid_target_inlet_C: float
+    pid_target_inlet_C: tuple[float, ...]
     pid_kp: tuple[float, ...]
     pid_ki: tuple[float, ...]
     pid_kd: tuple[float, ...]
@@ -117,7 +122,7 @@ def default_space(cfg: pe.EvalConfig) -> TuningSpace:
         # steps the plant needs (at its rate limit) to reach ANY set-point of the range from its 10 C reset value:
         # legacy-0 ceil(5/2)=3 (unchanged); physics 1 ceil(15/2)=8.
         lookup_transient_steps_excluded=_transient_steps(cfg.resolved_physics_version),
-        pid_target_inlet_C=22.0,
+        pid_target_inlet_C=tuple(pe.INLET_TEMP_MAX - m for m in PID_TARGET_MARGINS_C),
         pid_kp=(0.0, 0.5, 1.0, 2.0, 4.0),
         pid_ki=(0.0, 0.02, 0.05, 0.1),
         pid_kd=(0.0, 0.5, 1.0),
@@ -444,10 +449,10 @@ def tune_pid(
     assert_validation_only(scenarios)
     say = progress or (lambda _m: None)
     cands = []
-    for kp, ki, kd in itertools.product(space.pid_kp, space.pid_ki, space.pid_kd):
+    for target, kp, ki, kd in itertools.product(space.pid_target_inlet_C, space.pid_kp, space.pid_ki, space.pid_kd):
         policy = PIDPolicy.for_physics(
             eval_cfg.resolved_physics_version,
-            space.pid_target_inlet_C,
+            target,
             kp,
             ki,
             kd,
@@ -458,7 +463,8 @@ def tune_pid(
         counts = envelope_counts(results)
         cands.append(
             {
-                "key": (float(kp), float(ki), float(kd)),
+                "key": (float(target), float(kp), float(ki), float(kd)),
+                "target_inlet_C": float(target),
                 "kp": float(kp),
                 "ki": float(ki),
                 "kd": float(kd),
@@ -467,12 +473,13 @@ def tune_pid(
                 "feasible": is_feasible(counts),
             }
         )
-    say(f"  swept {len(cands)} PID gain sets")
+    say(f"  swept {len(cands)} PID (target, gain) sets")
     best = pick(cands, space.tie_tolerance)
     info = least_violating(cands)
 
     def public(c: dict[str, Any]) -> dict[str, Any]:
         return {
+            "target_inlet_C": c["target_inlet_C"],
             "kp": c["kp"],
             "ki": c["ki"],
             "kd": c["kd"],
@@ -483,7 +490,8 @@ def tune_pid(
 
     return {
         "parameters": {
-            "target_inlet_C": space.pid_target_inlet_C,
+            # the SELECTED target (the least-violating candidate's when infeasible, for information only)
+            "target_inlet_C": (best or info)["target_inlet_C"],
             "nominal_setpoint_C": space.pid_nominal_setpoint_C,
             "initial_setpoint_C": INITIAL_SETPOINT_C,
             "min_setpoint_C": actuator_range_C(eval_cfg.resolved_physics_version)[0],
@@ -498,13 +506,13 @@ def tune_pid(
             "validation_reward": None if best is None else best["reward"],
             "candidates": [public(c) for c in cands],
             "least_violating": public(info),
-            "tie_break": "lexicographic ascending on (kp, ki, kd)",
+            "tie_break": "lexicographic ascending on (target_inlet_C, kp, ki, kd)",
         },
         "search_space": {
             "kp": list(space.pid_kp),
             "ki": list(space.pid_ki),
             "kd": list(space.pid_kd),
-            "target_inlet_C": space.pid_target_inlet_C,
+            "target_inlet_C": list(space.pid_target_inlet_C),
             "tie_tolerance": space.tie_tolerance,
         },
         "status": "feasible" if best else "infeasible",

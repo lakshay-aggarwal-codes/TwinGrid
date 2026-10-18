@@ -457,7 +457,13 @@ def _fake_pid_eval(rewards_by_gain, violating=()):
 
 
 def test_pid_grid_is_searched_deterministically_with_lexicographic_ties(monkeypatch):
-    space = replace(tuning.default_space(SMALL), pid_kp=(2.0, 0.0, 1.0), pid_ki=(0.05, 0.0), pid_kd=(0.0,))
+    space = replace(
+        tuning.default_space(SMALL),
+        pid_target_inlet_C=(22.0,),
+        pid_kp=(2.0, 0.0, 1.0),
+        pid_ki=(0.05, 0.0),
+        pid_kd=(0.0,),
+    )
     val = pe.build_scenarios(SMALL)["validation"]
     monkeypatch.setattr(pe, "evaluate_policy", _fake_pid_eval({}))  # everything ties
     tied = tuning.tune_pid(space, val, SMALL, CURVE)
@@ -478,8 +484,69 @@ def test_pid_grid_is_searched_deterministically_with_lexicographic_ties(monkeypa
     }  # a violating set never wins
 
 
+def test_pid_target_grid_is_derived_from_the_envelope_and_stays_below_its_upper_limit():
+    """TG-A-16: a single fixed 22 C target made zero gains win; the target is searched, bounded by the envelope."""
+    grid = tuning.default_space(SMALL).pid_target_inlet_C
+    assert grid == (22.0, 24.0, 25.0, 26.0) and tuning.TUNER_VERSION == "baselines-tuner/3"
+    assert all(pe.INLET_TEMP_MIN < t < pe.INLET_TEMP_MAX for t in grid) and list(grid) == sorted(grid)
+
+
+def test_pid_searches_the_target_and_records_the_selected_one(monkeypatch):
+    space = replace(
+        tuning.default_space(SMALL),
+        pid_target_inlet_C=(22.0, 24.0, 26.0),
+        pid_kp=(0.0, 1.0),
+        pid_ki=(0.0,),
+        pid_kd=(0.0,),
+    )
+    val = pe.build_scenarios(SMALL)["validation"]
+
+    def fake(policy, scenarios, cfg, carbon):  # warmer target + feedback is better; 26 C with feedback violates
+        bad = policy.target_inlet_C == 26.0 and policy.kp > 0
+        reward = -50.0 + (policy.target_inlet_C - 22.0) + (3.0 if policy.kp > 0 else 0.0)
+        return [ep(reward, violations=1 if bad else 0)]
+
+    monkeypatch.setattr(pe, "evaluate_policy", fake)
+    out = tuning.tune_pid(space, val, SMALL, CURVE)
+    assert len(out["result"]["candidates"]) == 3 * 2  # targets x gain sets
+    assert out["parameters"]["target_inlet_C"] == 24.0 and out["parameters"]["selected_gains"]["kp"] == 1.0
+    assert out["search_space"]["target_inlet_C"] == [22.0, 24.0, 26.0]
+    assert all("target_inlet_C" in c for c in out["result"]["candidates"])
+    # the config rebuilds a policy with the SELECTED target and gains
+    cfg = bcfg.make_config(
+        "pid",
+        parameters=out["parameters"],
+        tuning=_tuning_block(out),
+        status=out["status"],
+        infeasible_reason=out["reason"],
+        tuner_version=tuning.TUNER_VERSION,
+    )
+    pol = bcfg.build_policy(cfg)
+    assert (pol.target_inlet_C, pol.kp) == (24.0, 1.0)
+
+
+def test_pid_target_ties_resolve_to_the_smaller_target(monkeypatch):
+    space = replace(
+        tuning.default_space(SMALL), pid_target_inlet_C=(26.0, 22.0, 24.0), pid_kp=(0.0,), pid_ki=(0.0,), pid_kd=(0.0,)
+    )
+    monkeypatch.setattr(pe, "evaluate_policy", lambda *a, **k: [ep(-10.0)])  # everything ties
+    out = tuning.tune_pid(space, pe.build_scenarios(SMALL)["validation"], SMALL, CURVE)
+    assert out["parameters"]["target_inlet_C"] == 22.0
+
+
+def test_an_infeasible_pid_still_records_a_numeric_target(monkeypatch):
+    space = replace(
+        tuning.default_space(SMALL), pid_target_inlet_C=(22.0, 24.0), pid_kp=(0.0,), pid_ki=(0.0,), pid_kd=(0.0,)
+    )
+    monkeypatch.setattr(pe, "evaluate_policy", lambda *a, **k: [ep(-5.0, violations=2)])
+    out = tuning.tune_pid(space, pe.build_scenarios(SMALL)["validation"], SMALL, CURVE)
+    assert out["status"] == "infeasible" and isinstance(out["parameters"]["target_inlet_C"], float)
+
+
 def test_pid_is_infeasible_when_no_gain_set_satisfies_the_envelope(monkeypatch):
-    space = replace(tuning.default_space(SMALL), pid_kp=(0.0, 1.0), pid_ki=(0.0,), pid_kd=(0.0,))
+    space = replace(
+        tuning.default_space(SMALL), pid_target_inlet_C=(22.0,), pid_kp=(0.0, 1.0), pid_ki=(0.0,), pid_kd=(0.0,)
+    )
     monkeypatch.setattr(pe, "evaluate_policy", lambda *a, **k: [ep(-5.0, violations=2)])
     out = tuning.tune_pid(space, pe.build_scenarios(SMALL)["validation"], SMALL, CURVE)
     assert (
@@ -557,7 +624,9 @@ def test_tuner_spy_proves_no_test_scenario_id_is_read():
 
     pe.run_episode = spy
     try:
-        space = replace(tuning.default_space(SMALL), pid_kp=(0.0, 1.0), pid_ki=(0.0,), pid_kd=(0.0,))
+        space = replace(
+            tuning.default_space(SMALL), pid_target_inlet_C=(22.0,), pid_kp=(0.0, 1.0), pid_ki=(0.0,), pid_kd=(0.0,)
+        )
         tuning.tune_all(SMALL, val, CURVE, carbon_is_real=False, space=space)
     finally:
         pe.run_episode = real
