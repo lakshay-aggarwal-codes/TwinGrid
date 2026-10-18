@@ -248,8 +248,9 @@ def main():
     fastest_time = min([t for t in [original_time, optimized_time, batch_time] if t is not None])
     print()
     if fastest_time < 2.0:
-        print(f"🎉 SUCCESS: Fastest time {fastest_time:.3f}s < 2.0s target")
-        print("✅ Real-time dashboard performance achieved!")
+        print(
+            f"Fastest time {fastest_time:.3f}s (simulator only; implementations are NOT checked for equal output here)"
+        )
     else:
         print(f"⚠️  NEEDS WORK: Fastest time {fastest_time:.3f}s > 2.0s target")
         print("❌ Real-time dashboard performance not yet achieved")

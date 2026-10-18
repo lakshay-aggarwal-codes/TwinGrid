@@ -249,7 +249,7 @@ def _results(scenarios, reward, **over):
             carbon_gco2=100.0,
             mean_pue=1.2,
             mean_wue=0.5,
-            inlet_under_min_steps=288.0,
+            inlet_under_min_steps=0.0,  # envelope-safe by default; tests that need a violation set it explicitly
         )
         m.update(over)
         out.append(pe.EpisodeResult(s.scenario_id, m, "h"))
@@ -328,10 +328,33 @@ def test_outcome_B_when_advantage_fails_in_one_family():
     assert d["outcome"] == "B"
 
 
-def test_inlet_under_min_is_judged_relative_to_the_rule_baseline():
-    ok = _decide(-40.0, -150.0, -58.0, ppo_over={"inlet_under_min_steps": 288.0})
-    worse = _decide(-40.0, -150.0, -58.0, ppo_over={"inlet_under_min_steps": 300.0})
-    assert ok["outcome"] == "A" and worse["outcome"] == "B"
+def test_inlet_under_min_is_an_absolute_hard_constraint():
+    """Amendment A1: a candidate with ANY under-minimum inlet step cannot be outcome A, even when the rule baseline
+    violates the same limit just as often (the old rule tolerated "no worse than the rule baseline")."""
+    same_as_rule = _decide(
+        -40.0, -150.0, -58.0, ppo_over={"inlet_under_min_steps": 288.0}
+    )  # rule/const are safe here: 0 steps
+    assert same_as_rule["outcome"] == "B"
+    assert same_as_rule["detail"]["envelope_selected_candidate"]["ok"] is False
+    assert same_as_rule["claim_allowed"] == "none"
+
+
+def test_candidate_matching_an_unsafe_baseline_is_still_unsafe():
+    cfg = replace(CFG, n_test_per_family=6)
+    sc = pe.build_scenarios(cfg)["test"]
+    jitter = np.random.default_rng(0).normal(0, 0.3, len(sc))
+    unsafe = {"inlet_under_min_steps": 288.0}
+    ppo = {s_: _results(sc, lambda i: -40.0 + jitter[i], **unsafe) for s_ in range(5)}
+    base = {"rule": _results(sc, lambda i: -150.0, **unsafe), "best_constant": _results(sc, lambda i: -58.0, **unsafe)}
+    d = pe.decide_outcome(cfg, ppo_test=ppo, selected_seed=0, baselines_test=base, test_scenarios=sc)
+    assert d["outcome"] == "B" and d["claim_allowed"] == "none"
+    # and the unsafe baselines are flagged unsafe, not accepted as the "simpler controller" replacement
+    assert all(not v["baseline_envelope_safe"] for v in d["detail"]["per_baseline"].values())
+
+
+def test_baseline_with_inlet_under_min_cannot_be_the_replacement_controller():
+    d = _decide(-60.0, -150.0, -58.0, const_over={"inlet_under_min_steps": 1.0})
+    assert d["outcome"] == "B" and d["simpler_controllers_within_tolerance"] == []
 
 
 def test_fewer_than_five_ppo_seeds_cannot_be_decided():
@@ -426,11 +449,15 @@ def test_cli_refuses_to_overwrite_a_preregistration(tmp_path):
     assert pe.main(["prereg", "--out", str(tmp_path)]) == 2
 
 
-def test_committed_preregistration_matches_the_default_config():
+def test_committed_preregistration_is_the_legacy0_protocol_and_differs_from_the_default_only_in_physics():
+    """The committed protocol was registered under the frozen legacy-0 equations (label "legacy-0 (implicit)").
+    New work registers under physics 1 (the default). Nothing else about the protocol may differ."""
     from pathlib import Path
 
     cfg = pe.load_preregistered_config(Path(__file__).resolve().parents[1] / "reports" / "policy_evaluation")
-    assert cfg == CFG
+    assert cfg.physics_version == "legacy-0 (implicit)" and cfg.resolved_physics_version == "legacy-0"
+    assert replace(cfg, physics_version=CFG.physics_version) == CFG
+    assert CFG.resolved_physics_version == "1"
 
 
 def test_registry_entries_record_physics_version_and_scenario_set_id():

@@ -77,7 +77,7 @@ graph TB
 | `api/plugins/` | Extension point (Task 1); see `extension_points.md`. |
 | `src/` | Physics (`digital_twin.py`, `physics/`), RL environment (`rl/`), optimizer, ML models, data generation, ingestion, telemetry storage, artifact gate, model registry, task queue. |
 | `models/` | Model artifacts and `registry.json`; `models/db_models.py` holds the SQLAlchemy ORM models. |
-| `alembic/versions/` | 10 revisions, one head (`20261004000000`). |
+| `alembic/versions/` | 14 revisions, one head (`20261008000000`). |
 | `twin-stream-insight-main/` | React frontend (own `package.json`, tests, docs under `docs/frontend/`). |
 
 ## Physics

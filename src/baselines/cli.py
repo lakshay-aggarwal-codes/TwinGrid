@@ -1,6 +1,6 @@
 """Command line for the baselines (T28).
 
-    python -m src.baselines.cli tune                 # tune all four on VALIDATION scenarios -> configs/baselines/*.json
+    python -m src.baselines.cli tune [--prereg PATH] # tune all four on VALIDATION scenarios -> configs/baselines/*.json
     python -m src.baselines.cli run  --run-id baselines-v2 [--check-determinism]
     python -m src.baselines.cli verify baselines-v2 [--rerun] [--strict]
 
@@ -23,10 +23,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 PREREG = "reports/policy_evaluation/PREREGISTRATION.json"
 
 
-def _eval_cfg(root: Path):
+def _eval_cfg(root: Path, prereg: str = PREREG):
     from .. import policy_evaluation as pe
 
-    return pe.load_preregistered_config((root / PREREG).parent)
+    return pe.load_preregistered_config((root / prereg).parent)
 
 
 def cmd_tune(args: argparse.Namespace, root: Path) -> int:
@@ -38,7 +38,9 @@ def cmd_tune(args: argparse.Namespace, root: Path) -> int:
     from . import config as bcfg
     from . import evaluation, tuning
 
-    eval_cfg = _eval_cfg(root)
+    prereg = getattr(args, "prereg", PREREG)
+    eval_cfg = _eval_cfg(root, prereg)
+    bcfg.assert_eval_physics_matches_lineage(eval_cfg.resolved_physics_version)
     scenarios = pe.build_scenarios(eval_cfg)
     pe.assert_disjoint(eval_cfg, scenarios)
     validation = scenarios["validation"]  # the tuners never receive the test split
@@ -52,7 +54,7 @@ def cmd_tune(args: argparse.Namespace, root: Path) -> int:
         print(f"{name}: {cfg['status']}  {bcfg.describe_parameters(cfg)}")
     write_atomic(
         out / "evaluation.json",
-        canonical_dumps(evaluation.evaluation_document(eval_cfg, directory=args.out, prereg=PREREG)).encode("ascii"),
+        canonical_dumps(evaluation.evaluation_document(eval_cfg, directory=args.out, prereg=prereg)).encode("ascii"),
     )
     print(f"wrote {args.out}/")
     return 0
@@ -63,14 +65,15 @@ def _request(args: argparse.Namespace, root: Path, argv: list[str]):
     from ..repro.run import RunRequest
     from . import config as bcfg
 
-    eval_cfg = _eval_cfg(root)
+    prereg = getattr(args, "prereg", PREREG)
+    eval_cfg = _eval_cfg(root, prereg)
     sc = pe.build_scenarios(eval_cfg)
     val_id, test_id = pe.scenario_set_id(sc["validation"]), pe.scenario_set_id(sc["test"])
     d = args.configs
     return RunRequest(
         experiment="baselines",
         config_paths=[f"{d}/evaluation.json", *[f"{d}/{n}.json" for n in bcfg.BASELINE_NAMES]],
-        prereg=PREREG,
+        prereg=prereg,
         scenario_set_id=pe.scenario_set_id(sc["validation"] + sc["test"]),
         split_id=f"validation={val_id};test={test_id}",
         run_id=args.run_id,
@@ -118,8 +121,10 @@ def main(argv: list[str] | None = None) -> int:
     sub = p.add_subparsers(dest="command", required=True)
     t = sub.add_parser("tune", help="tune the baselines on validation scenarios")
     t.add_argument("--out", default="configs/baselines")
+    t.add_argument("--prereg", default=PREREG, help="repo-relative PREREGISTRATION.json of the protocol to tune under")
     r = sub.add_parser("run", help="evaluate on the test scenarios through the T24 run framework")
     r.add_argument("--configs", default="configs/baselines")
+    r.add_argument("--prereg", default=PREREG, help="repo-relative PREREGISTRATION.json of the protocol to run under")
     r.add_argument("--run-id")
     r.add_argument("--check-determinism", action="store_true")
     v = sub.add_parser("verify", help="verify a baselines run (T24 verify, with the experiment registered)")

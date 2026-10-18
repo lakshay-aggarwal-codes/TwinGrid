@@ -48,10 +48,35 @@ from .optimizer import (
     INTERVAL_MIN,
     OUTLET_MAX,
     DataCentreEnv,
+    assert_rl_supported_physics_version,
 )
+from .versions import PHYSICS_V1, validate_physics_version
 
-PHYSICS_VERSION = "legacy-0 (implicit)"  # T1b/T7 introduce the real constant; this is the frozen current physics
+# The physics a NEW evaluation runs on. Canonical version strings only.
+PHYSICS_VERSION = PHYSICS_V1
 SCHEMA_VERSION = 1
+
+# Labels written by earlier harness versions. The shipped PREREGISTRATION.json (and every result produced from
+# it) says "legacy-0 (implicit)"; that label meant the frozen legacy-0 equations and is resolved to them, so
+# the registered protocol still reproduces its recorded numbers. The hash of a registered config covers the
+# label as written, so the label itself is never rewritten on load.
+LEGACY_PHYSICS_LABELS: dict[str, str] = {"legacy-0 (implicit)": "legacy-0"}
+
+
+def resolve_physics_version(label: str) -> str:
+    """Map a config's ``physics_version`` label to the canonical version the environment must run.
+
+    Raises ``PhysicsVersionError`` for an unknown label and ``UnsupportedPhysicsVersionForRL`` for a twin
+    version the RL environment cannot run (currently ``2``). It never falls back to the process default:
+    that fallback is what let a report say one physics while the environment ran another.
+    """
+    canonical = LEGACY_PHYSICS_LABELS.get(label, label)
+    return assert_rl_supported_physics_version(validate_physics_version(canonical))
+
+
+class PhysicsMismatchError(RuntimeError):
+    """The environment that ran an episode is not the physics the evaluation config declared."""
+
 
 # =============================================================================================
 # Metrics registry (pre-registered)
@@ -68,6 +93,14 @@ METRICS: dict[str, tuple[str, str]] = {
     "inlet_over_max_steps": ("lower", f"Steps with inlet temperature > {INLET_TEMP_MAX} C"),
     "inlet_under_min_steps": ("lower", f"Steps with inlet temperature < {INLET_TEMP_MIN} C"),
 }
+# HARD constraints: the safety envelope's counted limits. They are judged ABSOLUTELY (zero steps), never relative
+# to a baseline and never traded against reward. (The envelope also has a PUE limit; PUE violations are not yet
+# counted per step by this harness -- see docs/audit/TwinGrid_Issue_Register.md, TG-A-12.)
+HARD_CONSTRAINT_METRICS: tuple[str, ...] = (
+    "outlet_violation_steps",
+    "inlet_over_max_steps",
+    "inlet_under_min_steps",
+)
 PRIMARY_METRIC = "total_reward"
 SECONDARY_METRICS = ("energy_kwh", "water_L", "carbon_gco2", "mean_pue", "mean_wue")
 
@@ -113,6 +146,11 @@ class EvalConfig:
     min_training_seeds: int = 5
     scenario_inputs_label: str = "synthetic diurnal weather and workload from DataCentreEnv; simulated plant"
 
+    @property
+    def resolved_physics_version(self) -> str:
+        """The canonical physics version this config runs (see ``resolve_physics_version``)."""
+        return resolve_physics_version(self.physics_version)
+
     def to_json(self) -> dict[str, Any]:
         return json.loads(json.dumps(asdict(self)))
 
@@ -139,13 +177,13 @@ OUTCOME_RULES = {
         "Continue under governance: for BOTH the rule baseline and the best constant, (1) the t-based 95% CI of the "
         "paired primary-metric difference across TRAINING SEEDS excludes zero in PPO's favour, (2) the same holds "
         "across test scenarios for the validation-selected candidate, (3) PPO's mean advantage is positive in every "
-        "test family, (4) the selected candidate has zero outlet-over-limit and inlet-over-max steps and no more "
-        "inlet-under-min steps than the rule baseline, (5) no secondary metric is worse by more than the secondary "
-        "tolerance. Only supports 'simulator-validated candidate'."
+        "test family, (4) the selected candidate has ZERO outlet-over-limit, inlet-over-max and inlet-under-min "
+        "steps on the test set (absolute; amendment A1, see docs/audit), (5) no secondary metric is worse by more "
+        "than the secondary tolerance. Only supports 'simulator-validated candidate'."
     ),
     "C": (
-        "Replace with a simpler controller: the rule baseline or the best constant, if it has zero outlet-over-limit "
-        "and inlet-over-max steps on the test set and PPO's mean primary-metric advantage over it is at most the "
+        "Replace with a simpler controller: the rule baseline or the best constant, if it has zero outlet-over-limit, "
+        "inlet-over-max and inlet-under-min steps on the test set (amendment A1) and PPO's mean primary-metric advantage over it is at most the "
         "primary tolerance (including the case where PPO is worse). Checked before B."
     ),
     "B": "Offline research module only: PPO is not shown to be better than simple controllers, and not shown to be equal.",
@@ -260,6 +298,7 @@ def run_episode(
     reset = getattr(policy, "reset", None)
     if callable(reset):
         reset()
+    declared = cfg.resolved_physics_version
     env = DataCentreEnv(
         alpha=cfg.alpha,
         beta=cfg.beta,
@@ -268,7 +307,12 @@ def run_episode(
         max_steps=cfg.episode_steps,
         seed=scenario.seed,
         carbon_intensity_by_hour=carbon_curve,
+        physics_version=declared,  # explicit: never the process default
     )
+    if env.physics_version != declared:  # defence in depth; the constructor already honours the argument
+        raise PhysicsMismatchError(
+            f"config declares physics {declared!r} but the environment runs {env.physics_version!r}"
+        )
     obs, _ = env.reset(seed=scenario.seed)
     state = env.get_state_dict()
     dt_h = INTERVAL_MIN / 60.0
@@ -339,6 +383,11 @@ def evaluate_policy(
 
 def metric_matrix(results: Sequence[EpisodeResult], metric: str) -> np.ndarray:
     return np.array([r.metrics[metric] for r in results], dtype=float)
+
+
+def hard_constraint_total(results: Sequence[EpisodeResult]) -> float:
+    """Total hard-constraint violation steps over ``results`` (zero == envelope-safe on every episode)."""
+    return float(sum(metric_matrix(results, m).sum() for m in HARD_CONSTRAINT_METRICS))
 
 
 def assert_identical_scenarios(by_policy: dict[str, list[EpisodeResult]]) -> None:
@@ -509,10 +558,7 @@ def decide_outcome(
         # (C) simpler-controller equivalence
         adv = float(sel_primary.mean() - b_primary.mean())
         tol = cfg.primary_tolerance_rel * abs(float(b_primary.mean()))
-        b_safe = (
-            float(metric_matrix(bres, "outlet_violation_steps").sum()) == 0
-            and float(metric_matrix(bres, "inlet_over_max_steps").sum()) == 0
-        )
+        b_safe = hard_constraint_total(bres) == 0  # all three hard limits, absolutely
         within = adv <= tol
         if within and b_safe:
             c_candidates.append(bname)
@@ -534,18 +580,11 @@ def decide_outcome(
         a_ok = a_ok and c1 and c2 and c3 and c5
 
     # (4) envelope, selected candidate (independent of baseline)
-    rule_under = float(metric_matrix(baselines_test["rule"], "inlet_under_min_steps").sum())
-    env = {
-        "outlet_violation_steps": float(metric_matrix(sel, "outlet_violation_steps").sum()),
-        "inlet_over_max_steps": float(metric_matrix(sel, "inlet_over_max_steps").sum()),
-        "inlet_under_min_steps": float(metric_matrix(sel, "inlet_under_min_steps").sum()),
-        "rule_inlet_under_min_steps": rule_under,
-    }
-    env_ok = (
-        env["outlet_violation_steps"] == 0
-        and env["inlet_over_max_steps"] == 0
-        and env["inlet_under_min_steps"] <= rule_under
-    )
+    env = {m: float(metric_matrix(sel, m).sum()) for m in HARD_CONSTRAINT_METRICS}
+    # Informational only: how the rule baseline fares. It is NOT a tolerance (an absolute limit is never relaxed
+    # to "no worse than a baseline"); a baseline that violates the envelope is reported as unsafe instead.
+    env["rule_inlet_under_min_steps"] = float(metric_matrix(baselines_test["rule"], "inlet_under_min_steps").sum())
+    env_ok = all(env[m] == 0 for m in HARD_CONSTRAINT_METRICS)
     detail["envelope_selected_candidate"] = {**env, "ok": env_ok}
     a_ok = a_ok and env_ok
 
@@ -611,7 +650,12 @@ def run_evaluation(
         ppo_val[seed] = evaluate_policy(PPOPolicy(opt, f"ppo_seed_{seed}"), val, cfg, carbon_curve)
         val_results[f"ppo_seed_{seed}"] = ppo_val[seed]
     assert_identical_scenarios(val_results)
-    best_const = max(consts, key=lambda c: (_mean(val_results[c.name]), c.name))
+    # The "best constant" is the simpler-controller comparator, so it is chosen among constants that satisfy
+    # every hard constraint on every validation episode. Only if NONE does (e.g. legacy-0, whose envelope is
+    # unreachable) is the highest-reward constant used, and the result says so.
+    feasible_consts = [c for c in consts if hard_constraint_total(val_results[c.name]) == 0]
+    best_const_pool = feasible_consts or consts
+    best_const = max(best_const_pool, key=lambda c: (_mean(val_results[c.name]), c.name))
     selected_seed = max(ppo_val, key=lambda s: (_mean(ppo_val[s]), -s)) if ppo_val else None
 
     # ---- test: identical scenarios for every policy ----
@@ -653,6 +697,7 @@ def run_evaluation(
     return {
         "schema_version": SCHEMA_VERSION,
         "physics_version": cfg.physics_version,
+        "physics_version_executed": cfg.resolved_physics_version,
         "scenario_inputs": cfg.scenario_inputs_label,
         "carbon": {"is_real": bool(carbon_is_real), "flat_curve": bool(np.ptp(carbon_curve) == 0)},
         "scenario_sets": {
@@ -664,6 +709,7 @@ def run_evaluation(
         "selection": {
             "best_constant": {"name": best_const.name, "chilled_C": best_const.chilled_C, "mode": best_const.mode},
             "best_constant_validation_reward": _mean(val_results[best_const.name]),
+            "best_constant_envelope_feasible": bool(feasible_consts),
             "rule_validation_reward": _mean(val_results[rule.name]),
             "constants_validation_reward": constants_validation,
             "ppo_validation_reward": {str(s): _mean(r) for s, r in ppo_val.items()},
@@ -798,7 +844,7 @@ def results_markdown(res: dict[str, Any]) -> str:
         f"**Outcome: {d['outcome']}**. {d['reason']}",
         f"Claim allowed: {d['claim_allowed']}.",
         "",
-        f"Physics `{res['physics_version']}`. Inputs: {res['scenario_inputs']}. "
+        f"Physics `{res['physics_version']}` (executed: `{res.get('physics_version_executed', res['physics_version'])}`). Inputs: {res['scenario_inputs']}. "
         f"Carbon curve real: {res['carbon']['is_real']} (flat: {res['carbon']['flat_curve']}).",
         f"Pre-registration `{res['preregistration_sha256']}`; scenario-set id `{res['scenario_set_id']}` "
         f"(validation n={res['scenario_sets']['validation']['n']}, test n={res['scenario_sets']['test']['n']}).",

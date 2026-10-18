@@ -87,6 +87,28 @@ CHILLED_WATER_ACTION_RANGE_C: dict[str, tuple[float, float]] = {
         SAFETY_ENVELOPE.inlet_max_C - CHILLED_WATER_APPROACH_C,
     ),
 }
+# Physics versions the RL environment can run. ``2`` is a valid TWIN version (src/physics/v2.py) but the RL
+# contract (action range, observation schema, reward normalisers, tuned baselines, trained policies) has not
+# been built or validated for it. It used to be accepted by ``validate_physics_version`` and then fail with a
+# bare ``KeyError: '2'`` inside ``reset()``; it is now refused at construction with an actionable message.
+RL_SUPPORTED_PHYSICS_VERSIONS: tuple[str, ...] = tuple(CHILLED_WATER_ACTION_RANGE_C)
+
+
+class UnsupportedPhysicsVersionForRL(ValueError):
+    """The twin knows this physics version but the RL environment contract does not support it yet."""
+
+
+def assert_rl_supported_physics_version(physics_version: str) -> str:
+    """Return ``physics_version`` if DataCentreEnv can run it; raise ``UnsupportedPhysicsVersionForRL`` otherwise."""
+    if physics_version not in RL_SUPPORTED_PHYSICS_VERSIONS:
+        raise UnsupportedPhysicsVersionForRL(
+            f"physics version {physics_version!r} is not supported by the RL environment "
+            f"(supported: {', '.join(RL_SUPPORTED_PHYSICS_VERSIONS)}). The digital twin itself can run it; "
+            "the RL action range, observation schema, baselines and policies have not been defined for it."
+        )
+    return physics_version
+
+
 EPISODE_STEPS = 288  # 24 hours at 5-min intervals
 
 # Observation normalisation ranges.
@@ -270,8 +292,8 @@ class DataCentreEnv(gym.Env):
         self._water_stress = water_stress
         self._max_steps = max_steps
         self._pinn = pinn
-        self._physics_version = validate_physics_version(
-            physics_version if physics_version is not None else active_physics_version()
+        self._physics_version = assert_rl_supported_physics_version(
+            validate_physics_version(physics_version if physics_version is not None else active_physics_version())
         )
         self._v1 = self._physics_version == PHYSICS_V1
         step_s = DEFAULT_SIM_STEP_SECONDS if sim_step_seconds is None else float(sim_step_seconds)

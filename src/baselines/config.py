@@ -58,6 +58,23 @@ def running_lineage() -> dict[str, Any]:
     return {k: values[k] for k in LINEAGE_FIELDS}
 
 
+def assert_eval_physics_matches_lineage(declared_physics_version: str) -> None:
+    """Refuse to tune or run baselines when the evaluation protocol's physics is not the physics the code runs.
+
+    A baseline's ``lineage.physics_version`` is the running code's physics. If the pre-registered protocol
+    declares a different one, the configs would be TUNED on one physics and RECORDED as another -- the same
+    label/execution split ``policy_evaluation`` used to have. Register a protocol for the running physics
+    (``python -m src.policy_evaluation prereg --out <dir>``) and pass it with ``--prereg``.
+    """
+    running = running_lineage()["physics_version"]
+    if declared_physics_version != running:
+        raise BaselineConfigError(
+            f"the evaluation protocol declares physics {declared_physics_version!r} but the running code uses "
+            f"{running!r}; tuning would record one physics and run the other. Register a protocol for "
+            f"physics {running!r} and pass it with --prereg."
+        )
+
+
 def config_path(name: str, root: Path, directory: str = CONFIG_DIR) -> Path:
     if name not in BASELINE_NAMES:
         raise BaselineConfigError(f"unknown baseline {name!r}; known: {', '.join(BASELINE_NAMES)}")
