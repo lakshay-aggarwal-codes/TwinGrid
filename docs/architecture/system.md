@@ -99,8 +99,8 @@ graph TB
   **flat 475 gCO2/kWh assumption** and labels it `constant_assumption` /
   `is_fallback=True`; the live payload carries `carbon_data_is_real`,
   `carbon_semantic` and `carbon_is_fallback`.
-- `src/digital_twin_optimized.py` is a separate batch/JIT variant used by
-  `benchmark_performance.py` and tests only; the API does not use it.
+- There is a single simulator (`src/digital_twin.py`). The separate batch/JIT variant
+  `src/digital_twin_optimized.py` was retired in Task 5 because it diverged from it.
 
 ## ML models and artifacts
 

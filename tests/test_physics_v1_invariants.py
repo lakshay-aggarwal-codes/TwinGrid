@@ -765,16 +765,15 @@ class TestItPowerCurveDecision:
 
 # =============================================================================== scope guard
 def test_duplicate_physics_modules_are_not_used_by_production_code():
-    """digital_twin_optimized.py (own COP/evaporation tables) and the PINN's hard-coded physics duplicate
-    legacy equations and are OUT OF SCOPE for v1. They must not be reachable from the API or the twin."""
+    """The PINN's hard-coded physics duplicates legacy equations and is OUT OF SCOPE for v1; it must not be
+    reachable from the API or the twin. (digital_twin_optimized.py, the other duplicate, was retired in Task 5.)"""
     import pathlib
 
     root = pathlib.Path(__file__).resolve().parents[1]
+    assert not (root / "src" / "digital_twin_optimized.py").exists()
     offenders = []
     for folder in ("api", "src"):
         for path in (root / folder).rglob("*.py"):
-            if path.name == "digital_twin_optimized.py":
-                continue
             if "digital_twin_optimized" in path.read_text(encoding="utf-8"):
                 offenders.append(str(path.relative_to(root)))
     assert offenders == []

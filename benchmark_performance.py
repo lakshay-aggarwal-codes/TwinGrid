@@ -1,26 +1,46 @@
 #!/usr/bin/env python3
-"""
-Performance benchmark for DigitalTwin optimization.
+"""Timing benchmark for the one simulator, ``src.digital_twin.DigitalTwin``.
 
-Tests original vs optimized implementation for 24-hour simulation (288 steps).
+Protocol (fixed, so numbers are comparable between runs and machines):
+  * workload  : 288 steps = one simulated day, the inputs of ``generate_test_actions``
+  * warm-up   : 3 untimed days (imports, caches, allocator)
+  * repeats   : 30 timed days, each on a fresh twin (construction is NOT timed)
+  * clock     : ``time.perf_counter``
+  * reported  : median, IQR (Q3 - Q1), min, max of seconds per day and microseconds per step
+  * physics   : legacy-0 and 1, both measured with this identical protocol
+  * environment is printed with every result; numbers from different machines must not be mixed.
+
+Run from the repository root:  python benchmark_performance.py [--repeats 30] [--json out.json]
+
+This measures speed only. Output equivalence is not a question here any more: there is no second
+implementation to compare against (the former "optimised" twin was retired, see docs/tasks/Task5_TWIN_PARITY_REPORT.md).
 """
 
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import os
+import platform
+import statistics
 import sys
 import time
 
 import numpy as np
 
-# Add src to path
-sys.path.insert(0, "src")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+PHYSICS_VERSIONS = ("legacy-0", "1")
+WARMUP_DAYS = 3
+DEFAULT_REPEATS = 30
 
 
 def generate_test_actions(n_steps=288):
     """Generate realistic test actions for 24-hour simulation."""
     actions = []
-    # base_time = datetime(2024, 1, 1, 0, 0, 0)
 
     for i in range(n_steps):
-        # Simulate daily patterns
         hour = (i * 5) // 60  # 5-minute intervals
 
         # Server utilisation: higher during business hours
@@ -57,206 +77,78 @@ def generate_test_actions(n_steps=288):
     return actions
 
 
-def benchmark_original():
-    """Benchmark original DigitalTwin implementation."""
-    print("Benchmarking Original DigitalTwin...")
-
-    try:
-        from src.digital_twin import DigitalTwin as OriginalTwin
-
-        # Original implementation doesn't have enable_logging parameter
-        twin = OriginalTwin()
-        actions = generate_test_actions()
-
-        start_time = time.time()
-
-        for action in actions:
-            state = twin.step(action)
-
-        end_time = time.time()
-        execution_time = end_time - start_time
-
-        print(f"  Original implementation: {execution_time:.3f} seconds")
-        print(f"  Final state: PUE={state.pue:.3f}, Outlet={state.server_outlet_temp_C:.1f}°C")
-
-        return execution_time
-
-    except ImportError as e:
-        print(f"  Could not import original implementation: {e}")
-        return None
+def environment() -> dict:
+    return {
+        "python": platform.python_version(),
+        "numpy": np.__version__,
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "processor": platform.processor() or "unknown",
+        "cpu_count": os.cpu_count(),
+    }
 
 
-def benchmark_optimized():
-    """Benchmark optimized DigitalTwin implementation."""
-    print("Benchmarking Optimized DigitalTwin...")
-
-    try:
-        from src.digital_twin_optimized import DigitalTwinOptimized
-
-        twin = DigitalTwinOptimized(enable_logging=False)
-        actions = generate_test_actions()
-
-        start_time = time.time()
-
-        for action in actions:
-            state = twin.step(action)
-
-        end_time = time.time()
-        execution_time = end_time - start_time
-
-        print(f"  Optimized implementation: {execution_time:.3f} seconds")
-        print(f"  Final state: PUE={state.pue:.3f}, Outlet={state.server_outlet_temp_C:.1f}°C")
-
-        return execution_time
-
-    except ImportError as e:
-        print(f"  Could not import optimized implementation: {e}")
-        return None
+def summarise(day_seconds: list[float], steps: int) -> dict:
+    q = statistics.quantiles(day_seconds, n=4, method="inclusive")
+    median = statistics.median(day_seconds)
+    return {
+        "repeats": len(day_seconds),
+        "median_s_per_day": median,
+        "iqr_s_per_day": q[2] - q[0],
+        "min_s_per_day": min(day_seconds),
+        "max_s_per_day": max(day_seconds),
+        "median_us_per_step": median / steps * 1e6,
+    }
 
 
-def benchmark_batch_processing():
-    """Benchmark optimized batch processing."""
-    print("Benchmarking Batch Processing...")
+def time_one_day(physics_version: str, actions: list[dict]) -> float:
+    from src.digital_twin import DigitalTwin
 
-    try:
-        from src.digital_twin_optimized import DigitalTwinOptimized
-
-        twin = DigitalTwinOptimized(enable_logging=False)
-        actions = generate_test_actions()
-
-        start_time = time.time()
-
-        # Process all steps in one batch
-        states = twin.step_batch(actions)
-
-        end_time = time.time()
-        execution_time = end_time - start_time
-
-        final_state = states[-1] if states else None
-        print(f"  Batch processing: {execution_time:.3f} seconds")
-        if final_state:
-            print(f"  Final state: PUE={final_state.pue:.3f}, Outlet={final_state.server_outlet_temp_C:.1f}°C")
-
-        return execution_time
-
-    except ImportError as e:
-        print(f"  Could not import optimized implementation: {e}")
-        return None
+    twin = DigitalTwin(physics_version=physics_version)  # construction not timed
+    start = time.perf_counter()
+    for action in actions:
+        twin.step(action)
+    return time.perf_counter() - start
 
 
-def benchmark_vectorized_functions():
-    """Benchmark individual vectorized functions."""
-    print("Benchmarking Vectorized Functions...")
-
-    try:
-        from src.digital_twin_optimized import DigitalTwinOptimized
-
-        twin = DigitalTwinOptimized(enable_logging=False)
-
-        # Generate test data
-        n_samples = 1000
-        utilisations = np.random.uniform(0.1, 0.9, n_samples)
-        inlet_temps = np.random.uniform(18, 25, n_samples)
-        it_powers = np.random.uniform(200, 500, n_samples)
-
-        # Benchmark batch IT power computation
-        start_time = time.time()
-        it_powers_batch = twin.compute_batch_it_power(utilisations)
-        batch_time = time.time() - start_time
-
-        # Benchmark individual IT power computation
-        start_time = time.time()
-        it_powers_individual = [twin.compute_it_power(u) for u in utilisations]
-        individual_time = time.time() - start_time
-
-        print(f"  Batch IT power ({n_samples} values): {batch_time:.6f} seconds")
-        print(f"  Individual IT power ({n_samples} values): {individual_time:.6f} seconds")
-        if batch_time > 0:
-            print(f"  Speedup: {individual_time / batch_time:.1f}x")
-        else:
-            print("  Speedup: >1000x (batch too fast to measure)")
-
-        # Verify results are equivalent
-        max_diff = np.max(np.abs(np.array(it_powers_batch) - np.array(it_powers_individual)))
-        print(f"  Max difference: {max_diff:.6f} kW")
-
-        # Benchmark batch outlet temperature computation
-        start_time = time.time()
-        # outlet_temps_batch = twin.compute_batch_outlet_temp(inlet_temps, it_powers)
-        _ = twin.compute_batch_outlet_temp(inlet_temps, it_powers)
-        batch_temp_time = time.time() - start_time
-
-        start_time = time.time()
-        # outlet_temps_individual = [twin.compute_outlet_temp(inlet_temps[i], it_powers[i]) for i in range(n_samples)]
-        _ = [twin.compute_outlet_temp(inlet_temps[i], it_powers[i]) for i in range(n_samples)]
-        individual_temp_time = time.time() - start_time
-
-        print(f"  Batch outlet temp ({n_samples} values): {batch_temp_time:.6f} seconds")
-        print(f"  Individual outlet temp ({n_samples} values): {individual_temp_time:.6f} seconds")
-        if batch_temp_time > 0:
-            print(f"  Speedup: {individual_temp_time / batch_temp_time:.1f}x")
-        else:
-            print("  Speedup: >1000x (batch too fast to measure)")
-
-        return batch_time, individual_time
-
-    except ImportError as e:
-        print(f"  Could not import optimized implementation: {e}")
-        return None, None
+def benchmark(physics_version: str, repeats: int) -> dict:
+    actions = generate_test_actions()
+    for _ in range(WARMUP_DAYS):
+        time_one_day(physics_version, actions)
+    samples = [time_one_day(physics_version, actions) for _ in range(repeats)]
+    result = summarise(samples, len(actions))
+    result["physics_version"] = physics_version
+    result["steps_per_day"] = len(actions)
+    return result
 
 
-def main():
-    """Run all benchmarks."""
-    print("Digital Twin Performance Benchmark")
-    print("=" * 50)
-    print("Test: 24-hour simulation (288 steps)")
-    print("Target: < 2 seconds for real-time dashboard")
-    print("=" * 50)
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--repeats", type=int, default=DEFAULT_REPEATS, help="timed days per physics version (>= 20)")
+    parser.add_argument("--json", metavar="PATH", help="also write the full result as JSON")
+    args = parser.parse_args(argv)
+    if args.repeats < 20:
+        parser.error("--repeats must be >= 20 (median/IQR are not meaningful below that)")
 
-    # Run benchmarks
-    original_time = benchmark_original()
-    print()
+    logging.disable(logging.CRITICAL)  # keep the carbon-fallback warning out of the timing loop
+    env = environment()
+    results = [benchmark(v, args.repeats) for v in PHYSICS_VERSIONS]
 
-    optimized_time = benchmark_optimized()
-    print()
-
-    batch_time = benchmark_batch_processing()
-    print()
-
-    benchmark_vectorized_functions()
-    print()
-
-    # Summary
-    print("=" * 50)
-    print("PERFORMANCE SUMMARY")
-    print("=" * 50)
-
-    if original_time is not None:
-        print(f"Original implementation: {original_time:.3f} seconds")
-        if optimized_time is not None:
-            speedup = original_time / optimized_time
-            print(f"Optimized implementation: {optimized_time:.3f} seconds")
-            print(f"Single-step speedup: {speedup:.1f}x")
-
-    if batch_time is not None:
-        print(f"Batch processing: {batch_time:.3f} seconds")
-        if original_time is not None:
-            batch_speedup = original_time / batch_time
-            print(f"Batch processing speedup: {batch_speedup:.1f}x")
-
-    # Check if we meet the target
-    fastest_time = min([t for t in [original_time, optimized_time, batch_time] if t is not None])
-    print()
-    if fastest_time < 2.0:
+    print("Digital Twin timing (DigitalTwin only; speed, not equivalence)")
+    print(f"environment: {json.dumps(env)}")
+    print(f"protocol   : {WARMUP_DAYS} warm-up days, {args.repeats} timed days, fresh twin per day, perf_counter")
+    for r in results:
         print(
-            f"Fastest time {fastest_time:.3f}s (simulator only; implementations are NOT checked for equal output here)"
+            f"  physics {r['physics_version']:<8} median {r['median_s_per_day'] * 1e3:7.3f} ms/day "
+            f"(IQR {r['iqr_s_per_day'] * 1e3:6.3f} ms, min {r['min_s_per_day'] * 1e3:7.3f}, "
+            f"max {r['max_s_per_day'] * 1e3:7.3f}) = {r['median_us_per_step']:6.1f} us/step"
         )
-    else:
-        print(f"⚠️  NEEDS WORK: Fastest time {fastest_time:.3f}s > 2.0s target")
-        print("❌ Real-time dashboard performance not yet achieved")
-
-    print("=" * 50)
+    if args.json:
+        with open(args.json, "w", encoding="utf-8") as fh:
+            json.dump({"environment": env, "warmup_days": WARMUP_DAYS, "results": results}, fh, indent=2)
+        print(f"wrote {args.json}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

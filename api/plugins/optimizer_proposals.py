@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Annotated, Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import get_current_user
@@ -67,10 +67,24 @@ class Context(BaseModel):
     inlet_temp_c: Optional[float] = Field(None, ge=0, le=60)
 
 
+def _accepted_range() -> tuple[float, float]:
+    """Read per request: the physics (``PHYSICS_VERSION``) is not fixed at import."""
+    return rules.accepted_chilled_range_C(SR.CHILLED_WATER_TEMP_BOUNDS)
+
+
+def _check_setpoint(value: float) -> float:
+    lo, hi = _accepted_range()
+    if not lo <= value <= hi:
+        raise ValueError(f"must be between {lo:g} and {hi:g} C for the running physics")
+    return value
+
+
 class ProposalCreate(Context):
-    chilled_water_temp_c: float = Field(ge=rules.CHILLED_MIN_C, le=rules.CHILLED_MAX_C)
+    chilled_water_temp_c: float
     cooling_mode: Mode
     rationale: Optional[str] = Field(None, max_length=rules.MAX_NOTE_CHARS)
+
+    _in_range = field_validator("chilled_water_temp_c")(_check_setpoint)
 
 
 class Decision(BaseModel):
@@ -88,7 +102,10 @@ def _predict(ctx: Context, chilled_c: float, mode: str) -> dict[str, Any]:
         ctx.utilisation, ctx.outside_temp, ctx.water_stress, ctx.current_mode, ctx.current_chilled_water_temp
     )
     proposed = twin_service.compute_whatif(ctx.utilisation, ctx.outside_temp, ctx.water_stress, mode, chilled_c)
-    return rules.predicted_effect(reference, proposed, OUTLET_TEMP_MAX)
+    effect = rules.predicted_effect(reference, proposed, OUTLET_TEMP_MAX)
+    # additive: which side of the evaluated actuator range each set-point is on, and under which physics
+    effect["setpoint_check"] = rules.setpoint_check(chilled_c, ctx.current_chilled_water_temp)
+    return effect
 
 
 def _recommend(ctx: Context) -> dict[str, Any]:
@@ -190,8 +207,10 @@ async def baseline_recommendation(
 
 
 class SandboxQuery(Context):
-    proposed_chilled_water_temp: float = Field(ge=rules.CHILLED_MIN_C, le=rules.CHILLED_MAX_C)
+    proposed_chilled_water_temp: float
     proposed_mode: Mode
+
+    _in_range = field_validator("proposed_chilled_water_temp")(_check_setpoint)
 
 
 @router.get("/api/optimizer/sandbox", dependencies=[Depends(http_limit("whatif"))])

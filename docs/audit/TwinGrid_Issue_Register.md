@@ -26,10 +26,10 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 ### TG-A-04 — Baseline lineage records the running physics, tuning could use another  (High, FIXED, medium-high)
 - Files: `src/baselines/{config,evaluation,cli}.py`. Guard `assert_eval_physics_matches_lineage`; `--prereg` option added.
 
-### TG-A-05 — "Optimized" twin is not numerically equivalent  (High, CONFIRMED-OPEN, high)
-- Files: `src/digital_twin_optimized.py`, `benchmark_performance.py`, `PERFORMANCE_OPTIMIZATION.md`.
-- Evidence: on the benchmark inputs max |d outlet| ~ 20 C, max |d PUE| ~ 0.10 vs `DigitalTwin(legacy-0)`. Used only by the benchmark and two tests.
-- Done: strict xfail documenting it; benchmark success banner removed; perf doc rewritten. Not done: fix or retire the module.
+### TG-A-05 — "Optimized" twin is not numerically equivalent  (High, FIXED by retirement, high)
+- Files: `src/digital_twin_optimized.py` (deleted), `benchmark_performance.py`, `PERFORMANCE_OPTIMIZATION.md`.
+- Evidence: on the benchmark inputs max |d outlet| ~ 20 C, max |d PUE| ~ 0.10 vs `DigitalTwin(legacy-0)`; 8 of the 15 shared state fields diverged and 5 `DataCentreState` fields do not exist in it. Used only by the benchmark and tests.
+- Done (Task 5): module deleted, strict xfail replaced by `test_optimized_twin_is_retired_and_nothing_references_it`, benchmark rewritten to a warm-up/repeat/median-IQR protocol on `DigitalTwin` only. See `docs/tasks/Task5_TWIN_PARITY_REPORT.md`.
 
 ### TG-A-06 — Performance claims false and unreproducible  (High, FIXED in docs, high)
 - Doc claimed 45 s / 3.844 s -> 0.003 s and cited non-existent modules. Measured: main twin ~3.3 ms per simulated day. Single run, one machine; rewritten as indicative only.

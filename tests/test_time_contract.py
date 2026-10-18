@@ -361,15 +361,9 @@ def _site(dt: datetime, name: str) -> datetime:
 GUARDED_DIRS = ("api", "models", "src")
 
 # file (repo-relative) -> number of naive-clock calls tolerated there, with the reason.
-# Every entry is debt that T12's allowed-file list did not let it fix; the count is pinned so
-# a NEW naive call in the same file still fails.
-ALLOW_LIST: dict[str, tuple[int, str]] = {
-    "src/digital_twin_optimized.py": (
-        2,
-        "legacy optimised twin; not an allowed T12 file. Two live `start_time or datetime.now()` defaults "
-        "(the other two hits are docstring examples, invisible to the AST).",
-    ),
-}
+# Debt only: the count is pinned so a NEW naive call in the same file still fails. Empty since
+# src/digital_twin_optimized.py (its only entry) was retired in Task 5.
+ALLOW_LIST: dict[str, tuple[int, str]] = {}
 
 _NAIVE_ATTRS_ALWAYS = {"utcnow", "utcfromtimestamp"}
 
