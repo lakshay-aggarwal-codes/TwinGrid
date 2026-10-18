@@ -7,7 +7,7 @@
   },
   "description": "Deterministic baselines v2 evaluated on the held-out test scenarios of the pre-registered evaluation config",
   "experiment": "baselines",
-  "preregistration": "reports/policy_evaluation/PREREGISTRATION.json",
+  "preregistration": "reports/policy_evaluation_physics1/PREREGISTRATION.json",
   "schema": "twingrid-baselines-run/1",
   "seeds": [
     200000,

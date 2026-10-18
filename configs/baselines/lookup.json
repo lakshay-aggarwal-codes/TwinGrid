@@ -2,28 +2,28 @@
   "config_version": 1,
   "infeasible_reason": null,
   "lineage": {
-    "action_schema_hash": "4eac7196a367fb0061a3a133f0541fa465297aa4be4cad086300e992ff7c1007",
-    "action_semantics_version": "1",
-    "environment_version": "1",
+    "action_schema_hash": "8a9f75c4a98717d8e50af4e08e10d474fe7ad83273ed72cdfa249b8c221db273",
+    "action_semantics_version": "2",
+    "environment_version": "2",
     "input_cadence_s": 300,
-    "observation_schema_hash": "9fb575882c20162b7e79bc378c1e753ff4fa7a75d11326d078053961a4884626",
+    "observation_schema_hash": "a585b2fef4a5b153973d14cc7ddebb84b37a6d1a4eb206ddb154a099cff4a4eb",
     "physics_params_hash": "14ed372364a00dbaa218da884426291e20963343eb1dd01af1a1c0f82c69afad",
     "physics_version": "1",
-    "reward_version": "1",
-    "safety_envelope_version": "1"
+    "reward_version": "2",
+    "safety_envelope_version": "2"
   },
   "name": "lookup",
   "parameters": {
     "bin_rule": "bin = bisect_right(edges, value): closed on the left, open on the right, first/last bins unbounded",
     "fallback": {
-      "chilled_C": 15.0,
+      "chilled_C": 12.5,
       "mode": "closed_loop",
       "rule": "best feasible constant over the lookup grid on validation"
     },
     "table": [
       [
         {
-          "chilled_C": 15.0,
+          "chilled_C": 12.5,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 0,
@@ -32,7 +32,7 @@
         },
         {
           "chilled_C": 15.0,
-          "mean_reward": -0.25103760104386413,
+          "mean_reward": -0.10045329600262733,
           "mode": "closed_loop",
           "n": 327,
           "source": "table",
@@ -40,7 +40,7 @@
         },
         {
           "chilled_C": 15.0,
-          "mean_reward": -0.2516201444197743,
+          "mean_reward": -0.09400407423027794,
           "mode": "closed_loop",
           "n": 1053,
           "source": "table",
@@ -48,7 +48,7 @@
         },
         {
           "chilled_C": 15.0,
-          "mean_reward": -0.25388235728080055,
+          "mean_reward": -0.09637406535321634,
           "mode": "closed_loop",
           "n": 1644,
           "source": "table",
@@ -56,7 +56,7 @@
         },
         {
           "chilled_C": 15.0,
-          "mean_reward": -0.25503142814304774,
+          "mean_reward": -0.10158050432988339,
           "mode": "closed_loop",
           "n": 102,
           "source": "table",
@@ -65,7 +65,7 @@
       ],
       [
         {
-          "chilled_C": 15.0,
+          "chilled_C": 12.5,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 12,
@@ -74,7 +74,7 @@
         },
         {
           "chilled_C": 15.0,
-          "mean_reward": -0.2515277132529313,
+          "mean_reward": -0.11404516816702139,
           "mode": "closed_loop",
           "n": 525,
           "source": "table",
@@ -82,7 +82,7 @@
         },
         {
           "chilled_C": 15.0,
-          "mean_reward": -0.2519288584721901,
+          "mean_reward": -0.11144328248232374,
           "mode": "closed_loop",
           "n": 27,
           "source": "table",
@@ -90,7 +90,7 @@
         },
         {
           "chilled_C": 15.0,
-          "mean_reward": -0.25567634571382886,
+          "mean_reward": -0.11689365615553082,
           "mode": "closed_loop",
           "n": 507,
           "source": "table",
@@ -98,7 +98,7 @@
         },
         {
           "chilled_C": 15.0,
-          "mean_reward": -0.2556708090178269,
+          "mean_reward": -0.1142943886109231,
           "mode": "closed_loop",
           "n": 60,
           "source": "table",
@@ -107,39 +107,39 @@
       ],
       [
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.25244370597218635,
+          "chilled_C": 12.5,
+          "mean_reward": -0.13253133957157978,
           "mode": "closed_loop",
           "n": 69,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.2523865429749815,
+          "chilled_C": 12.5,
+          "mean_reward": -0.13151242447299547,
           "mode": "closed_loop",
           "n": 501,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.25602271427843465,
+          "chilled_C": 12.5,
+          "mean_reward": -0.13746908911516206,
           "mode": "closed_loop",
           "n": 33,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.25616479663780556,
+          "chilled_C": 12.5,
+          "mean_reward": -0.13399667976187307,
           "mode": "closed_loop",
           "n": 525,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 12.5,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 12,
@@ -149,39 +149,39 @@
       ],
       [
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.25332731646158807,
+          "chilled_C": 12.5,
+          "mean_reward": -0.1467823503927693,
           "mode": "closed_loop",
           "n": 102,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.25338014405992704,
+          "chilled_C": 12.5,
+          "mean_reward": -0.14754445579692765,
           "mode": "closed_loop",
           "n": 594,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.2559318391745061,
+          "chilled_C": 12.5,
+          "mean_reward": -0.15058462938162667,
           "mode": "closed_loop",
           "n": 417,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.25593572809519344,
+          "chilled_C": 12.5,
+          "mean_reward": -0.14701925771727473,
           "mode": "closed_loop",
           "n": 288,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 12.5,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 0,
@@ -191,7 +191,7 @@
       ],
       [
         {
-          "chilled_C": 15.0,
+          "chilled_C": 12.5,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 9,
@@ -199,23 +199,23 @@
           "violation_steps": null
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.2544221811270563,
+          "chilled_C": 12.5,
+          "mean_reward": -0.15992679837090704,
           "mode": "closed_loop",
           "n": 969,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.255229457741264,
+          "chilled_C": 12.5,
+          "mean_reward": -0.16015943240948147,
           "mode": "closed_loop",
           "n": 765,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 12.5,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 9,
@@ -223,7 +223,7 @@
           "violation_steps": null
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 12.5,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 0,
@@ -254,17 +254,17 @@
       "flat_curve": true,
       "is_real": false
     },
-    "eval_config_sha256": "25c4cc68464207f90980eee334f22032c982251afe69f11693f5320c8b1605ac",
+    "eval_config_sha256": "4f7259b1ee87cf500ca4d0f3b2f7c9308dd2f7fd754df24a33ef7fe78877b347",
     "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
     "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
     "result": {
-      "best_constant_over_lookup_grid_validation_reward": -73.1079186601823,
+      "best_constant_over_lookup_grid_validation_reward": -36.32471519118651,
       "cells": 25,
       "fallback_cells": 7,
-      "improves_on_best_constant": false,
+      "improves_on_best_constant": true,
       "least_violating_cells": 0,
       "tie_break": "lexicographic ascending on (chilled_C, mode index)",
-      "validation_reward_closed_loop": -73.1079186601823,
+      "validation_reward_closed_loop": -36.068554769249474,
       "validation_violation_steps": {
         "inlet_over_max_steps": 0,
         "inlet_under_min_steps": 0,

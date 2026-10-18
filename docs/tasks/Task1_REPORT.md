@@ -1,23 +1,22 @@
-# Task 1 — Foundation: extension points
+# Task 1 — Physics-aware baseline policies (TG-A-13, part 1)
 
-## What changed
-- **Backend:** `api/plugins/__init__.py` (`load_plugins`), one additive call in `api/main.py` after the routers. Tests: `tests/test_task1_plugins.py`, fixtures `tests/plugin_fixtures/` (test-only).
-- **Frontend (`src/features/`):** `types.ts`, `registry.ts` (glob discovery, validation, role filtering), `roles.ts`, `commands.ts` + `useCommands.ts` (shared command registry), `Slot.tsx`, `FeatureNav.tsx`, `FeaturePage.tsx`, `FeatureRoutes.tsx`. Test-only example feature in `src/test/fixtures/exampleFeature/`.
-- **Additive host edits:** `App.tsx` (feature routes above the catch-all), `DashboardSidebar` and `TwinHeader` (nav), `Index` (`dashboard` slot), `SidePanel` (`facility-inspector`), `TwinHeader`/`DashboardHeader` (`header-actions`), `AccountMenu` (`settings`). With no features, all render nothing.
-- Docs: `docs/architecture/extension_points.md`.
+## Problem and evidence
+`src/baselines/policies.py` normalised every set-point with the legacy range 5..15 C. `DataCentreEnv._action_to_control` denormalises with `CHILLED_WATER_ACTION_RANGE_C[physics]`: legacy-0 5..15 C, physics 1 16..25 C. Computed from the code in the audit sandbox: label 5 -> 16.0 C, 7.5 -> 18.25, 10 -> 20.5, 12 -> 22.3, 12.5 -> 22.75, 15 -> 25.0 C actually commanded under physics 1. `test_actuator_limits_match_the_environment` was already failing on the unmodified repo.
 
-## Assumptions
-- There is no settings page and no navigation sidebar; `settings` is hosted in the account bar and nav in the controls sidebar and the live-twin header.
-- Plugin routers get the core general rate-limit dependency; `setup` runs before `include_router` so a failing plugin adds no routes.
-- `admin` is accepted as a `minRole` but the backend issues only viewer/operator, so admin-only items are hidden from everyone for now.
+## Decisions
+- Range is read from the environment's table (`actuator_range_C`), never copied; physics `"2"` raises `UnsupportedPhysicsVersionForRL`.
+- Default `physics_version` is `legacy-0` everywhere so every existing call site and the frozen legacy report behave exactly as before (tested against a copy of the old formula for 41 set-points x 4 modes, float32).
+- Out-of-range set-points now raise instead of being silently clipped (the clipping is how the mislabelling stayed invisible). Legacy-0 call sites in the repo only use in-range values.
+- `RulePolicy` default set-point: legacy-0 12 C (unchanged); physics 1 the middle of the range, 20.5 C. This is a protocol parameter, not tuned; 12 C is below physics 1's reachable range. Task 2 must register it in the physics-1 protocol.
+- `PIDPolicy.for_physics` fills limits and nominal set-point from the physics. The controller's memory still starts at the plant's frozen 10 C reset value clipped into the range (as `reset()` always did); under physics 1 the plant starts below its reachable range and its own rate limit walks it up, so the first few PID rate-limit steps are only approximately truthful. Not changed here; flag for Task 2 if tuning is sensitive to it.
 
-## Tests (real output)
-- `pytest tests/test_task1_plugins.py`: `10 passed`. `ruff check`: `All checks passed!`
-- `vitest run src/features`: `Test Files 2 passed (2) · Tests 30 passed (30)`
-- Full vitest, before → after: `6 failed | 905 passed | 14 skipped` → `6 failed | 935 passed | 14 skipped`; the failing set is identical.
-- Backend (api, smoke, startup, security, alembic): `26 failed, 545 passed` before and after, identical set (route-table walkers hit FastAPI's lazy `_IncludedRouter`).
-- `npm run lint:ci`: exit 0, 0 warnings. `npm run typecheck`: 7 errors before and after, none in files touched.
+## Files
+MODIFY `src/baselines/policies.py`, `tests/test_baselines.py` (`test_actuator_limits_match_the_environment` now covers both physics), `docs/audit/TwinGrid_Issue_Register.md` (TG-A-13). CREATE `tests/test_baseline_physics_ranges.py` (14 tests), this report.
 
-## Not verified
-- `npm run build` fails before and after: the uploaded zip has no `src/runs/` (`Runs.tsx` imports `@/runs/flag`, `@/components/runs/*`). The same gap causes the typecheck errors and `bundleScan` failures. Task 1's "build passes" could not be shown; re-upload with `src/runs/` or fix in Task 2.
-- No browser, Docker or CI.
+## Tests (audit sandbox, Python 3.12, no TF/torch/Postgres; NOT your machine)
+- `tests/test_baseline_physics_ranges.py`: 14 passed.
+- `tests/test_baselines.py` + `tests/test_policy_evaluation.py` + `tests/test_audit_regressions.py` + new file: 162 passed, 3 xfailed, 5 failed. The 5 failures are the Task-4 set (2 obsolete version-constant tests, 3 tests pinned to the legacy protocol / `baselines-v2`), unchanged by this task; `test_actuator_limits_match_the_environment` now passes.
+
+## NOT done / remaining risk
+- This task adds the mechanism only. `src/policy_evaluation.py`, `src/baselines/{tuning,config,evaluation}.py` still construct policies without a physics version, so evaluation and tuning under physics 1 still use the legacy normalisation until Task 2. Do not trust any physics-1 C label before then.
+- Recommendation/API ranges: Task 3.

@@ -4,8 +4,11 @@ Every policy here is a pure function of what the environment shows it (``state``
 outside_temp, inlet_temp, water_stress, ...) plus, for PID only, its own integrator. None reads the
 clock, a random generator or the scenario identity, so the same config on the same scenario always
 gives the same actions. All of them emit the environment's own normalised action ``[chilled, mode]``
-and are bound by the SAME actuator limits: chilled-water set-point 5..15 C, the plant's per-step rate
-limit, and the same four cooling modes (the drought override is applied by the environment itself).
+and are bound by the SAME actuator limits: the chilled-water set-point range OF THE PHYSICS VERSION BEING RUN
+(``actuator_range_C``: legacy-0 5..15 C, physics 1 16..25 C -- read from the environment's own table), the
+plant's per-step rate limit, and the same four cooling modes (the drought override is applied by the
+environment itself). A policy that is not told its physics version assumes legacy-0, which keeps every
+pre-existing call site and the committed legacy report unchanged.
 
 MPC is NOT implemented (contract 13.8: a perfect-model controller would be an oracle upper bound, not a
 deployable baseline).
@@ -21,9 +24,14 @@ import numpy as np
 
 from ..digital_twin import DEFAULT_CHILLED_WATER_TEMP_C, DEFAULT_MAX_CHILLED_WATER_RATE_C_PER_STEP, DigitalTwin
 from ..optimizer import COOLING_MODES
+from ..rl.env import CHILLED_WATER_ACTION_RANGE_C, assert_rl_supported_physics_version
+from ..versions import LEGACY_PHYSICS_VERSION
 
-# Actuator limits: the environment maps action[0] in [0,1] linearly onto 5..15 C (DataCentreEnv._action_to_control)
-# and rounds action[1]*3 to a mode index. A test pins these two constants to the environment.
+# The environment maps action[0] in [0,1] linearly onto the chilled-water range of the physics version
+# (DataCentreEnv._action_to_control) and rounds action[1]*3 to a mode index. The range is PHYSICS-DEPENDENT:
+# a policy must normalise with the SAME range or "12 C" silently becomes some other temperature.
+# CHILLED_MIN_C / CHILLED_MAX_C are the LEGACY-0 limits only, kept for backward compatibility; new code must use
+# ``actuator_range_C(physics_version)``. Tests pin both to the environment.
 CHILLED_MIN_C = 5.0
 CHILLED_MAX_C = 15.0
 MAX_RATE_C_PER_STEP = DEFAULT_MAX_CHILLED_WATER_RATE_C_PER_STEP
@@ -32,16 +40,47 @@ INITIAL_SETPOINT_C = 10.0  # DataCentreEnv.reset() starts the plant at 10 C
 PRODUCTION_RULE = "production_rule"
 
 
-def norm_chilled(celsius: float) -> float:
-    return float(np.clip((celsius - CHILLED_MIN_C) / (CHILLED_MAX_C - CHILLED_MIN_C), 0.0, 1.0))
+def actuator_range_C(physics_version: str = LEGACY_PHYSICS_VERSION) -> tuple[float, float]:
+    """(lowest, highest) chilled-water set-point in C that the environment can command under ``physics_version``.
+
+    Read from ``DataCentreEnv``'s own table, never copied. Raises ``UnsupportedPhysicsVersionForRL`` for a
+    version the RL environment cannot run (currently ``2``).
+    """
+    return CHILLED_WATER_ACTION_RANGE_C[assert_rl_supported_physics_version(physics_version)]
+
+
+def default_rule_setpoint_C(physics_version: str = LEGACY_PHYSICS_VERSION) -> float:
+    """The production rule's chilled-water set-point under ``physics_version`` (a PROTOCOL parameter, not tuned).
+
+    legacy-0: the twin's default (12 C), unchanged. Other versions: the middle of the actuator range, because
+    the legacy 12 C lies BELOW physics 1's reachable range (16..25 C) and would otherwise be silently clipped.
+    """
+    if physics_version == LEGACY_PHYSICS_VERSION:
+        return float(DEFAULT_CHILLED_WATER_TEMP_C)
+    lo, hi = actuator_range_C(physics_version)
+    return (lo + hi) / 2.0
+
+
+def _check_in_range(celsius: float, physics_version: str, what: str) -> None:
+    lo, hi = actuator_range_C(physics_version)
+    if not lo <= celsius <= hi:
+        raise ValueError(
+            f"{what} {celsius:g} C is outside the actuator range {lo:g}..{hi:g} C of physics {physics_version!r}; "
+            "it would be silently clipped to a different temperature"
+        )
+
+
+def norm_chilled(celsius: float, physics_version: str = LEGACY_PHYSICS_VERSION) -> float:
+    lo, hi = actuator_range_C(physics_version)
+    return float(np.clip((celsius - lo) / (hi - lo), 0.0, 1.0))
 
 
 def norm_mode(mode: str) -> float:
     return COOLING_MODES.index(mode) / 3.0
 
 
-def make_action(chilled_C: float, mode: str) -> np.ndarray:
-    return np.array([norm_chilled(chilled_C), norm_mode(mode)], dtype=np.float32)
+def make_action(chilled_C: float, mode: str, physics_version: str = LEGACY_PHYSICS_VERSION) -> np.ndarray:
+    return np.array([norm_chilled(chilled_C, physics_version), norm_mode(mode)], dtype=np.float32)
 
 
 class _ProductionModeRule:
@@ -62,10 +101,12 @@ class ConstantPolicy:
     chilled_C: float
     mode: str
     name: str = ""
+    physics_version: str = LEGACY_PHYSICS_VERSION
 
     def __post_init__(self) -> None:
         if self.mode not in COOLING_MODES:
             raise ValueError(f"unknown cooling mode {self.mode!r}")
+        _check_in_range(self.chilled_C, self.physics_version, "constant set-point")
         if not self.name:
             self.name = f"constant[{self.chilled_C:g}C,{self.mode}]"
 
@@ -73,7 +114,7 @@ class ConstantPolicy:
         pass
 
     def act(self, obs: np.ndarray, state: dict[str, Any]) -> np.ndarray:
-        return make_action(self.chilled_C, self.mode)
+        return make_action(self.chilled_C, self.mode, self.physics_version)
 
 
 # ----------------------------------------------------------------------------- Rule
@@ -83,16 +124,19 @@ class RulePolicy:
     """The production rule at the twin's default chilled-water set-point. It sees only what the PPO
     observation also carries (outside temperature, water stress)."""
 
-    def __init__(self, chilled_C: float = DEFAULT_CHILLED_WATER_TEMP_C) -> None:
+    def __init__(self, chilled_C: float | None = None, physics_version: str = LEGACY_PHYSICS_VERSION) -> None:
         self.name = "rule_baseline"
-        self._chilled_C = chilled_C
+        self.physics_version = physics_version
+        # None -> the physics' own default (legacy-0: 12 C, exactly as before; physics 1: mid-range).
+        self._chilled_C = default_rule_setpoint_C(physics_version) if chilled_C is None else float(chilled_C)
+        _check_in_range(self._chilled_C, physics_version, "rule set-point")
         self._mode_rule = _ProductionModeRule()
 
     def reset(self) -> None:
         pass
 
     def act(self, obs: np.ndarray, state: dict[str, Any]) -> np.ndarray:
-        return make_action(self._chilled_C, self._mode_rule(state))
+        return make_action(self._chilled_C, self._mode_rule(state), self.physics_version)
 
 
 # ----------------------------------------------------------------------------- Lookup
@@ -113,7 +157,10 @@ class LookupPolicy:
         temp_edges: Sequence[float],
         actions: Sequence[Sequence[tuple[float, str]]],
         name: str = "lookup",
+        physics_version: str = LEGACY_PHYSICS_VERSION,
     ) -> None:
+        self.physics_version = physics_version
+        lo, hi = actuator_range_C(physics_version)
         self.util_edges = [float(e) for e in util_edges]
         self.temp_edges = [float(e) for e in temp_edges]
         if self.util_edges != sorted(self.util_edges) or self.temp_edges != sorted(self.temp_edges):
@@ -125,7 +172,7 @@ class LookupPolicy:
         self.actions = [[(float(c), str(m)) for c, m in row] for row in actions]
         for row in self.actions:
             for c, m in row:
-                if m not in COOLING_MODES or not CHILLED_MIN_C <= c <= CHILLED_MAX_C:
+                if m not in COOLING_MODES or not lo <= c <= hi:
                     raise ValueError(f"table action ({c}, {m}) is outside the actuator limits")
         self.name = name
 
@@ -138,7 +185,7 @@ class LookupPolicy:
     def act(self, obs: np.ndarray, state: dict[str, Any]) -> np.ndarray:
         i, j = self.cell(float(state["utilisation"]), float(state["outside_temp"]))
         chilled, mode = self.actions[i][j]
-        return make_action(chilled, mode)
+        return make_action(chilled, mode, self.physics_version)
 
 
 # ----------------------------------------------------------------------------- PID
@@ -178,6 +225,7 @@ class PIDPolicy:
     mode_rule: str = PRODUCTION_RULE
     anti_windup: bool = True
     name: str = ""
+    physics_version: str = LEGACY_PHYSICS_VERSION
     _integral: float = field(default=0.0, init=False, repr=False)
     _prev_error: float | None = field(default=None, init=False, repr=False)
     _prev_output: float = field(default=0.0, init=False, repr=False)
@@ -186,8 +234,12 @@ class PIDPolicy:
     def __post_init__(self) -> None:
         if not (self.min_setpoint_C < self.max_setpoint_C):
             raise ValueError("min_setpoint_C must be below max_setpoint_C")
-        if not (CHILLED_MIN_C <= self.min_setpoint_C and self.max_setpoint_C <= CHILLED_MAX_C):
-            raise ValueError("set-point limits must lie inside the plant's actuator range")
+        lo, hi = actuator_range_C(self.physics_version)
+        if not (lo <= self.min_setpoint_C and self.max_setpoint_C <= hi):
+            raise ValueError(
+                f"set-point limits {self.min_setpoint_C:g}..{self.max_setpoint_C:g} C must lie inside the plant's "
+                f"actuator range {lo:g}..{hi:g} C of physics {self.physics_version!r}"
+            )
         if self.max_rate_C_per_step <= 0:
             raise ValueError("max_rate_C_per_step must be positive")
         if self.mode_rule != PRODUCTION_RULE and self.mode_rule not in COOLING_MODES:
@@ -198,6 +250,26 @@ class PIDPolicy:
             self.name = f"pid[kp={self.kp:g},ki={self.ki:g},kd={self.kd:g}]"
         self._production = _ProductionModeRule() if self.mode_rule == PRODUCTION_RULE else None
         self.reset()
+
+    @classmethod
+    def for_physics(
+        cls, physics_version: str, target_inlet_C: float, kp: float, ki: float, kd: float, **overrides: Any
+    ) -> "PIDPolicy":
+        """A PID whose set-point limits and nominal set-point come from ``physics_version`` (not from legacy-0).
+
+        ``initial_setpoint_C`` stays the plant's frozen reset value (10 C) CLIPPED into the range, exactly as
+        ``reset()`` always did: under physics 1 the plant starts below its reachable range and its own rate
+        limit walks it up, while the controller's memory starts at the nearest reachable value.
+        """
+        lo, hi = actuator_range_C(physics_version)
+        params: dict[str, Any] = dict(
+            nominal_setpoint_C=default_rule_setpoint_C(physics_version),
+            min_setpoint_C=lo,
+            max_setpoint_C=hi,
+            physics_version=physics_version,
+        )
+        params.update(overrides)
+        return cls(target_inlet_C, kp, ki, kd, **params)
 
     # -- state -------------------------------------------------------------------------------
     def reset(self) -> None:
@@ -241,4 +313,4 @@ class PIDPolicy:
     def act(self, obs: np.ndarray, state: dict[str, Any]) -> np.ndarray:
         chilled = self.setpoint(float(state["inlet_temp"]))
         mode = self._production(state) if self._production is not None else self.mode_rule
-        return make_action(chilled, mode)
+        return make_action(chilled, mode, self.physics_version)
