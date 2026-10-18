@@ -1,13 +1,17 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useInRouterContext, useLocation } from "react-router-dom";
-import { RotateLink } from "@/components/transition/RotateLink";
+import { Link, useInRouterContext, useLocation } from "react-router-dom";
 import { useAuth, useRole } from "@/hooks/useAuth.ts";
 import { featureRegistry, type FeatureRegistry } from "../registry";
 import type { SlotWidgetProps } from "../types";
 import { isActivePath, mobileNavItems } from "./navItems";
 
-/** Phones only (hidden from 640px up, where the header carries navigation). Signed-in pages only. Needs a Router. */
+/**
+ * Phones only (hidden from 640px up, where the header carries navigation). Signed-in pages only. Needs a Router.
+ *
+ * Uses a plain `Link`, NOT `RotateLink`: this widget lives in the `settings` slot, which `AccountMenu` renders from
+ * `AuthGate`, i.e. OUTSIDE `<RotateTransition>`, and `RotateLink` throws when there is no transition provider.
+ */
 export function MobileBottomNav({ registry = featureRegistry }: { registry?: FeatureRegistry }) {
   // Without a Router there are no links to render (isolated component tests); render nothing rather than throw.
   return useInRouterContext() ? <BottomNav registry={registry} /> : null;
@@ -40,7 +44,7 @@ function BottomNav({ registry }: { registry: FeatureRegistry }) {
       {items.map(({ path, label, icon: Icon }) => {
         const active = isActivePath(pathname, path);
         return (
-          <RotateLink
+          <Link
             key={path}
             to={path}
             aria-current={active ? "page" : undefined}
@@ -50,7 +54,7 @@ function BottomNav({ registry }: { registry: FeatureRegistry }) {
           >
             <Icon aria-hidden="true" className="h-4 w-4" />
             <span className="whitespace-nowrap">{label}</span>
-          </RotateLink>
+          </Link>
         );
       })}
     </nav>,
