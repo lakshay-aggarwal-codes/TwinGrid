@@ -227,7 +227,9 @@ def _read_meta(path: Path) -> dict[str, Any]:
         return {}
 
 
-def _load_carbon_signal_uncached(zone: str | None = None, *, path: Path | None = None) -> CarbonSignal:
+def _load_carbon_signal_uncached(
+    zone: str | None = None, *, path: Path | None = None, _warn_missing: bool = True
+) -> CarbonSignal:
     """Load the cleaned carbon file as a :class:`CarbonSignal`, or the labelled flat fallback if it is absent.
 
     The file's semantic/license/version come ONLY from the sidecar ``carbon_intensity.meta.json``
@@ -235,11 +237,12 @@ def _load_carbon_signal_uncached(zone: str | None = None, *, path: Path | None =
     """
     src = Path(path) if path is not None else CLEANED_CARBON_PATH
     if not src.exists():
-        logger.warning(
-            "%s not found -- using the flat assumed intensity of %.0f gCO2/kWh (is_fallback=True).",
-            src,
-            FALLBACK_FLAT_INTENSITY_GCO2_PER_KWH,
-        )
+        if _warn_missing:
+            logger.warning(
+                "%s not found -- using the flat assumed intensity of %.0f gCO2/kWh (is_fallback=True).",
+                src,
+                FALLBACK_FLAT_INTENSITY_GCO2_PER_KWH,
+            )
         return fallback_signal(zone)
 
     df = pd.read_csv(src)
@@ -313,6 +316,11 @@ def _load_carbon_signal_uncached(zone: str | None = None, *, path: Path | None =
     return sig
 
 
+# Task 8: the missing-file fallback is memoised too. It used to be exempt ("never cached"), so EVERY DigitalTwin() /
+# DataCentreEnv() construction -- one per scenario or episode in a tune/evaluation run -- re-ran the lookup and logged
+# the same "not found" warning again (hundreds of times per run). The cache key for an absent file is
+# ("missing", path, zone, site tz): it costs one stat per call, a file that appears later gets a content key and is read
+# (so nothing is stale), and the warning is emitted once per (path, zone) per process (``clear_carbon_cache`` resets it).
 # Task 24: every DigitalTwin() (one per /api/state call) reads and parses the cleaned carbon file. The result is a
 # pure function of the file bytes, the sidecar bytes, the zone and the site time zone, so it is memoised under
 # exactly that key (content hashes, not mtimes: a same-size rewrite within one clock tick is still seen). A missing
@@ -321,6 +329,7 @@ def _load_carbon_signal_uncached(zone: str | None = None, *, path: Path | None =
 _LOAD_CACHE_MAX = 8
 _load_cache: "OrderedDict[tuple, tuple[CarbonSignal, np.ndarray]]" = OrderedDict()
 _load_cache_lock = threading.Lock()
+_warned_missing: set[tuple[str, str | None]] = set()
 
 
 def _content_key(src: Path, zone: str | None) -> tuple | None:
@@ -336,13 +345,15 @@ def _content_key(src: Path, zone: str | None) -> tuple | None:
 def _signal_and_curve(zone: str | None, path: Path | None) -> tuple[CarbonSignal, np.ndarray]:
     src = Path(path) if path is not None else CLEANED_CARBON_PATH
     key = _content_key(src, zone) if src.exists() else None
+    if key is None and not src.exists():
+        key = ("missing", str(src), zone, site_timezone_name())
     if key is not None:
         with _load_cache_lock:
             hit = _load_cache.get(key)
             if hit is not None:
                 _load_cache.move_to_end(key)
                 return hit
-    sig = _load_carbon_signal_uncached(zone, path=path)
+    sig = _load_carbon_signal_uncached(zone, path=path, _warn_missing=_claim_missing_warning(src, zone))
     curve = sig.curve_by_site_local_hour
     if key is not None:
         with _load_cache_lock:
@@ -352,10 +363,21 @@ def _signal_and_curve(zone: str | None, path: Path | None) -> tuple[CarbonSignal
     return sig, curve
 
 
+def _claim_missing_warning(src: Path, zone: str | None) -> bool:
+    """True the first time this (path, zone) is found missing in this process; the caller then logs the warning."""
+    with _load_cache_lock:
+        mark = (str(src), zone)
+        if mark in _warned_missing:
+            return False
+        _warned_missing.add(mark)
+        return True
+
+
 def clear_carbon_cache() -> None:
-    """Drop the memoised signals (tests, or an operator who wants a forced re-read)."""
+    """Drop the memoised signals and the warn-once marks (tests, or an operator who wants a forced re-read)."""
     with _load_cache_lock:
         _load_cache.clear()
+        _warned_missing.clear()
 
 
 def load_carbon_signal(zone: str | None = None, *, path: Path | None = None) -> CarbonSignal:

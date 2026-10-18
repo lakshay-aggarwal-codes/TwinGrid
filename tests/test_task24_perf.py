@@ -325,10 +325,14 @@ def test_memoised_result_equals_a_fresh_uncached_load(tmp_path):
     assert np.array_equal(cached.curve_by_site_local_hour, fresh.curve_by_site_local_hour)
 
 
-def test_missing_file_still_returns_the_labelled_fallback_and_is_not_cached(tmp_path):
+def test_missing_file_still_returns_the_labelled_fallback_and_is_memoised_once(tmp_path):
+    # Task 8: this used to assert "not cached". That exemption was the cause of the fallback warning being logged once
+    # per DigitalTwin/env construction (hundreds per tuning run). The fallback is now memoised under a "missing" key;
+    # a file that appears later gets a content key and is read (tests/test_carbon_signal_task8.py).
     cp.clear_carbon_cache()
     sig = cp.load_carbon_signal(path=tmp_path / "absent.csv")
-    assert sig.is_fallback and not cp._load_cache
+    assert sig.is_fallback and sig.semantic == "constant_assumption" and len(cp._load_cache) == 1
+    assert cp.load_carbon_signal(path=tmp_path / "absent.csv") is sig
 
 
 def test_diurnal_curve_is_a_copy_so_callers_cannot_corrupt_the_cache(tmp_path, monkeypatch):
