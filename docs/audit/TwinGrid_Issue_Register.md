@@ -26,10 +26,10 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 ### TG-A-04 — Baseline lineage records the running physics, tuning could use another  (High, FIXED, medium-high)
 - Files: `src/baselines/{config,evaluation,cli}.py`. Guard `assert_eval_physics_matches_lineage`; `--prereg` option added.
 
-### TG-A-05 — "Optimized" twin is not numerically equivalent  (High, FIXED by retirement, high)
-- Files: `src/digital_twin_optimized.py` (deleted), `benchmark_performance.py`, `PERFORMANCE_OPTIMIZATION.md`.
-- Evidence: on the benchmark inputs max |d outlet| ~ 20 C, max |d PUE| ~ 0.10 vs `DigitalTwin(legacy-0)`; 8 of the 15 shared state fields diverged and 5 `DataCentreState` fields do not exist in it. Used only by the benchmark and tests.
-- Done (Task 5): module deleted, strict xfail replaced by `test_optimized_twin_is_retired_and_nothing_references_it`, benchmark rewritten to a warm-up/repeat/median-IQR protocol on `DigitalTwin` only. See `docs/tasks/Task5_TWIN_PARITY_REPORT.md`.
+### TG-A-05 — "Optimized" twin is not numerically equivalent  (High, CONFIRMED-OPEN, high)
+- Files: `src/digital_twin_optimized.py`, `benchmark_performance.py`, `PERFORMANCE_OPTIMIZATION.md`.
+- Evidence: on the benchmark inputs max |d outlet| ~ 20 C, max |d PUE| ~ 0.10 vs `DigitalTwin(legacy-0)`. Used only by the benchmark and two tests.
+- Done: strict xfail documenting it; benchmark success banner removed; perf doc rewritten. Not done: fix or retire the module.
 
 ### TG-A-06 — Performance claims false and unreproducible  (High, FIXED in docs, high)
 - Doc claimed 45 s / 3.844 s -> 0.003 s and cited non-existent modules. Measured: main twin ~3.3 ms per simulated day. Single run, one machine; rewritten as indicative only.
@@ -56,10 +56,16 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 ## Audit claims I did NOT verify
 Forecaster has no baseline; anomaly-threshold leakage; missing `data/cleaned|features|predictions` content (directories exist, content not inspected in depth); PPO candidates unevaluated (consistent with the report's `NOT_EVALUATED`); frontend screenshots/E2E; accessibility; Docker demo startup.
 
-### TG-A-13 — Baseline policies normalise set-points with the legacy 5..15 C range under every physics  (High, PARTLY FIXED, confidence high)
+### TG-A-13 — Baseline policies normalise set-points with the legacy 5..15 C range under every physics  (High, FIXED in code by Tasks 1+2; re-tune pending, confidence high)
 - Files: `src/baselines/policies.py` (`CHILLED_MIN_C/MAX_C`, `norm_chilled`, `make_action`, all four policies); `src/rl/env.py::CHILLED_WATER_ACTION_RANGE_C` (`legacy-0`: 5..15, `"1"`: 16..25).
 - Evidence: under physics 1 a baseline labelled 5/10/12/15 C commands 16.0/20.5/22.3/25.0 C. `tests/test_baselines.py::test_actuator_limits_match_the_environment` failed on the unmodified repo for this reason. Feasibility results remain valid as normalised-action results; the C labels, PID limits and any C-valued report text were wrong.
 - Task 1 (done): policies take `physics_version` (default legacy-0, byte-identical actions), read the range from the environment's table, refuse out-of-range set-points instead of clipping, `PIDPolicy.for_physics`, physics-specific default rule set-point (physics 1: 20.5 C, a protocol parameter).
-- STILL OPEN until Task 2: `src/policy_evaluation.py` (`constant_grid`, `run_episode` rule construction), `src/baselines/{tuning,config,evaluation}.py` still build policies without a physics version, so evaluation/tuning under physics 1 still runs the legacy normalisation end to end. Until Task 2 is applied, do not trust any physics-1 C label.
+- Task 2 (done): `EvalConfig` set-points are physics-specific and validated at construction (`constant_grid_c`, `default_rule_setpoint_C`; legacy-0 grid and the frozen protocol hash unchanged); tuning, lookup/PID limits, transient-step count and `build_policy` use the physics' own range; configs record `tuning.actuator_range_C` (tuner `baselines-tuner/2`), configs without it are stale; `scripts/eval_policies.py` threads physics.
+- STILL OPEN: the user must regenerate the physics-1 protocol, `configs/baselines/*` and the baselines run on their machine (Task 4); until then any previously generated physics-1 configs (tuner /1) are stale by design.
 - Also open (Task 3): `src/baseline_recommendation.py`, `src/optimizer_proposals.py`, `api/plugins/optimizer_proposals.py` assume 5..15 C.
 - Tests: `tests/test_baseline_physics_ranges.py` (14).
+
+### TG-A-15 — The locked robustness protocol `configs/prereg/prereg_v2.json` registered physics 1 with the legacy 5..15 C grid  (High, FIXED by re-registration, confidence high)
+- Found while doing Task 2: its `eval_config` had `physics_version "1"`, `constant_chilled_C [5..15]`, `rule_chilled_C 12.0` (physics 1 reaches 16..25 C), and its `outcome_rules` text predated amendment A1.
+- Handling: no evaluation run ever used the old hash `1fe941db…` (checked: no `reports/runs/*/manifest.json` references it), so the repo's own `write_prereg(force=True)` was used. Only four fields changed: `registered_at_utc`, `eval_config` (physics-1 grid 16/18.25/20.5/22.75/25 C, rule 20.5 C), `outcome_rules` (A1 text), `preregistration_sha256` (new `2973cd13…`); the lock file was rewritten; `verify_prereg()` passes. Thresholds, seeds, bootstrap settings and the perturbation manifest are untouched.
+- This is an **amendment (A3)** of a locked protocol. It is legitimate only because nothing was evaluated under the old one; review the diff and keep or reject it before Task 9.

@@ -14,7 +14,7 @@ from src import policy_evaluation as pe
 from src.optimizer import COOLING_MODES, JointOptimizer
 
 CFG = pe.EvalConfig()
-SMALL = replace(CFG, n_validation_per_family=2, n_test_per_family=3, constant_chilled_C=(10.0, 15.0))
+SMALL = replace(CFG, n_validation_per_family=2, n_test_per_family=3, constant_chilled_C=(18.0, 22.0))
 CURVE = np.full(24, 475.0)
 
 
@@ -169,19 +169,15 @@ def test_episode_is_reproducible():
 
 
 # --------------------------------------------------------------------------- policies / metrics
-@pytest.mark.xfail(
-    strict=True,
-    reason="T20: the v1 env's chilled-water range is now 16-25 C (derived from the envelope); the T8 harness "
-    "(src/policy_evaluation.py::_chilled_to_action) still encodes constants on the legacy 5-15 C axis. Fixing "
-    "it needs src/policy_evaluation.py, which is not an allowed T20 file -- follow-up required.",
-)
-def test_constant_policy_encodes_the_action_the_env_decodes():
+@pytest.mark.parametrize("version", ["legacy-0", "1"])
+def test_constant_policy_encodes_the_action_the_env_decodes(version):
+    """TG-A-13 (was a strict xfail since T20): the policy must encode in the range of the env's physics."""
     from src.optimizer import DataCentreEnv
 
-    env = DataCentreEnv(seed=0)
-    for t in (5.0, 7.5, 12.5, 15.0):
+    env = DataCentreEnv(seed=0, physics_version=version)
+    for t in pe.constant_grid_c(version):
         for m in COOLING_MODES:
-            chilled, mode = env._action_to_control(pe.ConstantPolicy(t, m).act(None, {}))
+            chilled, mode = env._action_to_control(pe.ConstantPolicy(t, m, physics_version=version).act(None, {}))
             assert chilled == pytest.approx(t, abs=1e-5) and mode == m
 
 
@@ -380,25 +376,19 @@ class _Stand:
     """Stand-in for a trained JointOptimizer: a fixed action, no torch."""
 
     def __init__(self, chilled_C, mode):
-        self._a = pe.ConstantPolicy(chilled_C, mode).act(None, {})
+        self._a = pe.ConstantPolicy(chilled_C, mode, physics_version="1").act(None, {})
 
     def policy_action(self, obs, deterministic=True):
         return self._a
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="T20: the v1 env's chilled-water range is now 16-25 C (derived from the envelope); the T8 harness "
-    "(src/policy_evaluation.py::_chilled_to_action) still encodes constants on the legacy 5-15 C axis. Fixing "
-    "it needs src/policy_evaluation.py, which is not an allowed T20 file -- follow-up required.",
-)
 def test_full_run_selects_by_validation_and_never_peeks_at_test():
     cands = {
-        0: _Stand(5.0, "free_air"),
-        1: _Stand(15.0, "closed_loop"),
-        2: _Stand(10.0, "hybrid"),
-        3: _Stand(12.5, "closed_loop"),
-        4: _Stand(7.5, "evaporative"),
+        0: _Stand(16.0, "free_air"),
+        1: _Stand(22.0, "closed_loop"),  # SMALL's physics-1 grid is (18, 22) C
+        2: _Stand(18.0, "hybrid"),
+        3: _Stand(20.5, "closed_loop"),
+        4: _Stand(17.0, "evaporative"),
     }
     res = pe.run_evaluation(SMALL, ppo_candidates=cands, carbon_curve=CURVE, carbon_is_real=False)
     v = res["selection"]["ppo_validation_reward"]
@@ -456,13 +446,24 @@ def test_committed_preregistration_is_the_legacy0_protocol_and_differs_from_the_
 
     cfg = pe.load_preregistered_config(Path(__file__).resolve().parents[1] / "reports" / "policy_evaluation")
     assert cfg.physics_version == "legacy-0 (implicit)" and cfg.resolved_physics_version == "legacy-0"
-    assert replace(cfg, physics_version=CFG.physics_version) == CFG
+    # the protocols differ ONLY in the physics label and its physics-specific set-points
+    assert (
+        replace(
+            cfg,
+            physics_version=CFG.physics_version,
+            constant_chilled_C=CFG.constant_chilled_C,
+            rule_chilled_C=CFG.rule_chilled_C,
+        )
+        == CFG
+    )
+    assert cfg.constant_chilled_C == (5.0, 7.5, 10.0, 12.5, 15.0) and cfg.rule_chilled_C == 12.0
+    assert CFG.constant_chilled_C == (16.0, 18.25, 20.5, 22.75, 25.0) and CFG.rule_chilled_C == 20.5
     assert CFG.resolved_physics_version == "1"
 
 
 def test_registry_entries_record_physics_version_and_scenario_set_id():
     res = pe.run_evaluation(
-        SMALL, ppo_candidates={s: _Stand(10.0, "hybrid") for s in range(5)}, carbon_curve=CURVE, carbon_is_real=False
+        SMALL, ppo_candidates={s: _Stand(20.5, "hybrid") for s in range(5)}, carbon_curve=CURVE, carbon_is_real=False
     )
     logged = []
     entries = pe.register_candidates(

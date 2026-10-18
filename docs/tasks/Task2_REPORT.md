@@ -1,27 +1,23 @@
-# Task 2 — Frontend green
+# Task 2 — Physics-aware tuning, config lineage and protocol (TG-A-13 part 2, TG-A-15)
 
-## Root causes and fixes (12 files)
-| Failure | Cause | Fix |
-|---|---|---|
-| `bundleScan` (real leak) | `evaluation/flag.ts`, `telemetry/history/flag.ts`, `scenarios/flag.ts` used `env = import.meta.env` as a default argument, so the bundler inlined EVERY `VITE_*` variable, including `VITE_DEMO_USERNAME/PASSWORD`, into the production bundle | Each reads only its own key |
-| `OperationsConsole` (5 tests) | The anomaly block still showed the old "Gauge n / 100 … No active alert" text, contradicting the FE-07 contract in `telemetry/anomalyView.ts` | Renders `toAnomalyView(...)`: fail-closed labels, `alert`/`status` roles, score beside backend threshold, provenance |
-| `ScenarioPicker` typecheck | `!kind.supported` does not narrow the union with `strict: false` | `kind.supported === false` |
-| `alerts`/`esgReport`/`facility` tests did not load | A class declared inside a `vi.mock` factory breaks module loading here | Class moved into `vi.hoisted` |
-| `alerts` test | `new Response("{}", {status: 204})` is invalid in Node | 204/205 get a null body |
-| `esgReport` test | jsdom `Blob` has no `text()`; Node `Response` stringifies a jsdom Blob | Test returns a jsdom Blob and reads it with `FileReader` |
-| `useWhatIf` (4 tests) | `beforeEach(() => mock.mockReset())` returns the mock, which vitest runs as teardown (hung or rejected) | Braces; same latent pattern fixed in `SimulationProvider.test.tsx` |
-| `useWhatIf` retry test | Network errors retry with 1 s/2 s delays, beyond `waitFor` | Test client uses `retryDelay: 0` |
-| `useFeed` (4 tests) | `ui` element built at import, before `store` exists | `ui` is a function |
-| `evaluation/schema` (2 tests) | Test expected `policies.0.x`; the documented format is `policies[0].x` | Test updated |
+## What changed
+- `src/policy_evaluation.py`: `constant_grid_c(physics)` (5 evenly spaced points incl. both ends of the env's range: legacy-0 `5, 7.5, 10, 12.5, 15` exactly as the frozen protocol; physics 1 `16, 18.25, 20.5, 22.75, 25`). `EvalConfig` defaults are physics 1's (grid above, rule 20.5 C = `default_rule_setpoint_C("1")`) and `__post_init__` refuses set-points outside the declared physics' range ("registered per physics"). `constant_grid` and `run_evaluation` build policies with `physics_version`.
+- `src/baselines/tuning.py`: all four tuners use the physics' range; PID via `PIDPolicy.for_physics`; PID limits recorded from the range; `pid_nominal_setpoint_C` and `rule_chilled_C` from the physics; `lookup_transient_steps_excluded` derived (`ceil(max(|10-lo|, |hi-10|) / 2 C per step)`: legacy-0 3 as before, physics 1 **8**); `TUNER_VERSION = baselines-tuner/2`; each config's `tuning.actuator_range_C` recorded.
+- `src/baselines/config.py`: `check_lineage` treats a config whose recorded actuator range differs from the physics' (or is absent, i.e. tuned by /1) as `BaselineConfigStale("tuning.actuator_range_C")`; `build_policy` builds in the config's physics (`lineage.physics_version`).
+- `scripts/eval_policies.py`: rule/best-constant built with the config's physics.
+- `configs/prereg/prereg_v2.json` + `.lock.json`: **re-registered** (TG-A-15, amendment A3; see the register). Old sha `1fe941db…` -> new `2973cd13…`.
 
-No assertion was weakened; no test skipped.
+## Decisions / trade-offs
+- Default `EvalConfig` is physics 1. The frozen legacy-0 protocol loads unchanged (explicit values in its JSON): test pins its `preregistration_sha256` and its grid/rule.
+- Validation at construction is deliberately strict: a legacy grid on physics 1 can no longer exist silently. Cost: two protocol files had to be handled (the committed policy-evaluation protocol is legacy-0 and valid; `prereg_v2.json` was not).
+- The repo's two strict xfails (T20: "harness still encodes constants on the legacy 5-15 C axis") are now real passing tests; the two obsolete version-bump tests in `test_baselines.py` were fixed here instead of Task 4 (they bump to a value derived from the current one).
+- PID memory start under physics 1 (plant resets at 10 C, below the reachable range): unchanged (clipped into range). A tiny physics-1 smoke tuning in the sandbox gave all four baselines feasible; that is NOT a result, only a sanity check (2 validation scenarios per family).
 
-## Results (real output, sandbox)
-- Before: `19 files failed | 74 passed`, `6 failed | 905 passed`; typecheck 7 errors; build failed.
-- After: `npm run typecheck` 0 errors; `npm run lint:ci` 0 warnings; `vite build` built.
-- `vitest run`: `3 failed | 1120 passed | 10 skipped`. The 3 failures are `src/pages/Runs.test.tsx`.
+## Tests (audit sandbox, Python 3.12; no TF/torch/Postgres; not your machine)
+- New/changed: `tests/test_baseline_physics_ranges.py` 21 passed; `test_policy_evaluation.py`, `test_audit_regressions.py` pass; `test_robustness_eval.py` 101 passed after re-registration.
+- Whole suite vs the unmodified repo: failure sets compared (union over 6 chunks). **No new failures.** Fixed vs original: `test_actuator_limits_match_the_environment` and the two version-bump tests. Remaining `test_baselines.py` failures: the 3 "shipped" tests (`test_shipped_configs_are_valid_current…`, `test_shipped_baselines_run_verifies…`, `test_shipped_baselines_run_reproduces_on_rerun`) -> Task 4 (need your regenerated protocol/configs/run). Other failures are unchanged environment ones (TensorFlow/torch/Postgres missing in the sandbox, one `.gitignore` test).
 
-## Not verified
-- The uploaded zip has no `src/runs/` (`schema`, `flag`, `testFixtures`) or `src/components/runs/` (`RunMonitor`, `RunStart`), though `apiClient.ts` and `Runs.tsx` import them. I used throwaway stubs, NOT in this zip, to load the rest. Apply this zip to your full repo, where those files exist; if `Runs.test.tsx` still fails there, that is separate.
-- Backend suites unchanged by this task (26 failures from FastAPI lazy-router route walking, noted in Task 1).
-- No browser or CI run.
+## NOT done
+- No physics-1 protocol, `configs/baselines/*`, or `reports/runs/baselines-*` generated here (Task 4, on your machine). Your current `configs/baselines/*` (tuner /1) are now stale by design.
+- `baselines` CLI default `--prereg` still points at the legacy-0 protocol; it therefore refuses to run without `--prereg` (the guard message says so).
+- Recommendation/API ranges: Task 3.

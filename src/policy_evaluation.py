@@ -37,11 +37,16 @@ from typing import Any, Callable, Protocol, Sequence
 
 import numpy as np
 
-from .baselines.policies import ConstantPolicy, RulePolicy  # noqa: F401  (T28: moved to src/baselines; re-exported)
+from .baselines.policies import (  # noqa: F401  (T28: moved to src/baselines; re-exported)
+    ConstantPolicy,
+    RulePolicy,
+    actuator_range_C,
+    default_rule_setpoint_C,
+)
 from .baselines.policies import norm_chilled as _norm_chilled  # noqa: F401
 from .baselines.policies import norm_mode as _norm_mode  # noqa: F401
 from .carbon_provider import load_diurnal_carbon_intensity
-from .digital_twin import DEFAULT_CHILLED_WATER_TEMP_C, INLET_TEMP_MAX, INLET_TEMP_MIN
+from .digital_twin import INLET_TEMP_MAX, INLET_TEMP_MIN
 from .optimizer import (
     COOLING_MODES,
     EPISODE_STEPS,
@@ -108,6 +113,14 @@ SECONDARY_METRICS = ("energy_kwh", "water_L", "carbon_gco2", "mean_pue", "mean_w
 # =============================================================================================
 # Configuration + pre-registration
 # =============================================================================================
+def constant_grid_c(physics_version: str, points: int = 5) -> tuple[float, ...]:
+    """The best-constant set-point grid of ``physics_version``: ``points`` evenly spaced values INCLUDING both ends
+    of the environment's actuator range. legacy-0 gives exactly (5, 7.5, 10, 12.5, 15): the frozen protocol's grid.
+    physics 1 gives (16, 18.25, 20.5, 22.75, 25)."""
+    lo, hi = actuator_range_C(physics_version)
+    return tuple(lo + i * (hi - lo) / (points - 1) for i in range(points))
+
+
 @dataclass(frozen=True)
 class FamilySpec:
     name: str
@@ -136,8 +149,11 @@ class EvalConfig:
         FamilySpec("stress_0.8", 0.8, False),  # held-out family (drought override active)
     )
     # best-constant search grid (selected on validation)
-    constant_chilled_C: tuple[float, ...] = (5.0, 7.5, 10.0, 12.5, 15.0)
-    rule_chilled_C: float = DEFAULT_CHILLED_WATER_TEMP_C
+    # Physics-specific (the defaults are physics 1's). A legacy-0 protocol carries its own explicit values
+    # (5..15 C grid, 12 C rule); the committed one does. __post_init__ refuses values outside the actuator range
+    # of the declared physics, because they would otherwise be silently clipped to a different temperature.
+    constant_chilled_C: tuple[float, ...] = constant_grid_c(PHYSICS_VERSION)
+    rule_chilled_C: float = default_rule_setpoint_C(PHYSICS_VERSION)
     # statistics
     confidence: float = 0.95
     # outcome rules (PROPOSED in the roadmap; frozen here before any run)
@@ -145,6 +161,15 @@ class EvalConfig:
     secondary_tolerance_rel: float = 0.02  # A: PPO no more than 2% worse on each secondary metric
     min_training_seeds: int = 5
     scenario_inputs_label: str = "synthetic diurnal weather and workload from DataCentreEnv; simulated plant"
+
+    def __post_init__(self) -> None:
+        lo, hi = actuator_range_C(self.resolved_physics_version)
+        bad = [c for c in (*self.constant_chilled_C, self.rule_chilled_C) if not lo <= c <= hi]
+        if bad:
+            raise ValueError(
+                f"set-points {bad} lie outside the actuator range {lo:g}..{hi:g} C of physics "
+                f"{self.physics_version!r}: constant_chilled_C and rule_chilled_C must be registered per physics"
+            )
 
     @property
     def resolved_physics_version(self) -> str:
@@ -268,7 +293,11 @@ class PPOPolicy:
 
 
 def constant_grid(cfg: EvalConfig) -> list[ConstantPolicy]:
-    return [ConstantPolicy(t, m) for t, m in itertools.product(cfg.constant_chilled_C, COOLING_MODES)]
+    physics = cfg.resolved_physics_version
+    return [
+        ConstantPolicy(t, m, physics_version=physics)
+        for t, m in itertools.product(cfg.constant_chilled_C, COOLING_MODES)
+    ]
 
 
 # =============================================================================================
@@ -640,7 +669,7 @@ def run_evaluation(
 
     # ---- validation: pick best constant and best PPO candidate (never from test) ----
     say(f"validation: {len(val)} scenarios")
-    rule = RulePolicy(cfg.rule_chilled_C)
+    rule = RulePolicy(cfg.rule_chilled_C, physics_version=cfg.resolved_physics_version)
     val_results: dict[str, list[EpisodeResult]] = {rule.name: evaluate_policy(rule, val, cfg, carbon_curve)}
     consts = constant_grid(cfg)
     for c in consts:

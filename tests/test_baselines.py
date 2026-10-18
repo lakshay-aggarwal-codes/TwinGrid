@@ -29,7 +29,7 @@ from src.repro.verify import verify_run
 
 ROOT = Path(__file__).resolve().parent.parent
 PREREG = "reports/policy_evaluation/PREREGISTRATION.json"
-SMALL = replace(pe.EvalConfig(), n_validation_per_family=2, n_test_per_family=2, constant_chilled_C=(10.0, 15.0))
+SMALL = replace(pe.EvalConfig(), n_validation_per_family=2, n_test_per_family=2, constant_chilled_C=(18.0, 22.0))
 CURVE = np.full(24, 475.0)
 
 
@@ -57,7 +57,7 @@ def test_actuator_limits_match_the_environment(version):
 
 def test_policy_evaluation_re_exports_the_moved_policies_unchanged():
     assert pe.ConstantPolicy is bp.ConstantPolicy and pe.RulePolicy is bp.RulePolicy
-    assert pe.constant_grid(SMALL)[0].name == "constant[10C,free_air]"
+    assert pe.constant_grid(SMALL)[0].name == "constant[18C,free_air]"
     assert len(pe.constant_grid(SMALL)) == 2 * len(COOLING_MODES)
 
 
@@ -341,13 +341,13 @@ def _lookup_fixture():
         (0.8, 25.0, "11"),
         (0.2, 10.0, "00"),
     ]
-    acts = [(5.0, "closed_loop"), (5.0, "hybrid"), (15.0, "closed_loop"), (15.0, "hybrid")]
+    acts = [(16.0, "closed_loop"), (16.0, "hybrid"), (25.0, "closed_loop"), (25.0, "hybrid")]
     rewards = {a: {"00": -10.0, "01": -9.0, "10": -9.0, "11": -9.0} for a in acts}
-    rewards[(15.0, "hybrid")]["00"] = -5.0  # cell 00: a unique winner
-    rewards[(5.0, "closed_loop")]["01"] = rewards[(15.0, "closed_loop")]["01"] = -3.0  # cell 01: an exact tie
-    rewards[(15.0, "closed_loop")]["10"] = -1.0  # cell 10: the best reward ...
-    rewards[(5.0, "hybrid")]["10"] = -4.0
-    violations = {(15.0, "closed_loop"): {"10": 1}}  # ... but it violates the envelope, so it must lose
+    rewards[(25.0, "hybrid")]["00"] = -5.0  # cell 00: a unique winner
+    rewards[(16.0, "closed_loop")]["01"] = rewards[(25.0, "closed_loop")]["01"] = -3.0  # cell 01: an exact tie
+    rewards[(25.0, "closed_loop")]["10"] = -1.0  # cell 10: the best reward ...
+    rewards[(16.0, "hybrid")]["10"] = -4.0
+    violations = {(25.0, "closed_loop"): {"10": 1}}  # ... but it violates the envelope, so it must lose
     return FakeSweep(rewards, violations, layout), acts
 
 
@@ -357,7 +357,7 @@ def _lookup_space(**kw):
         space,
         lookup_util_edges=(0.5,),
         lookup_temp_edges=(20.0,),
-        lookup_chilled_C=(5.0, 15.0),
+        lookup_chilled_C=(16.0, 25.0),
         lookup_modes=("closed_loop", "hybrid"),
         lookup_min_cell_samples=3,
         lookup_transient_steps_excluded=0,
@@ -372,12 +372,12 @@ def test_lookup_picks_the_best_feasible_action_per_cell_with_lexicographic_ties_
     out = tuning.tune_lookup(_lookup_space(), sweep, val, SMALL, CURVE)
     t = out["parameters"]["table"]
     cell = lambda i, j: (t[i][j]["chilled_C"], t[i][j]["mode"], t[i][j]["source"])  # noqa: E731
-    assert cell(0, 0) == (15.0, "hybrid", "table")  # unique best
-    assert cell(0, 1) == (5.0, "closed_loop", "table")  # exact tie -> (chilled_C, mode index) ascending
-    assert cell(1, 0) == (5.0, "hybrid", "table")  # the better-rewarded (15, closed_loop) violates the envelope
+    assert cell(0, 0) == (25.0, "hybrid", "table")  # unique best
+    assert cell(0, 1) == (16.0, "closed_loop", "table")  # exact tie -> (chilled_C, mode index) ascending
+    assert cell(1, 0) == (16.0, "hybrid", "table")  # the better-rewarded (15, closed_loop) violates the envelope
     assert t[1][1]["source"] == "fallback" and t[1][1]["n"] == 2  # too few validation steps (min 3)
     assert out["status"] == "feasible" and out["result"]["fallback_cells"] == 1
-    assert out["parameters"]["fallback"]["chilled_C"] in (5.0, 15.0)
+    assert out["parameters"]["fallback"]["chilled_C"] in (16.0, 25.0)
 
 
 def test_lookup_fallback_is_the_best_feasible_constant_over_the_lookup_grid(monkeypatch):
@@ -420,11 +420,11 @@ def test_lookup_tuning_uses_only_the_sweep_it_is_given(monkeypatch):
 
 def test_constant_tuning_never_loosens_the_envelope():
     sweep = FakeSweep(
-        {(c, m): {"a": -float(i)} for i, (c, m) in enumerate([(5.0, "closed_loop"), (15.0, "closed_loop")])},
-        {(5.0, "closed_loop"): {"a": 1}, (15.0, "closed_loop"): {"a": 1}},
+        {(c, m): {"a": -float(i)} for i, (c, m) in enumerate([(16.0, "closed_loop"), (25.0, "closed_loop")])},
+        {(16.0, "closed_loop"): {"a": 1}, (25.0, "closed_loop"): {"a": 1}},
         [(0.2, 10.0, "a")] * 4,
     )
-    space = replace(tuning.default_space(SMALL), constant_chilled_C=(5.0, 15.0), constant_modes=("closed_loop",))
+    space = replace(tuning.default_space(SMALL), constant_chilled_C=(16.0, 25.0), constant_modes=("closed_loop",))
     out = tuning.tune_constant(space, sweep)
     assert (
         out["status"] == "infeasible"
@@ -436,13 +436,13 @@ def test_constant_tuning_never_loosens_the_envelope():
 
 
 def test_constant_tuning_ties_go_to_the_smallest_setpoint_then_mode_index():
-    rewards = {(c, m): {"a": -4.0} for c in (5.0, 15.0) for m in ("closed_loop", "hybrid")}
+    rewards = {(c, m): {"a": -4.0} for c in (16.0, 25.0) for m in ("closed_loop", "hybrid")}
     sweep = FakeSweep(rewards, {}, [(0.2, 10.0, "a")] * 4)
     space = replace(
-        tuning.default_space(SMALL), constant_chilled_C=(15.0, 5.0), constant_modes=("hybrid", "closed_loop")
+        tuning.default_space(SMALL), constant_chilled_C=(25.0, 16.0), constant_modes=("hybrid", "closed_loop")
     )
     out = tuning.tune_constant(space, sweep)
-    assert out["parameters"]["selected"] == {"chilled_C": 5.0, "mode": "closed_loop"}  # independent of grid order
+    assert out["parameters"]["selected"] == {"chilled_C": 16.0, "mode": "closed_loop"}  # independent of grid order
 
 
 def _fake_pid_eval(rewards_by_gain, violating=()):
@@ -517,6 +517,7 @@ def _tuning_block(out, val=None):
         "eval_config_sha256": pe.config_sha256(SMALL),
         "objective": tuning.OBJECTIVE,
         "feasibility_rule": tuning.FEASIBILITY_RULE,
+        "actuator_range_C": list(bp.actuator_range_C(bcfg.running_lineage()["physics_version"])),
         "carbon": {"is_real": False, "flat_curve": True, "curve_sha256": tuning.curve_sha256(CURVE)},
         "search_space": out["search_space"],
         "result": out["result"],
@@ -594,7 +595,7 @@ def test_tuning_modules_never_build_or_name_the_test_split():
 
 def _config(name="constant", status="feasible", **kw):
     out = {
-        "parameters": {"selected": {"chilled_C": 15.0, "mode": "closed_loop"}},
+        "parameters": {"selected": {"chilled_C": 25.0, "mode": "closed_loop"}},
         "result": {"validation_reward": -1.0},
         "search_space": {},
     }
@@ -666,7 +667,7 @@ def test_a_config_tuned_against_other_versions_is_stale_and_names_the_field(fiel
 
 def test_changing_a_version_constant_makes_every_existing_config_stale(monkeypatch):
     cfg = _config()
-    monkeypatch.setattr(versions, "ENV_VERSION", "2")
+    monkeypatch.setattr(versions, "ENV_VERSION", str(int(versions.ENV_VERSION) + 1))
     with pytest.raises(bcfg.BaselineConfigStale, match="environment_version"):
         bcfg.check_lineage(cfg)
 
@@ -693,7 +694,7 @@ def test_a_config_must_have_been_tuned_on_exactly_these_scenarios_config_and_car
 
 def test_build_policy_is_a_pure_function_of_the_config():
     constant = bcfg.build_policy(_config())
-    assert isinstance(constant, bp.ConstantPolicy) and (constant.chilled_C, constant.mode) == (15.0, "closed_loop")
+    assert isinstance(constant, bp.ConstantPolicy) and (constant.chilled_C, constant.mode) == (25.0, "closed_loop")
     a, b = bcfg.build_policy(_config()), bcfg.build_policy(json.loads(json.dumps(_config())))
     assert np.array_equal(a.act(None, {}), b.act(None, {}))
     with pytest.raises(bcfg.BaselineConfigError, match="missing"):
@@ -850,7 +851,7 @@ def test_evaluation_runs_on_test_scenarios_and_tuning_ran_on_validation_scenario
 
 
 def test_a_stale_config_fails_the_run_instead_of_comparing_against_the_wrong_environment(world, monkeypatch):
-    monkeypatch.setattr(versions, "REWARD_VERSION", "2")
+    monkeypatch.setattr(versions, "REWARD_VERSION", str(int(versions.REWARD_VERSION) + 1))
     outcome = run(request("stale"), world)
     assert outcome.state == "failed" and "BaselineConfigStale" in outcome.error and "reward_version" in outcome.error
 

@@ -28,7 +28,7 @@ from typing import Any
 
 from .. import versions
 from ..repro.canonical import canonical_dumps, sha256_input_file
-from .policies import ConstantPolicy, LookupPolicy, PIDPolicy, RulePolicy
+from .policies import ConstantPolicy, LookupPolicy, PIDPolicy, RulePolicy, actuator_range_C
 
 SCHEMA = "twingrid-baseline-config/1"
 CONFIG_VERSION = 1
@@ -165,6 +165,13 @@ def check_lineage(cfg: dict[str, Any]) -> None:
     for field in LINEAGE_FIELDS:
         if cfg["lineage"][field] != running[field]:
             raise BaselineConfigStale(f"lineage.{field}", running[field], cfg["lineage"][field])
+    # The set-points inside a config are expressed in the actuator range of ITS physics. A config tuned before
+    # the range was recorded (tuner < baselines-tuner/2) used the legacy 5..15 C normalisation under every
+    # physics (TG-A-13) and is stale by definition.
+    expected_range = list(actuator_range_C(cfg["lineage"]["physics_version"]))
+    recorded_range = cfg.get("tuning", {}).get("actuator_range_C")
+    if recorded_range != expected_range:
+        raise BaselineConfigStale("tuning.actuator_range_C", expected_range, recorded_range)
 
 
 def check_tuning_scenarios(
@@ -187,17 +194,20 @@ def check_tuning_scenarios(
 def build_policy(cfg: dict[str, Any]) -> Any:
     """The policy a config describes. Pure function of ``cfg['parameters']``."""
     p, name = cfg["parameters"], cfg["name"]
+    physics = cfg["lineage"]["physics_version"]  # the policy is built in the range of the physics it was tuned on
     try:
         if name == "rule":
-            return RulePolicy(float(p["chilled_C"]))
+            return RulePolicy(float(p["chilled_C"]), physics_version=physics)
         if name == "constant":
             sel = p["selected"]
             if sel is None:
                 raise BaselineConfigError("the constant baseline is infeasible and has no selected action")
-            return ConstantPolicy(float(sel["chilled_C"]), str(sel["mode"]), name="best_constant")
+            return ConstantPolicy(
+                float(sel["chilled_C"]), str(sel["mode"]), name="best_constant", physics_version=physics
+            )
         if name == "lookup":
             table = [[(c["chilled_C"], c["mode"]) for c in row] for row in p["table"]]
-            return LookupPolicy(p["util_edges"], p["temp_edges"], table, name="lookup")
+            return LookupPolicy(p["util_edges"], p["temp_edges"], table, name="lookup", physics_version=physics)
         if name == "pid":
             g = p["selected_gains"]
             if g is None:
@@ -215,6 +225,7 @@ def build_policy(cfg: dict[str, Any]) -> Any:
                 mode_rule=str(p["mode_rule"]),
                 anti_windup=bool(p["anti_windup"]),
                 name="pid",
+                physics_version=physics,
             )
     except KeyError as exc:
         raise BaselineConfigError(f"{name}: parameters.{exc.args[0]} is missing") from None
