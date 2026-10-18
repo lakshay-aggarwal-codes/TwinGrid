@@ -985,6 +985,25 @@ def load_candidates(candidates_dir: Path, cfg: EvalConfig) -> dict[int, Any]:
     return found
 
 
+def load_numpy_candidates_for(
+    cfg: EvalConfig, candidates_dir: Path, *, model_id_prefix: str | None = None
+) -> dict[int, Any]:
+    """Load the NumPy PPO candidates written by ``scripts/train_ppo.py`` (Task 9), refusing any whose environment
+    contract, physics, reward weights or file hashes do not match the CURRENT code and the registered protocol."""
+    from .rl.candidate_loader import load_numpy_candidates
+    from .rl.env import env_contract
+
+    physics = cfg.resolved_physics_version
+    return load_numpy_candidates(
+        candidates_dir,
+        cfg.training_seeds,
+        expected_contract=env_contract(physics),
+        expected_weights={"alpha": cfg.alpha, "beta": cfg.beta, "gamma": cfg.gamma},
+        obs_dim=len(DataCentreEnv(physics_version=physics).observation_space.low),
+        model_id_prefix=model_id_prefix,
+    )
+
+
 def train_candidates(
     cfg: EvalConfig,
     candidates_dir: Path,
@@ -1024,6 +1043,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     p2.add_argument("--out", default="reports/policy_evaluation")
     p2.add_argument("--candidates-dir", default="models/optimizer_candidates")
     p2.add_argument("--baselines-only", action="store_true")
+    p2.add_argument(
+        "--candidate-format",
+        choices=("joint-optimizer", "numpy"),
+        default="joint-optimizer",
+        help="joint-optimizer: <dir>/seed_<n> SB3 saves (default); numpy: scripts/train_ppo.py output "
+        "(models/candidates/ppo/<model_id>/)",
+    )
+    p2.add_argument(
+        "--model-id-prefix", default=None, help="numpy format: choose one training run, e.g. ppo-p1-e2-cd2345024"
+    )
     args = ap.parse_args(argv)
     out = Path(args.out)
     if args.cmd == "prereg":
@@ -1036,8 +1065,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.cmd == "train-candidates":
         train_candidates(cfg, Path(args.candidates_dir), total_timesteps=args.timesteps, progress=print)
         return 0
-    cands = None if args.baselines_only else load_candidates(Path(args.candidates_dir), cfg)
+    if args.baselines_only:
+        cands = None
+    elif args.candidate_format == "numpy":
+        cands = load_numpy_candidates_for(cfg, Path(args.candidates_dir), model_id_prefix=args.model_id_prefix)
+    else:
+        cands = load_candidates(Path(args.candidates_dir), cfg)
     res = run_evaluation(cfg, ppo_candidates=cands, progress=print)
+    if cands and args.candidate_format == "numpy":
+        res["candidate_provenance"] = {
+            str(s): {"model_id": c.model_id, "files_sha256": dict(c.files_sha256)} for s, c in sorted(cands.items())
+        }
     tag = f"{'baselines_only' if cands is None else 'full'}_{res['scenario_set_id']}"
     print("wrote", write_results(res, out, tag))
     print("outcome:", res["decision"]["outcome"])
