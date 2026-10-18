@@ -2,20 +2,20 @@
   "config_version": 1,
   "infeasible_reason": null,
   "lineage": {
-    "action_schema_hash": "4eac7196a367fb0061a3a133f0541fa465297aa4be4cad086300e992ff7c1007",
-    "action_semantics_version": "1",
-    "environment_version": "1",
+    "action_schema_hash": "8a9f75c4a98717d8e50af4e08e10d474fe7ad83273ed72cdfa249b8c221db273",
+    "action_semantics_version": "2",
+    "environment_version": "2",
     "input_cadence_s": 300,
-    "observation_schema_hash": "9fb575882c20162b7e79bc378c1e753ff4fa7a75d11326d078053961a4884626",
+    "observation_schema_hash": "a585b2fef4a5b153973d14cc7ddebb84b37a6d1a4eb206ddb154a099cff4a4eb",
     "physics_params_hash": "14ed372364a00dbaa218da884426291e20963343eb1dd01af1a1c0f82c69afad",
     "physics_version": "1",
-    "reward_version": "1",
-    "safety_envelope_version": "1"
+    "reward_version": "2",
+    "safety_envelope_version": "2"
   },
   "name": "constant",
   "parameters": {
     "selected": {
-      "chilled_C": 15.0,
+      "chilled_C": 12.5,
       "mode": "closed_loop"
     }
   },
@@ -28,7 +28,7 @@
       "flat_curve": true,
       "is_real": false
     },
-    "eval_config_sha256": "25c4cc68464207f90980eee334f22032c982251afe69f11693f5320c8b1605ac",
+    "eval_config_sha256": "4f7259b1ee87cf500ca4d0f3b2f7c9308dd2f7fd754df24a33ef7fe78877b347",
     "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
     "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
     "result": {
@@ -37,7 +37,7 @@
           "chilled_C": 5.0,
           "feasible": true,
           "mode": "free_air",
-          "validation_reward": -95.16384662641046,
+          "validation_reward": -56.30462349445116,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -48,7 +48,7 @@
           "chilled_C": 5.0,
           "feasible": true,
           "mode": "closed_loop",
-          "validation_reward": -76.38007830916284,
+          "validation_reward": -38.324881261393834,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -59,7 +59,7 @@
           "chilled_C": 5.0,
           "feasible": true,
           "mode": "evaporative",
-          "validation_reward": -114.48794297200428,
+          "validation_reward": -80.14290112238139,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -70,7 +70,7 @@
           "chilled_C": 5.0,
           "feasible": true,
           "mode": "hybrid",
-          "validation_reward": -95.16384662641046,
+          "validation_reward": -56.30462349445116,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -81,7 +81,7 @@
           "chilled_C": 7.5,
           "feasible": true,
           "mode": "free_air",
-          "validation_reward": -93.897531636323,
+          "validation_reward": -55.385656083422326,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -92,7 +92,7 @@
           "chilled_C": 7.5,
           "feasible": true,
           "mode": "closed_loop",
-          "validation_reward": -75.42919218426432,
+          "validation_reward": -37.60224108249876,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -103,7 +103,7 @@
           "chilled_C": 7.5,
           "feasible": true,
           "mode": "evaporative",
-          "validation_reward": -114.17098093037141,
+          "validation_reward": -79.9020210627497,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -114,7 +114,7 @@
           "chilled_C": 7.5,
           "feasible": true,
           "mode": "hybrid",
-          "validation_reward": -93.897531636323,
+          "validation_reward": -55.385656083422326,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -125,7 +125,7 @@
           "chilled_C": 10.0,
           "feasible": true,
           "mode": "free_air",
-          "validation_reward": -92.75838870119476,
+          "validation_reward": -54.54059619095643,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -136,7 +136,7 @@
           "chilled_C": 10.0,
           "feasible": true,
           "mode": "closed_loop",
-          "validation_reward": -74.57380713410717,
+          "validation_reward": -36.937704719655386,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -147,7 +147,7 @@
           "chilled_C": 10.0,
           "feasible": true,
           "mode": "evaporative",
-          "validation_reward": -113.88585258031905,
+          "validation_reward": -79.68050894180192,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -158,7 +158,7 @@
           "chilled_C": 10.0,
           "feasible": true,
           "mode": "hybrid",
-          "validation_reward": -92.75838870119476,
+          "validation_reward": -54.54059619095643,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -169,7 +169,7 @@
           "chilled_C": 12.5,
           "feasible": true,
           "mode": "free_air",
-          "validation_reward": -91.7319731503997,
+          "validation_reward": -53.76109746296266,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -180,7 +180,7 @@
           "chilled_C": 12.5,
           "feasible": true,
           "mode": "closed_loop",
-          "validation_reward": -73.80306940089109,
+          "validation_reward": -36.32471519118651,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -191,7 +191,7 @@
           "chilled_C": 12.5,
           "feasible": true,
           "mode": "evaporative",
-          "validation_reward": -113.62894000258034,
+          "validation_reward": -79.47617909897895,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -202,7 +202,7 @@
           "chilled_C": 12.5,
           "feasible": true,
           "mode": "hybrid",
-          "validation_reward": -91.7319731503997,
+          "validation_reward": -53.76109746296266,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
@@ -211,54 +211,54 @@
         },
         {
           "chilled_C": 15.0,
-          "feasible": true,
+          "feasible": false,
           "mode": "free_air",
-          "validation_reward": -90.80622612652071,
+          "validation_reward": -283.44002840599677,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 3456
           }
         },
         {
           "chilled_C": 15.0,
-          "feasible": true,
+          "feasible": false,
           "mode": "closed_loop",
-          "validation_reward": -73.1079186601823,
+          "validation_reward": -266.15766604550254,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 3456
           }
         },
         {
           "chilled_C": 15.0,
-          "feasible": true,
+          "feasible": false,
           "mode": "evaporative",
-          "validation_reward": -113.39722308901075,
+          "validation_reward": -309.6871627170843,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 3456
           }
         },
         {
           "chilled_C": 15.0,
-          "feasible": true,
+          "feasible": false,
           "mode": "hybrid",
-          "validation_reward": -90.80622612652071,
+          "validation_reward": -283.44002840599677,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 3456
           }
         }
       ],
       "least_violating": {
-        "chilled_C": 15.0,
+        "chilled_C": 12.5,
         "feasible": true,
         "mode": "closed_loop",
-        "validation_reward": -73.1079186601823,
+        "validation_reward": -36.32471519118651,
         "violation_steps": {
           "inlet_over_max_steps": 0,
           "inlet_under_min_steps": 0,
@@ -266,7 +266,7 @@
         }
       },
       "tie_break": "lexicographic ascending on (chilled_C, mode index)",
-      "validation_reward": -73.1079186601823
+      "validation_reward": -36.32471519118651
     },
     "scenario_ids": [
       "stress_0.0/validation/100000",

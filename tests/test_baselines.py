@@ -36,19 +36,23 @@ CURVE = np.full(24, 475.0)
 # ============================================================================= policies
 
 
-def test_actuator_limits_match_the_environment():
-    env = DataCentreEnv(carbon_intensity_by_hour=CURVE)
-    assert env._action_to_control(np.array([0.0, 0.0])) == (bp.CHILLED_MIN_C, "free_air")
-    assert env._action_to_control(np.array([1.0, 1.0]))[0] == bp.CHILLED_MAX_C
+@pytest.mark.parametrize("version", ["legacy-0", "1"])
+def test_actuator_limits_match_the_environment(version):
+    """The range is PHYSICS-DEPENDENT (legacy-0 5..15 C, physics 1 16..25 C); the policies must use the env's own."""
+    lo, hi = bp.actuator_range_C(version)
+    env = DataCentreEnv(carbon_intensity_by_hour=CURVE, physics_version=version)
+    assert env._action_to_control(np.array([0.0, 0.0])) == (lo, "free_air")
+    assert env._action_to_control(np.array([1.0, 1.0]))[0] == hi
     for mode in COOLING_MODES:
-        assert env._action_to_control(bp.make_action(10.0, mode))[1] == mode
-    for c in (5.0, 7.5, 10.0, 12.5, 15.0):
-        assert env._action_to_control(bp.make_action(c, "hybrid"))[0] == pytest.approx(c)
+        assert env._action_to_control(bp.make_action(10.0 if version == "legacy-0" else 20.0, mode, version))[1] == mode
+    for c in np.linspace(lo, hi, 5):
+        assert env._action_to_control(bp.make_action(float(c), "hybrid", version))[0] == pytest.approx(float(c))
     obs, _ = env.reset(seed=1)
     assert env._twin._applied_chilled_water_temp_C == bp.INITIAL_SETPOINT_C
     from src.digital_twin import DEFAULT_MAX_CHILLED_WATER_RATE_C_PER_STEP
 
     assert bp.MAX_RATE_C_PER_STEP == DEFAULT_MAX_CHILLED_WATER_RATE_C_PER_STEP
+    assert (bp.CHILLED_MIN_C, bp.CHILLED_MAX_C) == bp.actuator_range_C("legacy-0")  # the legacy constants stay pinned
 
 
 def test_policy_evaluation_re_exports_the_moved_policies_unchanged():

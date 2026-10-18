@@ -2,15 +2,15 @@
   "config_version": 1,
   "infeasible_reason": null,
   "lineage": {
-    "action_schema_hash": "4eac7196a367fb0061a3a133f0541fa465297aa4be4cad086300e992ff7c1007",
-    "action_semantics_version": "1",
-    "environment_version": "1",
+    "action_schema_hash": "8a9f75c4a98717d8e50af4e08e10d474fe7ad83273ed72cdfa249b8c221db273",
+    "action_semantics_version": "2",
+    "environment_version": "2",
     "input_cadence_s": 300,
-    "observation_schema_hash": "9fb575882c20162b7e79bc378c1e753ff4fa7a75d11326d078053961a4884626",
+    "observation_schema_hash": "a585b2fef4a5b153973d14cc7ddebb84b37a6d1a4eb206ddb154a099cff4a4eb",
     "physics_params_hash": "14ed372364a00dbaa218da884426291e20963343eb1dd01af1a1c0f82c69afad",
     "physics_version": "1",
-    "reward_version": "1",
-    "safety_envelope_version": "1"
+    "reward_version": "2",
+    "safety_envelope_version": "2"
   },
   "name": "rule",
   "parameters": {
@@ -26,12 +26,12 @@
       "flat_curve": true,
       "is_real": false
     },
-    "eval_config_sha256": "25c4cc68464207f90980eee334f22032c982251afe69f11693f5320c8b1605ac",
+    "eval_config_sha256": "4f7259b1ee87cf500ca4d0f3b2f7c9308dd2f7fd754df24a33ef7fe78877b347",
     "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
     "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
     "result": {
       "tuned": false,
-      "validation_reward": -92.16491257640048,
+      "validation_reward": -54.18553892857974,
       "validation_violation_steps": {
         "inlet_over_max_steps": 0,
         "inlet_under_min_steps": 0,

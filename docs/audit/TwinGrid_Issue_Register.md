@@ -55,3 +55,11 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 
 ## Audit claims I did NOT verify
 Forecaster has no baseline; anomaly-threshold leakage; missing `data/cleaned|features|predictions` content (directories exist, content not inspected in depth); PPO candidates unevaluated (consistent with the report's `NOT_EVALUATED`); frontend screenshots/E2E; accessibility; Docker demo startup.
+
+### TG-A-13 — Baseline policies normalise set-points with the legacy 5..15 C range under every physics  (High, PARTLY FIXED, confidence high)
+- Files: `src/baselines/policies.py` (`CHILLED_MIN_C/MAX_C`, `norm_chilled`, `make_action`, all four policies); `src/rl/env.py::CHILLED_WATER_ACTION_RANGE_C` (`legacy-0`: 5..15, `"1"`: 16..25).
+- Evidence: under physics 1 a baseline labelled 5/10/12/15 C commands 16.0/20.5/22.3/25.0 C. `tests/test_baselines.py::test_actuator_limits_match_the_environment` failed on the unmodified repo for this reason. Feasibility results remain valid as normalised-action results; the C labels, PID limits and any C-valued report text were wrong.
+- Task 1 (done): policies take `physics_version` (default legacy-0, byte-identical actions), read the range from the environment's table, refuse out-of-range set-points instead of clipping, `PIDPolicy.for_physics`, physics-specific default rule set-point (physics 1: 20.5 C, a protocol parameter).
+- STILL OPEN until Task 2: `src/policy_evaluation.py` (`constant_grid`, `run_episode` rule construction), `src/baselines/{tuning,config,evaluation}.py` still build policies without a physics version, so evaluation/tuning under physics 1 still runs the legacy normalisation end to end. Until Task 2 is applied, do not trust any physics-1 C label.
+- Also open (Task 3): `src/baseline_recommendation.py`, `src/optimizer_proposals.py`, `api/plugins/optimizer_proposals.py` assume 5..15 C.
+- Tests: `tests/test_baseline_physics_ranges.py` (14).
