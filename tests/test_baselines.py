@@ -2,7 +2,7 @@
 
 Unit tests (policies, PID anti-windup, tuners on synthetic sweeps) need no simulator run. The
 integration tests tune and evaluate on a SMALL scenario set through the real environment and the T24 run
-framework; the shipped ``configs/baselines`` and ``reports/runs/baselines-v2`` are checked at the end.
+framework; the shipped ``configs/baselines`` and ``reports/runs/baselines-v3`` are checked at the end.
 """
 
 from __future__ import annotations
@@ -28,7 +28,10 @@ from src.repro.run import RunRequest, read_json, run
 from src.repro.verify import verify_run
 
 ROOT = Path(__file__).resolve().parent.parent
-PREREG = "reports/policy_evaluation/PREREGISTRATION.json"
+PREREG = "reports/policy_evaluation/PREREGISTRATION.json"  # location inside the scratch "world" project roots
+# the shipped baselines are tuned and run under the physics-1 protocol (Task 4); the legacy-0 one is frozen history
+SHIPPED_PREREG = evaluation.PHYSICS1_PREREG
+SHIPPED_RUN = "baselines-v3"
 SMALL = replace(pe.EvalConfig(), n_validation_per_family=2, n_test_per_family=2, constant_chilled_C=(18.0, 22.0))
 CURVE = np.full(24, 475.0)
 
@@ -578,8 +581,15 @@ def test_the_tune_command_hands_the_tuners_only_the_validation_split(tmp_path, m
 
     monkeypatch.setattr(tuning, "tune_all", fake_tune_all)
     with pytest.raises(Stop):
-        cli.cmd_tune(type("A", (), {"out": "configs/baselines"})(), tmp_path)
+        cli.cmd_tune(type("A", (), {"out": "configs/baselines", "prereg": PREREG})(), tmp_path)
     assert captured["ids"] and all("/validation/" in i for i in captured["ids"])
+
+
+def test_the_cli_and_the_evaluation_document_default_to_the_same_physics_1_protocol():
+    from src.baselines import cli
+
+    assert cli.PREREG == evaluation.PHYSICS1_PREREG == SHIPPED_PREREG
+    assert "physics1" in cli.PREREG
 
 
 def test_tuning_modules_never_build_or_name_the_test_split():
@@ -945,7 +955,7 @@ def test_baselines_do_not_read_the_clock_or_the_environment():
 
 
 def _shipped_context():
-    eval_cfg = pe.load_preregistered_config((ROOT / PREREG).parent)
+    eval_cfg = pe.load_preregistered_config((ROOT / SHIPPED_PREREG).parent)
     return eval_cfg, pe.build_scenarios(eval_cfg)
 
 
@@ -974,9 +984,9 @@ def test_shipped_configs_are_valid_current_and_tuned_on_the_registered_validatio
 
 
 def test_shipped_baselines_run_verifies_and_lists_all_four():
-    run_dir = ROOT / "reports/runs/baselines-v2"
+    run_dir = ROOT / "reports/runs" / SHIPPED_RUN
     assert run_dir.is_dir()
-    rep = verify_run(ROOT, "baselines-v2")
+    rep = verify_run(ROOT, SHIPPED_RUN)
     assert rep.failures == [], [str(f) for f in rep.failures]
     results = read_json(run_dir / "results.json")
     assert [r[0] for r in results["tables"]["baselines"]["rows"]] == list(bcfg.BASELINE_NAMES)
@@ -984,7 +994,7 @@ def test_shipped_baselines_run_verifies_and_lists_all_four():
     assert all(f"| {n} |" in text for n in bcfg.BASELINE_NAMES)
     m = read_json(run_dir / "manifest.json")
     assert set(m["config_files"]) == {f"configs/baselines/{n}.json" for n in (*bcfg.BASELINE_NAMES, "evaluation")}
-    assert m["prereg_sha256"] == canonical.sha256_input_file(ROOT / PREREG)
+    assert m["prereg_sha256"] == canonical.sha256_input_file(ROOT / SHIPPED_PREREG)
 
 
 def _close(a, b, rel=1e-6):
@@ -1001,7 +1011,7 @@ def test_shipped_baselines_run_reproduces_on_rerun():
     """Level L1 (same machine/environment) is byte-identical; on another platform only numeric agreement is claimed (L2)."""
     from src.repro import env
 
-    m = read_json(ROOT / "reports/runs/baselines-v2/manifest.json")
+    m = read_json(ROOT / "reports/runs" / SHIPPED_RUN / "manifest.json")
     evaluation.register(ROOT)
     try:
         cfg = read_json(ROOT / m["primary_config"])
@@ -1010,7 +1020,7 @@ def test_shipped_baselines_run_reproduces_on_rerun():
         )
     finally:
         experiments._REGISTRY.pop("baselines", None)
-    shipped_bytes = (ROOT / "reports/runs/baselines-v2/results.json").read_bytes()
+    shipped_bytes = (ROOT / "reports/runs" / SHIPPED_RUN / "results.json").read_bytes()
     now = env.platform_info()
     same_environment = all(m["platform"][k] == now[k] for k in ("os", "arch", "python", "numpy"))
     if same_environment:

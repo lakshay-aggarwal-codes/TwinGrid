@@ -4,7 +4,7 @@
     python -m src.baselines.cli run  --run-id baselines-v2 [--check-determinism]
     python -m src.baselines.cli verify baselines-v2 [--rerun] [--strict]
 
-``tune`` reads the pre-registered evaluation config (``reports/policy_evaluation/PREREGISTRATION.json``),
+``tune`` reads the pre-registered evaluation config (``reports/policy_evaluation_physics1/PREREGISTRATION.json`` (override with ``--prereg``)),
 builds the validation scenarios and hands ONLY those to the tuners. ``run`` and ``verify`` use the T24
 framework (``src/repro``): the experiment is registered in-process, the five config files and the
 pre-registration are hashed into ``reports/runs/<run_id>/manifest.json``, and ``verify --rerun``
@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-PREREG = "reports/policy_evaluation/PREREGISTRATION.json"
+PREREG = "reports/policy_evaluation_physics1/PREREGISTRATION.json"  # == evaluation.PHYSICS1_PREREG (pinned by a test)
 
 
 def _eval_cfg(root: Path, prereg: str = PREREG):

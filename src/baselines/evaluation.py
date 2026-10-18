@@ -45,11 +45,16 @@ class BaselineRunError(RuntimeError):
 # ----------------------------------------------------------------------------- inputs
 
 
+# The protocol the shipped baselines are tuned and run under: physics 1 (Task 4). The legacy-0 protocol at
+# reports/policy_evaluation/ is frozen history (it still reproduces its recorded report); baselines are NOT run on it.
+PHYSICS1_PREREG = "reports/policy_evaluation_physics1/PREREGISTRATION.json"
+
+
 def evaluation_document(
     eval_cfg: pe.EvalConfig,
     *,
     directory: str = bcfg.CONFIG_DIR,
-    prereg: str = "reports/policy_evaluation/PREREGISTRATION.json",
+    prereg: str = PHYSICS1_PREREG,
 ) -> dict[str, Any]:
     """Content of ``configs/baselines/evaluation.json`` (the primary config of the T24 run)."""
     test = pe.build_scenarios(eval_cfg)["test"]
