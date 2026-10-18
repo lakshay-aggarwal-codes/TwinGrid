@@ -14,8 +14,8 @@ Generated from `results.json` by `src/repro/report.py`; nothing in this file is 
 | baselines_infeasible | 0 |
 | mean_test_reward_constant | -36.3272 |
 | mean_test_reward_lookup | -36.0675 |
-| mean_test_reward_pid | -54.229 |
-| mean_test_reward_rule | -54.229 |
+| mean_test_reward_pid | -54.8517 |
+| mean_test_reward_rule | -54.8517 |
 | test_scenarios | 60 |
 | validation_scenarios | 30 |
 
@@ -23,10 +23,10 @@ Generated from `results.json` by `src/repro/report.py`; nothing in this file is 
 
 | baseline | status | validation_reward | validation_violation_steps | parameters |
 |---|---|---|---|---|
-| rule | feasible | -54.1855 | 0 | production mode rule at 12 C |
-| constant | feasible | -36.3247 | 0 | 12.5 C, closed_loop |
+| rule | feasible | -54.8095 | 0 | production mode rule at 20.5 C |
+| constant | feasible | -36.3247 | 0 | 22.75 C, closed_loop |
 | lookup | feasible | -36.0686 | 0 | 5 x 5 bins (25 cells, 7 fallback) |
-| pid | feasible | -54.1855 | 0 | target inlet 22 C, kp=0, ki=0, kd=0, mode rule production_rule |
+| pid | feasible | -54.8095 | 0 | target inlet 22 C, kp=0, ki=0, kd=0, mode rule production_rule |
 
 Full precision: `tables/baselines.csv`
 
@@ -34,10 +34,10 @@ Full precision: `tables/baselines.csv`
 
 | baseline | stress_0.0 | stress_0.4 | stress_0.8 |
 |---|---|---|---|
-| rule | -63.5961 | -62.6451 | -36.4457 |
+| rule | -64.2754 | -63.3402 | -36.9395 |
 | constant | -36.3272 | -36.3272 | -36.3272 |
 | lookup | -36.0675 | -36.0675 | -36.0675 |
-| pid | -63.5961 | -62.6451 | -36.4457 |
+| pid | -64.2754 | -63.3402 | -36.9395 |
 
 Full precision: `tables/test_reward_by_family.csv`
 
@@ -45,10 +45,10 @@ Full precision: `tables/test_reward_by_family.csv`
 
 | baseline | total_reward | energy_kwh | water_L | carbon_gco2 | mean_pue | mean_wue | outlet_violation_steps | inlet_over_max_steps | inlet_under_min_steps |
 |---|---|---|---|---|---|---|---|---|---|
-| rule | -54.229 | 9568.78 | 4823.47 | 4.54517e+06 | 1.22905 | 0.627444 | 0 | 0 | 0 |
+| rule | -54.8517 | 9622.23 | 4850.79 | 4.57056e+06 | 1.23588 | 0.630964 | 0 | 0 | 0 |
 | constant | -36.3272 | 9414.43 | 451.45 | 4.47185e+06 | 1.20914 | 0.0585493 | 0 | 0 | 0 |
 | lookup | -36.0675 | 9394.39 | 450.456 | 4.46233e+06 | 1.20555 | 0.0583709 | 0 | 0 | 0 |
-| pid | -54.229 | 9568.78 | 4823.47 | 4.54517e+06 | 1.22905 | 0.627444 | 0 | 0 | 0 |
+| pid | -54.8517 | 9622.23 | 4850.79 | 4.57056e+06 | 1.23588 | 0.630964 | 0 | 0 | 0 |
 
 Full precision: `tables/test_summary.csv`
 

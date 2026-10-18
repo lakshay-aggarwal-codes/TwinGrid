@@ -2,7 +2,7 @@
   "action_schema_hash": "8a9f75c4a98717d8e50af4e08e10d474fe7ad83273ed72cdfa249b8c221db273",
   "action_semantics_version": "2",
   "artifacts": [],
-  "code_revision": "3935ddeb59bece17c82d375d33316e09606f3317",
+  "code_revision": "9325dac9cd2f603ee8e08385dfd4a077d640ec6a",
   "code_revision_source": "git",
   "command": [
     "python",
@@ -15,11 +15,11 @@
     "baselines-v3"
   ],
   "config_files": {
-    "configs/baselines/constant.json": "8723ebb354526b818c1ba570115e481b68e149f649444508e41654881ce26db2",
+    "configs/baselines/constant.json": "fa8a9ddf974d2a85110a0648bdea092724fa52d9d08556aa85dd5c0ecc98f884",
     "configs/baselines/evaluation.json": "1941b95db6fce7384ea86188dad5463e3900e48a12614b0997ed4dfadcde3cf9",
-    "configs/baselines/lookup.json": "013446ca896f92fbcddf5acf106da3adecbb90afd8d78e1eaded61f14e9a7e8f",
-    "configs/baselines/pid.json": "1c744d7d1355b7205d246e6aba0bfe32011e65d183baa43542c569f4e92ade8d",
-    "configs/baselines/rule.json": "719a4484193601e9ca03a6e91c4eaba6ca4dc561c0b336f22c5b0e47f24d9be5"
+    "configs/baselines/lookup.json": "758f3b8fc9937714725fbcc3b8ceff8ef140764ee45f35c42fec4c6c8979440b",
+    "configs/baselines/pid.json": "b7559e56b3b86f72c1ab0642ef19600f20d03456a05bce320f9e5760199af7b8",
+    "configs/baselines/rule.json": "a10569af1add4445e778371d47a96ad27553c3fef8064abe0248cc53b072fef6"
   },
   "dataset_manifest_path": null,
   "dataset_manifest_sha256": null,
@@ -29,7 +29,7 @@
     "level": "L1"
   },
   "dirty": true,
-  "dirty_diff_sha256": "699353e17e3184a7e06ba3c55fab8493fe52987ec2f5c83e058a0f9bd149762a",
+  "dirty_diff_sha256": "03793735b4fcc7201b8e01d562b46206dcdab4aaab3bc103d199cea0cdc42e21",
   "environment_version": "2",
   "experiment": "baselines",
   "input_cadence_s": 300,
@@ -50,9 +50,9 @@
     "torch": "2.14.0"
   },
   "prereg_path": "reports/policy_evaluation_physics1/PREREGISTRATION.json",
-  "prereg_sha256": "8c2c3593a11ad14724caa9bc327de62675a417fbda3c411a09be103862fa75d7",
+  "prereg_sha256": "3151637098cc8d8bcc690edb296c0cba003324cbcfaa93680bc47eddc7a97620",
   "primary_config": "configs/baselines/evaluation.json",
-  "result_sha256": "b454ff811659259cbf8fa2a4727b19c363aa24b6269c1276dc90c65258ee5371",
+  "result_sha256": "92511ae9bc16748806c9d337bf9c85e9b0c8a5bc43686102c37d2ab14164fe17",
   "results_schema": "twingrid-results/1",
   "reward_version": "2",
   "run_id": "baselines-v3",
@@ -81,5 +81,5 @@
     200019
   ],
   "split_id": "validation=a290e92dcf0037b0;test=b8329f196c910981",
-  "started_at_utc": "2026-10-18T08:02:23Z"
+  "started_at_utc": "2026-10-18T13:39:25Z"
 }

@@ -37,8 +37,6 @@ from .. import policy_evaluation as pe
 from ..optimizer import COOLING_MODES
 from . import config as bcfg
 from .policies import (
-    CHILLED_MAX_C,
-    CHILLED_MIN_C,
     INITIAL_SETPOINT_C,
     MAX_RATE_C_PER_STEP,
     PRODUCTION_RULE,
@@ -46,9 +44,11 @@ from .policies import (
     LookupPolicy,
     PIDPolicy,
     RulePolicy,
+    actuator_range_C,
+    default_rule_setpoint_C,
 )
 
-TUNER_VERSION = "baselines-tuner/1"
+TUNER_VERSION = "baselines-tuner/2"  # /2: set-points are in the physics' own actuator range (TG-A-13)
 OBJECTIVE = (
     "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates"
 )
@@ -97,6 +97,11 @@ class TuningSpace:
         return {k: (list(v) if isinstance(v, tuple) else v) for k, v in asdict(self).items()}
 
 
+def _transient_steps(physics_version: str) -> int:
+    lo, hi = actuator_range_C(physics_version)
+    return int(np.ceil(max(abs(INITIAL_SETPOINT_C - lo), abs(hi - INITIAL_SETPOINT_C)) / MAX_RATE_C_PER_STEP))
+
+
 def default_space(cfg: pe.EvalConfig) -> TuningSpace:
     """The registered search space. The constant grid is the pre-registered one (``cfg.constant_chilled_C``)."""
     return TuningSpace(
@@ -108,12 +113,14 @@ def default_space(cfg: pe.EvalConfig) -> TuningSpace:
         lookup_chilled_C=tuple(float(c) for c in cfg.constant_chilled_C),
         lookup_modes=tuple(COOLING_MODES),
         lookup_min_cell_samples=20,
-        lookup_transient_steps_excluded=3,  # the plant needs <= 3 steps (5 C at 2 C/step) to reach any constant set-point from 10 C
+        # steps the plant needs (at its rate limit) to reach ANY set-point of the range from its 10 C reset value:
+        # legacy-0 ceil(5/2)=3 (unchanged); physics 1 ceil(15/2)=8.
+        lookup_transient_steps_excluded=_transient_steps(cfg.resolved_physics_version),
         pid_target_inlet_C=22.0,
         pid_kp=(0.0, 0.5, 1.0, 2.0, 4.0),
         pid_ki=(0.0, 0.02, 0.05, 0.1),
         pid_kd=(0.0, 0.5, 1.0),
-        pid_nominal_setpoint_C=12.0,
+        pid_nominal_setpoint_C=default_rule_setpoint_C(cfg.resolved_physics_version),
         pid_mode_rule=PRODUCTION_RULE,
     )
 
@@ -182,7 +189,7 @@ class ActionSweep:
         """``(episode results, steps)``; ``steps`` has shape ``(n_scenarios, n_steps, 4)``."""
         key = (float(chilled_C), mode)
         if key not in self._cache:
-            policy = ConstantPolicy(chilled_C, mode)
+            policy = ConstantPolicy(chilled_C, mode, physics_version=self.eval_cfg.resolved_physics_version)
             results, per_scenario = [], []
             for scenario in self.scenarios:
                 rows: list[tuple[float, float, float, float]] = []
@@ -209,7 +216,9 @@ def tune_rule(
     space: TuningSpace, scenarios: Sequence[pe.Scenario], eval_cfg: pe.EvalConfig, carbon: np.ndarray
 ) -> dict[str, Any]:
     assert_validation_only(scenarios)
-    results = pe.evaluate_policy(RulePolicy(space.rule_chilled_C), scenarios, eval_cfg, carbon)
+    results = pe.evaluate_policy(
+        RulePolicy(space.rule_chilled_C, physics_version=eval_cfg.resolved_physics_version), scenarios, eval_cfg, carbon
+    )
     counts = envelope_counts(results)
     feasible = is_feasible(counts)
     return {
@@ -375,6 +384,7 @@ def tune_lookup(
         space.lookup_temp_edges,
         [[(c["chilled_C"], c["mode"]) for c in r] for r in table],
         name="lookup",
+        physics_version=eval_cfg.resolved_physics_version,
     )
     closed_loop = pe.evaluate_policy(policy, scenarios, eval_cfg, carbon)
     counts = envelope_counts(closed_loop)
@@ -434,11 +444,12 @@ def tune_pid(
     say = progress or (lambda _m: None)
     cands = []
     for kp, ki, kd in itertools.product(space.pid_kp, space.pid_ki, space.pid_kd):
-        policy = PIDPolicy(
-            target_inlet_C=space.pid_target_inlet_C,
-            kp=kp,
-            ki=ki,
-            kd=kd,
+        policy = PIDPolicy.for_physics(
+            eval_cfg.resolved_physics_version,
+            space.pid_target_inlet_C,
+            kp,
+            ki,
+            kd,
             nominal_setpoint_C=space.pid_nominal_setpoint_C,
             mode_rule=space.pid_mode_rule,
         )
@@ -474,8 +485,8 @@ def tune_pid(
             "target_inlet_C": space.pid_target_inlet_C,
             "nominal_setpoint_C": space.pid_nominal_setpoint_C,
             "initial_setpoint_C": INITIAL_SETPOINT_C,
-            "min_setpoint_C": CHILLED_MIN_C,
-            "max_setpoint_C": CHILLED_MAX_C,
+            "min_setpoint_C": actuator_range_C(eval_cfg.resolved_physics_version)[0],
+            "max_setpoint_C": actuator_range_C(eval_cfg.resolved_physics_version)[1],
             "max_rate_C_per_step": MAX_RATE_C_PER_STEP,
             "mode_rule": space.pid_mode_rule,
             "anti_windup": True,
@@ -525,6 +536,8 @@ def tune_all(
         "eval_config_sha256": pe.config_sha256(eval_cfg),
         "objective": OBJECTIVE,
         "feasibility_rule": FEASIBILITY_RULE,
+        # the actuator range the set-points in these configs are expressed in (physics-dependent; TG-A-13)
+        "actuator_range_C": list(actuator_range_C(eval_cfg.resolved_physics_version)),
         "carbon": {
             "is_real": bool(carbon_is_real),
             "flat_curve": bool(np.ptp(carbon) == 0),

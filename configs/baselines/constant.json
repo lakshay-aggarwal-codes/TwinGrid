@@ -15,26 +15,30 @@
   "name": "constant",
   "parameters": {
     "selected": {
-      "chilled_C": 12.5,
+      "chilled_C": 22.75,
       "mode": "closed_loop"
     }
   },
   "schema": "twingrid-baseline-config/1",
   "status": "feasible",
-  "tuner_version": "baselines-tuner/1",
+  "tuner_version": "baselines-tuner/2",
   "tuning": {
+    "actuator_range_C": [
+      16.0,
+      25.0
+    ],
     "carbon": {
       "curve_sha256": "afef42cfe64a6bdae71dd82e6dd3171a926fae939b162ecadfa38d0d56e8a754",
       "flat_curve": true,
       "is_real": false
     },
-    "eval_config_sha256": "4f7259b1ee87cf500ca4d0f3b2f7c9308dd2f7fd754df24a33ef7fe78877b347",
+    "eval_config_sha256": "fe76f6691857ef267c6fc958fda22f187b8a077110ae3dfc0d9d4e65835d9105",
     "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
     "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
     "result": {
       "candidates": [
         {
-          "chilled_C": 5.0,
+          "chilled_C": 16.0,
           "feasible": true,
           "mode": "free_air",
           "validation_reward": -56.30462349445116,
@@ -45,7 +49,7 @@
           }
         },
         {
-          "chilled_C": 5.0,
+          "chilled_C": 16.0,
           "feasible": true,
           "mode": "closed_loop",
           "validation_reward": -38.324881261393834,
@@ -56,7 +60,7 @@
           }
         },
         {
-          "chilled_C": 5.0,
+          "chilled_C": 16.0,
           "feasible": true,
           "mode": "evaporative",
           "validation_reward": -80.14290112238139,
@@ -67,7 +71,7 @@
           }
         },
         {
-          "chilled_C": 5.0,
+          "chilled_C": 16.0,
           "feasible": true,
           "mode": "hybrid",
           "validation_reward": -56.30462349445116,
@@ -78,7 +82,7 @@
           }
         },
         {
-          "chilled_C": 7.5,
+          "chilled_C": 18.25,
           "feasible": true,
           "mode": "free_air",
           "validation_reward": -55.385656083422326,
@@ -89,7 +93,7 @@
           }
         },
         {
-          "chilled_C": 7.5,
+          "chilled_C": 18.25,
           "feasible": true,
           "mode": "closed_loop",
           "validation_reward": -37.60224108249876,
@@ -100,7 +104,7 @@
           }
         },
         {
-          "chilled_C": 7.5,
+          "chilled_C": 18.25,
           "feasible": true,
           "mode": "evaporative",
           "validation_reward": -79.9020210627497,
@@ -111,7 +115,7 @@
           }
         },
         {
-          "chilled_C": 7.5,
+          "chilled_C": 18.25,
           "feasible": true,
           "mode": "hybrid",
           "validation_reward": -55.385656083422326,
@@ -122,7 +126,7 @@
           }
         },
         {
-          "chilled_C": 10.0,
+          "chilled_C": 20.5,
           "feasible": true,
           "mode": "free_air",
           "validation_reward": -54.54059619095643,
@@ -133,7 +137,7 @@
           }
         },
         {
-          "chilled_C": 10.0,
+          "chilled_C": 20.5,
           "feasible": true,
           "mode": "closed_loop",
           "validation_reward": -36.937704719655386,
@@ -144,7 +148,7 @@
           }
         },
         {
-          "chilled_C": 10.0,
+          "chilled_C": 20.5,
           "feasible": true,
           "mode": "evaporative",
           "validation_reward": -79.68050894180192,
@@ -155,7 +159,7 @@
           }
         },
         {
-          "chilled_C": 10.0,
+          "chilled_C": 20.5,
           "feasible": true,
           "mode": "hybrid",
           "validation_reward": -54.54059619095643,
@@ -166,7 +170,7 @@
           }
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "feasible": true,
           "mode": "free_air",
           "validation_reward": -53.76109746296266,
@@ -177,7 +181,7 @@
           }
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "feasible": true,
           "mode": "closed_loop",
           "validation_reward": -36.32471519118651,
@@ -188,7 +192,7 @@
           }
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "feasible": true,
           "mode": "evaporative",
           "validation_reward": -79.47617909897895,
@@ -199,7 +203,7 @@
           }
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "feasible": true,
           "mode": "hybrid",
           "validation_reward": -53.76109746296266,
@@ -210,7 +214,7 @@
           }
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 25.0,
           "feasible": false,
           "mode": "free_air",
           "validation_reward": -283.44002840599677,
@@ -221,7 +225,7 @@
           }
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 25.0,
           "feasible": false,
           "mode": "closed_loop",
           "validation_reward": -266.15766604550254,
@@ -232,7 +236,7 @@
           }
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 25.0,
           "feasible": false,
           "mode": "evaporative",
           "validation_reward": -309.6871627170843,
@@ -243,7 +247,7 @@
           }
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 25.0,
           "feasible": false,
           "mode": "hybrid",
           "validation_reward": -283.44002840599677,
@@ -255,7 +259,7 @@
         }
       ],
       "least_violating": {
-        "chilled_C": 12.5,
+        "chilled_C": 22.75,
         "feasible": true,
         "mode": "closed_loop",
         "validation_reward": -36.32471519118651,
@@ -303,11 +307,11 @@
     "scenario_set_id": "a290e92dcf0037b0",
     "search_space": {
       "chilled_C": [
-        5.0,
-        7.5,
-        10.0,
-        12.5,
-        15.0
+        16.0,
+        18.25,
+        20.5,
+        22.75,
+        25.0
       ],
       "modes": [
         "free_air",

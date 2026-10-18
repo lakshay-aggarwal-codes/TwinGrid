@@ -48,6 +48,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.rate_limit import limiter
 from api.secrets import read_secret
 from api.services import audit_service
+from api.startup_checks import check_jwt_secret
 from database import get_db
 from models.db_models import USER_ROLE_OPERATOR, USER_ROLE_VIEWER, RefreshToken, User
 
@@ -55,16 +56,12 @@ from models.db_models import USER_ROLE_OPERATOR, USER_ROLE_VIEWER, RefreshToken,
 # Config
 # -----------------------------------------------------------------------------
 
-SECRET_KEY = read_secret("JWT_SECRET_KEY")
-if not SECRET_KEY:
-    raise RuntimeError(
-        "JWT_SECRET_KEY (or JWT_SECRET_KEY_FILE) is not set. This app will not start "
-        'without it -- generate one with: python -c "import secrets; print(secrets.token_hex(32))" '
-        "and set it in your .env / deployment environment, or point JWT_SECRET_KEY_FILE at a "
-        "secrets-manager-mounted file. There is no default: a hardcoded fallback here would mean "
-        "every deployment that forgets to set this variable shares the same, publicly-visible "
-        "signing key."
-    )
+# Task 18: the strict rules (placeholder / test value, shorter than MIN_SECRET_LENGTH) live in ONE place,
+# api/startup_checks.py, and are applied here at import, so they hold however the app is launched (a bare
+# `uvicorn api.main:app`, start.sh, a debugger), not only through the `python -m api.startup_checks` step in the
+# Dockerfile/Procfile CMD. A missing secret is fatal everywhere; a weak one is fatal in production. There is no
+# default: a hardcoded fallback would mean every deployment that forgets the variable shares one public key.
+SECRET_KEY = check_jwt_secret(read_secret("JWT_SECRET_KEY"))
 ALGORITHM = "HS256"
 # Short-lived on purpose -- see module docstring. Was 60 minutes with no
 # refresh mechanism; now a stolen access token is only useful for 15 minutes.
@@ -93,12 +90,32 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(_bcrypt_input(password), bcrypt.gensalt()).decode("utf-8")
 
 
+_dummy_hash: Optional[str] = None
+
+
+def _dummy_password_hash() -> str:
+    """A real bcrypt hash of a throwaway random password, computed once. Used so an unknown username costs the same
+    bcrypt work as a wrong password (no account-existence timing oracle on /auth/login)."""
+    global _dummy_hash
+    if _dummy_hash is None:
+        _dummy_hash = hash_password(secrets_module.token_urlsafe(16))
+    return _dummy_hash
+
+
 def verify_password(plain: str, hashed: str) -> bool:
     try:
         return bcrypt.checkpw(_bcrypt_input(plain), hashed.encode("utf-8"))
     except ValueError:
         # Malformed / non-bcrypt stored hash: treat as a failed login, not a 500.
         return False
+
+
+def check_login_password(user: Optional[User], password: str) -> bool:
+    """True only for an existing account whose password matches. Always performs exactly one bcrypt verification,
+    whether or not ``user`` exists."""
+    hashed = user.hashed_password if user is not None else _dummy_password_hash()
+    valid = verify_password(password, hashed)
+    return valid and user is not None
 
 
 _TRUTHY = {"1", "true", "yes", "on"}
@@ -147,7 +164,10 @@ def create_access_token(subject: str | int, role: str) -> str:
 
 def decode_token(token: str) -> dict:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # A token without `exp` would be valid forever, one without `sub` identifies nobody: refuse both.
+        payload = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options={"require_exp": True, "require_sub": True}
+        )
         return payload
     except JWTError:
         raise HTTPException(
@@ -467,7 +487,7 @@ async def login(
     """Authenticate and return a short-lived access token plus a refresh
     token. Rate limited: 10/minute per IP."""
     user = await get_user_by_username(session, body.username)
-    if user is None or not verify_password(body.password, user.hashed_password):
+    if not check_login_password(user, body.password):
         # The attempted username is NOT stored (people paste passwords into that field); the actor is
         # recorded only when the account exists. Volume is bounded by the 10/minute per-IP limit above.
         await audit_service.log_action_best_effort(

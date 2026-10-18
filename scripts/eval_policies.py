@@ -1018,8 +1018,10 @@ def run_evaluation_protocol(
     base.pop("environment", None)  # wall-clock fields stay out of results.json (L1 determinism)
 
     sel = base["selection"]
-    rule = pe.RulePolicy(cfg.rule_chilled_C)
-    best = pe.ConstantPolicy(sel["best_constant"]["chilled_C"], sel["best_constant"]["mode"])
+    rule = pe.RulePolicy(cfg.rule_chilled_C, physics_version=cfg.resolved_physics_version)
+    best = pe.ConstantPolicy(
+        sel["best_constant"]["chilled_C"], sel["best_constant"]["mode"], physics_version=cfg.resolved_physics_version
+    )
     selected_seed = sel["selected_ppo_seed"]
     policies: dict[str, Any] = {"rule": rule, "best_constant": best}
     if candidates and selected_seed is not None:

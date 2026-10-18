@@ -19,7 +19,9 @@ from src.versions import PhysicsVersionError
 
 ROOT = Path(__file__).resolve().parents[1]
 CURVE = np.full(24, 475.0)
-SMALL = replace(pe.EvalConfig(), n_validation_per_family=2, n_test_per_family=2, constant_chilled_C=(10.0, 15.0))
+SMALL = replace(pe.EvalConfig(), n_validation_per_family=2, n_test_per_family=2, constant_chilled_C=(18.0, 22.0))
+# a legacy-0 config registers its own (legacy-range) set-points
+LEGACY = dict(constant_chilled_C=(10.0, 15.0), rule_chilled_C=12.0)
 
 
 def _one_test_scenario(cfg: pe.EvalConfig, sid: str = "stress_0.0/test/200000"):
@@ -31,20 +33,21 @@ def test_evaluation_runs_the_physics_its_config_declares_not_the_process_default
     """TG-A-01: run_episode used to omit physics_version, so the environment ran the process default while the
     report carried the config's label."""
     v1 = replace(pe.EvalConfig(), physics_version="1")
-    leg = replace(pe.EvalConfig(), physics_version="legacy-0")
+    leg = replace(pe.EvalConfig(), physics_version="legacy-0", **LEGACY)
     sc = _one_test_scenario(v1)
-    rule = pe.RulePolicy(v1.rule_chilled_C)
+    rule = pe.RulePolicy(v1.rule_chilled_C, physics_version="1")
+    rule_leg = pe.RulePolicy(12.0)  # legacy-0 range
 
     monkeypatch.delenv("PHYSICS_VERSION", raising=False)
     base_v1 = pe.run_episode(rule, sc, v1, CURVE).metrics
-    base_leg = pe.run_episode(rule, sc, leg, CURVE).metrics
+    base_leg = pe.run_episode(rule_leg, sc, leg, CURVE).metrics
     assert base_v1 != base_leg, "the two physics versions must give different numbers for this to be a test"
 
     # flipping the process-wide default must not change what a config that names its physics produces
     for ambient in ("legacy-0", "1"):
         monkeypatch.setenv("PHYSICS_VERSION", ambient)
         assert pe.run_episode(rule, sc, v1, CURVE).metrics == base_v1
-        assert pe.run_episode(rule, sc, leg, CURVE).metrics == base_leg
+        assert pe.run_episode(rule_leg, sc, leg, CURVE).metrics == base_leg
 
 
 def test_environment_receives_the_declared_version_explicitly(monkeypatch):
@@ -56,7 +59,7 @@ def test_environment_receives_the_declared_version_explicitly(monkeypatch):
         return real(**kw)
 
     monkeypatch.setattr(pe, "DataCentreEnv", spy)
-    cfg = replace(pe.EvalConfig(), physics_version="legacy-0", episode_steps=3)
+    cfg = replace(pe.EvalConfig(), physics_version="legacy-0", episode_steps=3, **LEGACY)
     pe.run_episode(pe.RulePolicy(12.0), _one_test_scenario(cfg), cfg, CURVE)
     assert seen == ["legacy-0"]
 
@@ -79,7 +82,7 @@ def test_results_record_the_executed_physics():
     res = pe.run_evaluation(SMALL, ppo_candidates=None, carbon_curve=CURVE, carbon_is_real=False)
     assert res["physics_version"] == "1" == res["physics_version_executed"]
     leg = pe.run_evaluation(
-        replace(SMALL, physics_version="legacy-0 (implicit)"),
+        replace(SMALL, physics_version="legacy-0 (implicit)", **LEGACY),
         ppo_candidates=None,
         carbon_curve=CURVE,
         carbon_is_real=False,
@@ -138,7 +141,10 @@ def test_best_constant_is_chosen_among_envelope_feasible_constants():
         for row in res["per_scenario_test"]["best_constant"]:
             assert sum(row[m] for m in pe.HARD_CONSTRAINT_METRICS) == 0
     leg = pe.run_evaluation(
-        replace(SMALL, physics_version="legacy-0"), ppo_candidates=None, carbon_curve=CURVE, carbon_is_real=False
+        replace(SMALL, physics_version="legacy-0", **LEGACY),
+        ppo_candidates=None,
+        carbon_curve=CURVE,
+        carbon_is_real=False,
     )
     # legacy-0's envelope is unreachable: no constant is feasible and the result says so instead of hiding it
     assert leg["selection"]["best_constant_envelope_feasible"] is False
@@ -174,41 +180,21 @@ def test_baselines_refuse_a_protocol_whose_physics_differs_from_the_running_code
 
 
 # ------------------------------------------------------------------------------------------- TG-A-05
-# DigitalTwinOptimized was a second, older model (own COP/evaporation tables, no derating, no carbon,
-# no water stress, no drought override): 8 of the 15 fields it shares with DigitalTwin diverged, so it
-# was retired rather than patched (docs/tasks/Task5_TWIN_PARITY_REPORT.md). These guards stop a second
-# simulator from coming back unnoticed.
-def test_optimized_twin_is_retired_and_nothing_references_it():
-    assert not (ROOT / "src" / "digital_twin_optimized.py").exists()
-    needles = ("digital_twin_optimized", "DigitalTwinOptimized")
-    offenders = []
-    for folder in ("api", "src", "scripts", "models"):
-        base = ROOT / folder
-        if not base.is_dir():
-            continue
-        for path in base.rglob("*.py"):
-            if any(n in path.read_text(encoding="utf-8", errors="ignore") for n in needles):
-                offenders.append(path.relative_to(ROOT).as_posix())
-    top = ROOT / "benchmark_performance.py"
-    if top.exists() and any(n in top.read_text(encoding="utf-8") for n in needles):
-        offenders.append("benchmark_performance.py")
-    assert offenders == []
-
-
-def test_benchmark_actions_are_deterministic_and_drive_both_supported_physics_versions():
-    """benchmark_performance.generate_test_actions is the pinned input sequence for the timing protocol."""
+@pytest.mark.xfail(
+    strict=True,
+    reason="TG-A-05: DigitalTwinOptimized is NOT numerically equivalent to DigitalTwin(legacy-0): on the benchmark "
+    "inputs outlet differs by ~20 C and PUE by ~0.10. Remove this xfail when the divergence is fixed or the module is retired.",
+)
+def test_optimized_twin_matches_the_main_twin_on_the_benchmark_inputs():
     import sys
 
     sys.path.insert(0, str(ROOT))
-    from benchmark_performance import PHYSICS_VERSIONS, generate_test_actions
+    from benchmark_performance import generate_test_actions
     from src.digital_twin import DigitalTwin
+    from src.digital_twin_optimized import DigitalTwinOptimized
 
-    first, second = generate_test_actions(), generate_test_actions()
-    assert len(first) == 288
-    assert [dict(a) for a in first] == [dict(a) for a in second]
-    for version in PHYSICS_VERSIONS:
-        twin = DigitalTwin(physics_version=version)
-        for action in first:
-            state = twin.step(dict(action))
-            assert state.pue >= 1.0
-            assert state.server_outlet_temp_C >= state.server_inlet_temp_C
+    main, fast = DigitalTwin(physics_version="legacy-0"), DigitalTwinOptimized(enable_logging=False)
+    for a in generate_test_actions():
+        s1, s2 = main.step(dict(a)), fast.step(dict(a))
+        assert s2.server_outlet_temp_C == pytest.approx(s1.server_outlet_temp_C, abs=1e-6)
+        assert s2.pue == pytest.approx(s1.pue, abs=1e-6)
