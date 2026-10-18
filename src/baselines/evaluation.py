@@ -93,6 +93,7 @@ def load_baselines(
     """The four configs, each checked against the running code and scenarios (raises BaselineConfigStale)."""
     if set(paths) != set(bcfg.BASELINE_NAMES):
         raise BaselineRunError(f"the evaluation config must list exactly the baselines {list(bcfg.BASELINE_NAMES)}")
+    bcfg.assert_eval_physics_matches_lineage(eval_cfg.resolved_physics_version)
     ids = [s.scenario_id for s in validation]
     val_set, eval_sha = pe.scenario_set_id(validation), pe.config_sha256(eval_cfg)
     out = {}

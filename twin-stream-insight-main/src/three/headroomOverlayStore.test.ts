@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { STATUS_STYLE, evenShare, headroomOverlay, zoneLabel } from "./headroomOverlay";
+import { STATUS_STYLE, evenShare, headroomOverlay, zoneLabel } from "./headroomOverlayStore";
 
 afterEach(() => headroomOverlay.reset());
 
@@ -31,7 +31,7 @@ describe("zoneLabel", () => {
   });
 });
 
-describe("headroomOverlay store", () => {
+describe("headroomOverlayStore", () => {
   it("starts off, publishes patches, notifies once per real change and resets", () => {
     const l = vi.fn();
     const off = headroomOverlay.subscribe(l);

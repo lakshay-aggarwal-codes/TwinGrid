@@ -3,9 +3,9 @@
  *
  * Everything shown is the backend's model-based estimate on simulated data. The backend has no per-rack or per-zone
  * limits, so headroom here is a FACILITY figure; the only client-side arithmetic is the even split across zones used
- * by the 3D overlay (`three/headroomOverlay.ts`), which is labelled as an assumption.
+ * by the 3D overlay (`three/headroomOverlayStore.ts`), which is labelled as an assumption.
  */
-import type { HeadroomStatus } from "@/three/headroomOverlay";
+import type { HeadroomStatus } from "@/three/headroomOverlayStore";
 import type { Capacity, CapacitySide } from "./schema";
 
 /** Mirrors `MAX_ADD_RACKS` and `KW_PER_RACK_BOUNDS` in src/capacity/planner.py (the backend rejects anything else). */

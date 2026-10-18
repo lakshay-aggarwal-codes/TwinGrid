@@ -70,11 +70,14 @@ from .rl.env import (  # noqa: E402,F401
     MAX_IT_POWER_KW,
     OBS_RANGES,
     OUTLET_MAX,
+    RL_SUPPORTED_PHYSICS_VERSIONS,
     DataCentreEnv,
+    UnsupportedPhysicsVersionForRL,
     _denormalise,
     _normalise,
     action_schema_hash,
     assert_env_contract,
+    assert_rl_supported_physics_version,
     env_contract,
     observation_schema,
     observation_schema_hash,
@@ -121,8 +124,8 @@ class JointOptimizer:
         self._gamma = gamma
         self._seed = seed
         self._pinn = pinn
-        self._physics_version = validate_physics_version(
-            physics_version if physics_version is not None else active_physics_version()
+        self._physics_version = assert_rl_supported_physics_version(
+            validate_physics_version(physics_version if physics_version is not None else active_physics_version())
         )
         self._sim_step_seconds = sim_step_seconds
         if carbon_intensity_by_hour is None:
