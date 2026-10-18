@@ -38,8 +38,7 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 - 6 failing tests in `tests/test_baselines.py` on the unmodified repo: `lineage.environment_version` recorded `1`, code is `2`; `requirements.lock` hash differs.
 - Fix requires re-tuning under a physics-1 protocol on the owner's machine (commands in the verification summary). Not done here: artifacts generated in the audit sandbox would carry the sandbox's hashes.
 
-### TG-A-08 — CI type gate deliberately red  (Medium, PARTIALLY FIXED)
-- Task 7: ceiling set to the measured 881 (pyrefly pinned 0.64.1, Windows .venv, 2 identical runs); audit-regression CI step added. STILL OPEN: Linux CI count not yet observed; frontend E2E/contract jobs stay advisory (no green run evidence supplied). Original finding below.
+### TG-A-08 — CI type gate deliberately red  (Medium, CONFIRMED-OPEN, high)
 - `.github/workflows/ci.yml` `PYREFLY_ERROR_CEILING: "unset"`; frontend E2E/contract jobs `continue-on-error: true`. Needs a measured count from a real CI run.
 
 ### TG-A-09 — Stale docs  (Medium, FIXED for two items)
@@ -51,9 +50,8 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 ### TG-A-11 — Flat assumed carbon intensity  (Medium, CONFIRMED-OPEN)
 - `data/cleaned/carbon_intensity.csv` absent; every run logs the 475 g/kWh fallback and reports `is_real: False`. Carbon-aware conclusions reduce to energy ranking. Needs a licensed time series.
 
-### TG-A-12 — PUE envelope limit not counted per step in evaluation  (Medium, FIXED in code by Task 6 / amendment A2; re-tune + re-run pending, confidence high)
-- `SAFETY_ENVELOPE` includes a PUE limit; `HARD_CONSTRAINT_METRICS` had no PUE counter. Now `pue_over_max_steps` is counted per step and is the fourth hard constraint. See `docs/audit/Amendment_A2_PUE_hard_constraint.md` (schema 2; schema-1 results still load and report the PUE limit as *not measured*).
-- Result (sandbox measurement on the shipped physics-1 baselines): no baseline exceeds the PUE limit (max per-step PUE 1.365 vs limit 2.0). Re-tune and `baselines-v4` are still required because the protocol changed.
+### TG-A-12 — PUE envelope limit not counted per step in evaluation  (Medium, CONFIRMED-OPEN, medium)
+- `SAFETY_ENVELOPE` includes a PUE limit; `HARD_CONSTRAINT_METRICS` has no PUE counter. Adding a metric changes the results schema consumed by the frontend; do with a contract update.
 
 ## Audit claims I did NOT verify
 Forecaster has no baseline; anomaly-threshold leakage; missing `data/cleaned|features|predictions` content (directories exist, content not inspected in depth); PPO candidates unevaluated (consistent with the report's `NOT_EVALUATED`); frontend screenshots/E2E; accessibility; Docker demo startup.
@@ -72,9 +70,10 @@ Forecaster has no baseline; anomaly-threshold leakage; missing `data/cleaned|fea
 - Handling: no evaluation run ever used the old hash `1fe941db…` (checked: no `reports/runs/*/manifest.json` references it), so the repo's own `write_prereg(force=True)` was used. Only four fields changed: `registered_at_utc`, `eval_config` (physics-1 grid 16/18.25/20.5/22.75/25 C, rule 20.5 C), `outcome_rules` (A1 text), `preregistration_sha256` (new `2973cd13…`); the lock file was rewritten; `verify_prereg()` passes. Thresholds, seeds, bootstrap settings and the perturbation manifest are untouched.
 - This is an **amendment (A3)** of a locked protocol. It is legitimate only because nothing was evaluated under the old one; review the diff and keep or reject it before Task 9.
 
-### TG-A-16 — The tuned PID baseline is degenerate under physics 1 (zero gains = the rule baseline)  (Medium, CONFIRMED-OPEN, confidence high)
+### TG-A-16 — The tuned PID baseline is degenerate under physics 1 (zero gains = the rule baseline)  (Medium, FIXED in code by Task 4b; re-tune pending, confidence high)
 - Evidence (owner's machine, validation scenarios, `baselines-v3` tuning, all 60 gain sets feasible): best candidate `kp=ki=kd=0`, validation reward -54.8095 = exactly the rule baseline's; reward falls monotonically with `kp` (0.5 -> -54.867, 1 -> -54.896, 2 -> -54.925) and with `kd`.
 - Cause (sandbox diagnostic, validation set only, one run, not shipped): the PID's `target_inlet_C` is fixed at 22 C and is not searched. The reward prefers a WARMER inlet (envelope 18..27 C), so any feedback toward 22 C costs reward. With target 24/25/26 C and `kp>0` the PID beats the zero-gain one (e.g. target 26, kp 1: -54.199, 0 violations); target 26 with kp 2 violates the envelope (456 steps), so the search must be bounded by feasibility, as it already is.
 - Also: even the best PID stays near -54 because it uses the production MODE rule; the best constant (22.75 C, `closed_loop`) scores -36.32. The cooling-mode choice, not the set-point, dominates the gap on these scenarios.
 - Impact: "PID" is not an independent comparator today; the A/B/C decision only uses the rule and best constant, so Task 9 is not blocked.
-- Fix (not done; optional Task 4b): add `pid_target_inlet_C` (e.g. 22, 24, 25, 26) to `TuningSpace`, bump `TUNER_VERSION` to `/3`, re-tune on the owner's machine. Tuner search space is not part of the registered protocol hash.
+- Fix (Task 4b, done in code): `pid_target_inlet_C` is searched over the envelope's upper inlet limit minus (5, 3, 2, 1) C = (22, 24, 25, 26) C; `TUNER_VERSION` `/3` (older configs are stale); candidates, the selected target and the search space are recorded; ties resolve to the smaller target. Sandbox scratch run (Linux, validation only, not shipped): PID selected target 26 C, kp=1, validation reward -54.199 vs rule -54.809; 141 of 240 candidates feasible (integral gain > 0 violated the envelope at warmer targets). The search space is not part of the registered protocol hash, so no re-registration is needed; the owner must re-tune and re-run (`baselines-v3`).
+- Caveat that remains: the PID uses the production MODE rule, so it stays ~18 reward behind the best constant (-36.32); it is a set-point controller, not a competitor for the constant's mode choice.

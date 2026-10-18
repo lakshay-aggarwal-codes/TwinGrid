@@ -211,7 +211,7 @@ def test_tuning_runs_in_the_physics_range_and_records_it():
     legacy = replace(cfg, physics_version="legacy-0", constant_chilled_C=(5.0, 15.0), rule_chilled_C=12.0)
     assert tuning.default_space(legacy).lookup_transient_steps_excluded == 3  # unchanged for legacy-0
     assert tuning.default_space(legacy).pid_nominal_setpoint_C == 12.0
-    assert tuning.TUNER_VERSION == "baselines-tuner/2"
+    assert tuning.TUNER_VERSION == "baselines-tuner/3"
 
 
 def test_a_config_without_the_recorded_actuator_range_is_stale():
