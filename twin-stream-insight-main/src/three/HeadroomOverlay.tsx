@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Html } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import type { ZoneDef } from "./facilityLayout";
-import { STATUS_STYLE, useHeadroomOverlay, zoneLabel } from "./headroomOverlay";
+import { STATUS_STYLE, useHeadroomOverlay, zoneLabel } from "./headroomOverlayStore";
 
 /**
  * Task 26: tints each zone's floor with the facility headroom status and labels it with an even share of the headroom.

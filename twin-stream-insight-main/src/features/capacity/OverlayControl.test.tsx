@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Capacity } from "./schema";
 import type { DataState } from "@/state/dataState";
-import { headroomOverlay } from "@/three/headroomOverlay";
+import { headroomOverlay } from "@/three/headroomOverlayStore";
 import { capacity } from "./testFixtures";
 
 let state: DataState<Capacity>;

@@ -4,7 +4,7 @@ import { Boxes } from "lucide-react";
 import type { SlotWidgetProps } from "../types";
 import { useSharedSimulation } from "@/hooks/simulationContext";
 import { StateBoundary } from "@/state/StateBoundary";
-import { STATUS_STYLE, headroomOverlay, useHeadroomOverlay, type HeadroomStatus } from "@/three/headroomOverlay";
+import { STATUS_STYLE, headroomOverlay, useHeadroomOverlay, type HeadroomStatus } from "@/three/headroomOverlayStore";
 import { ESTIMATE_LABEL, overlayPatch } from "./model";
 import { usePlan } from "./planStore";
 import { useCapacity } from "./useCapacity";
