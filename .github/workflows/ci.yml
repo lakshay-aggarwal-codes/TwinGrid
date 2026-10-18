@@ -22,9 +22,13 @@ env:
   ENVIRONMENT: development
   # CPU-only torch wheels (stable-baselines3 pulls torch; the default Linux wheel bundles CUDA).
   TORCH_CPU_INDEX: https://download.pytorch.org/whl/cpu
-  # Type-error ceiling (T11). Record the count printed by the `types` job here once; it may only go DOWN.
-  # While "unset" the job fails on purpose: a baseline must be recorded, never assumed.
-  PYREFLY_ERROR_CEILING: "unset"
+  # Type-error ceiling (T11 / Task 7). MEASURED, not guessed: 881 errors with pyrefly 0.64.1 (pinned in
+  # requirements-dev.txt), on the owner's Windows .venv, twice with identical results; see reports/postT9/T11_ci_run.md.
+  # RATCHET RULE: this number may only go DOWN. Lower it whenever the `types` job prints a notice that errors fell.
+  # The one permitted upward edit is the FIRST green-field Linux run, if it prints a higher count than the Windows
+  # measurement (different installed packages); record that count and its run URL in T11_ci_run.md. After that, never up.
+  # Changing the pinned pyrefly version re-baselines the count and must be recorded the same way.
+  PYREFLY_ERROR_CEILING: "881"
 
 jobs:
   lint:
@@ -118,6 +122,10 @@ jobs:
 
       - name: TensorFlow and stable-baselines3 must be importable
         run: python -c "import tensorflow, stable_baselines3, torch; print(tensorflow.__version__, stable_baselines3.__version__, torch.__version__)"
+
+      - name: Audit regression gate (physics executed, hard constraints, parity)
+        # Runs first and on its own so a regression in the audited behaviour is named in the job, not buried in the full run.
+        run: pytest tests/test_audit_regressions.py -q -rs
 
       - name: pytest (everything except the PostgreSQL tests)
         run: >

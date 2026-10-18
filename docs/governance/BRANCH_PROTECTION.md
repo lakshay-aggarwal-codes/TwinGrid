@@ -15,7 +15,7 @@ Required status check names are the job ids of `.github/workflows/ci.yml`:
 | `audit` | yes | `pip-audit` on the lock |
 | `frontend` | yes | typecheck, lint, vitest, build, `npm audit --audit-level=high` |
 | `docker` | yes | image builds, non-root, `/healthz` |
-| `types` | **not yet** | fails on purpose while `PYREFLY_ERROR_CEILING` is `"unset"` in `ci.yml`; require it after a baseline is recorded |
+| `types` | **after one recorded green run** | ceiling recorded (881); require it once the first CI run has been confirmed green |
 | `frontend-e2e`, `frontend-contract` | no | `continue-on-error` (advisory) until recorded green once |
 | `analyze (python)`, `analyze (javascript-typescript)` | after the first CodeQL run | CodeQL workflow |
 | `gitleaks` | after the first run | secret-scan workflow |

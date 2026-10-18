@@ -1,0 +1,2 @@
+﻿Python 3.12.10
+pip 26.2.1 from C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\.venv\Lib\site-packages\pip (python 3.12)
