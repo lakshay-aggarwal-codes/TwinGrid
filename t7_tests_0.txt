@@ -1,0 +1,150 @@
+﻿ERROR    src.artifacts.loaders:loaders.py:300 Refusing to load before: ppo_model.zip: format 'sb3_zip' is not loadable by the api process (SB3 zips are training-only)
+_______ test_cadence_constant_matches_the_code_that_defines_the_cadence _______
+tests\test_artifact_gate.py:356: in test_cadence_constant_matches_the_code_that_defines_the_cadence
+    assert "INTERVAL_MIN = 5" in optimizer_source
+E   assert 'INTERVAL_MIN = 5' in '"""\nJoint Water and Energy Optimisation for Data Centre Cooling Systems.\n\nPATENT CLAIM: Method and system for join...er._model = PPO.load(str(path / "ppo_model"))\n        logger.info("Loaded from %s", path)\n        return optimizer\n'
+_____________ test_declared_schemas_match_the_environment_source ______________
+tests\test_artifact_gate.py:361: in test_declared_schemas_match_the_environment_source
+    assert f"np.zeros({versions.OBSERVATION_SCHEMA['shape'][0]}, dtype=np.float32)" in source
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'src.versions' has no attribute 'OBSERVATION_SCHEMA'
+_ test_shipped_scalers_are_json_and_equal_the_legacy_pickles_when_both_are_present _
+tests\test_artifact_gate.py:662: in test_shipped_scalers_are_json_and_equal_the_legacy_pickles_when_both_are_present
+    assert not (ROOT / "models" / directory / "scaler.joblib").exists()
+E   AssertionError: assert not True
+E    +  where True = exists()
+E    +    where exists = (((WindowsPath('C:/Users/Lakshay/Desktop/data center/DigitalTwin-main') / 'models') / 'anomaly') / 'scaler.joblib').exists
+_______ test_quarantine_appends_history_and_never_alters_prior_entries ________
+tests\test_artifact_gate.py:686: in test_quarantine_appends_history_and_never_alters_prior_entries
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+____________________________ test_transition_rules ____________________________
+tests\test_artifact_gate.py:713: in test_transition_rules
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+_____ test_promote_requires_integrity_compat_api_format_and_an_evaluation _____
+tests\test_artifact_gate.py:725: in test_promote_requires_integrity_compat_api_format_and_an_evaluation
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+_ test_required_audit_failure_exits_nonzero_and_leaves_the_registry_unchanged _
+tests\test_artifact_gate.py:749: in test_required_audit_failure_exits_nonzero_and_leaves_the_registry_unchanged
+    monkeypatch.setattr(cli, "_audit_backend", down)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+_____ test_a_commit_failure_after_the_write_is_reported_as_audit_failure ______
+tests\test_artifact_gate.py:766: in test_a_commit_failure_after_the_write_is_reported_as_audit_failure
+    monkeypatch.setattr(cli, "_audit_backend", late)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+___________________ test_audit_row_describes_the_transition ___________________
+tests\test_artifact_gate.py:774: in test_audit_row_describes_the_transition
+    monkeypatch.setattr(cli, "_audit_backend", lambda row, apply: (rows.append(row), apply())[1])
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+__________ test_unreachable_database_is_detected_by_the_real_backend __________
+tests\test_artifact_gate.py:789: in test_unreachable_database_is_detected_by_the_real_backend
+    monkeypatch.setattr(cli, "AUDIT_TIMEOUT_S", 0.5)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute 'AUDIT_TIMEOUT_S'
+____________________________ test_list_and_dry_run ____________________________
+tests\test_artifact_gate.py:798: in test_list_and_dry_run
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+_ test_migration_quarantines_ppo_and_promotes_data_models_under_a_named_waiver _
+tests\test_artifact_gate.py:837: in test_migration_quarantines_ppo_and_promotes_data_models_under_a_named_waiver
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+____ test_migration_refuses_a_model_file_that_changed_since_it_was_logged _____
+tests\test_artifact_gate.py:864: in test_migration_refuses_a_model_file_that_changed_since_it_was_logged
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+__________________ test_migration_needs_the_converted_scaler __________________
+tests\test_artifact_gate.py:874: in test_migration_needs_the_converted_scaler
+    _no_audit(cli, monkeypatch)
+tests\test_artifact_gate.py:681: in _no_audit
+    monkeypatch.setattr(cli, "_audit_backend", backend)
+E   AttributeError: <module 'registry_cli_under_test' from 'C:\\Users\\Lakshay\\Desktop\\data center\\DigitalTwin-main\\scripts\\registry_cli.py'> has no attribute '_audit_backend'
+______ test_no_pickle_or_unsafe_loader_exists_outside_the_loaders_module ______
+tests\test_artifact_gate.py:991: in test_no_pickle_or_unsafe_loader_exists_outside_the_loaders_module
+    assert offenders == {}
+E   AssertionError: assert {'src/optimiz... ['PPO.load']} == {}
+E
+E     Left contains 1 more item:
+E     {'src/optimizer.py': ['PPO.load']}
+E     Use -v to get more diff
+___________ test_joint_optimizer_load_is_refused_in_the_api_profile ___________
+tests\test_artifact_gate.py:1057: in test_joint_optimizer_load_is_refused_in_the_api_profile
+    JointOptimizer.load(world / "models/optimizer")
+src\optimizer.py:379: in load
+    assert_current_safety_envelope_version(config.get("safety_envelope_version"))
+src\versions.py:59: in assert_current_safety_envelope_version
+    raise SafetyEnvelopeVersionError(
+E   src.versions.SafetyEnvelopeVersionError: artifact safety_envelope_version=None but the current envelope is '2'; retrain or re-evaluate under the current envelope
+___________ test_shipped_baselines_run_verifies_and_lists_all_four ____________
+tests\test_baselines.py:990: in test_shipped_baselines_run_verifies_and_lists_all_four
+    assert rep.failures == [], [str(f) for f in rep.failures]
+E   AssertionError: ["FAIL code_revision: recorded '9325dac9cd2f603ee8e08385dfd4a077d640ec6a' but now 'f4802ea478beba3ded39514744a3082acf6... 'FAIL REPORT.md: differs from the version regenerated from results.json (edited by hand, or generated by other code)']
+E   assert [Finding(leve...other code)')] == []
+E
+E     Left contains 2 more items, first extra item: Finding(level='FAIL', field='code_revision', message="recorded '9325dac9cd2f603ee8e08385dfd4a077d640ec6a' but now 'f4802ea478beba3ded39514744a3082acf69b285'")
+E     Use -v to get more diff
+_______________ test_shipped_baselines_run_reproduces_on_rerun ________________
+tests\test_baselines.py:1018: in test_shipped_baselines_run_reproduces_on_rerun
+    again = __import__("src.repro.run", fromlist=["execute_experiment"]).execute_experiment(
+src\repro\run.py:275: in execute_experiment
+    first = once()
+            ^^^^^^
+src\repro\run.py:266: in once
+    raw = fn(json.loads(json.dumps(config)), list(seeds), RngFactory())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\baselines\evaluation.py:276: in run
+    configs = load_baselines(root, config["baseline_configs"], eval_cfg, validation, meta["curve_sha256"])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\baselines\evaluation.py:112: in load_baselines
+    raise bcfg.BaselineConfigStale("tuning.feasibility_rule", tuning.FEASIBILITY_RULE, recorded_rule)
+E   src.baselines.config.BaselineConfigStale: tuning.feasibility_rule: config records 'zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode' but the running code/scenarios have 'zero outlet_violation_steps, inlet_over_max_steps, inlet_under_min_steps and pue_over_max_steps in every validation episode'; re-tune the baselines
+_ test_legacy_generate_sensor_data_raises_without_inputs_and_works_with_the_flags _
+tests\test_datasets_v2.py:516: in test_legacy_generate_sensor_data_raises_without_inputs_and_works_with_the_flags
+    with pytest.raises(dp.MissingInputError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'src.data_pipeline.MissingInputError'>
+- generated xml file: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main\t7_junit_0.xml -
+=========================== short test summary info ===========================
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_env_version-environment_version]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_reward_version-reward_version]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_safety_version-safety_envelope_version]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_action_semantics-action_semantics_version]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_observation_schema-observation_schema_hash]
+FAILED tests/test_artifact_gate.py::test_changing_any_running_constant_invalidates_an_artifact_carrying_the_old_value[_sabotage_action_schema-action_schema_hash]
+FAILED tests/test_artifact_gate.py::test_cadence_constant_matches_the_code_that_defines_the_cadence
+FAILED tests/test_artifact_gate.py::test_declared_schemas_match_the_environment_source
+FAILED tests/test_artifact_gate.py::test_shipped_scalers_are_json_and_equal_the_legacy_pickles_when_both_are_present
+FAILED tests/test_artifact_gate.py::test_quarantine_appends_history_and_never_alters_prior_entries
+FAILED tests/test_artifact_gate.py::test_transition_rules - AttributeError: <...
+FAILED tests/test_artifact_gate.py::test_promote_requires_integrity_compat_api_format_and_an_evaluation
+FAILED tests/test_artifact_gate.py::test_required_audit_failure_exits_nonzero_and_leaves_the_registry_unchanged
+FAILED tests/test_artifact_gate.py::test_a_commit_failure_after_the_write_is_reported_as_audit_failure
+FAILED tests/test_artifact_gate.py::test_audit_row_describes_the_transition
+FAILED tests/test_artifact_gate.py::test_unreachable_database_is_detected_by_the_real_backend
+FAILED tests/test_artifact_gate.py::test_list_and_dry_run - AttributeError: <...
+FAILED tests/test_artifact_gate.py::test_migration_quarantines_ppo_and_promotes_data_models_under_a_named_waiver
+FAILED tests/test_artifact_gate.py::test_migration_refuses_a_model_file_that_changed_since_it_was_logged
+FAILED tests/test_artifact_gate.py::test_migration_needs_the_converted_scaler
+FAILED tests/test_artifact_gate.py::test_no_pickle_or_unsafe_loader_exists_outside_the_loaders_module
+FAILED tests/test_artifact_gate.py::test_joint_optimizer_load_is_refused_in_the_api_profile
+FAILED tests/test_baselines.py::test_shipped_baselines_run_verifies_and_lists_all_four
+FAILED tests/test_baselines.py::test_shipped_baselines_run_reproduces_on_rerun
+FAILED tests/test_datasets_v2.py::test_legacy_generate_sensor_data_raises_without_inputs_and_works_with_the_flags
+SKIPPED [1] tests\test_artifact_integrity.py:205: symlinks not available
+SKIPPED [1] tests\test_audit_migration.py:156: set TEST_POSTGRES_URL to run the PostgreSQL trigger tests
+SKIPPED [1] tests\test_audit_migration.py:173: set TEST_POSTGRES_URL to run the PostgreSQL trigger tests
+SKIPPED [1] tests\test_audit_migration.py:192: set TEST_POSTGRES_URL to run the PostgreSQL trigger tests
+= 25 failed, 625 passed, 4 skipped, 3 deselected, 1 xfailed in 296.13s (0:04:56) =

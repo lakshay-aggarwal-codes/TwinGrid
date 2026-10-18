@@ -38,7 +38,8 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 - 6 failing tests in `tests/test_baselines.py` on the unmodified repo: `lineage.environment_version` recorded `1`, code is `2`; `requirements.lock` hash differs.
 - Fix requires re-tuning under a physics-1 protocol on the owner's machine (commands in the verification summary). Not done here: artifacts generated in the audit sandbox would carry the sandbox's hashes.
 
-### TG-A-08 — CI type gate deliberately red  (Medium, CONFIRMED-OPEN, high)
+### TG-A-08 — CI type gate deliberately red  (Medium, PARTIALLY FIXED)
+- Task 7: ceiling set to the measured 881 (pyrefly pinned 0.64.1, Windows .venv, 2 identical runs); audit-regression CI step added. STILL OPEN: Linux CI count not yet observed; frontend E2E/contract jobs stay advisory (no green run evidence supplied). Original finding below.
 - `.github/workflows/ci.yml` `PYREFLY_ERROR_CEILING: "unset"`; frontend E2E/contract jobs `continue-on-error: true`. Needs a measured count from a real CI run.
 
 ### TG-A-09 — Stale docs  (Medium, FIXED for two items)

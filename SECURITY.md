@@ -37,7 +37,7 @@ no response-time commitment; this is a competition/portfolio project maintained 
 | External-data register | `lint` | `scripts/check_register.py` |
 | Python dependency audit | `audit` | `pip-audit --strict` on the hash-pinned `requirements.lock`, no suppressions |
 | Frontend dependency audit | `frontend` | `npm audit --audit-level=high` |
-| Type check | `types` | pyrefly error-count ratchet; **fails on purpose until `PYREFLY_ERROR_CEILING` is recorded** |
+| Type check | `types` | pyrefly error-count ratchet (ceiling 881 @ pyrefly 0.64.1, may only go down; see `reports/postT9/T11_ci_run.md`) |
 | Tests | `test`, `test-postgres`, `frontend` | no skipped tests allowed in `test` |
 | Image checks | `docker` | digest-pinned base image, non-root user, `/healthz` |
 
