@@ -46,7 +46,7 @@ from .baselines.policies import (  # noqa: F401  (T28: moved to src/baselines; r
 from .baselines.policies import norm_chilled as _norm_chilled  # noqa: F401
 from .baselines.policies import norm_mode as _norm_mode  # noqa: F401
 from .carbon_provider import load_diurnal_carbon_intensity
-from .digital_twin import INLET_TEMP_MAX, INLET_TEMP_MIN
+from .digital_twin import INLET_TEMP_MAX, INLET_TEMP_MIN, PUE_MAX_SAFE
 from .optimizer import (
     COOLING_MODES,
     EPISODE_STEPS,
@@ -59,7 +59,12 @@ from .versions import PHYSICS_V1, validate_physics_version
 
 # The physics a NEW evaluation runs on. Canonical version strings only.
 PHYSICS_VERSION = PHYSICS_V1
-SCHEMA_VERSION = 1
+# results.json / PREREGISTRATION.json schema. 2 (amendment A2, TG-A-12) adds the counted ``pue_over_max_steps`` hard
+# constraint. A schema-1 file (e.g. the frozen legacy-0 report) has no such key: it still loads and is served, and its
+# PUE-limit status is "not measured" -- never zero. ``pue_limit_measured`` below is the one place that says so.
+SCHEMA_VERSION = 2
+SUPPORTED_RESULT_SCHEMAS: tuple[int, ...] = (1, 2)
+PUE_METRIC = "pue_over_max_steps"
 
 # Labels written by earlier harness versions. The shipped PREREGISTRATION.json (and every result produced from
 # it) says "legacy-0 (implicit)"; that label meant the frozen legacy-0 equations and is resolved to them, so
@@ -97,14 +102,19 @@ METRICS: dict[str, tuple[str, str]] = {
     "outlet_violation_steps": ("lower", f"Steps with outlet temperature > {OUTLET_MAX} C"),
     "inlet_over_max_steps": ("lower", f"Steps with inlet temperature > {INLET_TEMP_MAX} C"),
     "inlet_under_min_steps": ("lower", f"Steps with inlet temperature < {INLET_TEMP_MIN} C"),
+    PUE_METRIC: (
+        "lower",
+        f"Steps with PUE > {PUE_MAX_SAFE:g} (the safety envelope's PUE limit; a NaN PUE counts) [amendment A2]",
+    ),
 }
 # HARD constraints: the safety envelope's counted limits. They are judged ABSOLUTELY (zero steps), never relative
-# to a baseline and never traded against reward. (The envelope also has a PUE limit; PUE violations are not yet
-# counted per step by this harness -- see docs/audit/TwinGrid_Issue_Register.md, TG-A-12.)
+# to a baseline and never traded against reward. Amendment A1 made the three temperature limits absolute; amendment
+# A2 (TG-A-12) adds the envelope's PUE limit, which the harness previously did not count per step.
 HARD_CONSTRAINT_METRICS: tuple[str, ...] = (
     "outlet_violation_steps",
     "inlet_over_max_steps",
     "inlet_under_min_steps",
+    PUE_METRIC,
 )
 PRIMARY_METRIC = "total_reward"
 SECONDARY_METRICS = ("energy_kwh", "water_L", "carbon_gco2", "mean_pue", "mean_wue")
@@ -202,13 +212,13 @@ OUTCOME_RULES = {
         "Continue under governance: for BOTH the rule baseline and the best constant, (1) the t-based 95% CI of the "
         "paired primary-metric difference across TRAINING SEEDS excludes zero in PPO's favour, (2) the same holds "
         "across test scenarios for the validation-selected candidate, (3) PPO's mean advantage is positive in every "
-        "test family, (4) the selected candidate has ZERO outlet-over-limit, inlet-over-max and inlet-under-min "
-        "steps on the test set (absolute; amendment A1, see docs/audit), (5) no secondary metric is worse by more "
+        "test family, (4) the selected candidate has ZERO outlet-over-limit, inlet-over-max, inlet-under-min "
+        "and PUE-over-limit steps on the test set (absolute; amendments A1 and A2, see docs/audit), (5) no secondary metric is worse by more "
         "than the secondary tolerance. Only supports 'simulator-validated candidate'."
     ),
     "C": (
         "Replace with a simpler controller: the rule baseline or the best constant, if it has zero outlet-over-limit, "
-        "inlet-over-max and inlet-under-min steps on the test set (amendment A1) and PPO's mean primary-metric advantage over it is at most the "
+        "inlet-over-max, inlet-under-min and PUE-over-limit steps on the test set (amendments A1 and A2) and PPO's mean primary-metric advantage over it is at most the "
         "primary tolerance (including the case where PPO is worse). Checked before B."
     ),
     "B": "Offline research module only: PPO is not shown to be better than simple controllers, and not shown to be equal.",
@@ -348,7 +358,7 @@ def run_episode(
     reward = energy = water = carbon = 0.0
     pue: list[float] = []
     wue: list[float] = []
-    outlet_v = inlet_over = inlet_under = 0
+    outlet_v = inlet_over = inlet_under = pue_over = 0
     trace = hashlib.sha256()
     trace.update(
         repr(
@@ -375,6 +385,7 @@ def run_episode(
         outlet_v += int(state["outlet_temp"] > OUTLET_MAX)
         inlet_over += int(state["inlet_temp"] > INLET_TEMP_MAX)
         inlet_under += int(state["inlet_temp"] < INLET_TEMP_MIN)
+        pue_over += int(not float(state["pue"]) <= PUE_MAX_SAFE)  # negated: NaN counts, as in SafetyEnvelope.violations
         trace.update(
             repr(
                 (
@@ -399,6 +410,7 @@ def run_episode(
             "outlet_violation_steps": float(outlet_v),
             "inlet_over_max_steps": float(inlet_over),
             "inlet_under_min_steps": float(inlet_under),
+            PUE_METRIC: float(pue_over),
         },
         exogenous_hash=trace.hexdigest()[:16],
     )
@@ -417,6 +429,11 @@ def metric_matrix(results: Sequence[EpisodeResult], metric: str) -> np.ndarray:
 def hard_constraint_total(results: Sequence[EpisodeResult]) -> float:
     """Total hard-constraint violation steps over ``results`` (zero == envelope-safe on every episode)."""
     return float(sum(metric_matrix(results, m).sum() for m in HARD_CONSTRAINT_METRICS))
+
+
+def pue_limit_measured(summary_or_metrics: dict[str, Any]) -> bool:
+    """Was the PUE limit counted? False for a schema-1 result (no ``pue_over_max_steps`` key): "not measured", not 0."""
+    return PUE_METRIC in summary_or_metrics
 
 
 def assert_identical_scenarios(by_policy: dict[str, list[EpisodeResult]]) -> None:
@@ -864,6 +881,7 @@ def results_markdown(res: dict[str, Any]) -> str:
         "outlet_violation_steps",
         "inlet_over_max_steps",
         "inlet_under_min_steps",
+        PUE_METRIC,
     ]
     rows = "\n".join(f"| {name} | " + " | ".join(f"{vals[c]:.4g}" for c in cols) + " |" for name, vals in s.items())
     sel = res["selection"]

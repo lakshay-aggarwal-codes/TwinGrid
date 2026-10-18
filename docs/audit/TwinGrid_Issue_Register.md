@@ -50,8 +50,9 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 ### TG-A-11 — Flat assumed carbon intensity  (Medium, CONFIRMED-OPEN)
 - `data/cleaned/carbon_intensity.csv` absent; every run logs the 475 g/kWh fallback and reports `is_real: False`. Carbon-aware conclusions reduce to energy ranking. Needs a licensed time series.
 
-### TG-A-12 — PUE envelope limit not counted per step in evaluation  (Medium, CONFIRMED-OPEN, medium)
-- `SAFETY_ENVELOPE` includes a PUE limit; `HARD_CONSTRAINT_METRICS` has no PUE counter. Adding a metric changes the results schema consumed by the frontend; do with a contract update.
+### TG-A-12 — PUE envelope limit not counted per step in evaluation  (Medium, FIXED in code by Task 6 / amendment A2; re-tune + re-run pending, confidence high)
+- `SAFETY_ENVELOPE` includes a PUE limit; `HARD_CONSTRAINT_METRICS` had no PUE counter. Now `pue_over_max_steps` is counted per step and is the fourth hard constraint. See `docs/audit/Amendment_A2_PUE_hard_constraint.md` (schema 2; schema-1 results still load and report the PUE limit as *not measured*).
+- Result (sandbox measurement on the shipped physics-1 baselines): no baseline exceeds the PUE limit (max per-step PUE 1.365 vs limit 2.0). Re-tune and `baselines-v4` are still required because the protocol changed.
 
 ## Audit claims I did NOT verify
 Forecaster has no baseline; anomaly-threshold leakage; missing `data/cleaned|features|predictions` content (directories exist, content not inspected in depth); PPO candidates unevaluated (consistent with the report's `NOT_EVALUATED`); frontend screenshots/E2E; accessibility; Docker demo startup.

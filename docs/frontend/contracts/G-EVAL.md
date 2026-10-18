@@ -96,3 +96,10 @@ Acceptance of the gate: the key set of `real-eval.json` equals the committed `G-
 3. `ci_level` = pre-registration `config.confidence` (0.95), copied. Default: yes.
 4. T30 `reports/runs/*` is not served now. Add it when a real T30 run exists, with its own capture.
 5. `origin: "simulated"` is a static backend-owned label so the frontend need not infer it (otherwise the UI would have to show "Unverified source" for every evaluation). Default: yes.
+
+## Amendment A2 (Task 6) — additive change to the detail payload
+`GET /api/evaluations/{id}` gains one key, `hard_constraints: { counted: string[], not_measured: string[], note: string|null }`,
+and accepts `schema_version` 1 **and** 2 (2 = the PUE hard constraint, `pue_over_max_steps`, added to every policy's
+`metrics` and to `decision.detail.envelope_selected_candidate`). For a schema-1 report (the frozen legacy report)
+`not_measured` is `["pue_over_max_steps"]`: render it as "not measured", never as 0. The captures in this directory were
+NOT regenerated; they still describe the schema-1 report. A new physics-1 report will be schema 2.

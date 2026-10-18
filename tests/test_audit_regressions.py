@@ -115,7 +115,7 @@ def test_committed_baselines_only_report_reproduces_under_its_declared_physics()
 
 
 # ------------------------------------------------------------------------------------------- TG-A-02
-def test_hard_constraint_total_counts_all_three_limits():
+def test_hard_constraint_total_counts_all_four_limits():  # A2 (TG-A-12): the PUE limit is the fourth
     sc = pe.build_scenarios(replace(pe.EvalConfig(), n_test_per_family=1))["test"][:1]
 
     def res(**over):
@@ -130,6 +130,7 @@ def test_hard_constraint_total_counts_all_three_limits():
         "outlet_violation_steps",
         "inlet_over_max_steps",
         "inlet_under_min_steps",
+        "pue_over_max_steps",
     }
 
 
