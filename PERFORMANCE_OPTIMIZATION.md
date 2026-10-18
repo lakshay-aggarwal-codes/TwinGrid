@@ -1,21 +1,30 @@
 # Digital Twin Performance Notes
 
-> **Status (deep audit, 2026-10-18).** The earlier version of this file claimed "45 s -> 0.003 s, 1,360x". That claim was not reproducible and referred to modules (`src.digital_twin_fast`, `src.digital_twin_original`) that do not exist. It has been removed. Everything below was measured with `benchmark_performance.py` on one Linux sandbox (Python 3.12.3, NumPy 2.4.4, no numba installed), one run, no warm-up control. Treat it as indicative, not as a benchmark.
+There is one simulator, `src/digital_twin.py::DigitalTwin`. The former "optimised" twin
+(`src/digital_twin_optimized.py`) was **retired** in Task 5 because it was a different, older model rather than a faster
+copy of this one (`docs/tasks/Task5_TWIN_PARITY_REPORT.md`). The earlier claims "45 s -> 0.003 s, 1,360x" were never
+reproducible and have been removed.
 
-## What was measured (288 steps = one simulated day, the benchmark's own inputs)
+## Protocol (`python benchmark_performance.py [--repeats 30] [--json out.json]`)
 
-| Implementation | Wall time (one run) | Note |
-|---|---|---|
-| `DigitalTwin` (legacy-0) | ~3.3 ms | the main simulator |
-| `DigitalTwin` (physics 1) | ~3.7 ms | the default for new work |
-| `DigitalTwinOptimized` | ~1.1 ms | **not numerically equivalent** (below) |
+288 steps = one simulated day on the pinned inputs of `generate_test_actions()`; 3 untimed warm-up days; at least 20
+(default 30) timed days, each on a fresh twin (construction not timed); `time.perf_counter`; median, IQR, min, max.
+The environment is printed with every result. Numbers from different machines must not be compared.
 
-The main simulator already steps a whole simulated day in a few milliseconds; speed is not a bottleneck for the dashboard.
+## Measured on the owner's machine (one run of the protocol above, 30 timed days)
 
-## Correctness caveat
+Environment: Windows 11 (AMD64, AMD Family 25 Model 97, 32 logical CPUs), Python 3.12.10, NumPy 2.5.3.
 
-`DigitalTwinOptimized` does **not** reproduce `DigitalTwin`: on the benchmark inputs the outlet temperature differs by up to ~20 C and PUE by up to ~0.10 versus legacy-0. A speed-up that changes the answer is not an optimisation. The module is used only by the benchmark and two tests. Until it is fixed or retired, do not use it for results. `tests/test_audit_regressions.py::test_optimized_twin_matches_the_main_twin_on_the_benchmark_inputs` is a strict xfail that records this.
+| Twin | Median per day | IQR | Median per step |
+|---|---|---|---|
+| `DigitalTwin` physics legacy-0 | 2.518 ms | 0.033 ms | 8.7 us |
+| `DigitalTwin` physics 1 | 2.778 ms | 0.034 ms | 9.6 us |
+
+A simulated day costs a few milliseconds, so speed is not a bottleneck for the dashboard or the evaluation harness.
+For reference, an earlier single run in a 1-vCPU Linux sandbox gave 5.8 / 6.6 ms/day (different hardware; do not
+mix the two). The retired module measured about 3.0 ms/day there, i.e. at most ~2x faster, for different physics.
 
 ## Not measured
 
-RL training/evaluation throughput, API latency, frontend rendering and 3D scene cost, and database queries have no recorded measurements in this repository. `docs/CLAIMS.md` (C-20) lists the performance claims backed by a script.
+RL training/evaluation throughput, API latency, frontend rendering and 3D scene cost, and database queries have no
+recorded measurements here. `docs/CLAIMS.md` (C-20) lists the performance claims backed by a script.

@@ -174,21 +174,41 @@ def test_baselines_refuse_a_protocol_whose_physics_differs_from_the_running_code
 
 
 # ------------------------------------------------------------------------------------------- TG-A-05
-@pytest.mark.xfail(
-    strict=True,
-    reason="TG-A-05: DigitalTwinOptimized is NOT numerically equivalent to DigitalTwin(legacy-0): on the benchmark "
-    "inputs outlet differs by ~20 C and PUE by ~0.10. Remove this xfail when the divergence is fixed or the module is retired.",
-)
-def test_optimized_twin_matches_the_main_twin_on_the_benchmark_inputs():
+# DigitalTwinOptimized was a second, older model (own COP/evaporation tables, no derating, no carbon,
+# no water stress, no drought override): 8 of the 15 fields it shares with DigitalTwin diverged, so it
+# was retired rather than patched (docs/tasks/Task5_TWIN_PARITY_REPORT.md). These guards stop a second
+# simulator from coming back unnoticed.
+def test_optimized_twin_is_retired_and_nothing_references_it():
+    assert not (ROOT / "src" / "digital_twin_optimized.py").exists()
+    needles = ("digital_twin_optimized", "DigitalTwinOptimized")
+    offenders = []
+    for folder in ("api", "src", "scripts", "models"):
+        base = ROOT / folder
+        if not base.is_dir():
+            continue
+        for path in base.rglob("*.py"):
+            if any(n in path.read_text(encoding="utf-8", errors="ignore") for n in needles):
+                offenders.append(path.relative_to(ROOT).as_posix())
+    top = ROOT / "benchmark_performance.py"
+    if top.exists() and any(n in top.read_text(encoding="utf-8") for n in needles):
+        offenders.append("benchmark_performance.py")
+    assert offenders == []
+
+
+def test_benchmark_actions_are_deterministic_and_drive_both_supported_physics_versions():
+    """benchmark_performance.generate_test_actions is the pinned input sequence for the timing protocol."""
     import sys
 
     sys.path.insert(0, str(ROOT))
-    from benchmark_performance import generate_test_actions
+    from benchmark_performance import PHYSICS_VERSIONS, generate_test_actions
     from src.digital_twin import DigitalTwin
-    from src.digital_twin_optimized import DigitalTwinOptimized
 
-    main, fast = DigitalTwin(physics_version="legacy-0"), DigitalTwinOptimized(enable_logging=False)
-    for a in generate_test_actions():
-        s1, s2 = main.step(dict(a)), fast.step(dict(a))
-        assert s2.server_outlet_temp_C == pytest.approx(s1.server_outlet_temp_C, abs=1e-6)
-        assert s2.pue == pytest.approx(s1.pue, abs=1e-6)
+    first, second = generate_test_actions(), generate_test_actions()
+    assert len(first) == 288
+    assert [dict(a) for a in first] == [dict(a) for a in second]
+    for version in PHYSICS_VERSIONS:
+        twin = DigitalTwin(physics_version=version)
+        for action in first:
+            state = twin.step(dict(action))
+            assert state.pue >= 1.0
+            assert state.server_outlet_temp_C >= state.server_inlet_temp_C

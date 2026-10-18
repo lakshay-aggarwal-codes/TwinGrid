@@ -67,7 +67,8 @@ async def test_baseline_recommendation_is_labelled_and_persists_nothing(client, 
     assert body["persisted"] is False
     rec = body["recommendation"]
     assert rec["selected"]["name"] in ("pid", "rule") and "not an evaluation" in rec["note"]
-    assert 5.0 <= rec["selected"]["chilled_water_temp_C"] <= 15.0
+    lo, hi = rules.actuator_range_C()  # Task 3: the range of the physics the twin runs, not the legacy 5..15 C
+    assert lo <= rec["selected"]["chilled_water_temp_C"] <= hi
     assert body["predicted"]["label"] == "model estimate on simulated data"
     assert {"mean_pue", "total_energy_kwh", "total_co2_kg", "thermal_margin_C"} <= body["predicted"]["delta"].keys()
     assert await count_rows(OptimizerProposal) == 0
@@ -134,7 +135,7 @@ async def test_a_setting_that_overheats_the_simulated_outlet_is_refused(
     "patch",
     [
         {"chilled_water_temp_c": 4.9},
-        {"chilled_water_temp_c": 15.1},
+        {"chilled_water_temp_c": 25.1},  # above every physics' range (15.1 is valid under physics 1: Task 3)
         {"cooling_mode": "turbo"},
         {"utilisation": 1.5},
         {"rationale": "x" * 501},

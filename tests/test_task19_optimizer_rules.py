@@ -146,7 +146,13 @@ def test_an_infeasible_stale_or_missing_config_is_skipped_with_a_reason(configs)
 def test_rule_setpoints_are_the_stored_chilled_c_and_the_production_mode(configs):
     _edit(configs, "pid", lambda c: c.update(status="infeasible", infeasible_reason="x"))
     hot = _rec(configs, outside_temp=35.0)["selected"]
-    assert hot["name"] == "rule" and hot["chilled_water_temp_C"] == 12.0
+    # Task 3: the stored 12.0 is a position on the legacy 5..15 C scale (0.7). The evaluation executed that action at
+    # lo + 0.7 * (hi - lo) of the RUNNING physics' actuator range (22.3 C under physics 1), and so is reported.
+    from src.baselines.policies import actuator_range_C
+    from src.versions import active_physics_version
+
+    lo, hi = actuator_range_C(active_physics_version())
+    assert hot["name"] == "rule" and hot["chilled_water_temp_C"] == pytest.approx(lo + 0.7 * (hi - lo), abs=1e-3)
     drought = _rec(configs, outside_temp=5.0, water_stress=0.9)["selected"]
     assert drought["cooling_mode"] == "closed_loop"  # the drought override wins even on a cold day
 
