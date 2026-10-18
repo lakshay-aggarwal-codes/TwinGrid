@@ -4,11 +4,11 @@
     "beta": 0.3,
     "confidence": 0.95,
     "constant_chilled_C": [
-      5.0,
-      7.5,
-      10.0,
-      12.5,
-      15.0
+      16.0,
+      18.25,
+      20.5,
+      22.75,
+      25.0
     ],
     "episode_steps": 288,
     "families": [
@@ -34,7 +34,7 @@
     "n_validation_per_family": 10,
     "physics_version": "1",
     "primary_tolerance_rel": 0.01,
-    "rule_chilled_C": 12.0,
+    "rule_chilled_C": 20.5,
     "scenario_inputs_label": "synthetic diurnal weather and workload from DataCentreEnv; simulated plant",
     "secondary_tolerance_rel": 0.02,
     "test_seed_start": 200000,
@@ -94,9 +94,9 @@
     "B": "Offline research module only: PPO is not shown to be better than simple controllers, and not shown to be equal.",
     "C": "Replace with a simpler controller: the rule baseline or the best constant, if it has zero outlet-over-limit, inlet-over-max and inlet-under-min steps on the test set (amendment A1) and PPO's mean primary-metric advantage over it is at most the primary tolerance (including the case where PPO is worse). Checked before B."
   },
-  "preregistration_sha256": "4f7259b1ee87cf500ca4d0f3b2f7c9308dd2f7fd754df24a33ef7fe78877b347",
+  "preregistration_sha256": "fe76f6691857ef267c6fc958fda22f187b8a077110ae3dfc0d9d4e65835d9105",
   "primary_metric": "total_reward",
-  "registered_at_utc": "2026-10-18T07:59:59+00:00",
+  "registered_at_utc": "2026-10-18T13:38:10+00:00",
   "scenario_sets": {
     "test": {
       "id": "b8329f196c910981",

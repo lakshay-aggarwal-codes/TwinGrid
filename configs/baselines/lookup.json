@@ -16,14 +16,14 @@
   "parameters": {
     "bin_rule": "bin = bisect_right(edges, value): closed on the left, open on the right, first/last bins unbounded",
     "fallback": {
-      "chilled_C": 12.5,
+      "chilled_C": 22.75,
       "mode": "closed_loop",
       "rule": "best feasible constant over the lookup grid on validation"
     },
     "table": [
       [
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 0,
@@ -31,41 +31,41 @@
           "violation_steps": null
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.10045329600262733,
+          "chilled_C": 25.0,
+          "mean_reward": -0.10045970219712878,
           "mode": "closed_loop",
-          "n": 327,
+          "n": 321,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.09400407423027794,
+          "chilled_C": 25.0,
+          "mean_reward": -0.09391368522252279,
           "mode": "closed_loop",
-          "n": 1053,
+          "n": 1014,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.09637406535321634,
+          "chilled_C": 25.0,
+          "mean_reward": -0.09633997234829644,
           "mode": "closed_loop",
-          "n": 1644,
+          "n": 1602,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.10158050432988339,
+          "chilled_C": 25.0,
+          "mean_reward": -0.10143061669014769,
           "mode": "closed_loop",
-          "n": 102,
+          "n": 99,
           "source": "table",
           "violation_steps": 0
         }
       ],
       [
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 12,
@@ -73,15 +73,15 @@
           "violation_steps": null
         },
         {
-          "chilled_C": 15.0,
-          "mean_reward": -0.11404516816702139,
+          "chilled_C": 25.0,
+          "mean_reward": -0.11390053752498297,
           "mode": "closed_loop",
-          "n": 525,
+          "n": 519,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 25.0,
           "mean_reward": -0.11144328248232374,
           "mode": "closed_loop",
           "n": 27,
@@ -89,7 +89,7 @@
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 25.0,
           "mean_reward": -0.11689365615553082,
           "mode": "closed_loop",
           "n": 507,
@@ -97,7 +97,7 @@
           "violation_steps": 0
         },
         {
-          "chilled_C": 15.0,
+          "chilled_C": 25.0,
           "mean_reward": -0.1142943886109231,
           "mode": "closed_loop",
           "n": 60,
@@ -107,23 +107,23 @@
       ],
       [
         {
-          "chilled_C": 12.5,
-          "mean_reward": -0.13253133957157978,
+          "chilled_C": 22.75,
+          "mean_reward": -0.13286709024481086,
           "mode": "closed_loop",
-          "n": 69,
+          "n": 66,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
-          "mean_reward": -0.13151242447299547,
+          "chilled_C": 22.75,
+          "mean_reward": -0.13158657440823082,
           "mode": "closed_loop",
-          "n": 501,
+          "n": 495,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": -0.13746908911516206,
           "mode": "closed_loop",
           "n": 33,
@@ -131,7 +131,7 @@
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": -0.13399667976187307,
           "mode": "closed_loop",
           "n": 525,
@@ -139,7 +139,7 @@
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 12,
@@ -149,7 +149,7 @@
       ],
       [
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": -0.1467823503927693,
           "mode": "closed_loop",
           "n": 102,
@@ -157,7 +157,7 @@
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": -0.14754445579692765,
           "mode": "closed_loop",
           "n": 594,
@@ -165,23 +165,23 @@
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
-          "mean_reward": -0.15058462938162667,
+          "chilled_C": 22.75,
+          "mean_reward": -0.15059018323022771,
           "mode": "closed_loop",
-          "n": 417,
+          "n": 408,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
-          "mean_reward": -0.14701925771727473,
+          "chilled_C": 22.75,
+          "mean_reward": -0.1469444042713495,
           "mode": "closed_loop",
-          "n": 288,
+          "n": 282,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 0,
@@ -191,7 +191,7 @@
       ],
       [
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 9,
@@ -199,23 +199,23 @@
           "violation_steps": null
         },
         {
-          "chilled_C": 12.5,
-          "mean_reward": -0.15992679837090704,
+          "chilled_C": 22.75,
+          "mean_reward": -0.15986459218842966,
           "mode": "closed_loop",
-          "n": 969,
+          "n": 954,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
-          "mean_reward": -0.16015943240948147,
+          "chilled_C": 22.75,
+          "mean_reward": -0.16008219713296554,
           "mode": "closed_loop",
-          "n": 765,
+          "n": 750,
           "source": "table",
           "violation_steps": 0
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 9,
@@ -223,7 +223,7 @@
           "violation_steps": null
         },
         {
-          "chilled_C": 12.5,
+          "chilled_C": 22.75,
           "mean_reward": null,
           "mode": "closed_loop",
           "n": 0,
@@ -247,14 +247,18 @@
   },
   "schema": "twingrid-baseline-config/1",
   "status": "feasible",
-  "tuner_version": "baselines-tuner/1",
+  "tuner_version": "baselines-tuner/2",
   "tuning": {
+    "actuator_range_C": [
+      16.0,
+      25.0
+    ],
     "carbon": {
       "curve_sha256": "afef42cfe64a6bdae71dd82e6dd3171a926fae939b162ecadfa38d0d56e8a754",
       "flat_curve": true,
       "is_real": false
     },
-    "eval_config_sha256": "4f7259b1ee87cf500ca4d0f3b2f7c9308dd2f7fd754df24a33ef7fe78877b347",
+    "eval_config_sha256": "fe76f6691857ef267c6fc958fda22f187b8a077110ae3dfc0d9d4e65835d9105",
     "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
     "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
     "result": {
@@ -307,11 +311,11 @@
     "search_space": {
       "attribution": "per-step reward of constant-action rollouts, attributed to the bin the step started in; switching costs are not modelled",
       "chilled_C": [
-        5.0,
-        7.5,
-        10.0,
-        12.5,
-        15.0
+        16.0,
+        18.25,
+        20.5,
+        22.75,
+        25.0
       ],
       "min_cell_samples": 20,
       "modes": [
@@ -327,7 +331,7 @@
         28.0
       ],
       "tie_tolerance": 1e-09,
-      "transient_steps_excluded": 3,
+      "transient_steps_excluded": 8,
       "util_edges": [
         0.2,
         0.4,

@@ -1,6 +1,6 @@
 # PPO decision gate (T8): pre-registration
 
-Registered BEFORE any evaluation run. `preregistration_sha256`: `4f7259b1ee87cf500ca4d0f3b2f7c9308dd2f7fd754df24a33ef7fe78877b347`
+Registered BEFORE any evaluation run. `preregistration_sha256`: `fe76f6691857ef267c6fc958fda22f187b8a077110ae3dfc0d9d4e65835d9105`
 (SHA-256 of the canonical JSON of `config` in `PREREGISTRATION.json`). `run` refuses to start if the file or its hash do not match.
 
 **Scope.** Everything is simulator-only (physics `1`). Scenario inputs: synthetic diurnal weather and workload from DataCentreEnv; simulated plant.
@@ -9,7 +9,7 @@ The best that outcome A can support is the phrase "simulator-validated candidate
 ## Protocol
 
 - Policies, identical scenarios for all: PPO (one candidate per training seed, deterministic action), the **rule baseline**
-  (`DigitalTwin.select_cooling_mode` at 12.0 C), and the **best constant** (grid of
+  (`DigitalTwin.select_cooling_mode` at 20.5 C), and the **best constant** (grid of
   5 chilled-water setpoints x 4 modes, chosen on VALIDATION scenarios only).
 - Each scenario is one 288-step (24 h) episode with a fixed environment seed; weather noise, workload,
   initial hour, initial state, timestep and constraints are identical for every policy (verified by an exogenous-trace hash).

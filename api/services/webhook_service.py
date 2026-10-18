@@ -13,16 +13,28 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Optional
+from urllib.parse import urlsplit
 
 import requests
 
 from api.services.webhook_security import WebhookURLError, validate_webhook_url
 from src import webhook_deliveries
+from src.admin_console.rules import webhook_id
 from src.webhook_registry import list_subscribers
 
 logger = logging.getLogger(__name__)
 
 WEBHOOK_TIMEOUT_SECONDS = 5
+
+
+def log_target(url: str) -> str:
+    """What may appear in a log line for a subscriber: host and a short non-reversible id. The path and query of a
+    webhook URL are often the secret itself (chat-tool incoming-webhook tokens), so they are never logged."""
+    try:
+        host = urlsplit(url).hostname or "invalid-url"
+    except ValueError:
+        host = "invalid-url"
+    return f"{host} [{webhook_id(url)}]"
 
 
 def webhook_on_simulated() -> bool:
@@ -54,26 +66,29 @@ def deliver(url: str, payload: dict[str, Any]) -> DeliveryResult:
     def done(ok: bool, status: Optional[int] = None, error: Optional[str] = None) -> DeliveryResult:
         return DeliveryResult(ok, status, error, int((time.monotonic() - start) * 1000))
 
+    target = log_target(url)
     try:
         validate_webhook_url(url)
         resp = requests.post(url, json=payload, timeout=WEBHOOK_TIMEOUT_SECONDS, allow_redirects=False)
         if resp.status_code >= 400:
-            logger.warning("Webhook %s returned %d", url, resp.status_code)
+            logger.warning("Webhook %s returned %d", target, resp.status_code)
             return done(False, resp.status_code, "http_error")
         if resp.status_code >= 300:
             return done(False, resp.status_code, "redirect_refused")
         return done(True, resp.status_code)
     except WebhookURLError as e:
-        logger.warning("Webhook %s blocked: %s", url, e)
+        logger.warning("Webhook %s blocked: %s", target, e)
         return done(False, None, "blocked_url")
+    # requests' exception text embeds the request path ("... Max retries exceeded with url: /secret"), so only the
+    # exception class is logged.
     except requests.Timeout as e:
-        logger.warning("Webhook %s failed: %s", url, e)
+        logger.warning("Webhook %s failed: %s", target, type(e).__name__)
         return done(False, None, "timeout")
     except requests.ConnectionError as e:
-        logger.warning("Webhook %s failed: %s", url, e)
+        logger.warning("Webhook %s failed: %s", target, type(e).__name__)
         return done(False, None, "connection")
     except requests.RequestException as e:
-        logger.warning("Webhook %s failed: %s", url, e)
+        logger.warning("Webhook %s failed: %s", target, type(e).__name__)
         return done(False, None, "request_error")
 
 
