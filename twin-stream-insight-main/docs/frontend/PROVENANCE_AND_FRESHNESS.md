@@ -49,3 +49,18 @@ Browser time is never data time, and a server timestamp is never compared with t
 
 - **Authorisation is UX only.** Operator-only controls (optimise, acknowledge) are disabled for viewers with the text "Requires operator role"; a server 403 is still handled and is final.
 - Errors shown to users use `safeMessage` copy; the reporter sends codes and paths, never payloads or tokens.
+
+## Evaluation and recommendation views (Task 14)
+
+| Item | Where it is shown | Rule |
+|---|---|---|
+| **Physics executed** | evaluation identity strip + provenance detail | The backend's `physics_version_executed`. Absent (reports written before it existed) reads "not reported", never the registered label. When label and executed differ both are shown, e.g. `legacy-0 (registered as "legacy-0 (implicit)")`. |
+| **Carbon signal** | evaluation identity strip + the strip's `Fallback carbon (flat constant)` flag + a caveat under every carbon column | Only `carbon.is_real === true` reads Measured. `false` reads Assumed. Missing reads "not reported", never real. |
+| **Hard constraints** | a panel BEFORE the metrics table (`HardConstraintPanel`) | Four limits (outlet, inlet-over, inlet-under, PUE). Mean violating steps per test episode: `0` means none, `>0` means at least one episode violated. A limit the report did not count is **not measured**, never zero, and can never produce a "clean" status. Words + a distinct icon shape per state; no success styling. Separate from reward. |
+| **Comparator caveat** | same panel | Shown only when `selection.best_constant_envelope_feasible === false`. |
+| **Run id / time** | strip (`Run <evaluation_id>`) + identity rows | Server time only. |
+| **Validation status** | outcome banner | `NOT_EVALUATED` and unknown outcomes use the same neutral banner as A/B/C. |
+| **Recommendation** | `ProvenanceStrip` (origin Simulated, physics, fallback carbon) + fixed evidence note | The stored validation reward is a simulated validation-set score: not a test-set result and not measured. |
+| **Set-point range** | recommendation form | The accepted range is the union of the legacy 5..15 C and the evaluated actuator range from `predicted.setpoint_check` (physics 1: 5..25 C), mirroring the server, which still decides. Outside the evaluated range, a words-only notice is shown. |
+
+Schema: `schema_version` 1 and 2 are accepted (2 = amendment A2, counted PUE limit); anything else is a contract violation.

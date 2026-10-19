@@ -1,6 +1,16 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CAPTURED_BASELINES_ONLY, SYNTHETIC_A, SYNTHETIC_B, SYNTHETIC_C, SYNTHETIC_UNKNOWN, clone, syntheticWithPpo } from '@/evaluation/testFixtures';
+import {
+  CAPTURED_BASELINES_ONLY,
+  SYNTHETIC_A,
+  SYNTHETIC_B,
+  SYNTHETIC_C,
+  SYNTHETIC_UNKNOWN,
+  clone,
+  syntheticSchema2,
+  syntheticWithPpo,
+  withMetric,
+} from '@/evaluation/testFixtures';
 
 vi.mock('@/lib/errorReporter.ts', () => ({ reportError: vi.fn() }));
 
@@ -37,7 +47,9 @@ describe('EvaluationView: real baselines-only report (primary acceptance fixture
     render(<EvaluationView result={clone(CAPTURED_BASELINES_ONLY)} />);
     const rule = document.querySelector('[data-policy-row="rule"]') as HTMLElement;
     expect(rule.querySelector('[data-cell="inlet_under_min_steps"]')).toHaveTextContent('288');
-    expect(screen.getByText('Fallback carbon (flat constant)')).toBeInTheDocument();
+    // the label appears on the provenance strip AND under the carbon columns (two places on purpose)
+    expect(document.querySelector('[data-provenance-strip] [data-flag="fallback"], [data-provenance-badge] [data-flag="fallback"]')).not.toBeNull();
+    expect(screen.getAllByText('Fallback carbon (flat constant)').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('table-uncertainty')).toHaveTextContent('uncertainty not provided');
     expect(screen.getByTestId('no-paired-differences')).toBeInTheDocument();
   });
@@ -142,5 +154,119 @@ describe('EvaluationView: outcome fixtures (A/B/C are SYNTHETIC shape fixtures, 
     delete r.origin;
     render(<EvaluationView result={r} />);
     expect(document.querySelector('[data-provenance-badge]')).toHaveAttribute('data-provenance-badge', 'unverified');
+  });
+});
+
+
+const panel = () => screen.getByTestId('hard-constraints');
+const hcRow = (id: string) => document.querySelector(`[data-hc-row="${id}"]`) as HTMLElement;
+const hcCell = (row: string, limit: string) => hcRow(row).querySelector(`[data-hc-cell="${limit}"]`) as HTMLElement;
+
+describe('Task 14: provenance and honesty labels on the evaluation view', () => {
+  it('real legacy-0 report: violations are first-class, the PUE limit is "not measured" (never zero), executed physics is "not reported"', () => {
+    render(<EvaluationView result={clone(CAPTURED_BASELINES_ONLY)} />);
+    expect(screen.getByTestId('hard-constraints-headline')).toHaveTextContent(/Hard-constraint violations: 2 of 2 policies violate/);
+    const rule = hcRow('rule');
+    expect(rule).toHaveAttribute('data-hc-state', 'violated');
+    expect(within(rule).getByText('Violates 1 of 4 limits')).toBeInTheDocument(); // words, not colour
+    expect(rule.querySelector('[data-hc-icon="violated"]')).not.toBeNull(); // plus a distinct icon shape
+    expect(hcCell('rule', 'inlet_under_min_steps')).toHaveTextContent('288 steps/episode — violated');
+    expect(hcCell('rule', 'pue_over_max_steps')).toHaveTextContent('not measured');
+    expect(hcCell('rule', 'pue_over_max_steps')).toHaveAttribute('data-hc-cell-state', 'not_measured');
+    expect(hcCell('rule', 'outlet_violation_steps')).toHaveTextContent('0 — none');
+    const identity = screen.getByTestId('evaluation-identity');
+    expect(within(identity).getByText('Physics executed').closest('[data-identity]')).toHaveAttribute('data-reported', 'false');
+    expect(within(identity).getByText(/not reported \(written before/)).toBeInTheDocument();
+    expect(within(identity).getByText('legacy-0 (implicit)')).toBeInTheDocument(); // the registered label stays visible
+    expect(within(identity).getByText('Assumed: flat constant, not a real grid series')).toBeInTheDocument();
+    expect(within(identity).getByText('baselines_only_0fcafef9d28fd539')).toBeInTheDocument();
+  });
+
+  it('the panel comes before the metrics table and is not styled as success or failure by colour', () => {
+    const { container } = render(<EvaluationView result={syntheticSchema2()} />);
+    const order = [...container.querySelectorAll('[data-testid="outcome-headline"], [data-testid="hard-constraints"], [data-testid="evaluation-table"]')].map((e) => e.getAttribute('data-testid'));
+    expect(order).toEqual(['outcome-headline', 'hard-constraints', 'evaluation-table']);
+    expect(panel().outerHTML).not.toMatch(/green|success|emerald|red-|destructive/);
+  });
+
+  it('schema 2, every limit measured and zero: "clean" is allowed and states what it covers', () => {
+    render(<EvaluationView result={syntheticSchema2()} />);
+    expect(screen.getByTestId('hard-constraints-headline')).toHaveTextContent('No policy violated any counted hard limit on the test episodes.');
+    expect(hcRow('rule')).toHaveAttribute('data-hc-state', 'clean');
+    expect(hcCell('rule', 'pue_over_max_steps')).toHaveTextContent('0 — none');
+    expect(panel()).toHaveAttribute('data-violating-policies', '0');
+    expect(screen.queryByTestId('comparator-caveat')).toBeNull();
+  });
+
+  it('a PUE-only violation is shown and names the limit', () => {
+    render(<EvaluationView result={withMetric(syntheticSchema2(), 'best_constant', 'pue_over_max_steps', 3.5)} />);
+    expect(hcRow('best_constant')).toHaveAttribute('data-hc-state', 'violated');
+    expect(hcRow('rule')).toHaveAttribute('data-hc-state', 'clean');
+    expect(hcCell('best_constant', 'pue_over_max_steps')).toHaveTextContent('3.5 steps/episode — violated');
+    expect(screen.getByTestId('hard-constraints-headline')).toHaveTextContent('1 of 2 policies violate');
+  });
+
+  it('an unmeasured limit can never read as clean, and the backend note is shown verbatim', () => {
+    const r = withMetric(syntheticSchema2(), 'rule', 'pue_over_max_steps', undefined);
+    r.hard_constraints = { counted: [], not_measured: ['pue_over_max_steps'], note: 'Older schema: PUE not counted.' };
+    render(<EvaluationView result={r} />);
+    expect(hcRow('rule')).toHaveAttribute('data-hc-state', 'partial');
+    expect(within(hcRow('rule')).getByText(/No violation in the 3 measured limits; 1 not measured/)).toBeInTheDocument();
+    expect(screen.getByTestId('hard-constraints-note')).toHaveTextContent('Older schema: PUE not counted.');
+    expect(screen.getByTestId('hard-constraints-headline')).toHaveTextContent(/not the same as zero/);
+  });
+
+  it('the backend says not_measured even when a metric key is present: it is still "not measured"', () => {
+    const r = syntheticSchema2();
+    r.hard_constraints = { counted: [], not_measured: ['pue_over_max_steps'] };
+    render(<EvaluationView result={r} />);
+    expect(hcCell('rule', 'pue_over_max_steps')).toHaveAttribute('data-hc-cell-state', 'not_measured');
+  });
+
+  it('an infeasible best-constant comparator is stated', () => {
+    const r = syntheticSchema2();
+    r.selection = { best_constant_envelope_feasible: false };
+    render(<EvaluationView result={r} />);
+    expect(screen.getByTestId('comparator-caveat')).toHaveTextContent(/no constant set-point satisfied every hard limit/i);
+  });
+
+  it('shows the executed physics, and both labels when they differ', () => {
+    render(<EvaluationView result={syntheticSchema2({ physics_version: 'legacy-0 (implicit)', physics_version_executed: 'legacy-0' })} />);
+    const identity = screen.getByTestId('evaluation-identity');
+    expect(within(identity).getByText('legacy-0 (registered as "legacy-0 (implicit)")')).toBeInTheDocument();
+  });
+
+  it('the strip carries the run id, the simulator origin and the fallback-carbon flag; measured carbon shows no fallback flag', () => {
+    const { unmount } = render(<EvaluationView result={syntheticSchema2()} />);
+    expect(document.querySelector('[data-provenance-run]')).toHaveTextContent('Run synthetic_schema2');
+    expect(document.querySelector('[data-provenance-badge]')).toHaveAttribute('data-provenance-badge', 'simulated');
+    expect(document.querySelector('[data-flag="fallback"]')).not.toBeNull();
+    unmount();
+    render(<EvaluationView result={syntheticSchema2({ carbon: { is_real: true, flat_curve: false } })} />);
+    expect(document.querySelector('[data-flag="fallback"]')).toBeNull();
+    expect(within(screen.getByTestId('evaluation-identity')).getByText(/Measured series/)).toBeInTheDocument();
+  });
+
+  it('carbon information missing entirely reads "not reported", never "real" and never a fallback claim', () => {
+    const r = syntheticSchema2();
+    delete r.carbon;
+    render(<EvaluationView result={r} />);
+    const carbonRow = within(screen.getByTestId('evaluation-identity')).getByText('Carbon signal').closest('[data-identity]');
+    expect(carbonRow).toHaveTextContent('not reported');
+    expect(carbonRow).toHaveAttribute('data-reported', 'false');
+    expect(document.querySelector('[data-flag="fallback"]')).toBeNull();
+  });
+
+  it('NOT_EVALUATED stays a plain neutral banner next to the constraint panel (never styled as success)', () => {
+    const { container } = render(<EvaluationView result={syntheticSchema2()} />);
+    expect(container.querySelector('[data-outcome="NOT_EVALUATED"]')).not.toBeNull();
+    expect(screen.getByTestId('outcome-headline')).toHaveTextContent('Not evaluated');
+    expect(container.innerHTML).not.toMatch(/bg-green|text-green|success/);
+  });
+
+  it('no policies: no constraint table and no clean claim', () => {
+    render(<EvaluationView result={syntheticSchema2({ policies: [] })} />);
+    expect(screen.getByTestId('hard-constraints-headline')).toHaveTextContent('No policies reported');
+    expect(screen.queryByTestId('hard-constraints-table')).toBeNull();
   });
 });

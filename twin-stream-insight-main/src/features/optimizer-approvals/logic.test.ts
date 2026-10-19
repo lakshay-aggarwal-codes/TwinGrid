@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  acceptedChilledRange,
+  setpointCheckOf,
+  setpointNotices,
   canDecide,
   canPropose,
   claimGate,
@@ -104,5 +107,39 @@ describe("shadow bars", () => {
   it("derives agree/differ counts from the summary", () => {
     expect(shadowBars({ n_samples: 8, agreement_rate: 0.75 })).toEqual({ total: 8, agree: 6, differ: 2, ratePct: "75.0" });
     expect(shadowBars({ n_samples: 0, agreement_rate: null })).toEqual({ total: 0, agree: 0, differ: 0, ratePct: null });
+  });
+});
+
+
+const CHECK_P1 = { physics_version: "1", actuator_range_C: [16, 25], proposed_within_actuator_range: true, reference_within_actuator_range: false };
+
+describe("physics-aware set-point range (Task 14)", () => {
+  it("reads the backend's setpoint_check defensively", () => {
+    expect(setpointCheckOf({ ...EFFECT, setpoint_check: CHECK_P1 })).toEqual({ physics: "1", actuatorRange: [16, 25], proposedWithin: true, referenceWithin: false });
+    for (const bad of [undefined, null, {}, { setpoint_check: 5 }, { setpoint_check: [] }, { setpoint_check: { actuator_range_C: [1] } }]) {
+      const c = setpointCheckOf(bad as object | null | undefined);
+      expect(c === null || c.actuatorRange === null).toBe(true);
+    }
+  });
+
+  it("accepts the union of the legacy bounds and the evaluated range (mirrors the server); legacy without a check", () => {
+    expect(acceptedChilledRange(null)).toEqual([5, 15]);
+    expect(acceptedChilledRange(setpointCheckOf({ setpoint_check: CHECK_P1 }))).toEqual([5, 25]);
+    expect(acceptedChilledRange(setpointCheckOf({ setpoint_check: { ...CHECK_P1, actuator_range_C: [5, 15] } }))).toEqual([5, 15]);
+  });
+
+  it("a physics-1 recommendation (22.75 C) is no longer rejected as out of range", () => {
+    const range = acceptedChilledRange(setpointCheckOf({ setpoint_check: CHECK_P1 }));
+    expect(setpointProblem({ chilled_water_temp_c: 22.75, cooling_mode: "closed_loop" }, range)).toBeNull();
+    expect(setpointProblem({ chilled_water_temp_c: 22.75, cooling_mode: "closed_loop" })).toMatch(/between 5 and 15/); // the old default still holds without a check
+    expect(setpointProblem({ chilled_water_temp_c: 25.5, cooling_mode: "hybrid" }, range)).toMatch(/between 5 and 25/);
+  });
+
+  it("says in words when a set-point is outside the evaluated range", () => {
+    const notices = setpointNotices(setpointCheckOf({ setpoint_check: { ...CHECK_P1, proposed_within_actuator_range: false } }));
+    expect(notices).toHaveLength(2);
+    expect(notices[0]).toMatch(/outside the 16–25 °C range the evaluated controllers could command under physics 1/);
+    expect(notices[0]).toMatch(/No baseline was evaluated there/);
+    expect(setpointNotices(null)).toEqual([]);
   });
 });

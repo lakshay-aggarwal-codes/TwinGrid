@@ -103,3 +103,10 @@ and accepts `schema_version` 1 **and** 2 (2 = the PUE hard constraint, `pue_over
 `metrics` and to `decision.detail.envelope_selected_candidate`). For a schema-1 report (the frozen legacy report)
 `not_measured` is `["pue_over_max_steps"]`: render it as "not measured", never as 0. The captures in this directory were
 NOT regenerated; they still describe the schema-1 report. A new physics-1 report will be schema 2.
+
+
+## Task 14 addendum (additive; the committed captures are unchanged)
+- `schema_version` is now `1` or `2` (A2 adds the counted `pue_over_max_steps` limit). Any other value is a contract violation.
+- Optional `physics_version_executed` (the physics that ran; absent in older reports) next to `physics_version` (the registered label).
+- Optional `hard_constraints { counted[], not_measured[], note }` and `selection { best_constant_envelope_feasible }` are read by the UI; unknown keys are ignored.
+- The captured `baselines-only` report is schema 1, legacy-0, has no `hard_constraints`/`physics_version_executed`: the UI shows its PUE limit as "not measured" and its executed physics as "not reported".

@@ -186,11 +186,64 @@ export function proposalBody(ctx: Context, sp: Setpoints, rationale: string): Pr
   return body;
 }
 
+/** The legacy registry bounds: what the form allows when the backend says nothing about the physics' range. */
+export const LEGACY_CHILLED_RANGE: readonly [number, number] = [CHILLED_MIN_C, CHILLED_MAX_C];
+
+export const RECOMMENDATION_EVIDENCE_NOTE =
+  "The stored validation reward is a simulated score on validation scenarios: not a test-set result and not measured on a real facility.";
+
+/** `effect.setpoint_check` (additive backend payload), read defensively. Null when absent or malformed. */
+export interface SetpointCheck {
+  readonly physics: string | null;
+  readonly actuatorRange: readonly [number, number] | null;
+  readonly proposedWithin: boolean | null;
+  readonly referenceWithin: boolean | null;
+}
+
+export function setpointCheckOf(effect: object | null | undefined): SetpointCheck | null {
+  const raw = effect === null || effect === undefined ? undefined : (effect as Record<string, unknown>).setpoint_check;
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  const range = r.actuator_range_C;
+  const ok = Array.isArray(range) && range.length === 2 && range.every((x) => typeof x === "number" && Number.isFinite(x));
+  const bool = (v: unknown) => (typeof v === "boolean" ? v : null);
+  return {
+    physics: typeof r.physics_version === "string" && r.physics_version !== "" ? r.physics_version : null,
+    actuatorRange: ok ? ([range[0], range[1]] as [number, number]) : null,
+    proposedWithin: bool(r.proposed_within_actuator_range),
+    referenceWithin: bool(r.reference_within_actuator_range),
+  };
+}
+
+/**
+ * The chilled-water inputs the form accepts: the union of the legacy bounds and the evaluated actuator range, which
+ * mirrors the server (`accepted_chilled_range_C`). The range is physics-dependent (legacy-0 5..15 C, physics 1
+ * 16..25 C), so a fixed 5..15 would reject the baseline's own physics-1 recommendation. The server still decides.
+ */
+export function acceptedChilledRange(check: SetpointCheck | null): readonly [number, number] {
+  if (check === null || check.actuatorRange === null) return LEGACY_CHILLED_RANGE;
+  return [Math.min(CHILLED_MIN_C, check.actuatorRange[0]), Math.max(CHILLED_MAX_C, check.actuatorRange[1])];
+}
+
+/** Notices about the evaluated range, as words (never colour alone). Empty when the backend sent no check. */
+export function setpointNotices(check: SetpointCheck | null): string[] {
+  if (check === null || check.actuatorRange === null) return [];
+  const [lo, hi] = check.actuatorRange;
+  const where = `${lo}–${hi} °C range the evaluated controllers could command${check.physics ? ` under physics ${check.physics}` : ""}`;
+  const out: string[] = [];
+  if (check.proposedWithin === false) out.push(`The proposed set-point is outside the ${where}. No baseline was evaluated there, and it can leave the inlet safety band.`);
+  if (check.referenceWithin === false) out.push(`Your current set-point is outside the ${where}.`);
+  return out;
+}
+
 /** Why these set-points cannot be sent, or null when they can. (The server checks again.) */
-export function setpointProblem(sp: { chilled_water_temp_c: number; cooling_mode: string }): string | null {
+export function setpointProblem(
+  sp: { chilled_water_temp_c: number; cooling_mode: string },
+  range: readonly [number, number] = LEGACY_CHILLED_RANGE,
+): string | null {
   if (!Number.isFinite(sp.chilled_water_temp_c)) return "Enter a chilled-water temperature.";
-  if (sp.chilled_water_temp_c < CHILLED_MIN_C || sp.chilled_water_temp_c > CHILLED_MAX_C) {
-    return `The chilled-water set-point must be between ${CHILLED_MIN_C} and ${CHILLED_MAX_C} °C.`;
+  if (sp.chilled_water_temp_c < range[0] || sp.chilled_water_temp_c > range[1]) {
+    return `The chilled-water set-point must be between ${range[0]} and ${range[1]} °C.`;
   }
   if (!(MODES as readonly string[]).includes(sp.cooling_mode)) return "Choose a cooling mode.";
   return null;

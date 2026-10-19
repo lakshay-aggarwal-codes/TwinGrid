@@ -3,13 +3,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/api/apiError";
 import { AuthRequiredError } from "@/authClient";
 import { StateBoundary } from "@/state/StateBoundary";
+import { ProvenanceStrip, buildProvenance } from "@/provenance";
 import { useApiQuery } from "@/state/useApiQuery";
 import { createProposal, fetchRecommendation, fetchSandbox, proposalsKey, recommendationKey } from "./api";
 import { EffectTable } from "./EffectTable";
 import {
-  CHILLED_MAX_C,
-  CHILLED_MIN_C,
   MAX_NOTE_CHARS,
+  RECOMMENDATION_EVIDENCE_NOTE,
+  acceptedChilledRange,
+  setpointCheckOf,
   MODES,
   canPropose,
   modeLabel,
@@ -54,7 +56,15 @@ function Body({ rec, ctx, role }: { rec: Recommendation; ctx: Context; role: str
   }, [sel?.chilled_water_temp_C, sel?.cooling_mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setpoints = { chilled_water_temp_c: Number(chilled), cooling_mode: mode as Mode };
-  const problem = chilled.trim() === "" ? "Enter a chilled-water temperature." : setpointProblem(setpoints);
+  const check = setpointCheckOf(rec.predicted);
+  const range = acceptedChilledRange(check);
+  const problem = chilled.trim() === "" ? "Enter a chilled-water temperature." : setpointProblem(setpoints, range);
+  const provenance = buildProvenance({
+    source: { kind: "preview" },
+    origin: "simulated", // the recommendation is computed by the simulator's twin from stored baseline configs
+    physicsVersion: check?.physics ?? null,
+    inputsFallback: rec.predicted ? (rec.predicted.carbon_data_is_real ? [] : ["carbon"]) : null,
+  });
   const edited = sel !== null && (Number(chilled) !== sel.chilled_water_temp_C || mode !== sel.cooling_mode);
 
   async function run<T>(work: () => Promise<T>, done: (v: T) => void) {
@@ -74,12 +84,13 @@ function Body({ rec, ctx, role }: { rec: Recommendation; ctx: Context; role: str
     <div className="space-y-3">
       {sel ? (
         <>
+          <ProvenanceStrip view={provenance} />
           <p data-testid="recommendation-source" className="text-sm">
             <strong>{sel.name.toUpperCase()} baseline controller</strong> proposes{" "}
             <strong>{sel.chilled_water_temp_C.toFixed(1)} °C</strong> chilled water and <strong>{modeLabel(sel.cooling_mode)}</strong> cooling.
           </p>
           <p className="text-xs text-muted-foreground">
-            Basis: {sel.basis}. Stored validation reward {sel.validation_reward.toFixed(2)} (config {sel.config}). {rec.recommendation.note}
+            Basis: {sel.basis}. Stored validation reward {sel.validation_reward.toFixed(2)} (config {sel.config}). {RECOMMENDATION_EVIDENCE_NOTE} {rec.recommendation.note}
           </p>
           {rec.predicted ? <EffectTable effect={rec.predicted} caption="Recommended set-points vs your current settings" /> : null}
 
@@ -87,12 +98,12 @@ function Body({ rec, ctx, role }: { rec: Recommendation; ctx: Context; role: str
             <legend className="px-1 text-[11px] uppercase tracking-wider text-muted-foreground">Sandbox: try set-points (nothing is saved)</legend>
             <div className="flex flex-wrap items-end gap-3">
               <label className="text-xs">
-                <span className="block text-muted-foreground">Chilled water ({CHILLED_MIN_C} to {CHILLED_MAX_C} °C)</span>
+                <span className="block text-muted-foreground">Chilled water ({range[0]} to {range[1]} °C)</span>
                 <input
                   type="number"
                   step="0.5"
-                  min={CHILLED_MIN_C}
-                  max={CHILLED_MAX_C}
+                  min={range[0]}
+                  max={range[1]}
                   value={chilled}
                   onChange={(e) => setChilled(e.target.value)}
                   className="w-24 rounded-md border border-border bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

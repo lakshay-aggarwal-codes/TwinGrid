@@ -5,7 +5,8 @@
  *  - nothing is defaulted (a missing value stays missing and is shown as "not provided");
  *  - vocabulary strings (`outcome`, `claim_allowed`, `origin`, `kind`, `better`) stay strings and are interpreted in
  *    `model.ts`, where an unknown value is rendered neutrally;
- *  - `schema_version` other than 1 is a contract violation (the endpoint serves the v1 format only).
+ *  - `schema_version` other than 1 or 2 is a contract violation. 2 (amendment A2) adds the counted `pue_over_max_steps`
+ *    hard constraint; a schema-1 report still loads and its PUE limit is shown as "not measured", never as zero.
  */
 import { z } from 'zod';
 
@@ -54,9 +55,12 @@ export const EvaluationResultSchema = z
     evaluation_id: z.string().min(1),
     source: z.string(),
     origin: z.string().optional(),
-    schema_version: z.literal(1),
+    schema_version: z.union([z.literal(1), z.literal(2)]),
     generated_at_utc: z.string().nullish(),
+    /** The physics label as registered (e.g. "legacy-0 (implicit)"). */
     physics_version: z.string().optional(),
+    /** The physics the environment actually ran. Absent in reports written before the audit fix: shown as not reported. */
+    physics_version_executed: z.string().optional(),
     scenario_inputs: z.string().optional(),
     carbon: z.object({ is_real: z.boolean().optional(), flat_curve: z.boolean().optional() }).passthrough().optional(),
     scenario_set_id: z.string().optional(),
@@ -64,6 +68,13 @@ export const EvaluationResultSchema = z
     preregistration_sha256: z.string().optional(),
     decision: DecisionSchema,
     policies: z.array(PolicySchema),
+    /** Which envelope limits this report counted. A limit under `not_measured` was NOT counted (not the same as zero). */
+    hard_constraints: z
+      .object({ counted: z.array(z.string()), not_measured: z.array(z.string()), note: z.string().nullish() })
+      .passthrough()
+      .optional(),
+    /** Only `best_constant_envelope_feasible` is read (comparator caveat); everything else stays untouched. */
+    selection: z.object({ best_constant_envelope_feasible: z.boolean().optional() }).passthrough().optional(),
     metrics: z.record(MetricDefinitionSchema).optional(),
     outcome_definitions: z.record(z.string()).optional(),
     ci_level: finite.optional(),

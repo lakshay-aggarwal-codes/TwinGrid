@@ -54,3 +54,35 @@ export const SYNTHETIC_A = syntheticWithPpo('A');
 export const SYNTHETIC_B = syntheticWithPpo('B');
 export const SYNTHETIC_C = syntheticWithPpo('C');
 export const SYNTHETIC_UNKNOWN = syntheticWithPpo('INCONCLUSIVE');
+
+const HARD_IDS = ['outlet_violation_steps', 'inlet_over_max_steps', 'inlet_under_min_steps', 'pue_over_max_steps'] as const;
+
+/**
+ * SYNTHETIC schema-2 report (amendment A2: the PUE limit is counted). Built from the captured real report with every
+ * hard-constraint metric set to 0 and the physics-1 labels; NOT a result. `over` can override any field.
+ */
+export function syntheticSchema2(over: Partial<EvaluationResult> = {}): EvaluationResult {
+  const base = clone(CAPTURED_BASELINES_ONLY);
+  return {
+    ...base,
+    evaluation_id: 'synthetic_schema2',
+    schema_version: 2,
+    physics_version: '1',
+    physics_version_executed: '1',
+    carbon: { is_real: false, flat_curve: true },
+    policies: base.policies.map((p) => ({ ...p, metrics: { ...p.metrics, ...Object.fromEntries(HARD_IDS.map((id) => [id, 0])) } })),
+    hard_constraints: { counted: [...HARD_IDS], not_measured: [], note: null },
+    selection: { best_constant_envelope_feasible: true },
+    ...over,
+  } as EvaluationResult;
+}
+
+/** `syntheticSchema2` with one metric of one policy overridden. */
+export function withMetric(result: EvaluationResult, policyId: string, metric: string, value: number | undefined): EvaluationResult {
+  const r = clone(result);
+  const p = r.policies.find((x) => x.policy_id === policyId);
+  if (p === undefined) throw new Error(`no policy ${policyId}`);
+  if (value === undefined) delete p.metrics[metric];
+  else p.metrics[metric] = value;
+  return r;
+}

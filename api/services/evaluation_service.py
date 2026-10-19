@@ -194,6 +194,7 @@ def get_evaluation(evaluation_id: str) -> dict[str, Any]:
     }
     for key in (
         "physics_version",
+        "physics_version_executed",  # the physics the environment RAN (absent in reports written before the audit fix)
         "scenario_inputs",
         "carbon",
         "scenario_set_id",

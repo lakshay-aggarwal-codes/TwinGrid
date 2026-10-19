@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COMPARATOR_CAVEAT,
   DEFINITION_NOT_PROVIDED,
   NOT_PROVIDED,
+  PHYSICS_EXECUTED_NOT_REPORTED,
   UNCERTAINTY_NOT_PROVIDED,
+  carbonText,
   ciLevelText,
   formatMetric,
+  hardConstraintView,
   identityRows,
   outcomeView,
   pairedDifferences,
+  physicsExecutedText,
   tableView,
 } from './model';
 import { CAPTURED_BASELINES_ONLY as REAL, SYNTHETIC_A, SYNTHETIC_B, SYNTHETIC_C, SYNTHETIC_UNKNOWN, clone } from './testFixtures';
@@ -156,5 +161,47 @@ describe('identityRows', () => {
     const rows = Object.fromEntries(identityRows(r).map((x) => [x.id, x]));
     expect(rows['evaluation-scenario-set'].value).toBe(NOT_PROVIDED);
     expect(rows.prereg.value).toBe(NOT_PROVIDED);
+  });
+});
+
+
+describe('physicsExecutedText / carbonText / hardConstraintView (Task 14)', () => {
+  it('physics executed: absent is not reported; equal is shown once; different shows both', () => {
+    expect(physicsExecutedText(REAL)).toBe(PHYSICS_EXECUTED_NOT_REPORTED);
+    expect(physicsExecutedText({ ...REAL, physics_version: '1', physics_version_executed: '1' })).toBe('1');
+    expect(physicsExecutedText({ ...REAL, physics_version: 'legacy-0 (implicit)', physics_version_executed: 'legacy-0' })).toBe(
+      'legacy-0 (registered as "legacy-0 (implicit)")',
+    );
+  });
+
+  it('carbon: only is_real === true reads as measured', () => {
+    expect(carbonText(undefined)).toBe('not reported');
+    expect(carbonText({})).toBe('not reported');
+    expect(carbonText({ is_real: true })).toMatch(/Measured/);
+    expect(carbonText({ is_real: false, flat_curve: true })).toMatch(/Assumed: flat constant/);
+    expect(carbonText({ is_real: false })).toMatch(/Assumed: fallback/);
+  });
+
+  it('hard constraints: a missing metric is not_measured (never none); a positive mean is violated; clean needs every limit', () => {
+    const v = hardConstraintView(REAL);
+    const rule = v.rows.find((r) => r.policyId === 'rule');
+    expect(rule?.cells.find((c) => c.id === 'pue_over_max_steps')).toMatchObject({ state: 'not_measured', value: null });
+    expect(rule?.cells.find((c) => c.id === 'inlet_under_min_steps')).toMatchObject({ state: 'violated', value: 288 });
+    expect(rule?.state).toBe('violated');
+    expect(v.violatingPolicies).toBe(2);
+  });
+
+  it('an unknown extra counted limit is appended, not dropped', () => {
+    const r = clone(REAL);
+    r.hard_constraints = { counted: ['future_limit_steps'], not_measured: [] };
+    const v = hardConstraintView(r);
+    expect(v.limits.map((l) => l.id)).toContain('future_limit_steps');
+    expect(v.rows[0].cells.find((c) => c.id === 'future_limit_steps')?.state).toBe('not_measured'); // metric absent
+  });
+
+  it('comparator caveat only when the backend says no constant was feasible', () => {
+    expect(hardConstraintView(REAL).comparatorCaveat).toBeNull();
+    expect(hardConstraintView({ ...REAL, selection: { best_constant_envelope_feasible: true } }).comparatorCaveat).toBeNull();
+    expect(hardConstraintView({ ...REAL, selection: { best_constant_envelope_feasible: false } }).comparatorCaveat).toBe(COMPARATOR_CAVEAT);
   });
 });
