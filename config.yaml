@@ -1,11 +1,11 @@
-# Production Configuration for Digital Twin Joint Optimizer
-# Patent: Joint minimisation of J = α·W + β·E + γ·C
+# Training configuration for the Digital Twin joint optimizer (simulator only; research module).
+# Objective: joint minimisation of J = α·W + β·E + γ·C
 
-# Patent Objective Weights
+# Objective weights. The key name `patent_objective` is kept for compatibility with saved configs; it is a label only.
 patent_objective:
   alpha: 0.5      # Weight for W (WUE) in J = α·W + β·E + γ·C
   beta: 0.3       # Weight for E (PUE-1) in J
-  gamma: 0.2      # Weight for C (cooling power) in J
+  gamma: 0.2      # Weight for C (carbon term, under an ASSUMED intensity) in J
 
 # Training Configuration
 training:

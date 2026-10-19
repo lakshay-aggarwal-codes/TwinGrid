@@ -1,15 +1,17 @@
 """
 Joint Water and Energy Optimisation for Data Centre Cooling Systems.
 
-PATENT CLAIM: Method and system for joint minimisation of a composite objective
+Objective: joint minimisation of a composite objective
 J = α·W + β·E + γ·C, where:
   - W = Water Usage Effectiveness (WUE) — normalised water consumption per IT energy
   - E = Energy overhead (PUE - 1) — excess facility power beyond IT load
-  - C = Cooling power consumption — auxiliary cooling system energy
+  - C = Carbon term — energy times the carbon intensity (a flat ASSUMED 475 gCO2/kWh unless a carbon file is loaded)
 
-The invention optimises chilled water setpoint and cooling mode selection via
-reinforcement learning to simultaneously reduce water footprint, energy waste,
-and cooling load while maintaining thermal safety constraints.
+The optimizer chooses a chilled water setpoint and a cooling mode via
+reinforcement learning, aiming to reduce water footprint, energy overhead and
+the carbon term together while respecting the simulated thermal safety limits.
+It is a research module: see docs/model_cards/ppo_optimizer.md for what has and
+has not been shown.
 """
 
 from __future__ import annotations
@@ -91,7 +93,7 @@ from .rl.safety_filter import (  # noqa: E402,F401
 )
 
 # =============================================================================
-# PATENT: JointOptimizer — PPO-based controller minimising J = α·W + β·E + γ·C
+# Design: JointOptimizer — PPO-based controller minimising J = α·W + β·E + γ·C
 # Tunable weights enable trade-off between water conservation, energy efficiency,
 # and cooling load. Supports scenario comparison (normal vs drought).
 # =============================================================================
@@ -101,7 +103,7 @@ class JointOptimizer:
     """
     Joint water+energy RL optimizer using PPO.
 
-    PATENT: Implements the invention's composite objective J = α·W + β·E + γ·C
+    Design: Implements the composite objective J = α·W + β·E + γ·C
     with tunable conservation weights. Trains a policy to select chilled water
     setpoint and cooling mode that minimises J over 24-hour episodes.
     """
@@ -194,7 +196,7 @@ class JointOptimizer:
         """
         Train PPO agent to minimise J = α·W + β·E + γ·C.
 
-        PATENT: The learned policy optimises chilled water temp and cooling
+        Design: The learned policy optimises chilled water temp and cooling
         mode selection to reduce water footprint (W), energy overhead (E),
         and cooling load (C) jointly.
         """
@@ -248,7 +250,7 @@ class JointOptimizer:
         """
         Run one 24-hour episode and return results DataFrame.
 
-        PATENT: Each step applies the learned policy to minimise J.
+        Design: Each step applies the learned policy to minimise J.
         """
         if self._model is None:
             raise RuntimeError("Model not trained. Call train() first.")
@@ -299,7 +301,7 @@ class JointOptimizer:
         """
         Compare normal vs drought water stress scenarios.
 
-        PATENT: Demonstrates policy adaptation under different water availability
+        Design: Demonstrates policy adaptation under different water availability
         constraints. Drought scenario tests water conservation under stress.
         """
         if self._model is None:
@@ -343,7 +345,7 @@ class JointOptimizer:
         }
 
     def save(self, path: str | Path) -> None:
-        """Save PPO model and patent config (alpha, beta, gamma, carbon curve)."""
+        """Save PPO model and objective config (alpha, beta, gamma, carbon curve)."""
         if self._model is None:
             raise RuntimeError("Model not trained. Call train() first.")
         path = Path(path)
@@ -355,6 +357,7 @@ class JointOptimizer:
             "gamma": self._gamma,
             "seed": self._seed,
             "carbon_intensity_by_hour": self._carbon_intensity_by_hour.tolist(),
+            # Key name kept for compatibility with saved configs and tests; it is a label, not a claim.
             "patent_objective": self._objective_label(),
             "carbon_signal": self.carbon_basis,
             # T20: what this policy was trained under. A loader rejects an older/missing envelope version.
@@ -370,7 +373,7 @@ class JointOptimizer:
 
     @classmethod
     def load(cls, path: str | Path) -> JointOptimizer:
-        """Load PPO model and patent config."""
+        """Load PPO model and objective config."""
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Path not found: {path}")

@@ -2,7 +2,7 @@
 
 The Data Ingestion Layer normalizes heterogeneous source datasets into clean, validated, and consistently formatted CSV files under `data/cleaned/`.
 
-These cleaned datasets power the Digital Twin thermal simulation, PPO joint optimization ($\alpha \cdot W + \beta \cdot E + \gamma \cdot C$), water stress cooling-mode arbitration (patent Claim 8), and forecasting.
+These cleaned datasets power the Digital Twin thermal simulation, PPO joint optimization ($\alpha \cdot W + \beta \cdot E + \gamma \cdot C$), water stress cooling-mode arbitration (the drought-override rule), and forecasting.
 
 ---
 

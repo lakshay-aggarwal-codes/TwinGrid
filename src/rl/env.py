@@ -56,7 +56,7 @@ DROUGHT_OVERRIDE_MODE_INDEX_NORM = DROUGHT_OVERRIDE_MODE_INDEX / 3.0
 logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
-# PATENT: Cooling mode enumeration — maps discrete control to physical systems
+# Design: Cooling mode enumeration — maps discrete control to physical systems
 # 0=free_air, 1=closed_loop, 2=evaporative, 3=hybrid
 # -----------------------------------------------------------------------------
 # COOLING_MODES / DROUGHT_* live in src/rl/safety_filter.py (single definition, used by the shield).
@@ -229,10 +229,10 @@ def _denormalise(val: float, lo: float, hi: float) -> float:
 
 
 # =============================================================================
-# PATENT: DataCentreEnv — Gymnasium environment implementing the optimisation
+# Design: DataCentreEnv — Gymnasium environment implementing the optimisation
 # Action space: Box([chilled_water_temp_5_to_15, cooling_mode_0_to_3])
 # Observation: 9 base features + (physics v1) applied actuator state, previous executed action, room-thermal state
-# Reward: -J = -(α·W_norm + β·(PUE-1)_norm + γ·C_norm) — minimises patent objective
+# Reward: -J = -(α·W_norm + β·(PUE-1)_norm + γ·C_norm) — minimises the composite objective
 # Safety penalty: -2.0 on any SafetyEnvelope breach (v1) / outlet only (legacy-0)
 # =============================================================================
 
@@ -241,8 +241,9 @@ class DataCentreEnv(gym.Env):
     """
     Gymnasium environment for joint water+energy optimisation.
 
-    PATENT: Embodies the composite objective J = α·W + β·E + γ·C as negative
-    reward. The agent learns to select chilled water setpoint (5–15°C) and
+    Design: Embodies the composite objective J = α·W + β·E + γ·C as negative
+    reward. The agent learns to select chilled water setpoint (5–15 °C under legacy-0, 16–25 °C under physics 1; see
+    CHILLED_WATER_ACTION_RANGE_C) and
     cooling mode (0–3) to minimise J while avoiding outlet_temp > 45°C.
     """
 
@@ -264,7 +265,7 @@ class DataCentreEnv(gym.Env):
         carbon_basis: dict | None = None,
     ) -> None:
         """
-        Initialise environment with patent objective weights.
+        Initialise environment with objective weights.
 
           carbon_basis: label of ``carbon_intensity_by_hour`` (``CarbonSignal.basis()``). A curve loaded here is
                         labelled by the loader; a caller-supplied curve without a label is recorded as
@@ -279,7 +280,7 @@ class DataCentreEnv(gym.Env):
           water_stress: the synthetic water-stress SCENARIO level (water_stress_scenario). The shield's drought
                            rule is triggered by it; an Aqueduct baseline never reaches this environment.
 
-        PATENT PARAMETERS:
+        OBJECTIVE PARAMETERS:
           alpha: Weight for W (WUE) in J = α·W + β·E + γ·C
           beta:  Weight for E (PUE-1) in J
           gamma: Weight for C (cooling power) in J
@@ -326,7 +327,7 @@ class DataCentreEnv(gym.Env):
         else:
             self._carbon_norm_max = 150.0 * float(self._carbon_intensity_by_hour.max()) * (INTERVAL_MIN / 60)
 
-        # PATENT: Action = [chilled_water_temp 5–15°C, cooling_mode 0–3]
+        # Design: Action = [chilled_water_temp (range per physics version, CHILLED_WATER_ACTION_RANGE_C), cooling_mode 0–3]
         # Normalised to [0,1] for continuous control
         self.action_space = gym.spaces.Box(
             low=np.array([0.0, 0.0], dtype=np.float32),
@@ -372,7 +373,7 @@ class DataCentreEnv(gym.Env):
         DigitalTwin (src/digital_twin.py) -- this method no longer computes
         IT power, inlet/outlet temperature, COP/cooling power, or water
         consumption itself. Uses the PINN for outlet/water/PUE when
-        provided (patent core, optional non-authoritative override) --
+        provided (core design, optional non-authoritative override) --
         the twin still runs either way, since it also owns actuator state
         (chilled-water rate limiting) and carbon accounting.
         """
@@ -584,7 +585,7 @@ class DataCentreEnv(gym.Env):
         self._prev_executed = a_x.astype(np.float32)
 
         # =====================================================================
-        # PATENT CORE: Reward = -J = -(α·W + β·E + γ·C)
+        # Core design: Reward = -J = -(α·W + β·E + γ·C)
         # W = WUE (normalised), E = (PUE-1) (normalised), C = cooling power (norm)
         # Minimising J is equivalent to maximising -J
         # =====================================================================
@@ -596,7 +597,7 @@ class DataCentreEnv(gym.Env):
         J = self._alpha * wue_norm + self._beta * pue_norm + self._gamma * carbon_norm
         reward = -J
 
-        # PATENT: Safety penalty. v1: any breach of THE SafetyEnvelope (inlet, outlet, PUE) costs a flat 2.0;
+        # Design: Safety penalty. v1: any breach of THE SafetyEnvelope (inlet, outlet, PUE) costs a flat 2.0;
         # legacy-0: outlet only (frozen).
         if self.safety_violations_of(self._state, legacy=not self._v1):
             reward -= 2.0
