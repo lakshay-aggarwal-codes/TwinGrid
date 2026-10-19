@@ -869,3 +869,22 @@ def test_framework_files_do_not_read_the_clock_inside_results_or_reports():
     for name in ("toy.py", "report.py", "canonical.py"):
         source = (ROOT / "src/repro" / name).read_text()
         assert not any(w in source for w in ("datetime", "time.time", "perf_counter", "os.environ", "getpid"))
+
+
+def test_generated_report_has_no_trailing_whitespace_and_shipped_runs_match_it():
+    """Task 21: the pre-commit trailing-whitespace hook strips line-end spaces from a committed REPORT.md, so a
+    generator that emits them makes every committed run fail ``repro verify`` ("differs from the regenerated version")."""
+    import json
+    from pathlib import Path
+
+    from src.repro import report as _report
+
+    root = Path(__file__).resolve().parents[1]
+    runs = sorted((root / "reports" / "runs").glob("*/results.json"))
+    assert runs, "no stored runs found to compare against"
+    for results_path in runs:
+        results = json.loads(results_path.read_bytes())
+        text = _report.render_report(results)
+        assert all(line == line.rstrip() for line in text.splitlines()), results_path.parent.name
+        on_disk = (results_path.parent / "REPORT.md").read_bytes().replace(b"\r\n", b"\n").decode("utf-8")
+        assert on_disk == text, f"{results_path.parent.name}/REPORT.md differs from the regenerated version"
