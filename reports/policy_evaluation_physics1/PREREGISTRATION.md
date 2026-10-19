@@ -39,11 +39,12 @@ Primary: `total_reward`. Secondary: `energy_kwh`, `water_L`, `carbon_gco2`, `mea
 | `outlet_violation_steps` | lower | Steps with outlet temperature > 45.0 C |
 | `inlet_over_max_steps` | lower | Steps with inlet temperature > 27.0 C |
 | `inlet_under_min_steps` | lower | Steps with inlet temperature < 18.0 C |
+| `pue_over_max_steps` | lower | Steps with PUE > 2 (the safety envelope's PUE limit; a NaN PUE counts) [amendment A2] |
 
 ## Outcome rules (PROPOSED in the roadmap; frozen here)
 
-- **A**: Continue under governance: for BOTH the rule baseline and the best constant, (1) the t-based 95% CI of the paired primary-metric difference across TRAINING SEEDS excludes zero in PPO's favour, (2) the same holds across test scenarios for the validation-selected candidate, (3) PPO's mean advantage is positive in every test family, (4) the selected candidate has ZERO outlet-over-limit, inlet-over-max and inlet-under-min steps on the test set (absolute; amendment A1, see docs/audit), (5) no secondary metric is worse by more than the secondary tolerance. Only supports 'simulator-validated candidate'.
-- **C**: Replace with a simpler controller: the rule baseline or the best constant, if it has zero outlet-over-limit, inlet-over-max and inlet-under-min steps on the test set (amendment A1) and PPO's mean primary-metric advantage over it is at most the primary tolerance (including the case where PPO is worse). Checked before B.
+- **A**: Continue under governance: for BOTH the rule baseline and the best constant, (1) the t-based 95% CI of the paired primary-metric difference across TRAINING SEEDS excludes zero in PPO's favour, (2) the same holds across test scenarios for the validation-selected candidate, (3) PPO's mean advantage is positive in every test family, (4) the selected candidate has ZERO outlet-over-limit, inlet-over-max, inlet-under-min and PUE-over-limit steps on the test set (absolute; amendments A1 and A2, see docs/audit), (5) no secondary metric is worse by more than the secondary tolerance. Only supports 'simulator-validated candidate'.
+- **C**: Replace with a simpler controller: the rule baseline or the best constant, if it has zero outlet-over-limit, inlet-over-max, inlet-under-min and PUE-over-limit steps on the test set (amendments A1 and A2) and PPO's mean primary-metric advantage over it is at most the primary tolerance (including the case where PPO is worse). Checked before B.
 - **B**: Offline research module only: PPO is not shown to be better than simple controllers, and not shown to be equal.
 
 Tolerances: primary 1% of the simpler controller's |mean reward|; secondary 2%.
