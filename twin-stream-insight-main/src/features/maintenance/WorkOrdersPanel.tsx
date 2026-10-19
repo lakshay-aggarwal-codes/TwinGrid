@@ -46,7 +46,7 @@ function OrderRow({ o, canWrite }: { o: WorkOrder; canWrite: boolean }) {
         </div>
       )}
       {error && (
-        <p role="alert" className="text-destructive" data-testid={`order-${o.id}-error`}>{error}</p>
+        <p role="alert" className="text-destructive-text" data-testid={`order-${o.id}-error`}>{error}</p>
       )}
     </li>
   );

@@ -57,7 +57,7 @@ export function AnomalyGauge({ status }: Props) {
             strokeWidth={12}
             strokeLinecap="round"
             strokeDasharray={view.kind === 'anomalous' ? '10 4' : undefined}
-            className={view.kind === 'anomalous' ? 'text-destructive' : 'text-primary'}
+            className={view.kind === 'anomalous' ? 'text-destructive-text' : 'text-primary'}
           />
         )}
         {marker && <line data-testid="threshold-marker" x1={marker.a.x} y1={marker.a.y} x2={marker.b.x} y2={marker.b.y} stroke="currentColor" strokeWidth={3} className="text-foreground" />}

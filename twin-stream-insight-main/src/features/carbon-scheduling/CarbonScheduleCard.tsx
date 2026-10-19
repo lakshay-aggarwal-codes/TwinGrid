@@ -44,12 +44,12 @@ export default function CarbonScheduleCard() {
         <div className="space-y-1">
           <label htmlFor={durId} className="block text-xs text-foreground">Run length (hours, 1–{MAX_DURATION_H})</label>
           <input id={durId} className={FIELD} inputMode="numeric" value={durText} onChange={(e) => setDurText(e.target.value)} aria-invalid={!dur.ok} aria-describedby={dur.ok ? undefined : `${durId}-err`} />
-          {!dur.ok && <p id={`${durId}-err`} role="alert" className="max-w-[14rem] text-[11px] text-destructive">{dur.error}</p>}
+          {!dur.ok && <p id={`${durId}-err`} role="alert" className="max-w-[14rem] text-[11px] text-destructive-text">{dur.error}</p>}
         </div>
         <div className="space-y-1">
           <label htmlFor={loadId} className="block text-xs text-foreground">Flexible load (kW, up to {MAX_LOAD_KW})</label>
           <input id={loadId} className={FIELD} inputMode="decimal" value={loadText} onChange={(e) => setLoadText(e.target.value)} aria-invalid={!load.ok} aria-describedby={load.ok ? undefined : `${loadId}-err`} />
-          {!load.ok && <p id={`${loadId}-err`} role="alert" className="max-w-[14rem] text-[11px] text-destructive">{load.error}</p>}
+          {!load.ok && <p id={`${loadId}-err`} role="alert" className="max-w-[14rem] text-[11px] text-destructive-text">{load.error}</p>}
         </div>
       </div>
       <div className="flex items-start gap-2">

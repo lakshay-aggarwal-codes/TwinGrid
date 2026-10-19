@@ -156,11 +156,14 @@ describe("What-if lab", () => {
   it("copies a link that reopens the same scenario", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    // The link is built from the browser address (window.location), which MemoryRouter does not change: set it as the app would have it.
+    window.history.replaceState(null, "", "/whatif-lab");
     renderAt("/whatif-lab?load=80");
     await screen.findByTestId("lab-delta-cards");
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(writeText).toHaveBeenCalled());
-    expect(String(writeText.mock.calls[0][0])).toMatch(/\/whatif-lab\?load=80$/);
+    // The link carries every scenario parameter (not only the one that changed), so it reopens the same scenario.
+    expect(String(writeText.mock.calls[0][0])).toMatch(/\/whatif-lab\?load=80&amb=22&set=7&mode=auto$/);
   });
 
   it("the sensitivity sweep runs only on request, then shows a tornado sorted by swing, labelled as an estimate", async () => {

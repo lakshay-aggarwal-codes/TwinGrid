@@ -127,7 +127,7 @@ export function ReportDialog({ report: generated, onClose }: ReportDialogProps) 
               )}
             </div>
             {esg.status === "error" && (
-              <p role="alert" data-testid="esg-error" className="text-xs text-destructive">
+              <p role="alert" data-testid="esg-error" className="text-xs text-destructive-text">
                 ESG report download failed: {esg.message}
               </p>
             )}

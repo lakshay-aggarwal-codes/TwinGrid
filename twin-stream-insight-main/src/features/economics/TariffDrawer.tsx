@@ -77,7 +77,7 @@ export function TariffDrawer({ open, onOpenChange, tariff, storageOk, onSave, on
                   onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
                 />
                 <p id={`${id}-hint`} className="text-[11px] text-muted-foreground">{f.hint}</p>
-                {err && <p id={`${id}-err`} role="alert" className="text-[11px] font-medium text-destructive">Error: {err}</p>}
+                {err && <p id={`${id}-err`} role="alert" className="text-[11px] font-medium text-destructive-text">Error: {err}</p>}
               </div>
             );
           })}

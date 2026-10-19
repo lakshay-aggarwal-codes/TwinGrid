@@ -30,7 +30,7 @@ function Field({ id, label, error, children }: { id: string; label: string; erro
       <label htmlFor={id} className="text-xs font-medium text-foreground">{label}</label>
       {children}
       {error && (
-        <p id={`${id}-err`} role="alert" className="text-[11px] text-destructive">{error}</p>
+        <p id={`${id}-err`} role="alert" className="text-[11px] text-destructive-text">{error}</p>
       )}
     </div>
   );
@@ -164,7 +164,7 @@ export function CreateOrderForm({ form, onChange, canCreate, onCreated }: Props)
             </p>
           )}
           {failure && (
-            <p role="alert" className="text-xs text-destructive" data-testid="create-failed">{failure}</p>
+            <p role="alert" className="text-xs text-destructive-text" data-testid="create-failed">{failure}</p>
           )}
         </div>
       </form>

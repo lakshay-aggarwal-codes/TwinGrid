@@ -174,7 +174,7 @@ function Body({ rec, ctx, role }: { rec: Recommendation; ctx: Context; role: str
           <div aria-live="polite" className="min-h-[1rem] text-xs">
             {message ? <span role="status">{message}</span> : null}
             {error ? (
-              <span role="alert" className="text-destructive">
+              <span role="alert" className="text-destructive-text">
                 {error}
               </span>
             ) : null}

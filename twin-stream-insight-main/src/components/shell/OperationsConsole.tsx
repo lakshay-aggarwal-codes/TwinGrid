@@ -242,7 +242,7 @@ export function OperationsConsole({
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Reward</span>{optimize.summary.total_reward.toFixed(1)}</div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Safety Violations</span>
-                  <span className={optimize.summary.safety_violations > 0 ? "text-destructive" : "text-success"}>
+                  <span className={optimize.summary.safety_violations > 0 ? "text-destructive-text" : "text-success"}>
                     {optimize.summary.safety_violations}
                   </span>
                 </div>

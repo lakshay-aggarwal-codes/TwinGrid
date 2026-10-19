@@ -88,7 +88,7 @@ function Row({ p, role, username }: { p: Proposal; role: string | null; username
             </>
           )}
           {error ? (
-            <p role="alert" className="text-xs text-destructive">
+            <p role="alert" className="text-xs text-destructive-text">
               {error}
             </p>
           ) : null}

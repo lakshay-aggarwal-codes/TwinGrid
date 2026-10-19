@@ -93,7 +93,7 @@ export function LoginScreen() {
 
         {/* A failed sign-in attempt, tied to both fields. */}
         {error && (
-          <p id="login-error" role="alert" className="text-sm text-destructive">
+          <p id="login-error" role="alert" className="text-sm text-destructive-text">
             {error}
           </p>
         )}

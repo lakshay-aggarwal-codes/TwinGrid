@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Clock } from "lucide-react";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { groupItems, resolveRecents, type PaletteItem } from "./items";
+import { groupItems, paletteFilter, resolveRecents, type PaletteItem } from "./items";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -37,10 +37,15 @@ export function CommandPalette({ open, onOpenChange, items, recentIds, onRun, so
     if (!next) setQuery("");
     onOpenChange(next);
   };
+  // The host also closes the palette directly (a row was run), which does not pass through handleOpenChange. Without
+  // this, the previous search text survived and hid every other command the next time the palette opened.
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
   const recents = query.trim() === "" ? resolveRecents(recentIds, items) : [];
 
   return (
-    <CommandDialog open={open} onOpenChange={handleOpenChange}>
+    <CommandDialog open={open} onOpenChange={handleOpenChange} commandProps={{ filter: paletteFilter }}>
       <DialogTitle className="sr-only">Command palette</DialogTitle>
       <DialogDescription className="sr-only">
         Type to search pages, scenarios, racks, alerts and actions. Use the arrow keys and Enter to run one. Escape closes.

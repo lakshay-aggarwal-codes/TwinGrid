@@ -51,7 +51,7 @@ function UserRow({ u }: { u: User }) {
           </span>
         )}
         {done && <span role="status" className="mt-1 block text-muted-foreground" data-testid={`user-${u.id}-done`}>{done}</span>}
-        {error && <span role="alert" className="mt-1 block text-destructive" data-testid={`user-${u.id}-error`}>{error}</span>}
+        {error && <span role="alert" className="mt-1 block text-destructive-text" data-testid={`user-${u.id}-error`}>{error}</span>}
       </td>
     </tr>
   );
