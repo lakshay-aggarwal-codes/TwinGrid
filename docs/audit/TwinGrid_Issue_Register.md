@@ -91,3 +91,7 @@ Forecaster has no baseline; anomaly-threshold leakage; missing `data/cleaned|fea
 
 ### TG-A-20 — `npm run typecheck` fails on the uploaded frontend (16 errors, 12 files) and 10 vitest tests fail  (Medium, CONFIRMED-OPEN, pre-existing)
 - Identical on the pristine upload and after Task 14. Errors are union-narrowing problems in `admin-console`, `capacity`, `carbon-scheduling`, `command-palette`, `economics`, `executive-dashboard`, `maintenance` (e.g. `Property 'error' does not exist on type 'Parsed<string>'`). Failing tests: `registry.test.ts`, `bundleScan.test.ts`, `TwinHeader.test.tsx`, `CommandPalette.test.tsx`, `executive-dashboard/components.test.tsx`, `FacilityInspector.test.tsx`, `LabPage.test.tsx`. `npm run verify` cannot pass today.
+
+### TG-A-21 — No way to put two policies side by side with the hard constraints first  (Medium, FIXED by Task 16 as a feature)
+- The evaluation screen listed all policies in one table and the constraint panel (Task 14) was separate; a reader had to cross-reference to see why a candidate was or was not eligible. `PolicyComparison` adds the head-to-head view described in `PROVENANCE_AND_FRESHNESS.md`.
+- Open: cross-report comparison (e.g. legacy-0 vs physics-1 baselines) is deliberately NOT offered: it would need equal scenario set, executed physics and carbon basis, and refuse otherwise. Run-registry drill-down (config/seeds of a `reports/runs/*` run) is not linked from the evaluation screen: the evaluation payload carries no run id for it.
