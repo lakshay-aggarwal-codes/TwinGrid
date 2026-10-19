@@ -1,8 +1,10 @@
-import { PREDICTION_LABEL, effectRows, type Effect } from "./model";
+import { PREDICTION_LABEL, effectRows, setpointCheckOf, setpointNotices, type Effect } from "./model";
 
 /** Current settings vs proposed settings, from the twin. Direction is written as a word, never shown by colour alone. */
 export function EffectTable({ effect, caption }: { effect: Effect; caption: string }) {
   const rows = effectRows(effect);
+  const check = setpointCheckOf(effect);
+  const notices = setpointNotices(check);
   return (
     <div className="space-y-1" data-testid="effect-table">
       <table className="w-full text-xs">
@@ -39,7 +41,13 @@ export function EffectTable({ effect, caption }: { effect: Effect; caption: stri
           ? `The simulated outlet stays within the ${effect.outlet_limit_C} °C limit.`
           : `The simulated outlet exceeds the ${effect.outlet_limit_C} °C limit: this setting cannot be proposed.`}
         {effect.carbon_data_is_real ? "" : " Carbon uses a flat fallback intensity, not a real grid series."}
+        {check?.physics ? ` Simulated under physics ${check.physics}.` : ""}
       </p>
+      {notices.map((n) => (
+        <p key={n} className="text-[11px] font-medium text-foreground" data-testid="setpoint-notice">
+          {n}
+        </p>
+      ))}
     </div>
   );
 }

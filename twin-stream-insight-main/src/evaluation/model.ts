@@ -205,6 +205,11 @@ function row(id: string, label: string, value: string | undefined | null): Ident
     : { id, label, value, reported: true };
 }
 
+/** Like `row`, but a missing value reads `missingText` (more specific than "not provided") and stays `reported: false`. */
+function rowOr(id: string, label: string, value: string | null, missingText: string): IdentityRow {
+  return value === null || value === '' ? { id, label, value: missingText, reported: false } : { id, label, value, reported: true };
+}
+
 /**
  * Two ids are named apart on purpose (G-EVAL.md): this is the *evaluation* scenario set (a hash of the pre-registered
  * evaluation episodes), not the BC-09 *scenario registry* set shown on run pages.
@@ -213,14 +218,127 @@ export function identityRows(r: EvaluationResult): IdentityRow[] {
   const sets = r.scenario_sets ?? {};
   const setText = (k: string) => (sets[k] ? `${sets[k].id} (n=${sets[k].n})` : null);
   return [
+    row('evaluation-id', 'Evaluation id', r.evaluation_id),
     row('evaluation-scenario-set', 'Evaluation scenario set', r.scenario_set_id),
     row('validation-set', 'Validation episodes', setText('validation')),
     row('test-set', 'Test episodes', setText('test')),
     row('prereg', 'Pre-registration hash (sha256)', r.preregistration_sha256),
-    row('physics', 'Physics version', r.physics_version),
+    rowOr('physics-executed', 'Physics executed', r.physics_version_executed === undefined ? null : physicsExecutedText(r), PHYSICS_EXECUTED_NOT_REPORTED),
+    row('physics', 'Physics label (as registered)', r.physics_version),
+    rowOr('carbon', 'Carbon signal', r.carbon?.is_real === undefined ? null : carbonText(r.carbon), 'not reported'),
     row('scenario-inputs', 'Scenario inputs', r.scenario_inputs),
     // The backend sends no dataset identity for evaluations; the row stays visible as "not provided".
     row('dataset', 'Dataset identity', null),
     row('generated', 'Report generated (server time, UTC)', r.generated_at_utc),
   ];
+}
+
+
+// ------------------------------------------------------------------------------------------------ physics and carbon
+
+export const PHYSICS_EXECUTED_NOT_REPORTED = 'not reported (written before the executed physics was recorded)';
+
+/** The physics the environment ran. When the registered label says something else, both are shown, never merged. */
+export function physicsExecutedText(r: EvaluationResult): string {
+  const executed = r.physics_version_executed;
+  if (executed === undefined || executed === '') return PHYSICS_EXECUTED_NOT_REPORTED;
+  return r.physics_version !== undefined && r.physics_version !== executed ? `${executed} (registered as "${r.physics_version}")` : executed;
+}
+
+/** Measured / assumed carbon, from the backend's own flags. Absent flags are "not reported", never "real". */
+export function carbonText(carbon: EvaluationResult['carbon']): string {
+  if (carbon === undefined || carbon.is_real === undefined) return 'not reported';
+  if (carbon.is_real) return 'Measured series (reported as real by the backend)';
+  return carbon.flat_curve === true ? 'Assumed: flat constant, not a real grid series' : 'Assumed: fallback values, not a real grid series';
+}
+
+// ------------------------------------------------------------------------------------------------ hard constraints
+
+/** The envelope limits the harness can count, in display order. Unknown extra ids the backend counts are appended. */
+export const KNOWN_HARD_CONSTRAINTS: ReadonlyArray<{ readonly id: string; readonly label: string }> = [
+  { id: 'outlet_violation_steps', label: 'Outlet over limit' },
+  { id: 'inlet_over_max_steps', label: 'Inlet over maximum' },
+  { id: 'inlet_under_min_steps', label: 'Inlet under minimum' },
+  { id: 'pue_over_max_steps', label: 'PUE over maximum' },
+];
+
+export type ConstraintState = 'violated' | 'none' | 'not_measured';
+export type PolicyConstraintState = 'violated' | 'clean' | 'partial';
+
+export interface ConstraintCell {
+  readonly id: string;
+  readonly state: ConstraintState;
+  /** Mean violating steps per test episode, as sent; null when not measured. */
+  readonly value: number | null;
+  readonly text: string;
+}
+
+export interface ConstraintRow {
+  readonly policyId: string;
+  /** `clean` only when EVERY limit was measured and is zero; unmeasured limits give `partial`, never `clean`. */
+  readonly state: PolicyConstraintState;
+  readonly summary: string;
+  readonly cells: readonly ConstraintCell[];
+}
+
+export interface HardConstraintView {
+  readonly limits: ReadonlyArray<{ readonly id: string; readonly label: string }>;
+  readonly rows: readonly ConstraintRow[];
+  readonly violatingPolicies: number;
+  readonly headline: string;
+  /** The backend's own note, verbatim, when it sent one. */
+  readonly backendNote: string | null;
+  /** Set when the backend says no constant set-point satisfied the envelope on validation. */
+  readonly comparatorCaveat: string | null;
+}
+
+export const COMPARATOR_CAVEAT =
+  'No constant set-point satisfied every hard limit on the validation episodes, so the best_constant comparator is the highest-reward constant even though it violates the envelope.';
+
+/**
+ * Hard constraints are separate from the reward and never traded against it. A mean of 0 steps per episode means no
+ * episode violated the limit; any value above 0 means at least one did. A limit that was not counted is "not
+ * measured": it is NOT zero and it can never produce a clean status.
+ */
+export function hardConstraintView(r: EvaluationResult): HardConstraintView {
+  const notMeasured = new Set(r.hard_constraints?.not_measured ?? []);
+  const extra = (r.hard_constraints?.counted ?? []).filter((id) => !KNOWN_HARD_CONSTRAINTS.some((k) => k.id === id));
+  const limits = [...KNOWN_HARD_CONSTRAINTS, ...extra.map((id) => ({ id, label: id }))];
+
+  const rows: ConstraintRow[] = r.policies.map((p) => {
+    const cells: ConstraintCell[] = limits.map(({ id }) => {
+      const v = p.metrics[id];
+      if (typeof v !== 'number' || notMeasured.has(id)) return { id, state: 'not_measured', value: null, text: 'not measured' };
+      return v > 0 ? { id, state: 'violated', value: v, text: `${formatMetric(v)} steps/episode — violated` } : { id, state: 'none', value: v, text: '0 — none' };
+    });
+    const violated = cells.filter((c) => c.state === 'violated').length;
+    const unmeasured = cells.filter((c) => c.state === 'not_measured').length;
+    const state: PolicyConstraintState = violated > 0 ? 'violated' : unmeasured > 0 ? 'partial' : 'clean';
+    const summary =
+      state === 'violated'
+        ? `Violates ${violated} of ${cells.length} limits`
+        : state === 'partial'
+          ? `No violation in the ${cells.length - unmeasured} measured limits; ${unmeasured} not measured`
+          : 'No violation of any limit';
+    return { policyId: p.policy_id, state, summary, cells };
+  });
+
+  const violatingPolicies = rows.filter((x) => x.state === 'violated').length;
+  const anyUnmeasured = rows.some((x) => x.state === 'partial' || x.cells.some((c) => c.state === 'not_measured'));
+  const headline =
+    rows.length === 0
+      ? 'No policies reported, so no hard-constraint result is available.'
+      : violatingPolicies > 0
+        ? `Hard-constraint violations: ${violatingPolicies} of ${rows.length} policies violate at least one limit on the test episodes.`
+        : anyUnmeasured
+          ? 'No violations in the limits that were measured; some limits were not measured in this report (that is not the same as zero).'
+          : 'No policy violated any counted hard limit on the test episodes.';
+  return {
+    limits,
+    rows,
+    violatingPolicies,
+    headline,
+    backendNote: typeof r.hard_constraints?.note === 'string' && r.hard_constraints.note !== '' ? r.hard_constraints.note : null,
+    comparatorCaveat: r.selection?.best_constant_envelope_feasible === false ? COMPARATOR_CAVEAT : null,
+  };
 }

@@ -34,7 +34,7 @@ describe('evaluation contract (mutations fail with the path)', () => {
   it.each([
     ['decision.outcome missing', (r: Record<string, any>) => delete r.decision.outcome, 'decision.outcome'],
     ['decision.claim_allowed missing', (r: Record<string, any>) => delete r.decision.claim_allowed, 'decision.claim_allowed'],
-    ['schema_version is not 1', (r: Record<string, any>) => (r.schema_version = 2), 'schema_version'],
+    ['schema_version is neither 1 nor 2', (r: Record<string, any>) => (r.schema_version = 3), 'schema_version'],
     ['policies is not an array', (r: Record<string, any>) => (r.policies = {}), 'policies'],
     ['a metric is a string', (r: Record<string, any>) => (r.policies[0].metrics.mean_pue = '1.2'), 'policies[0].metrics.mean_pue'],
     ['a metric is not finite', (r: Record<string, any>) => (r.policies[0].metrics.mean_pue = null), 'policies[0].metrics.mean_pue'],
@@ -43,6 +43,27 @@ describe('evaluation contract (mutations fail with the path)', () => {
     const r = mutate(fn);
     expect(isFailure(r)).toBe(true);
     if (isFailure(r)) expect(r.error.issues.map((i) => i.path)).toContain(path);
+  });
+
+  it('accepts schema_version 2 (A2) and reads the executed physics, hard_constraints and selection', () => {
+    const r = mutate((x) => {
+      x.schema_version = 2;
+      x.physics_version_executed = '1';
+      x.hard_constraints = { counted: ['pue_over_max_steps'], not_measured: [], note: null };
+      x.selection = { best_constant_envelope_feasible: false, extra: 1 };
+    });
+    expect(isSuccess(r)).toBe(true);
+    if (isSuccess(r)) {
+      expect(r.data.schema_version).toBe(2);
+      expect(r.data.physics_version_executed).toBe('1');
+      expect(r.data.hard_constraints?.counted).toEqual(['pue_over_max_steps']);
+      expect(r.data.selection?.best_constant_envelope_feasible).toBe(false);
+    }
+  });
+
+  it('a malformed hard_constraints block is a contract violation, not silently ignored', () => {
+    const r = mutate((x) => (x.hard_constraints = { counted: 'pue', not_measured: [] }));
+    expect(isFailure(r)).toBe(true);
   });
 
   it('does not invent values: ci_level and outcome_definitions stay absent when the backend omits them', () => {

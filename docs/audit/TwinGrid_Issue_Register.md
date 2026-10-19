@@ -77,3 +77,17 @@ Forecaster has no baseline; anomaly-threshold leakage; missing `data/cleaned|fea
 - Impact: "PID" is not an independent comparator today; the A/B/C decision only uses the rule and best constant, so Task 9 is not blocked.
 - Fix (Task 4b, done in code): `pid_target_inlet_C` is searched over the envelope's upper inlet limit minus (5, 3, 2, 1) C = (22, 24, 25, 26) C; `TUNER_VERSION` `/3` (older configs are stale); candidates, the selected target and the search space are recorded; ties resolve to the smaller target. Sandbox scratch run (Linux, validation only, not shipped): PID selected target 26 C, kp=1, validation reward -54.199 vs rule -54.809; 141 of 240 candidates feasible (integral gain > 0 violated the envelope at warmer targets). The search space is not part of the registered protocol hash, so no re-registration is needed; the owner must re-tune and re-run (`baselines-v3`).
 - Caveat that remains: the PID uses the production MODE rule, so it stays ~18 reward behind the best constant (-36.32); it is a set-point controller, not a competitor for the constant's mode choice.
+
+### TG-A-17 — Frontend rejected schema-2 evaluation reports and ignored what they say  (High, FIXED by Task 14, confidence high)
+- `src/evaluation/schema.ts` accepted `schema_version` 1 only, while the API now serves 1 and 2 (amendment A2): the first new report would have shown as a contract violation. The UI also ignored `hard_constraints` and `selection`, and the API never passed `physics_version_executed`; hard-constraint metrics were plain table columns in policy order.
+- Fixed in `twin-stream-insight-main/src/evaluation/*`, `src/components/evaluation/*` and `api/services/evaluation_service.py` (additive passthrough of `physics_version_executed`).
+
+### TG-A-18 — Recommendation form hardcoded the legacy 5..15 C and showed no provenance  (High, FIXED by Task 14, confidence high)
+- `optimizer-approvals/model.ts::setpointProblem` rejected any physics-1 recommendation (16..25 C) with "must be between 5 and 15", blocking the sandbox/propose flow for the baseline's own output; the card had no provenance strip, physics or evidence note.
+- Fixed with a range derived from `predicted.setpoint_check` (mirrors the server's union), a strip, an evidence note and out-of-range notices.
+
+### TG-A-19 — The legacy 5..15 C assumption remains elsewhere in the frontend  (Medium, CONFIRMED-OPEN)
+- `src/features/what-if-lab/model.ts` (`setpointC: { min: 5, max: 15 }`) and the sidebar "Chilled Water Setpoint" slider. Not changed in Task 14 (scope). Follow-up: one shared physics-derived accepted range fed by the backend.
+
+### TG-A-20 — `npm run typecheck` fails on the uploaded frontend (16 errors, 12 files) and 10 vitest tests fail  (Medium, CONFIRMED-OPEN, pre-existing)
+- Identical on the pristine upload and after Task 14. Errors are union-narrowing problems in `admin-console`, `capacity`, `carbon-scheduling`, `command-palette`, `economics`, `executive-dashboard`, `maintenance` (e.g. `Property 'error' does not exist on type 'Parsed<string>'`). Failing tests: `registry.test.ts`, `bundleScan.test.ts`, `TwinHeader.test.tsx`, `CommandPalette.test.tsx`, `executive-dashboard/components.test.tsx`, `FacilityInspector.test.tsx`, `LabPage.test.tsx`. `npm run verify` cannot pass today.

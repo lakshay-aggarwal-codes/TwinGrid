@@ -284,3 +284,48 @@ describe("shadow-mode comparison", () => {
     expect(await screen.findByText(/there is no policy to shadow/)).toBeInTheDocument();
   });
 });
+
+
+describe("provenance on the recommendation (Task 14)", () => {
+  const P1 = { physics_version: "1", actuator_range_C: [16, 25], proposed_within_actuator_range: true, reference_within_actuator_range: false };
+
+  it("shows the simulator origin, the physics, the fallback-carbon flag and the evidence limit", async () => {
+    mocks.fetchRecommendation.mockResolvedValue({
+      ...RECOMMENDATION,
+      recommendation: { ...RECOMMENDATION.recommendation, selected: { ...RECOMMENDATION.recommendation.selected!, chilled_water_temp_C: 22.75 } },
+      predicted: { ...EFFECT, setpoint_check: P1 },
+    });
+    renderPage();
+    await screen.findByTestId("recommendation-source");
+    expect(document.querySelector("[data-provenance-badge]")).toHaveAttribute("data-provenance-badge", "simulated");
+    expect(document.querySelector('[data-flag="fallback"]')).not.toBeNull();
+    expect(screen.getByText(/not a test-set result and not measured on a real facility/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Simulated under physics 1/).length).toBeGreaterThan(0);
+  });
+
+  it("a physics-1 recommendation can be sandboxed: the input allows 22.75 C and the button is enabled", async () => {
+    mocks.fetchRecommendation.mockResolvedValue({
+      ...RECOMMENDATION,
+      recommendation: { ...RECOMMENDATION.recommendation, selected: { ...RECOMMENDATION.recommendation.selected!, chilled_water_temp_C: 22.75 } },
+      predicted: { ...EFFECT, setpoint_check: P1 },
+    });
+    renderPage();
+    await screen.findByTestId("recommendation-source");
+    expect(screen.getByText(/Chilled water \(5 to 25 °C\)/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Run in sandbox/ })).toBeEnabled();
+    expect(screen.queryByText(/must be between/)).toBeNull();
+  });
+
+  it("without a setpoint_check the legacy 5 to 15 form is unchanged (older backend)", async () => {
+    renderPage();
+    await screen.findByTestId("recommendation-source");
+    expect(screen.getByText(/Chilled water \(5 to 15 °C\)/)).toBeInTheDocument();
+  });
+
+  it("an out-of-range proposed set-point is flagged in words", async () => {
+    mocks.fetchRecommendation.mockResolvedValue({ ...RECOMMENDATION, predicted: { ...EFFECT, setpoint_check: { ...P1, proposed_within_actuator_range: false } } });
+    renderPage();
+    await screen.findByTestId("recommendation-source");
+    expect((await screen.findAllByTestId("setpoint-notice"))[0]).toHaveTextContent(/No baseline was evaluated there/);
+  });
+});

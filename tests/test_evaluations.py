@@ -181,6 +181,22 @@ def test_missing_decision_fields_stay_absent_not_defaulted(reports):
     assert item["outcome"] is None and item["claim_allowed"] is None
 
 
+# ---- executed physics (Task 14) -------------------------------------------------------------------------------
+def test_executed_physics_is_passed_through_verbatim_and_stays_absent_for_old_reports(reports):
+    """The registered label (``physics_version``) and the physics the environment ran can differ; the UI needs both."""
+    assert "physics_version_executed" not in ES.get_evaluation(
+        REAL_ID
+    )  # the committed legacy report predates the field
+    raw = _results(reports)
+    raw["physics_version_executed"] = "legacy-0"
+    _write(reports, "executed_0000000000000000", raw)
+    detail = ES.get_evaluation("executed_0000000000000000")
+    assert detail["physics_version_executed"] == "legacy-0"
+    assert (
+        detail["physics_version"] == raw["physics_version"]
+    )  # the label is untouched, never replaced by the executed one
+
+
 # ---- pre-registration binding ----------------------------------------------------------------------------------
 def test_prereg_text_withheld_when_hash_differs(reports):
     raw = _results(reports)
