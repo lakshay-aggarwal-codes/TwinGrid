@@ -4,7 +4,7 @@
 
 This project has **two separate build/deploy paths that do not affect each other**:
 
-1. **Railway (production, live today)** — builds via **Nixpacks** (`nixpacks.toml`, `Procfile`), *not* the Dockerfile. This is what actually serves `https://function-bun-production-6ce5.up.railway.app`.
+1. **Railway (configured production path; no live deployment is confirmed in this repository, see `docs/CLAIMS.md` C-34)** — builds via **Nixpacks** (`nixpacks.toml`, `Procfile`), *not* the Dockerfile. An earlier note names `https://function-bun-production-6ce5.up.railway.app` as its URL; that was not checked for this review.
 2. **Docker / `docker-compose`** (Phase 14) — used for local development (`docker-compose up`) and CI's build-verification step (Phase 15). Not currently used by Railway.
 
 Editing the Dockerfile does **not** change the live Railway deployment, and editing `nixpacks.toml`/`Procfile` does **not** change local Docker behavior. The three files are kept in agreement on **one start command** (a test enforces it): `python -m api.startup_checks`, then `alembic upgrade head` unless `RUN_MIGRATIONS=0`, then `exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}`. The port is `$PORT` when the platform injects one, otherwise 8000 (the Dockerfile sets `PORT=8000` and `EXPOSE 8000`). Switching Railway to build from the Dockerfile (a `railway.json` with `"builder": "DOCKERFILE"`) would now run the same command, but still needs its own validation pass, not a silent switch.
@@ -16,7 +16,7 @@ Releases (tagged image, frontend bundle, smoke test, rollback) are described in 
 | Environment | Backend | Frontend | Database | Notes |
 |---|---|---|---|---|
 | **Local dev** | `docker-compose up` (Phase 14) or `uvicorn api.main:app --reload` | `npm run dev` in `twin-stream-insight-main/` | Local Postgres (compose) or SQLite-free local Postgres install | Use `.env` copied from `.env.example` |
-| **Production** | Railway (Nixpacks) | Vercel/Lovable | Railway-managed Postgres | Live URLs in the patent PDF |
+| **Production** (configured; no deployment is confirmed in this repository) | Railway (Nixpacks) | Vercel/Lovable | Railway-managed Postgres | No live URL is recorded here |
 | **Staging (recommended, not yet set up)** | Railway — create a second Railway *environment* in the same project, fed from a `staging` branch | Vercel preview deployments (automatic per-branch, free) | Separate Railway Postgres instance | See "Adding staging" below |
 
 ## Required environment variables (consolidated from every phase)
@@ -33,7 +33,7 @@ Releases (tagged image, frontend bundle, smoke test, rollback) are described in 
 | `VITE_API_BASE_URL` | Frontend build | Yes, frontend only (build time) | Backend URL; `npm run build` fails without it (`vite.config.ts`). Not secret. The release workflow reads it from the repository variable `RELEASE_VITE_API_BASE_URL`. Demo credentials are not baked into production bundles. |
 | `RUN_MIGRATIONS` | Task 8 | No (default `1`) | `0` skips `alembic upgrade head` at start, e.g. when migrations run as a separate release step |
 
-## Deploying the backend (Railway, current production path)
+## Deploying the backend (Railway, configured production path)
 
 1. Push to the branch Railway is watching (currently the default branch) — Railway auto-builds via Nixpacks.
 2. Set the required env vars above in Railway's dashboard (Variables tab), not in code.

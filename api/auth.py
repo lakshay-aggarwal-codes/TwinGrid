@@ -42,7 +42,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.rate_limit import limiter
@@ -251,6 +251,10 @@ async def revoke_descendants_if_reused(session: AsyncSession, plaintext: str) ->
     return True
 
 
+class RefreshTokenAlreadyUsed(Exception):
+    """The refresh token was claimed by another request first (a replay or a concurrent double use)."""
+
+
 async def rotate_refresh_token(session: AsyncSession, old_token: RefreshToken) -> str:
     """Revoke ``old_token`` and issue a fresh one for the same user.
 
@@ -258,14 +262,29 @@ async def rotate_refresh_token(session: AsyncSession, old_token: RefreshToken) -
     one fails as soon as the legitimate client has used it once, which is
     the main defence an opaque, DB-backed token has over a bare long-lived
     JWT.
+
+    Task 18 (TG-SEC-01): the old token is CLAIMED with one conditional UPDATE (``WHERE revoked_at IS NULL``)
+    before anything is issued. The previous read-then-write let two simultaneous requests carrying the same token both
+    pass the "still active" check and each mint a successor, forking the chain into two live tokens, one of which
+    reuse detection (``revoke_descendants_if_reused``) could never reach. Now exactly one request wins the claim; the
+    other gets ``RefreshTokenAlreadyUsed`` and no token. The database serialises the two UPDATEs on the row.
     """
+    claimed_at = datetime.now(timezone.utc)
+    claimed = await session.execute(
+        update(RefreshToken)
+        .where(RefreshToken.id == old_token.id, RefreshToken.revoked_at.is_(None))
+        .values(revoked_at=claimed_at)
+        .execution_options(synchronize_session=False)
+    )
+    if claimed.rowcount != 1:
+        raise RefreshTokenAlreadyUsed()
+    old_token.revoked_at = claimed_at  # keep the session's copy in step with the row (the UPDATE bypassed the ORM)
     new_plaintext = await issue_refresh_token(session, old_token.user_id)
     new_result = await session.execute(
         select(RefreshToken).where(RefreshToken.token_hash == _hash_refresh_token(new_plaintext))
     )
     new_token = new_result.scalar_one()
-    old_token.revoked_at = datetime.now(timezone.utc)
-    old_token.replaced_by_id = new_token.id
+    old_token.replaced_by_id = new_token.id  # this request owns the claimed row, so a plain ORM write is safe
     await session.flush()
     return new_plaintext
 
@@ -528,31 +547,41 @@ async def refresh(
     module docstring's "Refresh tokens" section)."""
     existing = await get_active_refresh_token(session, body.refresh_token)
     if existing is None:
-        owner_id = await _refresh_token_owner_id(session, body.refresh_token)
-        if await revoke_descendants_if_reused(session, body.refresh_token):
-            # get_db rolls back when the request raises, which would undo the
-            # revocation -- commit it explicitly before responding 401.
-            await session.commit()
-            owner = await session.get(User, owner_id) if owner_id is not None else None
-            await audit_service.log_action_best_effort(
-                action="refresh_reuse_detected",
-                user=owner,
-                resource_type="user",
-                resource_id=owner_id,
-                details={"descendants_revoked": True},
-                request=request,
-                outcome=audit_service.AUDIT_OUTCOME_DENIED,
-            )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid, expired, or already-used refresh token",
-        )
+        await _reject_refresh(session, request, body.refresh_token)
     user = await session.get(User, existing.user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    new_refresh_token = await rotate_refresh_token(session, existing)
+    try:
+        new_refresh_token = await rotate_refresh_token(session, existing)
+    except RefreshTokenAlreadyUsed:
+        # Lost the race to another request carrying the same token: treat it exactly like a replay.
+        await session.rollback()
+        await _reject_refresh(session, request, body.refresh_token)
     access_token = create_access_token(subject=user.id, role=user.role)
     return TokenResponse(access_token=access_token, refresh_token=new_refresh_token, role=user.role)
+
+
+async def _reject_refresh(session: AsyncSession, request: Request, plaintext: str) -> None:
+    """401 for an unusable refresh token; if it was a rotated one being replayed, revoke its descendants first."""
+    owner_id = await _refresh_token_owner_id(session, plaintext)
+    if await revoke_descendants_if_reused(session, plaintext):
+        # get_db rolls back when the request raises, which would undo the
+        # revocation -- commit it explicitly before responding 401.
+        await session.commit()
+        owner = await session.get(User, owner_id) if owner_id is not None else None
+        await audit_service.log_action_best_effort(
+            action="refresh_reuse_detected",
+            user=owner,
+            resource_type="user",
+            resource_id=owner_id,
+            details={"descendants_revoked": True},
+            request=request,
+            outcome=audit_service.AUDIT_OUTCOME_DENIED,
+        )
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid, expired, or already-used refresh token",
+    )
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

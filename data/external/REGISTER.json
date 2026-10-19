@@ -165,7 +165,7 @@
         "Only the baseline annual table is read. src/data_generator.py uses one static, min-max-normalised bws_score per country as the water-stress baseline of generated data, combined with a synthetic seasonal and drought overlay, when data/cleaned/water_stress_aqueduct.csv exists"
       ],
       "prohibited_claims": [
-        "A water-stress input that drives cooling-mode arbitration or supports patent Claim 8: the drought override acts on whatever water_stress value it is given, and Aqueduct supplies only a static country baseline",
+        "A water-stress input that drives cooling-mode arbitration or supports the drought-override rule: the drought override acts on whatever water_stress value it is given, and Aqueduct supplies only a static country baseline",
         "Facility-level or basin-level water risk for a site",
         "Monthly, future or projected water risk (those tables are not read)",
         "Any licence, reuse or redistribution statement: no terms evidence is recorded (license_status is unverified) (the earlier manifest wording 'open data' is an unverified claim)"

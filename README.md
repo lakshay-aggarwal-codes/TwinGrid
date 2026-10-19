@@ -73,9 +73,19 @@ and `npm run dev` with `VITE_API_BASE_URL` set (see `twin-stream-insight-main/.e
 
 - The thermal forecaster: RMSE 0.523 °C, 30 minutes ahead, on held-out simulator data, with no baseline to compare against. [C-06]
 - The anomaly detector: F1 0.96, with a threshold tuned on the rows it is scored on. [C-07]
-- The PPO optimizer: the one scored policy was worse than the rule baseline; newer candidates are not evaluated. [C-08]
+- The PPO optimizer: scored once under the physics-1 protocol, outcome C, claim allowed: none. A fixed setting scored higher than every PPO seed, so the registered action is to prefer the simpler controller. [C-08]
 
 Read [`docs/model_cards/LIMITATIONS.md`](docs/model_cards/LIMITATIONS.md) before quoting any of these.
+
+## Limitations
+
+- **Simulated.** Every number comes from the project's own simulator; nothing is measured at a facility and no equipment is controlled. [C-35]
+- **Lumped model.** The physics is a lumped (whole-room) thermal and energy model, with no per-rack or per-aisle behaviour. [C-35]
+- **Assumed carbon.** Carbon is a flat 475 gCO2/kWh assumption, so carbon figures follow energy use, not a grid. [C-35]
+- **No calibration.** Parameters are published engineering values, not fitted to any facility. [C-35]
+- **Models.** Trained and scored on simulator data only; the forecaster has no baseline, the anomaly threshold saw its own test rows, and PPO did not beat a fixed setting. [C-35]
+
+Details: [`docs/model_cards/LIMITATIONS.md`](docs/model_cards/LIMITATIONS.md), [`docs/PHYSICS_V2.md`](docs/PHYSICS_V2.md).
 
 ## Engineering
 

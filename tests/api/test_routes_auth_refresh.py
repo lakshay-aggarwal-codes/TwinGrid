@@ -89,7 +89,9 @@ async def test_login_wrong_password_and_unknown_user_look_identical(client):
     wrong_pw = await client.post("/auth/login", json={"username": "alice", "password": "nope-nope-nope"})
     no_user = await client.post("/auth/login", json={"username": "ghost", "password": PASSWORD})
     assert wrong_pw.status_code == no_user.status_code == 401
-    assert wrong_pw.json() == no_user.json()  # no user-enumeration leak
+    # The problem+json body carries a per-request `request_id` (api/errors.py) that differs by design; every other field must match.
+    strip = lambda body: {k: v for k, v in body.items() if k != "request_id"}  # noqa: E731
+    assert strip(wrong_pw.json()) == strip(no_user.json())  # no user-enumeration leak
 
 
 async def test_refresh_token_stored_only_as_hash(client, session_maker):

@@ -79,6 +79,54 @@ _RQ_TO_RUN: Final[dict[str, str]] = {
 _RUN_FAILED_RE = re.compile(r"RunFailed:\s*([a-z_]+)\s*$")
 
 
+def _env_positive_int(name: str, default: int) -> int:
+    raw = os.getenv(name, "").strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
+def max_pending_runs_per_user() -> int:
+    """RUN_MAX_PENDING_PER_USER (default 5): queued runs one account may have waiting at once. Malformed -> default."""
+    return _env_positive_int("RUN_MAX_PENDING_PER_USER", 5)
+
+
+def max_pending_runs_total() -> int:
+    """RUN_MAX_PENDING_TOTAL (default 200): queued jobs of any kind; above it new runs are refused. Malformed -> default."""
+    return _env_positive_int("RUN_MAX_PENDING_TOTAL", 200)
+
+
+def _backlog_refusal(queue: Any, user: User) -> HTTPException | None:
+    """Task 18 (TG-SEC-02): 429 if the queue backlog is already at its cap, else None.
+
+    Before this, the only bound was the 30/minute request rate, so one viewer could park 1800 queued runs an hour
+    (each holding a result in Redis for RUN_RESULT_TTL_SECONDS) and starve every other user behind them. The check
+    reads at most ``max_pending_runs_total()`` queued ids, so its cost is bounded too.
+    """
+    total_cap = max_pending_runs_total()
+    ids = queue.get_job_ids(0, total_cap)  # up to total_cap + 1 ids: enough to know "at or over the cap"
+    if len(ids) >= total_cap:
+        return HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many runs are waiting. Retry shortly.",
+            headers={"Retry-After": "30"},
+        )
+    mine = sum(
+        1
+        for job in Job.fetch_many(ids, connection=queue.connection, serializer=queue.serializer)
+        if job is not None and _is_run(job) and job.meta.get("owner_id") == user.id
+    )
+    if mine >= max_pending_runs_per_user():
+        return HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"You already have {mine} runs waiting (max {max_pending_runs_per_user()}). Wait for one to finish.",
+            headers={"Retry-After": "10"},
+        )
+    return None
+
+
 def result_ttl_seconds() -> int:
     raw = os.getenv("RUN_RESULT_TTL_SECONDS", "").strip()
     try:
@@ -213,6 +261,9 @@ def _submit_sync(body: RunCreate, user: User) -> dict[str, Any]:
     }
     ttl = result_ttl_seconds()
     try:
+        refusal = _backlog_refusal(task_queue._get_queue(), user)
+        if refusal is not None:
+            raise refusal
         task_queue.enqueue(
             JOB_FUNCTION,
             run_id,

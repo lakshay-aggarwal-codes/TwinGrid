@@ -243,8 +243,8 @@ def render_report(results: dict[str, Any]) -> str:
     lines = [
         f"# {results['title']}",
         "",
-        f"Experiment: `{results['experiment']}`  ",
-        f"Schema: `{results['schema']}`  ",
+        f"Experiment: `{results['experiment']}`",
+        f"Schema: `{results['schema']}`",
     ]
     lines.append("Seeds: " + (", ".join(str(s) for s in results["seeds"]) or "none"))
     lines += ["", "Generated from `results.json` by `src/repro/report.py`; nothing in this file is typed by hand.", ""]

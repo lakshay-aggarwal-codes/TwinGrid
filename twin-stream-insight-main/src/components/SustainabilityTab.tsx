@@ -118,7 +118,7 @@ export function SustainabilityTab({ feed, equipmentHealth, onRetryEquipment }: P
                   {/* The caveat leads: these numbers say how a method performed on a proxy dataset, nothing about this facility. */}
                   <div data-testid="equipment-caveat" className="space-y-1 rounded border border-warning/40 bg-warning/10 p-2 text-xs">
                     <p>
-                      Proxy model: validated on a proxy dataset, not on this facility&apos;s equipment. It does not report the health of
+                      Proxy model: scored on a proxy dataset (aircraft engines), not on this facility&apos;s equipment. It does not report the health of
                       any rack.
                     </p>
                     <p>{health.dataset_caveat ?? 'Dataset caveat: not reported by the backend.'}</p>

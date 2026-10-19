@@ -22,8 +22,8 @@ Report these metrics as "performance on the current simulator," not as a claim a
 | Forecaster | One run, no seed on file, no persistence baseline, no evaluation record. Its error figure has nothing to be compared against. |
 | Anomaly detector | The headline F1 used a threshold tuned on the rows it is scored on. The event-level evaluation exists as code and config but has no result on file. |
 | PPO, legacy policy | Scored worse than the rule baseline (mean PUE change below zero), and is quarantined. |
-| PPO, five v2 candidates | Trained, not evaluated, not promoted. |
-| PPO decision gate | The only report is a baselines-only run: `NOT_EVALUATED`, claim allowed: none. |
+| PPO, five v2 candidates | Scored once under the physics-1 protocol: outcome `C`, claim allowed: none. A fixed setting scored higher than every seed. Not promoted. |
+| PPO decision gate | `reports/policy_evaluation_physics1/full_0fcafef9d28fd539/` (outcome `C`). The older legacy-physics report is baselines-only (`NOT_EVALUATED`). |
 
 ## 3. Things that hold for the whole system
 - **Carbon is an assumption.** No carbon data file ships; the twin uses a flat assumed intensity, labelled as such
@@ -31,8 +31,11 @@ Report these metrics as "performance on the current simulator," not as a claim a
 - **Physics versions differ.** The promoted forecaster and anomaly detector, and the legacy PPO, were trained under physics
   `legacy-0` whose parameters were not recorded; the v2 PPO candidates use physics `1`. Two registry entries still carry a
   named compatibility waiver, and no re-validation record is on file.
-- **The rule baseline is weak.** In the baselines-only run a fixed setting beat it on reward, PUE and water, so "better than
-  the rule baseline" is a low bar. The same run shows no policy keeping the inlet temperature above its simulated minimum.
+- **The rule baseline is weak.** In both runs a fixed setting beat it on reward and water, so "better than the rule baseline" is
+  a low bar. In the older legacy-physics run no policy kept the inlet temperature above its simulated minimum; under physics 1
+  the hard-limit counters are zero for the rule, the best constant and every PPO seed.
+- **Simulated, lumped, uncalibrated.** The model is a lumped thermal and energy simulator with published parameters, not fitted
+  to any facility (`docs/PHYSICS_V2.md`). Nothing here is a measurement.
 - **No uncertainty is shipped.** Sample sizes are small (3 seeds for the legacy PPO, one run for the other two) and the
   stated interval for the legacy PPO uses a multiplier that is too small for 3 seeds.
 - **Not reproducible from this repository alone.** The training data file is not shipped; the registry holds its SHA-256, not

@@ -3,7 +3,7 @@ Digital twin simulation of a data centre using thermodynamic and hydraulic physi
 
 Provides physics-based models for thermal dynamics, cooling system performance,
 water consumption, and rule-based control. Supports an optional Physics-Informed
-Neural Network (PINN) for surrogate prediction — patent core combined with the
+Neural Network (PINN) for surrogate prediction — core design, combined with the
 joint optimizer (J = α·W + β·E + γ·C).
 
 DYNAMIC PHYSICS: thermal state has memory (first-order lag toward a
@@ -52,7 +52,7 @@ from .timeutil import utc_now
 from .versions import PHYSICS_V1, PHYSICS_V2, active_physics_version, physics_identity, validate_physics_version
 
 # Matches DataCentreEnv.DROUGHT_THRESHOLD (src/optimizer.py) exactly --
-# both files enforce the same patent Claim 3 rule.
+# both files enforce the same drought-override rule.
 DROUGHT_THRESHOLD = 0.7
 
 logger = logging.getLogger(__name__)
@@ -918,8 +918,8 @@ class DigitalTwin:
         """
         Rule-based cooling mode selection.
 
-        - Closed-loop when water stress > DROUGHT_THRESHOLD (patent Claim 3
-          drought override — checked first; must match DataCentreEnv's threshold).
+        - Closed-loop when water stress > DROUGHT_THRESHOLD (the drought override —
+          checked first; must match DataCentreEnv's threshold).
         - Free-air when outside < 12°C (no water, high COP).
         - Evaporative when outside hot and water stress low.
         - Hybrid as default balance.
@@ -931,7 +931,7 @@ class DigitalTwin:
         Returns:
             Selected CoolingMode.
         """
-        # Drought override FIRST (patent Claim 3): it must win over every other
+        # Drought override FIRST (drought-override rule): it must win over every other
         # rule, including free-air, exactly as DataCentreEnv._action_to_control
         # does. (It was previously checked second, so a cold day with severe
         # water stress returned free_air while the state still reported
@@ -1402,7 +1402,7 @@ class DigitalTwin:
         return self._state
 
     # -------------------------------------------------------------------------
-    # Physics-Informed Neural Network (PINN) — patent core
+    # Physics-Informed Neural Network (PINN) — core design
     # -------------------------------------------------------------------------
 
     def train_pinn(
@@ -1415,7 +1415,7 @@ class DigitalTwin:
         """
         Train the optional Physics-Informed Neural Network on twin rollouts.
 
-        PATENT: PINN learns outlet_temp, water_consumed, PUE with soft physics
+        Design: PINN learns outlet_temp, water_consumed, PUE with soft physics
         constraints (energy balance, PUE identity, WUE identity). Combines with
         the joint optimizer for surrogate prediction.
         """

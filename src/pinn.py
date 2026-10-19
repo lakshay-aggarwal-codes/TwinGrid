@@ -1,7 +1,7 @@
 """
 Physics-Informed Neural Network (PINN) for the data centre digital twin.
 
-PATENT CORE: Combines data-driven prediction with physics constraints:
+Core design: Combines data-driven prediction with physics constraints:
   - L_physics_1: Energy balance — outlet_temp = inlet + Q/(m_dot*cp)
   - L_physics_2: PUE = total_power / it_power
   - L_physics_3: WUE = water_L / it_kWh
@@ -117,7 +117,7 @@ class PhysicsInformedNN:
     """
     Physics-Informed Neural Network for data centre state prediction.
 
-    PATENT: Soft physics constraints (energy balance, PUE, WUE) combined with
+    Design: Soft physics constraints (energy balance, PUE, WUE) combined with
     data loss. Used with the joint optimizer for surrogate prediction.
     """
 
