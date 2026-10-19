@@ -110,3 +110,6 @@ NOT regenerated; they still describe the schema-1 report. A new physics-1 report
 - Optional `physics_version_executed` (the physics that ran; absent in older reports) next to `physics_version` (the registered label).
 - Optional `hard_constraints { counted[], not_measured[], note }` and `selection { best_constant_envelope_feasible }` are read by the UI; unknown keys are ignored.
 - The captured `baselines-only` report is schema 1, legacy-0, has no `hard_constraints`/`physics_version_executed`: the UI shows its PUE limit as "not measured" and its executed physics as "not reported".
+
+## Task 16 addendum (read-only; no new endpoint)
+The comparison reads `policies[].metrics`, `metrics[id].better/definition`, `scenario_sets.test`, `decision.detail.per_baseline[*].{baseline_envelope_safe, seed_level_diff, scenario_level_diff}` and `decision.detail.envelope_selected_candidate` (`ok` plus the hard-limit step counts). Anything absent or malformed reads as "not provided"/"not reported"; nothing is defaulted or computed. Real PPO decision detail has never been served (Task 9 pass 2 is pending): those paths are tested with SYNTHETIC shape fixtures only.

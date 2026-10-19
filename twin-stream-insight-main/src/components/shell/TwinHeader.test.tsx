@@ -10,6 +10,8 @@ import { feedIn } from "@/three/feedTestUtils.ts";
 vi.mock("@/components/transition/RotateLink", () => ({
   RotateLink: ({ to, children }: { to: string; children: ReactNode }) => <a href={to}>{children}</a>,
 }));
+// Feature widgets (alerts watcher, model passport...) have their own live regions and need app providers; they are not under test here.
+vi.mock("@/features/Slot", () => ({ Slot: () => null }));
 vi.mock("@/pages/lazyPages.ts", () => ({ loadAnalyticsPage: () => Promise.resolve({}) }));
 
 import { TwinHeader } from "./TwinHeader";

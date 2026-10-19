@@ -168,7 +168,7 @@ export function AlertDetail({ alert, isOperator, apply }: Props) {
             {pending ? <span role="status">Saving…</span> : null}
             {done && !pending ? <span role="status">{done}</span> : null}
             {error ? (
-              <span role="alert" className="text-destructive">
+              <span role="alert" className="text-destructive-text">
                 {error}
               </span>
             ) : null}

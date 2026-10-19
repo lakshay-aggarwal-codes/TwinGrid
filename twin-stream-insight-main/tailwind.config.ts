@@ -35,6 +35,8 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+          // Text on the dark surfaces: DEFAULT is a fill colour (white text sits on it), so it is too dark as text (3.84:1).
+          text: "hsl(var(--destructive-text))",
         },
         success: {
           DEFAULT: "hsl(var(--success))",

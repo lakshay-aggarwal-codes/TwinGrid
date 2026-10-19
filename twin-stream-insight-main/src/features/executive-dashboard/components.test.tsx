@@ -100,7 +100,9 @@ describe("KpiCards", () => {
     run.current = { status: "error", kind: "server" };
     render(<KpiCards {...ctx} />);
     expect(screen.queryByTestId("kpi-total-energy-value")).toBeNull();
-    expect(screen.getAllByRole("alert").length + screen.getAllByRole("status").length).toBeGreaterThan(0);
+    // The error state is announced as an alert (STATE_VOCABULARY.error.role); queryAll so a missing role cannot throw.
+    expect(screen.queryAllByRole("alert").length + screen.queryAllByRole("status").length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole("alert")).toHaveLength(3);
   });
 
   it("a failed refresh keeps the earlier numbers and says so; a stale feed marks PUE as last known", () => {
@@ -137,7 +139,9 @@ describe("GoalRings", () => {
     expect(JSON.parse(window.localStorage.getItem(GOALS_KEY) as string).pue).toBe(1.2);
     fireEvent.click(screen.getByRole("button", { name: "Edit the PUE target" }));
     fireEvent.keyDown(screen.getByLabelText(/PUE target/), { key: "Escape" });
-    expect(screen.queryByLabelText(/PUE target/)).toBeNull();
+    // The editor is gone (the "Edit the PUE target" button is back, so look for the text box, not any label).
+    expect(screen.queryByRole("textbox", { name: /PUE target/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Edit the PUE target" })).toBeTruthy();
   });
 
   it("sets and clears an energy target; the model value is the ring's value", () => {
@@ -196,7 +200,13 @@ describe("InsightsFeed", () => {
     feed(3);
     render(<InsightsFeed {...ctx} />);
     expect(screen.getByTestId("insights-warming").textContent).toContain("3 samples");
-    act(() => feed(1, () => ({ seq: 99 })));
+    // A new frame must be NEWER than the last one (appendSample drops equal or older timestamps), so give it a later time.
+    act(() =>
+      recordFrame(
+        { pue: 1.25, it_power_kw: 400, cooling_power_kw: 100, total_power_kw: 500, server_outlet_temp_C: 30, carbon_intensity_gco2_per_kwh: 475, carbon_data_is_real: false, seq: 99 } as LiveStatePayload,
+        T + 3 * 3000,
+      ),
+    );
     expect(screen.getByTestId("insights-warming").textContent).toContain("4 samples");
   });
 });

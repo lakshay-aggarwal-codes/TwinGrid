@@ -43,7 +43,7 @@ const ICONS: Record<UiStateKind, LucideIcon> = {
   unavailable_model: Cpu,
 };
 
-const ALERT_STYLE = "rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive";
+const ALERT_STYLE = "rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive-text";
 
 /**
  * Stage 14: the one visual pattern for every loading / error / empty state in the app.

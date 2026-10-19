@@ -122,13 +122,13 @@ export function AuditPanel() {
           <button type="button" className={BTN} onClick={reset}>Clear</button>
         </div>
       </form>
-      {formError && <p role="alert" className="text-xs text-destructive" data-testid="audit-form-error">{formError}</p>}
+      {formError && <p role="alert" className="text-xs text-destructive-text" data-testid="audit-form-error">{formError}</p>}
 
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className={BTN} disabled={busy} onClick={() => void doExport("csv")} data-testid="export-csv">Export CSV</button>
         <button type="button" className={BTN} disabled={busy} onClick={() => void doExport("json")} data-testid="export-json">Export JSON</button>
         {exportMsg && (
-          <p role={exportMsg.kind} className={`text-xs ${exportMsg.kind === "alert" ? "text-destructive" : "text-muted-foreground"}`} data-testid="export-message">{exportMsg.text}</p>
+          <p role={exportMsg.kind} className={`text-xs ${exportMsg.kind === "alert" ? "text-destructive-text" : "text-muted-foreground"}`} data-testid="export-message">{exportMsg.text}</p>
         )}
       </div>
 

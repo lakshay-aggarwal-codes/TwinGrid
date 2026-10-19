@@ -85,7 +85,7 @@ function WebhookRow({ w }: { w: Webhook }) {
         </p>
       )}
       {saved && <p role="status" className="text-muted-foreground" data-testid={`webhook-${w.id}-saved`}>URL changed. It is not shown again.</p>}
-      {error && <p role="alert" className="text-destructive" data-testid={`webhook-${w.id}-error`}>{error}</p>}
+      {error && <p role="alert" className="text-destructive-text" data-testid={`webhook-${w.id}-error`}>{error}</p>}
     </li>
   );
 }
@@ -124,7 +124,7 @@ function AddWebhook() {
       </div>
       <button type="submit" className={BTN} disabled={busy} data-testid="webhook-add-submit">Add webhook</button>
       {added && <p role="status" className="text-xs text-muted-foreground" data-testid="webhook-added">Added. The URL is not shown again.</p>}
-      {error && <p role="alert" className="w-full text-xs text-destructive" data-testid="webhook-add-error">{error}</p>}
+      {error && <p role="alert" className="w-full text-xs text-destructive-text" data-testid="webhook-add-error">{error}</p>}
     </form>
   );
 }

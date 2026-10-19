@@ -34,6 +34,7 @@
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
+    --destructive-text: 0 85% 65%; /* >= 5.2:1 on --card/--background and on a 10% destructive tint (axe found 3.84:1 with --destructive) */
 
     --success: 152 69% 45%;
     --success-foreground: 152 69% 10%;
@@ -98,6 +99,7 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 42%;
     --destructive-foreground: 0 0% 100%;
+    --destructive-text: 0 72% 42%; /* 6.5:1 on white */
     --success: 152 69% 26%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 30%;

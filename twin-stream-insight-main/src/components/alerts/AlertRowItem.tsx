@@ -11,7 +11,7 @@ import { alertProvenance, alertTime, attributionEvidence, lifecycleOf, scoreLabe
 const SEVERITY_ICON: Record<SeverityIcon, typeof Info> = { info: Info, warning: AlertTriangle, critical: XOctagon, unknown: HelpCircle };
 
 const SEVERITY_CLASS: Record<SeverityIcon, string> = {
-  critical: 'bg-destructive/20 text-destructive border-destructive/40 border-solid',
+  critical: 'bg-destructive/20 text-destructive-text border-destructive/40 border-solid',
   warning: 'bg-warning/20 text-warning border-warning/40 border-dashed',
   info: 'bg-muted text-foreground border-border border-solid',
   unknown: 'bg-muted text-muted-foreground border-border border-dotted',
@@ -120,7 +120,7 @@ export function AlertRowItem({ alert: a, role, queryKey, onSelect }: AlertRowIte
           ))}
       </div>
       {ack.isError && (
-        <p role="alert" data-testid="ack-error" className="px-2.5 pb-2 text-[11px] text-destructive">
+        <p role="alert" data-testid="ack-error" className="px-2.5 pb-2 text-[11px] text-destructive-text">
           Could not acknowledge alert #{a.id}: {ackErrorText(ack.error)}
         </p>
       )}

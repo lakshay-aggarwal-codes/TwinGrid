@@ -54,7 +54,7 @@ export default function CapacityPage() {
             </label>
             <Input id={`${uid}-racks`} inputMode="numeric" value={racks} onChange={(e) => setRacks(e.target.value)} aria-invalid={errors.racks ? true : undefined} aria-describedby={errors.racks ? `${uid}-racks-err` : undefined} className="w-28" />
             {errors.racks && (
-              <p id={`${uid}-racks-err`} role="alert" className="text-[11px] text-destructive">
+              <p id={`${uid}-racks-err`} role="alert" className="text-[11px] text-destructive-text">
                 {errors.racks}
               </p>
             )}
@@ -65,7 +65,7 @@ export default function CapacityPage() {
             </label>
             <Input id={`${uid}-kw`} inputMode="decimal" value={kw} onChange={(e) => setKw(e.target.value)} aria-invalid={errors.kw ? true : undefined} aria-describedby={errors.kw ? `${uid}-kw-err` : undefined} className="w-28" />
             {errors.kw && (
-              <p id={`${uid}-kw-err`} role="alert" className="text-[11px] text-destructive">
+              <p id={`${uid}-kw-err`} role="alert" className="text-[11px] text-destructive-text">
                 {errors.kw}
               </p>
             )}

@@ -62,7 +62,7 @@ export function ScenarioParamForm({ fields, unrecognised, values, errors, onChan
               </p>
             )}
             {err && (
-              <p id={`${id}-err`} role="alert" className="text-[11px] text-destructive">
+              <p id={`${id}-err`} role="alert" className="text-[11px] text-destructive-text">
                 {err}
               </p>
             )}

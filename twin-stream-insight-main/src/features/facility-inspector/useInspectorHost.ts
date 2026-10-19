@@ -29,6 +29,8 @@ export function useInspectorHost(o: InspectorHostOptions): void {
   const { layout, topologyLoading, selectedRackId, mode, onFocusRack, onDeselect, onSetMode, onFocusPreset } = o;
   const win = o.win ?? window;
   const applied = useRef(false);
+  const selectedRackIdRef = useRef(selectedRackId);
+  selectedRackIdRef.current = selectedRackId;
   // A rack read from the URL that the page has been asked to select but has not selected yet: the write below must wait for it.
   const pendingFromUrl = useRef<string | null>(null);
 
@@ -53,8 +55,14 @@ export function useInspectorHost(o: InspectorHostOptions): void {
     if (fromUrl !== null) {
       pendingFromUrl.current = fromUrl;
       onFocusRack(fromUrl);
+      return;
     }
-    // An unknown id is dropped by the write below (selection stays null), never trusted.
+    // An unknown id is never trusted: drop it from the URL now. The write effect below only re-runs when the selection
+    // changes, so without this a stale `?rack=nope` stayed in the address bar (and in copied links) until the user selected something.
+    const next = withRackParam(win.location.search, selectedRackIdRef.current);
+    if (next !== win.location.search) {
+      win.history.replaceState(win.history.state, "", `${win.location.pathname}${next}${win.location.hash}`);
+    }
   }, [topologyLoading, layout, onFocusRack, win]);
 
   useEffect(() => {

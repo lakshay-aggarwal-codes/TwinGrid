@@ -11,7 +11,7 @@ const colorMap = {
   info: 'text-chart-blue',
   success: 'text-success',
   warning: 'text-warning',
-  error: 'text-destructive',
+  error: 'text-destructive-text',
 };
 
 export function EventLog({ events }: { events: EventItem[] }) {

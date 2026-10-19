@@ -38,8 +38,8 @@ export function AnomalyAlert({ status }: Props) {
       className="anomaly-alert-banner rounded-lg px-4 py-3 flex items-center gap-3 mb-4 border border-destructive/40 bg-destructive/10 backdrop-blur-sm"
     >
       <div className="flex items-center gap-2 shrink-0">
-        <AlertTriangle aria-hidden="true" className="h-4 w-4 text-destructive animate-pulse motion-reduce:animate-none" />
-        <span className="text-xs font-bold uppercase tracking-wider text-destructive">{view.label}</span>
+        <AlertTriangle aria-hidden="true" className="h-4 w-4 text-destructive-text animate-pulse motion-reduce:animate-none" />
+        <span className="text-xs font-bold uppercase tracking-wider text-destructive-text">{view.label}</span>
       </div>
       <div className="h-4 w-px bg-destructive/30" />
       <div className="flex flex-wrap items-center gap-x-1.5 flex-1 text-sm">

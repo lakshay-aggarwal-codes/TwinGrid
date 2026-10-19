@@ -5,7 +5,7 @@ import { STATUS_LABEL, type AlertStatus } from "./model";
 const SEVERITY_ICON: Record<SeverityIcon, LucideIcon> = { info: Info, warning: AlertTriangle, critical: XOctagon, unknown: HelpCircle };
 // Meaning is carried by the icon SHAPE, the text and the border style (solid / dashed / dotted), not by colour alone.
 const SEVERITY_CLASS: Record<SeverityIcon, string> = {
-  critical: "bg-destructive/20 text-destructive border-destructive/40 border-solid",
+  critical: "bg-destructive/20 text-destructive-text border-destructive/40 border-solid",
   warning: "bg-warning/20 text-warning border-warning/40 border-dashed",
   info: "bg-muted text-foreground border-border border-solid",
   unknown: "bg-muted text-muted-foreground border-border border-dotted",

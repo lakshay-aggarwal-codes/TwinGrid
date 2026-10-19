@@ -75,11 +75,9 @@ function Editor({ def, current, onDone }: { def: GoalDef; current: number | null
       <div className="flex gap-1">
         <input
           id={inputId}
-          type="number"
+          type="text"
           inputMode="decimal"
-          step={def.step}
-          min={def.min}
-          max={def.max}
+          autoComplete="off"
           value={text}
           autoFocus
           aria-invalid={error !== null}
@@ -105,7 +103,7 @@ function Editor({ def, current, onDone }: { def: GoalDef; current: number | null
       </div>
       <p className="text-[10px] text-muted-foreground">Leave empty to clear the target.</p>
       {error && (
-        <p id={`${inputId}-err`} role="alert" className="text-[11px] text-destructive">
+        <p id={`${inputId}-err`} role="alert" className="text-[11px] text-destructive-text">
           {error}
         </p>
       )}

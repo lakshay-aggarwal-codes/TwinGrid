@@ -64,3 +64,9 @@ Browser time is never data time, and a server timestamp is never compared with t
 | **Set-point range** | recommendation form | The accepted range is the union of the legacy 5..15 C and the evaluated actuator range from `predicted.setpoint_check` (physics 1: 5..25 C), mirroring the server, which still decides. Outside the evaluated range, a words-only notice is shown. |
 
 Schema: `schema_version` 1 and 2 are accepted (2 = amendment A2, counted PUE limit); anything else is a contract violation.
+
+## Comparing two policies (Task 16)
+
+`PolicyComparison` (below the evaluation table) compares two policies **inside one report**. Both were scored on that report's test scenario set (id and n are shown), so nothing is compared across reports: a different report may run other physics, scenarios or carbon.
+
+Order on screen: (1) **Hard constraints first**: one eligibility sentence from the four counted limits alone ("a better reward never offsets a violated limit"), then each policy's status as words + icon shape; (2) **What decided the report's outcome**: the outcome, its reason and decision-rule text as sent, and, when the report has PPO decision detail, the selected candidate's violated limits and the baselines judged not envelope-safe (`decision.detail.envelope_selected_candidate`, `per_baseline[*].baseline_envelope_safe`: read, never computed); (3) **table**: the four limits first, then the other metrics in first-appearance order; per row reference, compared, *difference = compared minus reference* (with % when the reference is non-zero), a direction word, and the metric's own `better` as sent; (4) **uncertainty**: the report's paired PPO-vs-baseline intervals only for that exact pair, otherwise "uncertainty not provided". No sorting, ranking, winner cell or colour judgement (`sourceGate.test.ts` enforces it).

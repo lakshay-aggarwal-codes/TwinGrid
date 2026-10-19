@@ -101,3 +101,22 @@ export function resolveRecents(recentIds: readonly string[], items: readonly Pal
     return found ? [found] : [];
   });
 }
+
+/**
+ * Palette matching. cmdk's default scorer accepts any scattered subsequence of the label plus keywords, so typing
+ * "analyt" also matched "Go to Telemetry history" (a-n-a-l-y-t appear in order across its keywords). Here every
+ * space-separated term the person typed must appear as a case-insensitive substring of the row's label or keywords,
+ * and a term that starts a word ranks higher. Returns 0 (hidden) or a positive score.
+ */
+export function paletteFilter(value: string, search: string, keywords: readonly string[] = []): number {
+  const terms = search.toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return 1;
+  const haystack = [value, ...keywords].join(" ").toLowerCase();
+  let score = 0;
+  for (const term of terms) {
+    const at = haystack.indexOf(term);
+    if (at < 0) return 0;
+    score += at === 0 || /[^a-z0-9]/.test(haystack[at - 1] ?? "") ? 2 : 1;
+  }
+  return score;
+}

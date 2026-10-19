@@ -90,7 +90,7 @@ export function PpoPanel({ role, onUnavailable }: { role: string | null; onUnava
         </div>
       ) : null}
       {run.status === "failed" && !unavailable ? (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-xs text-destructive-text">
           {safeMessageFor(run.kind)}
         </p>
       ) : null}

@@ -6,6 +6,7 @@ import { EvaluationTable } from './EvaluationTable';
 import { HardConstraintPanel } from './HardConstraintPanel';
 import { OutcomeBanner } from './OutcomeBanner';
 import { PairedDifferences } from './PairedDifferences';
+import { PolicyComparison } from './PolicyComparison';
 
 /** One backend `EvaluationResult`, rendered. Every number and sentence on this screen comes from the payload. */
 export function EvaluationView({ result }: { result: EvaluationResult }) {
@@ -53,6 +54,8 @@ export function EvaluationView({ result }: { result: EvaluationResult }) {
         <EvaluationTable view={table} />
       )}
       <PairedDifferences items={paired} ciLevel={result.ci_level} />
+      {/* keyed by report: a different report starts from its own defaults, never the previous selection */}
+      <PolicyComparison key={result.evaluation_id} result={result} />
     </div>
   );
 }
