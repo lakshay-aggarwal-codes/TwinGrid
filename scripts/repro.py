@@ -57,7 +57,9 @@ def cmd_verify(args: argparse.Namespace, root: Path) -> int:
     for finding in rep.findings:
         print(finding)
     ok = rep.ok(strict=args.strict)
-    print(f"{'PASS' if ok else 'FAIL'} {args.run_id}: {len(rep.failures)} failure(s), {len(rep.warnings)} warning(s)")
+    label = "PASS" if ok else "UNVERIFIABLE" if rep.unverifiables and not rep.failures else "FAIL"
+    unverifiable = f", {len(rep.unverifiables)} unverifiable" if rep.unverifiables else ""  # absent when 0: format kept
+    print(f"{label} {args.run_id}: {len(rep.failures)} failure(s), {len(rep.warnings)} warning(s){unverifiable}")
     return 0 if ok else 1
 
 
