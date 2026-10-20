@@ -1,0 +1,1 @@
+python3 -I -m compileall -q api src models scripts tests alembic *.py (Python 3.13.16) exit 0 - syntax only, no imports executed

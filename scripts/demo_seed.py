@@ -23,8 +23,9 @@ Notes
     wall-clock tick instants, so the two never collide, and the newest live rows win the anomaly window.
   * The facility layout scale (1 scene unit = 1.0 m) is a PROPOSED value that has not been signed off by the
     owner; the seeded ``facility.frame_note`` says so.
-  * ``admin`` is the role string the roadmap reserves for the admin console. The backend currently grants it no
-    more than viewer rights (only ``operator`` is checked), so the admin demo account is not an operator.
+  * ``admin`` gates the admin console (``/api/admin/*``), optimizer-proposal decisions and role changes. It is not
+    an operator: routes guarded by ``require_operator`` check the exact role ``operator``, so the admin demo
+    account cannot use them.
 """
 
 from __future__ import annotations

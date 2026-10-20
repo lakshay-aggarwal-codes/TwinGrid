@@ -409,10 +409,21 @@ reports/junit.xml
 node_modules/
 backups/
 
-# Local experiment logs
-retune_1_prereg.txt
-retune_2_tune.txt
-run_clean.txt
-tests_clean.txt	une_clean.txt
-
-twin-stream-insight-main/unit_after.txt
+# Loose local logs at the repo root (BASE-002). Anchored with a leading slash so they only match the root:
+# the historical copies under reports/archive/2026-10-loose-logs/ must stay trackable.
+/fails.txt
+/run_clean.txt
+/tests_clean.txt
+/tune_clean.txt
+/retune_*.txt
+/t7_*.txt
+/t7_*.xml
+/t7b_*.txt
+/task*_ppo_eval.txt
+/playwright_*.txt
+/pyrefly*.json
+/pyrefly_baseline.txt
+/junit*.xml
+/twin-stream-insight-main/fails.txt
+/twin-stream-insight-main/playwright_*.txt
+/twin-stream-insight-main/unit_after.txt
