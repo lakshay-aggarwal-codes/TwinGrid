@@ -373,16 +373,33 @@ class JointOptimizer:
 
     @classmethod
     def load(cls, path: str | Path) -> JointOptimizer:
-        """Load PPO model and objective config."""
+        """Load PPO model and objective config.
+
+        T6 (SEC-001): the SB3 zip is a pickle container, so it is read ONLY through the reviewed artifact gate
+        (``src.artifacts.loaders``). Order matters:
+
+        1. the cheap contract checks on ``config.json`` run first, so a pre-v2 / older-envelope artifact is rejected
+           before the gate or any model code is reached (the file is only inspected, never trusted, at this point);
+        2. ``loaders.authorize`` then checks status, SHA-256/size, compatibility and the format allow-list for BOTH
+           ``config.json`` and ``ppo_model.zip``; the ``api`` profile refuses an SB3 zip outright, so this method is
+           usable only in a ``training`` process (``ARTIFACT_PROFILE=training``);
+        3. the configuration actually used is re-read from the authorised (hash-verified) file and re-checked;
+        4. only then is the zip handed to ``loaders.load_sb3_zip_training_only``.
+        """
+        from .artifacts import loaders  # local import: keeps ``src.optimizer`` importable without the gate's deps
+
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Path not found: {path}")
-        config = json.loads((path / "config.json").read_text())
+        config_path, model_path = path / "config.json", path / "ppo_model.zip"
+        config = json.loads(config_path.read_text())
         # Gate BEFORE any model code runs: an artifact trained under an older envelope is rejected outright.
         assert_current_safety_envelope_version(config.get("safety_envelope_version"))
         assert_env_contract(config.get("env_contract"), config.get("physics_version"))  # T27: pre-v2 artifacts end here
-        sb3 = _get_sb3()
-        PPO = sb3["PPO"]
+        grant = loaders.authorize([config_path, model_path], artifact="ppo_optimizer")
+        config = loaders.load_json(config_path, artifact="ppo_optimizer", grant=grant)  # the verified copy
+        assert_current_safety_envelope_version(config.get("safety_envelope_version"))
+        assert_env_contract(config.get("env_contract"), config.get("physics_version"))
         carbon_curve = config.get("carbon_intensity_by_hour")
         optimizer = cls(
             alpha=config.get("alpha", 0.5),
@@ -394,6 +411,6 @@ class JointOptimizer:
             physics_version=config.get("physics_version"),
             sim_step_seconds=config.get("sim_step_seconds"),
         )
-        optimizer._model = PPO.load(str(path / "ppo_model"))
+        optimizer._model = loaders.load_sb3_zip_training_only(model_path, artifact="ppo_optimizer", grant=grant)
         logger.info("Loaded from %s", path)
         return optimizer
