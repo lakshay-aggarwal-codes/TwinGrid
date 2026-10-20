@@ -8,6 +8,7 @@ failure/determinism handling and the toy round trip. Nothing here needs TensorFl
 
 import ast
 import contextlib
+import importlib
 import importlib.util
 import inspect
 import io
@@ -417,7 +418,10 @@ def test_altering_the_config_fails_verify_naming_the_field(world):
     "mutate,field",
     [
         (lambda w: (w / "data/MANIFEST.json").write_text('{"files": {"a.csv": "11"}}\n'), "dataset_manifest_sha256"),
-        (lambda w: (w / "prereg.json").write_text('{"alpha": 0.6}\n'), "prereg_sha256"),
+        # Task 7: verify reads the run's OWN snapshot, so that is what must be tampered with / lost (the shared
+        # prereg.json is covered by test_a_run_verifies_after_the_shared_preregistration_is_overwritten below).
+        (lambda w: (w / "reports/runs/r1/prereg.snapshot.json").write_text('{"alpha": 0.6}\n'), "prereg_sha256"),
+        (lambda w: (w / "reports/runs/r1/prereg.snapshot.json").unlink(), "prereg_sha256"),
         (lambda w: (w / "requirements.lock").write_text("numpy==9.9.9\n"), "lock_sha256"),
         (lambda w: flip(w / ARTIFACT_FILE), f"artifacts[toyart-1].files[{ARTIFACT_FILE}]"),
         (lambda w: (w / "data/MANIFEST.json").unlink(), "dataset_manifest_sha256"),
@@ -545,7 +549,8 @@ def test_unknown_code_revision_is_a_warning_that_strict_turns_into_a_failure(wor
 
 def test_a_changed_version_constant_fails_verify_naming_it(world, monkeypatch):
     full_run(world)
-    monkeypatch.setattr(versions, "REWARD_VERSION", "2")
+    # Task 7: the literal "2" became the running value when the reward version was bumped, so it no longer differed.
+    monkeypatch.setattr(versions, "REWARD_VERSION", f"{versions.REWARD_VERSION}-changed")
     assert names(verify_run(world, "r1")) == ["reward_version"]
 
 
@@ -800,11 +805,25 @@ def test_cli_notes_that_a_dirty_run_cannot_be_promoted(world, monkeypatch):
 # ----------------------------------------------------------------------------- the shipped toy run, and static rules
 
 
+# What a historical run legitimately disagrees with once the code has moved on: the lineage versions/hashes it recorded
+# and the lock file. Anything else failing (results, report, config, seeds, snapshot) would be real damage.
+_HISTORICAL_DRIFT = {
+    "lock_sha256", "environment_version", "observation_schema_hash", "action_schema_hash",
+    "action_semantics_version", "reward_version", "safety_envelope_version",
+}  # fmt: skip
+
+
 def test_the_shipped_toy_reference_run_round_trips():
+    """Task 7 (ML-001): ``toy-reference`` was recorded BEFORE the environment/action/reward/safety versions moved to 2
+    and before ``requirements.lock`` last changed. ``verify`` is right to say so, and an old manifest is never
+    rewritten, so this run can no longer pass outright. What must still hold is that its content is intact: the
+    only failures are those recorded-vs-running lineage fields, and the answer is the same every time."""
     run_dir = ROOT / "reports/runs/toy-reference"
     assert run_dir.is_dir(), "run: python scripts/run_experiment.py --experiment toy --config src/repro/toy_config.json --run-id toy-reference --check-determinism"
-    rep = verify_run(ROOT, "toy-reference", rerun=True)
-    assert rep.failures == [], [str(f) for f in rep.failures]
+    rep = verify_run(ROOT, "toy-reference")
+    assert {f.field for f in rep.failures} <= _HISTORICAL_DRIFT, [str(f) for f in rep.failures]
+    again = verify_run(ROOT, "toy-reference")
+    assert [str(f) for f in rep.findings] == [str(f) for f in again.findings]  # the same answer every time
     results = read_json(run_dir / "results.json")
     assert report.check_report_numbers((run_dir / "REPORT.md").read_text(encoding="utf-8"), results) == []
     assert read_json(run_dir / "status.json")["state"] == "completed"
@@ -888,3 +907,124 @@ def test_generated_report_has_no_trailing_whitespace_and_shipped_runs_match_it()
         assert all(line == line.rstrip() for line in text.splitlines()), results_path.parent.name
         on_disk = (results_path.parent / "REPORT.md").read_bytes().replace(b"\r\n", b"\n").decode("utf-8")
         assert on_disk == text, f"{results_path.parent.name}/REPORT.md differs from the regenerated version"
+
+
+# ----------------------------------------------------------------------------- Task 7 (ML-001): run-owned pre-registration
+
+RUN_DIR = "reports/runs"
+
+
+def _run_with_prereg(world, run_id, text):
+    (world / "prereg.json").write_text(text, encoding="utf-8")
+    outcome = make_run(world, run_id, prereg="prereg.json")
+    assert outcome.state == "completed", outcome.error
+    return outcome
+
+
+def test_a_run_verifies_after_the_shared_preregistration_is_overwritten(world):
+    """Two runs with DIFFERENT pre-registrations at the SAME shared path both verify after it changes again."""
+    _run_with_prereg(world, "a1", '{"alpha": 0.1}\n')
+    _run_with_prereg(world, "a2", '{"alpha": 0.2}\n')
+    (world / "prereg.json").write_text('{"alpha": 0.3}\n', encoding="utf-8")  # the next run's pre-registration
+    for run_id, alpha in (("a1", 0.1), ("a2", 0.2)):
+        rep = verify_run(world, run_id)
+        assert rep.ok(), [str(f) for f in rep.findings]
+        assert json.loads((world / RUN_DIR / run_id / "prereg.snapshot.json").read_text())["alpha"] == alpha
+    (world / "prereg.json").unlink()  # not even needed to exist
+    assert verify_run(world, "a1").ok()
+
+
+def test_the_snapshot_is_the_exact_bytes_and_its_hash_is_in_the_manifest(world):
+    raw = b'{"alpha":\r\n 0.5}\r\n'  # CRLF and odd spacing: copied as is, never re-serialised
+    (world / "prereg.json").write_bytes(raw)
+    assert make_run(world, "exact", prereg="prereg.json").state == "completed"
+    snap = world / RUN_DIR / "exact/prereg.snapshot.json"
+    m = read_json(world / RUN_DIR / "exact/manifest.json")
+    assert snap.read_bytes() == raw and m["prereg_snapshot"] == "prereg.snapshot.json"
+    assert m["prereg_sha256"] == canonical.sha256_input_file(snap) == canonical.sha256_input_file(world / "prereg.json")
+    assert verify_run(world, "exact").ok()
+
+
+def test_a_run_without_a_preregistration_records_no_snapshot(world):
+    assert make_run(world, "plain").state == "completed"
+    m = read_json(world / RUN_DIR / "plain/manifest.json")
+    assert m["prereg_path"] is None and m["prereg_sha256"] is None and m["prereg_snapshot"] is None
+    assert not (world / RUN_DIR / "plain/prereg.snapshot.json").exists() and verify_run(world, "plain").ok()
+
+
+def test_a_tampered_or_missing_snapshot_fails_closed_and_the_shared_file_cannot_rescue_it(world):
+    full_run(world)
+    snap = world / RUN_DIR / "r1/prereg.snapshot.json"
+    original = snap.read_bytes()
+    snap.write_text('{"alpha": 9}\n', encoding="utf-8")
+    assert names(verify_run(world, "r1")) == ["prereg_sha256"]  # shared prereg.json still matches: irrelevant
+    snap.unlink()
+    rep = verify_run(world, "r1")
+    assert names(rep) == ["prereg_sha256"] and "missing" in rep.failures[0].message and not rep.unverifiables
+    snap.write_bytes(original)
+    assert verify_run(world, "r1").ok()
+
+
+def test_a_manifest_cannot_point_verify_at_another_file(world):
+    full_run(world)
+    path = world / RUN_DIR / "r1/manifest.json"
+    m = read_json(path)
+    m["prereg_snapshot"] = "../../../prereg.json"
+    path.write_text(json.dumps(m), encoding="utf-8")
+    assert names(verify_run(world, "r1")) == ["prereg_snapshot"]
+
+
+def test_a_preregistration_that_changes_while_the_run_starts_fails_the_run(world, monkeypatch):
+    run_module = importlib.import_module("src.repro.run")
+    real = run_module.build_manifest
+
+    def racing(*args, **kw):
+        manifest = real(*args, **kw)
+        (world / "prereg.json").write_text('{"alpha": 0.99}\n', encoding="utf-8")  # between hashing and copying
+        return manifest
+
+    monkeypatch.setattr(run_module, "build_manifest", racing)
+    outcome = make_run(world, "race", prereg="prereg.json")
+    assert outcome.state == "failed" and "changed while the run was starting" in outcome.error
+    assert not verify_run(world, "race").ok()
+
+
+def _as_historical(world, run_id):
+    """A run laid out the way runs made BEFORE Task 7 were: no snapshot field, no snapshot file (test fixture only)."""
+    path = world / RUN_DIR / run_id / "manifest.json"
+    m = read_json(path)
+    del m["prereg_snapshot"]
+    path.write_text(json.dumps(m), encoding="utf-8")
+    (world / RUN_DIR / run_id / "prereg.snapshot.json").unlink()
+
+
+def test_a_historical_run_verifies_against_its_recorded_hash_only_while_the_shared_file_matches(world):
+    full_run(world)
+    _as_historical(world, "r1")
+    assert verify_run(world, "r1").ok()  # shared file unchanged: the recorded hash can be checked
+
+
+@pytest.mark.parametrize("change", ["edit", "delete"])
+def test_a_historical_run_whose_shared_preregistration_changed_is_labelled_unverifiable(world, change):
+    full_run(world)
+    _as_historical(world, "r1")
+    if change == "edit":
+        (world / "prereg.json").write_text('{"alpha": 0.7}\n', encoding="utf-8")
+    else:
+        (world / "prereg.json").unlink()
+    manifest_before = (world / RUN_DIR / "r1/manifest.json").read_bytes()
+    rep = verify_run(world, "r1")
+    assert rep.failures == [] and rep.label == "UNVERIFIABLE" and not rep.ok()  # not a pass, and not an accusation
+    assert [f.field for f in rep.unverifiables] == ["prereg_sha256"]
+    assert "unverifiable (historical, snapshot absent)" in rep.unverifiables[0].message
+    assert (world / RUN_DIR / "r1/manifest.json").read_bytes() == manifest_before  # an old manifest is never rewritten
+
+
+def test_every_committed_run_gets_a_deterministic_verdict_and_never_a_prereg_failure():
+    """Verified, or labelled unverifiable: never a pre-registration FAIL for a shared file that was overwritten."""
+    runs = sorted(p.parent.name for p in (ROOT / RUN_DIR).glob("*/manifest.json"))
+    assert runs, "no committed runs found"
+    for run_id in runs:
+        first, second = verify_run(ROOT, run_id), verify_run(ROOT, run_id)
+        assert [str(f) for f in first.findings] == [str(f) for f in second.findings], run_id
+        assert not [f for f in first.failures if f.field in ("prereg_sha256", "prereg_snapshot")], run_id

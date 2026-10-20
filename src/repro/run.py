@@ -43,6 +43,7 @@ from .rng import RngFactory, forbid_global_rng
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$")
 STATES = ("running", "completed", "failed")
 LOCK_FILE = "requirements.lock"
+PREREG_SNAPSHOT = "prereg.snapshot.json"  # the run's own copy of its pre-registration (Task 7, ML-001)
 _ABS_PATH_IN_TEXT = re.compile(r"(?:[A-Za-z]:\\[^\s'\"]+|/(?:[\w.-]+/)+[\w.-]*)")
 REQUIRED_MANIFEST_FIELDS = (
     "manifest_version", "run_id", "experiment", "started_at_utc", "command", "code_revision", "dirty",
@@ -233,6 +234,10 @@ def build_manifest(request: RunRequest, root: Path, run_id: str, started_at: str
         "artifacts": resolve_artifacts(request.artifacts, root),
         "prereg_path": prereg_rel,
         "prereg_sha256": _hash_input(prereg_rel, root, "pre-registration") if prereg_rel else None,
+        # Optional field (absent from runs made before Task 7, which hashed only the shared file, so they carry no
+        # snapshot): the run directory's own copy of the pre-registration. verify reads THIS, never the shared path,
+        # which the next run overwrites.
+        "prereg_snapshot": PREREG_SNAPSHOT if prereg_rel else None,
         "result_sha256": None,
         "determinism": {
             "level": DETERMINISM_LEVEL,
@@ -280,6 +285,21 @@ def execute_experiment(
                 "experiment is not deterministic: two executions with the same config and seeds gave different results"
             )
     return first
+
+
+def snapshot_prereg(request: RunRequest, root: Path, run_dir: Path, manifest: dict[str, Any]) -> None:
+    """Copy the exact pre-registration bytes into the run directory and prove the copy is what the manifest hashed.
+
+    Fails (the run is then recorded ``failed``) if the shared file changed between hashing it for the manifest and
+    copying it, so a snapshot can never disagree with ``prereg_sha256``.
+    """
+    if not manifest.get("prereg_snapshot"):
+        return
+    source = env.resolve_in_root(_relative_input(request.prereg, root, "pre-registration"), root)
+    target = run_dir / manifest["prereg_snapshot"]
+    write_atomic(target, source.read_bytes())
+    if sha256_input_file(target) != manifest["prereg_sha256"]:
+        raise RunError("the pre-registration changed while the run was starting; no consistent snapshot could be taken")
 
 
 def _make_run_id(request: RunRequest, config_sha: str, seeds: list[int], started_at: str) -> str:
@@ -345,6 +365,7 @@ def run(request: RunRequest, root: Path = env.PROJECT_ROOT, *, clock: Callable[[
     write_atomic(run_dir / "manifest.json", canonical_bytes(manifest))
     _write_status(run_dir, run_id, "running", started, clock=clock)
     try:
+        snapshot_prereg(request, root, run_dir, manifest)
         results = execute_experiment(
             request.experiment,
             config,

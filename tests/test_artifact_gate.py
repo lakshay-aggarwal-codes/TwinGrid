@@ -271,19 +271,19 @@ def test_rl_only_fields_are_not_compared_for_data_models_unless_recorded(world):
 
 
 def _sabotage_env_version(mp):
-    mp.setattr(versions, "ENV_VERSION", "2")
+    mp.setattr(versions, "ENV_VERSION", "sabotaged-" + versions.ENV_VERSION)
 
 
 def _sabotage_reward_version(mp):
-    mp.setattr(versions, "REWARD_VERSION", "2")
+    mp.setattr(versions, "REWARD_VERSION", "sabotaged-" + versions.REWARD_VERSION)
 
 
 def _sabotage_safety_version(mp):
-    mp.setattr(versions, "SAFETY_ENVELOPE_VERSION", "2")
+    mp.setattr(versions, "SAFETY_ENVELOPE_VERSION", "sabotaged-" + versions.SAFETY_ENVELOPE_VERSION)
 
 
 def _sabotage_action_semantics(mp):
-    mp.setattr(versions, "ACTION_SEMANTICS_VERSION", "2")
+    mp.setattr(versions, "ACTION_SEMANTICS_VERSION", "sabotaged-" + versions.ACTION_SEMANTICS_VERSION)
 
 
 def _sabotage_cadence(mp):
@@ -291,11 +291,15 @@ def _sabotage_cadence(mp):
 
 
 def _sabotage_observation_schema(mp):
-    mp.setitem(versions.OBSERVATION_SCHEMA, "shape", [10])
+    from src.rl import env
+
+    mp.setattr(env, "_BASE_OBS_SCHEMA", env._BASE_OBS_SCHEMA[:-1])  # the schema now lives in src/rl/env.py
 
 
 def _sabotage_action_schema(mp):
-    mp.setitem(versions.ACTION_SCHEMA, "high", [1.0, 2.0])
+    from src.rl import env
+
+    mp.setattr(env, "ACTION_SCHEMA", tuple((n, lo, hi + 1.0) for n, lo, hi in env.ACTION_SCHEMA))
 
 
 def _sabotage_physics_constant(mp):
@@ -350,20 +354,25 @@ def test_arbitrary_physics_constants_feed_the_hash():
 
 def test_cadence_constant_matches_the_code_that_defines_the_cadence():
     from src import digital_twin
+    from src.rl import env
 
     assert versions.INPUT_CADENCE_S == digital_twin.INTERVAL_MINUTES * 60
-    optimizer_source = (ROOT / "src/optimizer.py").read_text()
-    assert "INTERVAL_MIN = 5" in optimizer_source
+    assert env.INTERVAL_MIN * 60 == versions.INPUT_CADENCE_S  # the environment (moved out of optimizer.py) agrees
+    assert "INTERVAL_MIN = 5" in (ROOT / "src/rl/env.py").read_text()
 
 
 def test_declared_schemas_match_the_environment_source():
-    source = (ROOT / "src/optimizer.py").read_text()
-    assert f"np.zeros({versions.OBSERVATION_SCHEMA['shape'][0]}, dtype=np.float32)" in source
-    assert (
-        "def _get_obs" in source
-        and len(versions.OBSERVATION_SCHEMA["features"]) == versions.OBSERVATION_SCHEMA["shape"][0]
-    )
-    assert len(versions.ACTION_SCHEMA["components"]) == versions.ACTION_SCHEMA["shape"][0]
+    from src.rl import env
+
+    source = (ROOT / "src/rl/env.py").read_text()
+    assert "n_obs = len(self._obs_schema)" in source and "def _get_obs" in source
+    for physics in (versions.LEGACY_PHYSICS_VERSION, versions.PHYSICS_V1):
+        names = [n for n, _lo, _hi in env.observation_schema(physics)]
+        assert len(names) == len(set(names))
+        assert env.observation_schema_hash(physics) == versions.running_compat_values()["observation_schema_hash"] or (
+            physics != versions.active_physics_version()
+        )
+    assert env.action_schema_hash() == versions.running_compat_values()["action_schema_hash"]
 
 
 # ----------------------------------------------------------------------------- waivers
@@ -1048,13 +1057,209 @@ def test_the_api_optimizer_service_never_trains_in_a_request():
     assert 'loaders.lock_profile("api")' in source and "model_unavailable" in source
 
 
-def test_joint_optimizer_load_is_refused_in_the_api_profile(world, monkeypatch):
+# ----------------------------------------------------------------------------- T6: JointOptimizer.load goes through the gate
+#
+# ``JointOptimizer.load`` is the only code that reads an SB3 zip (a pickle container). It must reach
+# ``PPO.load`` only via ``loaders.authorize`` + ``loaders.load_sb3_zip_training_only``. The tests below put a
+# recording stand-in for ``stable_baselines3`` in ``sys.modules`` (a TEST DOUBLE: no real model is read) so that
+# "PPO.load was never reached" is observable.
+
+
+class _FakePPO:
+    calls: list[str] = []
+
+    @classmethod
+    def load(cls, path):
+        cls.calls.append(str(path))
+        return "fake-sb3-model"
+
+
+@pytest.fixture
+def fake_sb3(monkeypatch):
+    import sys
+    import types
+
+    module = types.ModuleType("stable_baselines3")
+    module.PPO = _FakePPO
+    monkeypatch.setitem(sys.modules, "stable_baselines3", module)
+    _FakePPO.calls = []
+    yield _FakePPO
+    _FakePPO.calls = []
+
+
+def _write_ppo_artifact(root: Path, directory: str = "models/optimizer") -> Path:
+    """A PPO directory whose config.json carries the CURRENT contract (written by ``JointOptimizer.save``)."""
     pytest.importorskip("gymnasium")
     from src.optimizer import JointOptimizer
 
+    target = root / directory
+    target.mkdir(parents=True, exist_ok=True)
+
+    class _Model:
+        def save(self, _p):
+            (target / "ppo_model.zip").write_bytes(b"PK-ppo-test-double-" + bytes(range(64)))
+
+    opt = JointOptimizer(seed=0, carbon_intensity_by_hour=np.full(24, 475.0))
+    opt._model = _Model()
+    opt.save(target)
+    return target
+
+
+@pytest.fixture
+def ppo_world(world):
+    """``world`` with a real-contract PPO artifact registered as ``candidate`` (what a training process evaluates)."""
+    _write_ppo_artifact(world)
+    mr.log_model("ppo_optimizer", metrics={}, data_source="synthetic", artifact_path="models/optimizer")
+    _set(world, _id("ppo_optimizer"), status="candidate")
+    return world
+
+
+def test_joint_optimizer_load_is_refused_in_the_api_profile(ppo_world, fake_sb3):
+    """Even a PROMOTED, hash-clean, compatible PPO is refused: an SB3 zip is training-only."""
+    from src.optimizer import JointOptimizer
+
+    _set(ppo_world, _id("ppo_optimizer"), status="promoted")  # past the status check, so the FORMAT rule decides
     loaders.lock_profile("api")
-    with pytest.raises(mr.ModelUnavailableError):
-        JointOptimizer.load(world / "models/optimizer")
+    with pytest.raises(mr.ArtifactFormatNotAllowed, match="training-only"):
+        JointOptimizer.load(ppo_world / "models/optimizer")
+    assert fake_sb3.calls == []  # PPO.load never reached
+
+
+def test_a_candidate_policy_is_refused_in_the_api_profile_by_status(ppo_world, fake_sb3):
+    from src.optimizer import JointOptimizer
+
+    loaders.lock_profile("api")
+    with pytest.raises(mr.ArtifactNotPromoted):
+        JointOptimizer.load(ppo_world / "models/optimizer")
+    assert fake_sb3.calls == []
+
+
+def test_the_api_profile_refuses_sb3_even_when_verification_is_switched_off(ppo_world, fake_sb3, monkeypatch):
+    from src.optimizer import JointOptimizer
+
+    monkeypatch.setenv("ARTIFACT_VERIFY", "off")  # skips the registry, never the format allow-list
+    loaders.lock_profile("api")
+    with pytest.raises(mr.ArtifactFormatNotAllowed):
+        JointOptimizer.load(ppo_world / "models/optimizer")
+    assert fake_sb3.calls == []
+
+
+def test_joint_optimizer_load_succeeds_only_through_the_training_profile_gate(ppo_world, fake_sb3):
+    from src.optimizer import JointOptimizer
+
+    loaders.lock_profile("training")
+    optimizer = JointOptimizer.load(ppo_world / "models/optimizer")
+    assert optimizer._model == "fake-sb3-model"
+    assert fake_sb3.calls == [str(ppo_world / "models/optimizer/ppo_model.zip")]
+    assert sum(loaders.failure_counts().values()) == 0
+
+
+def test_the_evaluator_path_loads_sb3_candidates_under_the_training_profile(world, fake_sb3, monkeypatch):
+    """``src.policy_evaluation.load_candidates`` -> ``JointOptimizer.load`` works when the process opts in to the
+    training profile (``ARTIFACT_PROFILE=training``); the unregistered scratch candidates need ARTIFACT_VERIFY=off."""
+    from src import policy_evaluation as pe
+
+    cfg = pe.EvalConfig()
+    for seed in cfg.training_seeds:
+        _write_ppo_artifact(world, f"scratch/candidates/seed_{seed}")
+    monkeypatch.setenv("ARTIFACT_PROFILE", "training")
+    monkeypatch.setenv("ARTIFACT_VERIFY", "off")
+    found = pe.load_candidates(world / "scratch/candidates", cfg)
+    assert sorted(found) == list(cfg.training_seeds) and len(fake_sb3.calls) == len(cfg.training_seeds)
+    # the same call in an api-profile process is refused and never reaches the loader
+    fake_sb3.calls.clear()
+    monkeypatch.setenv("ARTIFACT_PROFILE", "api")
+    with pytest.raises(mr.ArtifactFormatNotAllowed):
+        pe.load_candidates(world / "scratch/candidates", cfg)
+    assert fake_sb3.calls == []
+
+
+def test_a_zip_that_does_not_match_its_manifest_hash_is_refused_before_ppo_load(ppo_world, fake_sb3):
+    from src.optimizer import JointOptimizer
+
+    loaders.lock_profile("training")
+    flip_byte(ppo_world / "models/optimizer/ppo_model.zip")
+    with pytest.raises(mr.ArtifactIntegrityError, match="sha256"):
+        JointOptimizer.load(ppo_world / "models/optimizer")
+    assert fake_sb3.calls == []
+
+
+def test_a_config_edited_after_registration_is_refused_before_ppo_load(ppo_world, fake_sb3):
+    """config.json is part of the manifest: valid JSON with a changed value must not be trusted."""
+    from src.optimizer import JointOptimizer
+
+    loaders.lock_profile("training")
+    path = ppo_world / "models/optimizer/config.json"
+    config = json.loads(path.read_text())
+    config["alpha"] = 0.6  # same byte length as 0.5, so the SIZE check passes and the SHA-256 check decides
+    path.write_text(json.dumps(config, indent=2))
+    with pytest.raises(mr.ArtifactIntegrityError, match="sha256"):
+        JointOptimizer.load(ppo_world / "models/optimizer")
+    assert fake_sb3.calls == []
+
+
+def test_a_directory_the_registry_does_not_cover_is_refused(ppo_world, fake_sb3):
+    from src.optimizer import JointOptimizer
+
+    loaders.lock_profile("training")
+    _write_ppo_artifact(ppo_world, "models/unregistered")
+    with pytest.raises(mr.ArtifactManifestError, match="no manifest entry covers"):
+        JointOptimizer.load(ppo_world / "models/unregistered")
+    assert fake_sb3.calls == []
+
+
+def test_a_quarantined_policy_is_refused_even_in_the_training_profile(ppo_world, fake_sb3):
+    from src.optimizer import JointOptimizer
+
+    loaders.lock_profile("training")
+    _set(ppo_world, _id("ppo_optimizer"), status="quarantined", status_reason="test")
+    with pytest.raises(mr.ArtifactNotPromoted, match="quarantined"):
+        JointOptimizer.load(ppo_world / "models/optimizer")
+    assert fake_sb3.calls == []
+
+
+def test_the_contract_checks_still_run_before_the_gate_and_before_any_model_code(ppo_world, fake_sb3):
+    """A pre-v2 config is rejected on its own merits: the error is the contract error, not a gate error."""
+    from src.optimizer import JointOptimizer
+    from src.versions import EnvContractError
+
+    loaders.lock_profile("training")
+    _write_ppo_artifact(ppo_world, "models/unregistered")
+    path = ppo_world / "models/unregistered/config.json"
+    config = json.loads(path.read_text())
+    del config["env_contract"]
+    path.write_text(json.dumps(config))
+    with pytest.raises(EnvContractError, match="predates environment v2"):
+        JointOptimizer.load(ppo_world / "models/unregistered")
+    assert fake_sb3.calls == []
+
+
+def test_optimizer_load_source_uses_the_gate_and_has_no_direct_sb3_load():
+    import inspect
+
+    from src.optimizer import JointOptimizer
+
+    source = inspect.getsource(JointOptimizer.load)
+    assert "loaders.authorize(" in source and "load_sb3_zip_training_only(" in source
+    assert "PPO.load" not in source and "_get_sb3" not in source
+
+
+def test_ppo_registry_text_matches_the_registered_evaluation_outcome():
+    """N-04: the five physics-1 candidates were scored once; the registry must not say they were never evaluated."""
+    results = json.loads(
+        (ROOT / "reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json").read_text(encoding="utf-8")
+    )
+    outcome = results["decision"]["outcome"]
+    registry = json.loads((ROOT / "models/registry.json").read_text(encoding="utf-8"))
+    candidates = [e for e in registry["artifacts"] if e["model_id"].startswith("ppo-p1-e2-")]
+    assert len(candidates) == 5
+    for entry in candidates:
+        assert entry["status"] != "promoted"  # outcome C: PPO is not promoted
+        blob = json.dumps(entry["metrics"])
+        assert "evaluation and promotion are T30" not in blob
+        assert f"registered outcome {outcome}" in entry["metrics"]["claim"]
+        assert f"registered outcome {outcome}" in entry["metrics"]["null_reasons"]["evaluation_ref"]
+        assert entry["evaluation_ref"] is None  # no per-entry evaluation id is stored; it is not a promotion
 
 
 def test_no_stale_joblib_references_remain_in_loader_code():

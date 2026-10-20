@@ -13,7 +13,7 @@ Last updated 2026-10-17 (Task 33). **TwinGrid is simulator-only.** "Done" below 
 | FE-15 | Scenario library | Done, committed | G-SCN real-backend run: [G-SCN.real-run.md](../../../docs/frontend/contracts/G-SCN.real-run.md) |
 | FE-16 | Run workflow | Done, committed; G-RUN passed on the real backend at `db92487705ba6ffe554b4c819b8006187966a446` | `G-RUN.real-run.md` (owner record) |
 | FE-17 | Evaluation + E2E-2 | Built against G-EVAL with owner-approved decisions (BE-G2 as specified; definitions and metrics verbatim from `PREREGISTRATION.json`; `ci_level` 0.95; T30 runs not served; static origin `simulated`; `NOT_EVALUATED` shows "definition not provided"). Applied and committed: `src/pages/Evaluation.tsx` is built into `dist/assets/Evaluation-*.js` and its tests ran in the IG-00 run; `git status --short` at `0c5b98a` lists no frontend changes. A real-backend capture of `/api/evaluations` is not recorded. | [G-EVAL.md](../../../docs/frontend/contracts/G-EVAL.md) |
-| FE-18 | Telemetry history | Delivered as a delta that imports FE-17 files, so it needs FE-17 first. Real-stack runbook in [G-HIST.md](../../../docs/frontend/contracts/G-HIST.md) still pending; the simulator alone writes no stored telemetry (producer gap, backend BE-G1), so a simulator-only stack shows the empty state. Applied: `TelemetryHistory` is built and its tests ran in the IG-00 run (commit `0c5b98a`). | tests under `src/telemetry/history/`, `src/pages/TelemetryHistory.test.tsx` |
+| FE-18 | Telemetry history | Delivered as a delta that imports FE-17 files, so it needs FE-17 first. Real-stack runbook in [G-HIST.md](../../../docs/frontend/contracts/G-HIST.md) still pending; and the producer exists in source (`_store_live_sample` writes the five feature sensors each tick, default on), so the history page is empty only until `seed_facility.py --seed-sensors` has run; not yet run on a real stack (see [RT-001](../../../docs/roadmap/RT-001.md)). Applied: `TelemetryHistory` is built and its tests ran in the IG-00 run (commit `0c5b98a`). | tests under `src/telemetry/history/`, `src/pages/TelemetryHistory.test.tsx` |
 | FE-19 | Accessibility sweep | **Not signed.** Fixes and tests written; none executed (no browser/backend where authored). Contrast, 200 % zoom/320 px reflow and screen-reader notes are pending. | [a11y/FE-19.md](a11y/FE-19.md) |
 | FE-20 | Performance measurement | **Not measured.** Harness only; every budget is unmeasured, not met. No breach list, so FE-20b has not started and no optimisation is allowed. | [perf/FE-20.md](perf/FE-20.md) |
 | FE-21 | Documentation closure | This change: README, RELEASE, docs set | docs diff |
@@ -47,12 +47,12 @@ Tasks 25 to 29 were not present in the snapshot this table was written from; add
 
 1. **FE-19 evidence run:** `npm run verify`, then `e2e/a11y.spec.ts` with a real backend; zero serious/critical axe findings; record screen-reader notes. Sweep `/evaluation` and `/telemetry` (not swept at FE-19).
 2. **FE-20 numbers:** run the three commands in [perf/FE-20.md](perf/FE-20.md), fill Measured/Verdict, list or waive breaches. S4 needs ≥ 5,000 stored samples (not fabricated).
-3. *(Part resolved 2026-10-17: `src/components/FloorHeatmap.tsx` no longer exists in the tree. The rest of this note was not re-audited.)* **`src/components/FloorHeatmap.tsx` still exists** in the snapshot and contains a `useFrame` loop; `components/analyticsGate.test.ts` ("FloorHeatmap is deleted") should therefore fail. Deleting it is a code change outside FE-21; also needs `src/three/visualizationModes.ts` checked for the reference.
+3. *(Resolved in source 2026-10-20: `src/components/FloorHeatmap.tsx` is absent from the tree. `components/analyticsGate.test.ts` was not run.)*
 4. `index.css` keyframes `.pulse-dot` / `.scan-line` have no reduced-motion guard (unused; add a guard or delete).
 5. Analytics bar chart encodes cooling mode by colour; the summary and data table carry it in text. A pattern/legend is a design decision.
 6. `src/contract/fixtures/` held only a README in the snapshot: commit a real capture set before making `frontend-contract` blocking.
 7. CI `frontend-e2e` and `frontend-contract` are advisory until one recorded green run each.
-8. Roadmap open questions still unrecorded as resolved: UQ-1 `server_utilisation` unit; UQ-2 rack `external_id` ↔ `rackId` parity; UQ-3 canonical alert-write path; UQ-4 `/api/simulate` persistence; owner decision on two-halves rack rendering in thermal mode.
+8. Roadmap open questions: UQ-1 to UQ-4 are settled by [ADR 004 to 007](../../../docs/adr/); the owner decision on two-halves rack rendering in thermal mode is still not recorded (the code renders two halves, both facility-wide values; see [RT-001](../../../docs/roadmap/RT-001.md)).
 
 ## MR §25 status (paste-ready)
 
@@ -65,7 +65,7 @@ The MR itself is not in this repository; copy this block into §25.
 | G-SCN / FE-15 | Closed (real-backend run recorded) |
 | G-RUN / FE-16 | Closed (real-backend run recorded) |
 | G-EVAL / FE-17 | Built and applied at `0c5b98a` (IG-00); real-backend capture not recorded |
-| G-HIST / FE-18 | Delivered; real-stack runbook and producer (BE-G1) pending |
+| G-HIST / FE-18 | Delivered; producer present in source, real-stack runbook not yet run |
 | FE-19 accessibility | Written, **not signed** |
 | FE-20 performance | Harness only, **not measured** |
 | FE-21 docs | Done |

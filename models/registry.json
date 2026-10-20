@@ -430,7 +430,7 @@
         "null_reasons": {
           "dataset_id": "no dataset: the policy is trained on the synthetic DataCentreEnv v2 day (src/rl/env.py); dataset v2 does not exist yet (T25 needs owner-supplied cleaned inputs)",
           "dataset_manifest_sha256": "no dataset manifest: same reason as dataset_id",
-          "evaluation_ref": "not evaluated: evaluation and promotion are T30",
+          "evaluation_ref": "not evaluated in this entry: no evaluation report is stored on it, and it is not promoted. The five physics-1 candidates were scored once as a set under the pre-registered protocol (registered outcome C, claim allowed: none; reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json, preregistration reports/policy_evaluation_physics1/PREREGISTRATION.json)",
           "compat_waiver": "no waiver: the candidate is fully compatible with the running code",
           "code_revision": "the code revision could not be determined (no git checkout and no GIT_SHA at training time)"
         },
@@ -463,7 +463,7 @@
           "statement": "Carbon term present; the signal is an assumption (a flat assumed intensity), not measured grid data."
         },
         "scenario_use": "lineage only: DataCentreEnv v2 generates its own synthetic day; scenario windows of the scenario set are not consumed during training",
-        "claim": "candidate only; not evaluated, not promoted; no statement is made about its quality or safety"
+        "claim": "candidate only, not promoted. Scored once in the physics-1 evaluation (registered outcome C, claim allowed: none: a fixed best-constant setting scored higher than every PPO seed); no statement is made about its quality, safety or energy savings"
       },
       "data_source": "synthetic: DataCentreEnv v2 (src/rl/env.py); no external dataset is read",
       "params": {
@@ -655,7 +655,7 @@
         "null_reasons": {
           "dataset_id": "no dataset: the policy is trained on the synthetic DataCentreEnv v2 day (src/rl/env.py); dataset v2 does not exist yet (T25 needs owner-supplied cleaned inputs)",
           "dataset_manifest_sha256": "no dataset manifest: same reason as dataset_id",
-          "evaluation_ref": "not evaluated: evaluation and promotion are T30",
+          "evaluation_ref": "not evaluated in this entry: no evaluation report is stored on it, and it is not promoted. The five physics-1 candidates were scored once as a set under the pre-registered protocol (registered outcome C, claim allowed: none; reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json, preregistration reports/policy_evaluation_physics1/PREREGISTRATION.json)",
           "compat_waiver": "no waiver: the candidate is fully compatible with the running code",
           "code_revision": "the code revision could not be determined (no git checkout and no GIT_SHA at training time)"
         },
@@ -688,7 +688,7 @@
           "statement": "Carbon term present; the signal is an assumption (a flat assumed intensity), not measured grid data."
         },
         "scenario_use": "lineage only: DataCentreEnv v2 generates its own synthetic day; scenario windows of the scenario set are not consumed during training",
-        "claim": "candidate only; not evaluated, not promoted; no statement is made about its quality or safety"
+        "claim": "candidate only, not promoted. Scored once in the physics-1 evaluation (registered outcome C, claim allowed: none: a fixed best-constant setting scored higher than every PPO seed); no statement is made about its quality, safety or energy savings"
       },
       "data_source": "synthetic: DataCentreEnv v2 (src/rl/env.py); no external dataset is read",
       "params": {
@@ -880,7 +880,7 @@
         "null_reasons": {
           "dataset_id": "no dataset: the policy is trained on the synthetic DataCentreEnv v2 day (src/rl/env.py); dataset v2 does not exist yet (T25 needs owner-supplied cleaned inputs)",
           "dataset_manifest_sha256": "no dataset manifest: same reason as dataset_id",
-          "evaluation_ref": "not evaluated: evaluation and promotion are T30",
+          "evaluation_ref": "not evaluated in this entry: no evaluation report is stored on it, and it is not promoted. The five physics-1 candidates were scored once as a set under the pre-registered protocol (registered outcome C, claim allowed: none; reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json, preregistration reports/policy_evaluation_physics1/PREREGISTRATION.json)",
           "compat_waiver": "no waiver: the candidate is fully compatible with the running code",
           "code_revision": "the code revision could not be determined (no git checkout and no GIT_SHA at training time)"
         },
@@ -913,7 +913,7 @@
           "statement": "Carbon term present; the signal is an assumption (a flat assumed intensity), not measured grid data."
         },
         "scenario_use": "lineage only: DataCentreEnv v2 generates its own synthetic day; scenario windows of the scenario set are not consumed during training",
-        "claim": "candidate only; not evaluated, not promoted; no statement is made about its quality or safety"
+        "claim": "candidate only, not promoted. Scored once in the physics-1 evaluation (registered outcome C, claim allowed: none: a fixed best-constant setting scored higher than every PPO seed); no statement is made about its quality, safety or energy savings"
       },
       "data_source": "synthetic: DataCentreEnv v2 (src/rl/env.py); no external dataset is read",
       "params": {
@@ -1105,7 +1105,7 @@
         "null_reasons": {
           "dataset_id": "no dataset: the policy is trained on the synthetic DataCentreEnv v2 day (src/rl/env.py); dataset v2 does not exist yet (T25 needs owner-supplied cleaned inputs)",
           "dataset_manifest_sha256": "no dataset manifest: same reason as dataset_id",
-          "evaluation_ref": "not evaluated: evaluation and promotion are T30",
+          "evaluation_ref": "not evaluated in this entry: no evaluation report is stored on it, and it is not promoted. The five physics-1 candidates were scored once as a set under the pre-registered protocol (registered outcome C, claim allowed: none; reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json, preregistration reports/policy_evaluation_physics1/PREREGISTRATION.json)",
           "compat_waiver": "no waiver: the candidate is fully compatible with the running code",
           "code_revision": "the code revision could not be determined (no git checkout and no GIT_SHA at training time)"
         },
@@ -1138,7 +1138,7 @@
           "statement": "Carbon term present; the signal is an assumption (a flat assumed intensity), not measured grid data."
         },
         "scenario_use": "lineage only: DataCentreEnv v2 generates its own synthetic day; scenario windows of the scenario set are not consumed during training",
-        "claim": "candidate only; not evaluated, not promoted; no statement is made about its quality or safety"
+        "claim": "candidate only, not promoted. Scored once in the physics-1 evaluation (registered outcome C, claim allowed: none: a fixed best-constant setting scored higher than every PPO seed); no statement is made about its quality, safety or energy savings"
       },
       "data_source": "synthetic: DataCentreEnv v2 (src/rl/env.py); no external dataset is read",
       "params": {
@@ -1330,7 +1330,7 @@
         "null_reasons": {
           "dataset_id": "no dataset: the policy is trained on the synthetic DataCentreEnv v2 day (src/rl/env.py); dataset v2 does not exist yet (T25 needs owner-supplied cleaned inputs)",
           "dataset_manifest_sha256": "no dataset manifest: same reason as dataset_id",
-          "evaluation_ref": "not evaluated: evaluation and promotion are T30",
+          "evaluation_ref": "not evaluated in this entry: no evaluation report is stored on it, and it is not promoted. The five physics-1 candidates were scored once as a set under the pre-registered protocol (registered outcome C, claim allowed: none; reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json, preregistration reports/policy_evaluation_physics1/PREREGISTRATION.json)",
           "compat_waiver": "no waiver: the candidate is fully compatible with the running code",
           "code_revision": "the code revision could not be determined (no git checkout and no GIT_SHA at training time)"
         },
@@ -1363,7 +1363,7 @@
           "statement": "Carbon term present; the signal is an assumption (a flat assumed intensity), not measured grid data."
         },
         "scenario_use": "lineage only: DataCentreEnv v2 generates its own synthetic day; scenario windows of the scenario set are not consumed during training",
-        "claim": "candidate only; not evaluated, not promoted; no statement is made about its quality or safety"
+        "claim": "candidate only, not promoted. Scored once in the physics-1 evaluation (registered outcome C, claim allowed: none: a fixed best-constant setting scored higher than every PPO seed); no statement is made about its quality, safety or energy savings"
       },
       "data_source": "synthetic: DataCentreEnv v2 (src/rl/env.py); no external dataset is read",
       "params": {

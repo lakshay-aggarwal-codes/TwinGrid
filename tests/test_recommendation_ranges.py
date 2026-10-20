@@ -48,6 +48,12 @@ def _only(root: Path, keep: str) -> None:
 def _env_executed_c(cfg: dict, physics: str, state: dict) -> float:
     env = DataCentreEnv(physics_version=physics, seed=0, max_steps=4)
     policy = bc.build_policy(cfg)
+    if cfg["name"] == "pid":
+        # Without a measured inlet the recommendation reports the PID's OPERATING POINT (its nominal set-point), not a
+        # control step from the plant's 10 C reset value (that step is rate-limited: from the clipped 16 C it would
+        # reach only 18 C under physics 1). So the scale check starts the policy at its nominal set-point.
+        policy.initial_setpoint_C = policy.nominal_setpoint_C
+        policy.reset()
     return env._action_to_control(policy.act(None, state))[0]
 
 
@@ -70,14 +76,21 @@ def test_recommended_celsius_is_what_the_environment_executes_under_physics_1(co
 
 @pytest.mark.skipif(active_physics_version() != PHYSICS_V1, reason="the shipped configs are tuned under physics 1")
 def test_the_old_legacy_scale_conversion_disagreed_with_the_environment_by_over_ten_degrees(configs):
-    """The pre-fix result for the shipped rule config (legacy formula) vs what the evaluation executed."""
+    """The pre-fix result (legacy 5..15 C formula under physics 1) vs what the evaluation executed.
+
+    Task 5 (ENG-001): the rule's set-point is fixed HERE (22 C = position 0.667 of 16..25) instead of read from the
+    shipped config, whose value moves with every re-tune. The legacy formula reports 5 + 0.667 * 10 = 11.67 C for an
+    action the environment runs at 22.0 C: 10.33 C apart.
+    """
     _only(configs, "rule")
+    _edit(configs, "rule", lambda c: c["parameters"].update(chilled_C=22.0))
     cfg = bc.load_config(bc.config_path("rule", configs), "rule")
     old_reported = bp.CHILLED_MIN_C + float(
         bc.build_policy(cfg).act(None, {"outside_temp": 22.0, "water_stress": 0.0})[0]
     ) * (bp.CHILLED_MAX_C - bp.CHILLED_MIN_C)
     executed = _env_executed_c(cfg, PHYSICS_V1, {"outside_temp": 22.0, "water_stress": 0.0})
-    assert old_reported == pytest.approx(12.0, abs=1e-3) and executed == pytest.approx(22.3, abs=1e-3)
+    assert old_reported == pytest.approx(5.0 + 10.0 * 6.0 / 9.0, abs=1e-3) and executed == pytest.approx(22.0, abs=1e-3)
+    assert executed - old_reported > 10.0
     assert _rec(configs)["selected"]["chilled_water_temp_C"] == pytest.approx(executed, abs=1e-3)
 
 
@@ -89,6 +102,10 @@ def test_legacy_0_recommendation_is_the_stored_celsius(configs, monkeypatch):
     running = bc.running_lineage()
     for name in ("pid", "rule"):
         _edit(configs, name, lambda c: c["lineage"].update(running))
+    # Task 5 (ENG-001): the shipped configs are physics 1; a legacy-0 config is the legacy scale in full: its recorded
+    # actuator range is 5..15 C (check_lineage refuses it otherwise) and its rule set-point is 12 C.
+    _edit(configs, "rule", lambda c: c["tuning"].update(actuator_range_C=[5.0, 15.0]))
+    _edit(configs, "rule", lambda c: c["parameters"].update(chilled_C=12.0))
     _only(configs, "rule")
     sel = _rec(configs, current_chilled_c=10.0)["selected"]
     assert sel["chilled_water_temp_C"] == pytest.approx(12.0, abs=1e-3)  # identity: stored C == reported C
@@ -125,13 +142,30 @@ def test_a_config_the_policy_cannot_hold_is_skipped_not_a_server_error(configs, 
 
 
 @pytest.mark.skipif(active_physics_version() != PHYSICS_V1, reason="the shipped configs are tuned under physics 1")
-def test_pid_step_starts_from_the_current_celsius_on_the_executed_scale(configs):
+def test_pid_step_starts_from_the_current_celsius_on_the_executed_scale(configs, monkeypatch):
+    """A PID whose own parameters are on the legacy 5..15 C scale, recommended under physics 1.
+
+    Task 5 (ENG-001): the shipped PID is now physics-1-native (so no conversion happens and the next test covers it);
+    the conversion branch is kept honest by building a legacy-scale policy explicitly.
+    """
     _only(configs, "pid")
-    _edit(configs, "pid", lambda c: c["parameters"].update(selected_gains={"kp": 1.0, "ki": 0.0, "kd": 0.0}))
+    monkeypatch.setattr(
+        bc, "build_policy", lambda cfg: bp.PIDPolicy(22.0, 1.0, 0.0, 0.0, nominal_setpoint_C=12.0, name="pid")
+    )
     # current 22 C = 0.667 of 16..25; the legacy-scale PID holds that as 11.667; error +1 -> 13.0 -> 0.8 -> 23.2 C
     sel = _rec(configs, current_chilled_c=22.0, inlet_temp_c=21.0)["selected"]
     assert sel["chilled_water_temp_C"] == pytest.approx(23.2, abs=1e-3)
     assert "one PID step" in sel["basis"] and "clipped" not in sel["basis"] and "converted" in sel["basis"]
+
+
+@pytest.mark.skipif(active_physics_version() != PHYSICS_V1, reason="the shipped configs are tuned under physics 1")
+def test_a_physics_1_pid_steps_in_physics_1_degrees_without_conversion(configs):
+    _only(configs, "pid")
+    _edit(configs, "pid", lambda c: c["parameters"].update(selected_gains={"kp": 1.0, "ki": 0.0, "kd": 0.0}))
+    # nominal 20.5 + kp * (22 - 21) = 21.5 C, inside the +-2 C rate window around the current 22 C
+    sel = _rec(configs, current_chilled_c=22.0, inlet_temp_c=21.0)["selected"]
+    assert sel["chilled_water_temp_C"] == pytest.approx(21.5, abs=1e-3)
+    assert "one PID step" in sel["basis"] and "clipped" not in sel["basis"] and "converted" not in sel["basis"]
 
 
 @pytest.mark.skipif(active_physics_version() != PHYSICS_V1, reason="the shipped configs are tuned under physics 1")

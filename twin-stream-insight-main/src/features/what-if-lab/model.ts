@@ -1,12 +1,16 @@
 /**
  * Task 15: what-if lab inputs. PURE.
  *
- * The four controls are the four inputs the backend's `GET /api/whatif` accepts that the lab exposes. Ranges and
- * defaults mirror the backend's (`api/services/scenario_registry.py`); the backend still validates every request, so a
- * drift here shows up as a 422, never as a wrong number. Water stress is not a lab control: it is held at the
- * backend default (0) in every run, and the lab says so.
+ * The four controls are the four inputs the backend's `GET /api/whatif` accepts that the lab exposes. IT load and
+ * ambient ranges mirror the backend's (`api/services/scenario_registry.py`); the backend still validates every request,
+ * so a drift here shows up as a 422, never as a wrong number. The set-point range is NOT a constant: it depends on the
+ * physics the server runs (legacy-0 5-15 C, physics 1 16-25 C), so it is read from the server (`setpoint_check` on
+ * `GET /api/optimizer/baseline-recommendation`, the same field the recommendation form uses) and passed in as a
+ * `SetpointRange`. Water stress is not a lab control: it is held at the backend default (0) in every run, and the lab
+ * says so.
  */
 import type { WhatIfParams } from "@/api/apiClient";
+import { setpointCheckOf } from "../optimizer-approvals/model";
 
 export const COOLING_MODES = [
   { id: "auto", label: "Auto (rule-based)" },
@@ -25,14 +29,49 @@ export interface LabInputs {
   readonly mode: CoolingModeId;
 }
 
+/** Controls whose range is fixed by the backend's registry. */
 export const LAB_BOUNDS = {
   itLoadPct: { min: 0, max: 100, step: 1, unit: "%" },
   ambientC: { min: -10, max: 50, step: 0.5, unit: "°C" },
-  setpointC: { min: 5, max: 15, step: 0.5, unit: "°C" },
 } as const;
+export type FixedKey = keyof typeof LAB_BOUNDS;
 
-/** The backend's documented what-if defaults (utilisation 0.65, outside 22 °C, chilled water 7 °C, mode auto). */
-export const DEFAULT_INPUTS: LabInputs = { itLoadPct: 65, ambientC: 22, setpointC: 7, mode: "auto" };
+/** The chilled-water set-point range the server's physics accepts for the lab, and where it came from. */
+export interface SetpointRange {
+  readonly min: number;
+  readonly max: number;
+  readonly step: number;
+  readonly unit: string;
+  /** The server's `physics_version`, when it said which. */
+  readonly physics: string | null;
+}
+
+export const SETPOINT_STEP_C = 0.5;
+
+/** The backend's own what-if default set-point (`WHATIF_DEFAULTS["chilled_water_temp"]`). It is a default, not a bound: it is clamped into the range. */
+export const BACKEND_WHATIF_SETPOINT_C = 7;
+
+/**
+ * The set-point range from an optimizer effect payload's `setpoint_check.actuator_range_C`. Null when the server sent
+ * no usable range (absent, malformed or empty): the lab then has no range and says so; it never falls back to a constant.
+ */
+export function setpointRangeOf(effect: object | null | undefined): SetpointRange | null {
+  const check = setpointCheckOf(effect);
+  if (check === null || check.actuatorRange === null) return null;
+  const [lo, hi] = check.actuatorRange;
+  if (!(lo < hi)) return null;
+  return { min: lo, max: hi, step: SETPOINT_STEP_C, unit: "°C", physics: check.physics };
+}
+
+/** The backend defaults, with the set-point moved into `range` (7 under legacy-0; the bottom of the range under physics 1). */
+export function defaultInputs(range: SetpointRange): LabInputs {
+  return {
+    itLoadPct: 65,
+    ambientC: 22,
+    setpointC: Math.min(range.max, Math.max(range.min, BACKEND_WHATIF_SETPOINT_C)),
+    mode: "auto",
+  };
+}
 
 export const WATER_STRESS_HELD = 0;
 
@@ -42,19 +81,26 @@ export const modeLabel = (id: string): string => COOLING_MODES.find((m) => m.id 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const round = (v: number, step: number) => Math.round(v / step) * step;
 
-/** Snap a number to a control's range and step; NaN falls back to `fallback`. */
-export function snap(key: keyof typeof LAB_BOUNDS, v: number, fallback: number): number {
+/** Snap a number to a fixed control's range and step; NaN falls back to `fallback`. */
+export function snap(key: FixedKey, v: number, fallback: number): number {
   if (!Number.isFinite(v)) return fallback;
   const b = LAB_BOUNDS[key];
   return clamp(Math.round(round(v, b.step) * 1000) / 1000, b.min, b.max);
 }
 
-export function normalise(i: Partial<LabInputs>): LabInputs {
+/** Snap a set-point to the server's range and step; NaN falls back to `fallback`. */
+export function snapSetpoint(v: number, range: SetpointRange, fallback: number): number {
+  if (!Number.isFinite(v)) return fallback;
+  return clamp(Math.round(round(v, range.step) * 1000) / 1000, range.min, range.max);
+}
+
+export function normalise(i: Partial<LabInputs>, range: SetpointRange): LabInputs {
+  const d = defaultInputs(range);
   return {
-    itLoadPct: snap("itLoadPct", i.itLoadPct ?? DEFAULT_INPUTS.itLoadPct, DEFAULT_INPUTS.itLoadPct),
-    ambientC: snap("ambientC", i.ambientC ?? DEFAULT_INPUTS.ambientC, DEFAULT_INPUTS.ambientC),
-    setpointC: snap("setpointC", i.setpointC ?? DEFAULT_INPUTS.setpointC, DEFAULT_INPUTS.setpointC),
-    mode: isMode(i.mode) ? i.mode : DEFAULT_INPUTS.mode,
+    itLoadPct: snap("itLoadPct", i.itLoadPct ?? d.itLoadPct, d.itLoadPct),
+    ambientC: snap("ambientC", i.ambientC ?? d.ambientC, d.ambientC),
+    setpointC: snapSetpoint(i.setpointC ?? d.setpointC, range, d.setpointC),
+    mode: isMode(i.mode) ? i.mode : d.mode,
   };
 }
 

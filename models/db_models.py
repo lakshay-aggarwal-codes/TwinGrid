@@ -644,3 +644,66 @@ class TelemetrySample(Base):
             name="ck_telemetry_invalid_reason",
         ),
     )
+
+
+# ---- T9 BEGIN ----
+ACCESS_STATUS_PENDING = "pending"
+ACCESS_STATUS_APPROVED = "approved"
+ACCESS_STATUS_ACTIVATED = "activated"
+ACCESS_STATUS_REJECTED = "rejected"
+ACCESS_STATUS_EXPIRED = "expired"
+ACCESS_STATUSES = (
+    ACCESS_STATUS_PENDING,
+    ACCESS_STATUS_APPROVED,
+    ACCESS_STATUS_ACTIVATED,
+    ACCESS_STATUS_REJECTED,
+    ACCESS_STATUS_EXPIRED,
+)
+ACCESS_NOTIFY_STATES = ("pending", "sent", "failed", "not_configured")
+
+
+class AccessRequest(Base):
+    """Task 9: a visitor's request for a viewer account (contract 8.1).
+
+    Tokens are never stored: ``status_token_hash`` and ``activation_token_hash`` are HMAC-SHA256 hex digests
+    (``src/access/tokens.py``). ``request_ip_hash`` is an HMAC of the client address, not the address.
+    At most one ``pending`` row exists per ``email_normalized`` (partial unique index ``uq_access_one_pending``).
+    """
+
+    __tablename__ = "access_requests"
+    __table_args__ = (
+        Index(
+            "uq_access_one_pending",
+            "email_normalized",
+            unique=True,
+            sqlite_where=text("status = 'pending'"),
+            postgresql_where=text("status = 'pending'"),
+        ),
+        Index("ix_access_requests_status_created", "status", "created_at", "id"),
+        UniqueConstraint("ref", name="uq_access_requests_ref"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    ref: Mapped[str] = mapped_column(String(16), nullable=False)
+    email_normalized: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    display_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    purpose: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default=ACCESS_STATUS_PENDING)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    decided_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    decided_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    decision_note: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # admin-only, never public
+    status_token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    activation_token_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    activation_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    activation_consumed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    notify_state: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    notify_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    notify_last_code: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
+    request_ip_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
+# ---- T9 END ----

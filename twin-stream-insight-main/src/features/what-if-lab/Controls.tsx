@@ -1,13 +1,15 @@
-import { COOLING_MODES, LAB_BOUNDS, describeInputs, snap, type LabInputs } from "./model";
+import { COOLING_MODES, LAB_BOUNDS, describeInputs, snap, snapSetpoint, type FixedKey, type LabInputs, type SetpointRange } from "./model";
 
 interface Props {
   inputs: LabInputs;
+  /** The server's set-point range for the running physics. */
+  range: SetpointRange;
   onChange: (next: LabInputs) => void;
   /** True while a newer setting is waiting out the debounce. */
   pending: boolean;
 }
 
-type NumKey = keyof typeof LAB_BOUNDS;
+type NumKey = FixedKey | "setpointC";
 const FIELDS: { key: NumKey; label: string; hint: string }[] = [
   { key: "itLoadPct", label: "IT load", hint: "Share of server capacity in use, held for all 24 h" },
   { key: "ambientC", label: "Ambient temperature", hint: "Outside air temperature, held for all 24 h" },
@@ -15,13 +17,15 @@ const FIELDS: { key: NumKey; label: string; hint: string }[] = [
 ];
 
 /** Three sliders (each with a number box) and the cooling-mode radio group. Native inputs: keyboard and screen-reader behaviour come for free. */
-export function Controls({ inputs, onChange, pending }: Props) {
-  const set = (key: NumKey, raw: number) => onChange({ ...inputs, [key]: snap(key, raw, inputs[key]) });
+export function Controls({ inputs, range, onChange, pending }: Props) {
+  const boundsOf = (key: NumKey) => (key === "setpointC" ? range : LAB_BOUNDS[key]);
+  const set = (key: NumKey, raw: number) =>
+    onChange({ ...inputs, [key]: key === "setpointC" ? snapSetpoint(raw, range, inputs.setpointC) : snap(key, raw, inputs[key]) });
   return (
     <fieldset className="space-y-4 rounded-md border border-border bg-card p-3" data-testid="lab-controls">
       <legend className="px-1 text-sm font-semibold text-foreground">Scenario inputs</legend>
       {FIELDS.map((f) => {
-        const b = LAB_BOUNDS[f.key];
+        const b = boundsOf(f.key);
         const id = `lab-${f.key}`;
         return (
           <div key={f.key} className="space-y-1">
@@ -56,6 +60,9 @@ export function Controls({ inputs, onChange, pending }: Props) {
           </div>
         );
       })}
+      <p className="text-[11px] text-muted-foreground" data-testid="lab-setpoint-source">
+        Set-point range {range.min} to {range.max} {range.unit}: the range the evaluated controllers can command{range.physics ? ` under physics ${range.physics}` : ""}, read from the server.
+      </p>
       <div role="radiogroup" aria-label="Cooling mode" className="space-y-1">
         <p className="text-sm text-foreground">Cooling mode</p>
         <div className="flex flex-wrap gap-1.5">

@@ -4,8 +4,14 @@ import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/apiError";
 
-const { fetchWhatIf, fetchSensitivity, downloadText } = vi.hoisted(() => ({ fetchWhatIf: vi.fn(), fetchSensitivity: vi.fn(), downloadText: vi.fn() }));
+const { fetchWhatIf, fetchSensitivity, downloadText, fetchRecommendation } = vi.hoisted(() => ({
+  fetchWhatIf: vi.fn(),
+  fetchSensitivity: vi.fn(),
+  downloadText: vi.fn(),
+  fetchRecommendation: vi.fn(),
+}));
 vi.mock("@/api/apiClient", () => ({ fetchWhatIf }));
+vi.mock("../optimizer-approvals/api", () => ({ fetchRecommendation }));
 vi.mock("./sensitivityApi", () => ({ fetchSensitivity }));
 vi.mock("./exportCsv", () => ({ downloadText }));
 vi.mock("@/lib/errorReporter", () => ({ reportError: vi.fn() }));
@@ -13,6 +19,15 @@ vi.mock("@/lib/errorReporter", () => ({ reportError: vi.fn() }));
 import LabPage from "./LabPage";
 import { signed } from "./metrics";
 import { CAPTURED_SWEEP, whatIfWith } from "./testFixtures";
+
+/** SYNTHETIC `GET /api/optimizer/baseline-recommendation` answer: only `predicted.setpoint_check` is read by the lab. */
+const recommendationFor = (physics: string, range: [number, number] | null) => ({
+  recommendation: { selected: null, considered: [], note: "" },
+  predicted: range === null ? null : { setpoint_check: { physics_version: physics, actuator_range_C: range, proposed_within_actuator_range: true, reference_within_actuator_range: true } },
+  persisted: false,
+});
+const LEGACY_0 = recommendationFor("0", [5, 15]);
+const PHYSICS_1 = recommendationFor("1", [16, 25]);
 
 /** SYNTHETIC stand-in for the backend: energy and outlet temperature rise with load, so deltas have a known sign and size. */
 const respond = (p: { utilisation: number; outside_temp: number; mode: string; chilled_water_temp: number }, carbonReal = false) =>
@@ -48,13 +63,14 @@ beforeEach(() => {
   fetchWhatIf.mockReset().mockImplementation(async (p) => respond(p));
   fetchSensitivity.mockReset().mockResolvedValue(CAPTURED_SWEEP);
   downloadText.mockReset();
+  fetchRecommendation.mockReset().mockResolvedValue(LEGACY_0);
 });
 afterEach(cleanup);
 
 describe("What-if lab", () => {
   it("opens with the results labelled a model estimate on simulated data, and runs the backend defaults", async () => {
     renderAt();
-    expect(screen.getByTestId("lab-estimate-label")).toHaveTextContent("model estimate on simulated data");
+    expect(await screen.findByTestId("lab-estimate-label")).toHaveTextContent("model estimate on simulated data");
     expect(await screen.findByTestId("lab-delta-cards")).toBeInTheDocument();
     expect(fetchWhatIf).toHaveBeenCalledWith({ utilisation: 0.65, outside_temp: 22, water_stress: 0, mode: "auto", chilled_water_temp: 7 }, expect.anything());
     // baseline = scenario at open: every delta is "unchanged"
@@ -207,10 +223,74 @@ describe("What-if lab", () => {
     expect(screen.queryByTestId("lab-delta-cards")).toBeNull();
   });
 
-  it("reset returns the controls to the backend defaults", async () => {
+  it("reset returns the controls to the default inputs", async () => {
     renderAt("/whatif-lab?load=90");
     await screen.findByTestId("lab-delta-cards");
     fireEvent.click(screen.getByRole("button", { name: "Reset inputs" }));
     expect((slider(/IT load/) as HTMLInputElement).value).toBe("65");
   });
+});
+
+describe("What-if lab: set-point range from the server's physics", () => {
+  const setpoint = () => slider(/Cooling setpoint/) as HTMLInputElement;
+
+  it("legacy-0: the slider is 5 to 15 and the default is 7", async () => {
+    renderAt();
+    await screen.findByTestId("lab-delta-cards");
+    expect([setpoint().min, setpoint().max, setpoint().value]).toEqual(["5", "15", "7"]);
+    expect(screen.getByTestId("lab-setpoint-source")).toHaveTextContent(/5 to 15 °C.*physics 0/);
+  });
+
+  it("physics 1: the slider is 16 to 25, the default is inside it, and the legacy 5 to 15 values appear nowhere", async () => {
+    fetchRecommendation.mockResolvedValue(PHYSICS_1);
+    renderAt();
+    await screen.findByTestId("lab-delta-cards");
+    expect([setpoint().min, setpoint().max, setpoint().value]).toEqual(["16", "25", "16"]);
+    expect((screen.getByLabelText("Cooling setpoint value") as HTMLInputElement).min).toBe("16");
+    expect(screen.getByTestId("lab-setpoint-source")).toHaveTextContent(/16 to 25 °C.*physics 1/);
+    expect(screen.getByTestId("lab-controls")).not.toHaveTextContent(/5 to 15/);
+    expect(fetchWhatIf.mock.calls.every((c) => c[0].chilled_water_temp >= 16 && c[0].chilled_water_temp <= 25)).toBe(true);
+    expect(fetchWhatIf.mock.calls.some((c) => c[0].chilled_water_temp === 7)).toBe(false);
+  });
+
+  it("physics 1: validation snaps a typed or linked set-point into 16 to 25", async () => {
+    fetchRecommendation.mockResolvedValue(PHYSICS_1);
+    renderAt("/whatif-lab?set=30&bset=7");
+    await screen.findByTestId("lab-delta-cards");
+    expect(setpoint().value).toBe("25");
+    fireEvent.change(screen.getByLabelText("Cooling setpoint value"), { target: { value: "10" } });
+    expect(setpoint().value).toBe("16");
+    await waitFor(() => expect(lastParams()?.chilled_water_temp).toBe(16));
+    expect(screen.getByTestId("lab-baseline-desc")).toHaveTextContent(/16 °C setpoint/);
+  });
+
+  it("the range is read from the server once, with the backend's own what-if defaults as context", async () => {
+    renderAt();
+    await screen.findByTestId("lab-delta-cards");
+    expect(fetchRecommendation).toHaveBeenCalledTimes(1);
+    expect(fetchRecommendation.mock.calls[0][0]).toEqual({ utilisation: 0.65, outside_temp: 22, water_stress: 0, mode: "auto", chilled_water_temp: 7, inlet_temp_c: null });
+  });
+
+  it("while the range is unknown the lab shows a loading state and runs nothing", async () => {
+    fetchRecommendation.mockReturnValue(new Promise(() => undefined));
+    renderAt();
+    expect(await screen.findByText(/Reading the set-point range/)).toBeInTheDocument();
+    expect(screen.queryByTestId("lab-controls")).toBeNull();
+    expect(fetchWhatIf).not.toHaveBeenCalled();
+  });
+
+  const unavailableCases: { name: string; arrange: () => void }[] = [
+    { name: "the request fails", arrange: () => void fetchRecommendation.mockRejectedValue(new ApiError({ kind: "server", status: 500 })) },
+    { name: "the server sends no recommendation to read a range from", arrange: () => void fetchRecommendation.mockResolvedValue(recommendationFor("1", null)) },
+    { name: "the range is empty", arrange: () => void fetchRecommendation.mockResolvedValue(recommendationFor("1", [20, 20])) },
+  ];
+  for (const c of unavailableCases) {
+    it(`is unavailable, not a guessed range, when ${c.name}`, async () => {
+      c.arrange();
+      renderAt();
+      await waitFor(() => expect(document.querySelector('[data-state="error"], [data-state="unavailable"]')).not.toBeNull());
+      expect(screen.queryByTestId("lab-controls")).toBeNull();
+      expect(fetchWhatIf).not.toHaveBeenCalled();
+    });
+  }
 });

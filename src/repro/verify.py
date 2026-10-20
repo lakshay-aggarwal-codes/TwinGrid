@@ -1,7 +1,9 @@
 """``repro.py verify``: recompute input hashes, regenerate the report from ``results.json``, diff.
 
 Every finding names the manifest field (or file) it is about. ``FAIL`` means the run can no longer be
-re-derived from what it recorded; ``WARN`` means something could not be checked or the environment
+re-derived from what it recorded; ``UNVERIFIABLE`` means a recorded input is gone and nothing proves it either way
+(a run made before pre-registrations were snapshotted whose shared file has since been overwritten): not a claim
+of tampering, and never a pass (fail closed); ``WARN`` means something could not be checked or the environment
 differs (level L1 needs the same one; other platforms are not claimed bit-identical). ``--strict``
 turns warnings into failures.
 """
@@ -14,12 +16,12 @@ from typing import Any
 
 from . import env, experiments, report
 from .canonical import canonical_bytes, sha256_bytes, sha256_input_file, sha256_raw_file
-from .run import REQUIRED_MANIFEST_FIELDS, RunError, execute_experiment, read_json, run_dir_for
+from .run import PREREG_SNAPSHOT, REQUIRED_MANIFEST_FIELDS, RunError, execute_experiment, read_json, run_dir_for
 
 
 @dataclass
 class Finding:
-    level: str  # "FAIL" | "WARN"
+    level: str  # "FAIL" | "UNVERIFIABLE" | "WARN"
     field: str
     message: str
 
@@ -38,6 +40,13 @@ class VerifyReport:
     def warn(self, name: str, message: str) -> None:
         self.findings.append(Finding("WARN", name, message))
 
+    def unverifiable(self, name: str, message: str) -> None:
+        self.findings.append(Finding("UNVERIFIABLE", name, message))
+
+    @property
+    def unverifiables(self) -> list[Finding]:
+        return [f for f in self.findings if f.level == "UNVERIFIABLE"]
+
     @property
     def failures(self) -> list[Finding]:
         return [f for f in self.findings if f.level == "FAIL"]
@@ -47,7 +56,12 @@ class VerifyReport:
         return [f for f in self.findings if f.level == "WARN"]
 
     def ok(self, strict: bool = False) -> bool:
-        return not self.failures and not (strict and self.warnings)
+        return not self.failures and not self.unverifiables and not (strict and self.warnings)
+
+    @property
+    def label(self) -> str:
+        """``FAIL`` > ``UNVERIFIABLE`` > ``PASS``: what a caller should print for the run."""
+        return "FAIL" if self.failures else "UNVERIFIABLE" if self.unverifiables else "PASS"
 
 
 def _lf(raw: bytes) -> bytes:
@@ -71,6 +85,34 @@ def _check_file(rep: VerifyReport, root: Path, name: str, rel: str, expected: st
     actual = sha256_input_file(path) if text else sha256_raw_file(path)
     if actual != expected:
         _mismatch(rep, name, expected, actual, f"{rel}: sha256 ")
+
+
+def _check_prereg(rep: VerifyReport, root: Path, run_dir: Path, m: dict[str, Any]) -> None:
+    """The pre-registration, from the run's OWN snapshot; the shared path is read only for a run that has none."""
+    if m["prereg_path"] is None:
+        if m.get("prereg_snapshot"):
+            rep.fail("prereg_snapshot", "the manifest records a snapshot but no pre-registration")
+        return
+    snapshot = m.get("prereg_snapshot")
+    if snapshot:
+        if snapshot != PREREG_SNAPSHOT:  # the name is fixed: a manifest cannot point verify at another file
+            rep.fail("prereg_snapshot", f"expected {PREREG_SNAPSHOT!r}, the manifest records {snapshot!r}")
+            return
+        _check_file(rep, run_dir, "prereg_sha256", snapshot, m["prereg_sha256"], text=True)
+        return
+    # Historical run (made before snapshots): the recorded hash can be checked only while the shared file is unchanged.
+    try:
+        shared = env.resolve_in_root(m["prereg_path"], root)
+    except env.PathOutsideRoot as exc:
+        rep.fail("prereg_sha256", str(exc))
+        return
+    if shared.is_file() and sha256_input_file(shared) == m["prereg_sha256"]:
+        return  # verified against the recorded hash: the shared file still is this run's pre-registration
+    rep.unverifiable(
+        "prereg_sha256",
+        "unverifiable (historical, snapshot absent): the run recorded only a hash of "
+        f"{m['prereg_path']}, which {'no longer exists' if not shared.is_file() else 'has changed since'}",
+    )
 
 
 def _check_code(rep: VerifyReport, root: Path, m: dict[str, Any]) -> None:
@@ -225,8 +267,7 @@ def verify_run(root: Path, run_id: str, *, runs_dir: str = env.RUNS_SUBDIR, reru
         _check_file(
             rep, root, "dataset_manifest_sha256", m["dataset_manifest_path"], m["dataset_manifest_sha256"], text=True
         )
-    if m["prereg_path"] is not None:
-        _check_file(rep, root, "prereg_sha256", m["prereg_path"], m["prereg_sha256"], text=True)
+    _check_prereg(rep, root, run_dir, m)
     if m["lock_path"] is not None:
         _check_file(rep, root, "lock_sha256", m["lock_path"], m["lock_sha256"], text=True)
     for art in m["artifacts"]:

@@ -1,0 +1,94 @@
+# Route x role authorization matrix, core routes (QA-001, Task 3).
+# Format and status classes: see the docstring of tests/authz_matrix.py. Other tasks add their own T<n>.yaml fragment.
+# Guards were read from the source (api/auth.py, api/plugins/*.py, api/routes/*.py); the HTTP test in
+# tests/test_authz_matrix.py is what proves each cell.
+
+routes:
+
+  # --- Public: no credentials needed (the handler may still refuse a bad body or key)
+  - {method: POST, path_template: "/auth/register", anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: POST, path_template: "/auth/login", anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: POST, path_template: "/auth/refresh", anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: POST, path_template: "/auth/logout", anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: GET, path_template: "/livez", anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: GET, path_template: "/readyz", anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: GET, path_template: "/healthz", anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: GET, path_template: "/metrics", anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: POST, path_template: "/api/client-errors", anonymous: public, viewer: public, operator: public, admin: public}
+
+  # --- Any signed-in user (get_current_user)
+  - {method: POST, path_template: "/auth/ws-ticket", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/health", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/state", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/benchmark", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/simulate/{hours}", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/whatif", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/whatif/sensitivity", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/scenarios", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/evaluations", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/evaluations/{evaluation_id}", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/equipment/health", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/esg_report", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/economics/summary", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/capacity/headroom", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/carbon/schedule", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/fleet/sites", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/facility", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/assets", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/assets/{asset_id}/edges", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/telemetry/sensors/{external_id}/samples", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/telemetry/sensors/{external_id}/gaps", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/anomaly_score", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/anomaly/status", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/alerts", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/alerts/inbox", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/alerts/{alert_id}/events", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/alerts/{alert_id}/explanation", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/models/passport", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/maintenance/health", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/maintenance/work-orders", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/maintenance/work-orders/{order_id}", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/optimizer/baseline-recommendation", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/optimizer/sandbox", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/optimizer/proposals", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/shadow_mode/summary", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/runs", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/runs/{run_id}", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/runs/{run_id}/result", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
+
+  # --- Operator only: require_operator checks the exact role 'operator', so admin is refused (pinned current behaviour)
+  - {method: POST, path_template: "/api/optimize", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: POST, path_template: "/api/optimize/train_async", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: GET, path_template: "/api/optimize/jobs/{job_id}", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: POST, path_template: "/api/shadow_mode/sample", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: POST, path_template: "/api/webhooks", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: DELETE, path_template: "/api/webhooks", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: POST, path_template: "/api/alerts/{alert_id}/acknowledge", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: PATCH, path_template: "/api/alerts/{alert_id}", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: POST, path_template: "/api/assets/{asset_id}/move", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: POST, path_template: "/api/assets/{asset_id}/edges", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  - {method: POST, path_template: "/api/edges/{edge_id}/close", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+
+  # --- Operator or admin: require_writer / require_proposer
+  - {method: POST, path_template: "/api/maintenance/work-orders", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: PATCH, path_template: "/api/maintenance/work-orders/{order_id}", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/maintenance/work-orders/{order_id}/status", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/optimizer/proposals", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+
+  # --- Admin only: require_admin
+  - {method: POST, path_template: "/api/optimizer/proposals/{proposal_id}/decision", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: GET, path_template: "/api/admin/users", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: POST, path_template: "/api/admin/users/{user_id}/role", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: GET, path_template: "/api/admin/audit", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: GET, path_template: "/api/admin/audit/export", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: GET, path_template: "/api/admin/webhooks", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: GET, path_template: "/api/admin/webhooks/deliveries", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: POST, path_template: "/api/admin/webhooks", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: PUT, path_template: "/api/admin/webhooks/{wid}", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: DELETE, path_template: "/api/admin/webhooks/{wid}", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: POST, path_template: "/api/admin/webhooks/{wid}/test", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+  - {method: GET, path_template: "/api/admin/system", anonymous: "401", viewer: "403", operator: "403", admin: 2xx}
+
+websockets:
+  # Rejected without a usable credential (close code 4001). Authenticated behaviour: tests/api/test_websocket.py.
+  - {path_template: "/ws/live", anonymous: rejected}

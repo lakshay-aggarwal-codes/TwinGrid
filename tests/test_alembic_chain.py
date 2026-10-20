@@ -39,6 +39,8 @@ M7 = "20261006000000"
 M8 = "20261007000000"
 # M9 = T28 (work_orders + work_order_events).
 M9 = "20261008000000"
+# M10 = T9 (access_requests).
+M10 = "20261101000000"
 
 
 def _script() -> ScriptDirectory:
@@ -68,7 +70,7 @@ def _tables(db: Path) -> set[str]:
 
 
 def test_single_head():
-    assert _script().get_heads() == [M9]
+    assert _script().get_heads() == [M10]
 
 
 def test_revision_ids_are_unique():
@@ -81,7 +83,7 @@ def test_revision_ids_are_unique():
 def test_chain_is_linear_and_in_the_agreed_order():
     script = _script()
     ordered = [rev.revision for rev in script.walk_revisions("base", "heads")][::-1]  # oldest first
-    assert ordered[-10:] == [LEGACY_HEAD, M1, M2, M3, M4, M5, M6, M7, M8, M9]
+    assert ordered[-11:] == [LEGACY_HEAD, M1, M2, M3, M4, M5, M6, M7, M8, M9, M10]
     for rev in script.walk_revisions():
         assert not rev.is_branch_point, f"{rev.revision} has more than one child"
         assert not rev.is_merge_point, f"{rev.revision} is a merge point"
@@ -94,6 +96,7 @@ def test_chain_is_linear_and_in_the_agreed_order():
     assert script.get_revision(M7).down_revision == M6
     assert script.get_revision(M8).down_revision == M7
     assert script.get_revision(M9).down_revision == M8
+    assert script.get_revision(M10).down_revision == M9
 
 
 # ----------------------------------------------------------------------------- SQLite round trip
@@ -115,7 +118,7 @@ def test_upgrade_downgrade_upgrade_on_sqlite(tmp_path):
 
     current = _alembic(db, "current")
     assert current.returncode == 0, current.stderr
-    assert M9 in current.stdout
+    assert M10 in current.stdout
 
 
 def test_orm_matches_migrations_no_autogenerate_diff(tmp_path):

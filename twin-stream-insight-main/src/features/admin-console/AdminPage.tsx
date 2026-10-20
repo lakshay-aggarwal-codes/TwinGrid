@@ -3,13 +3,14 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { roleAllows } from "../roles";
+import { AccessPanel } from "./AccessPanel";
 import { AuditPanel } from "./AuditPanel";
 import { SystemPanel } from "./SystemPanel";
 import { UsersPanel } from "./UsersPanel";
 import { WebhooksPanel } from "./WebhooksPanel";
 
 /**
- * `/admin`: users and roles, the audit log (filters, export), webhooks (add, change, test, delivery log) and system status.
+ * `/admin`: users and roles, access requests (approve or reject viewer sign-ups), the audit log (filters, export), webhooks (add, change, test, delivery log) and system status.
  * Admin only. The role check here is a UX gate: it decides what is offered and sends no request for anyone else; the backend
  * answers 403 to every non-admin on every route regardless. Only the open tab's panel is mounted, so only its data is fetched.
  */
@@ -41,11 +42,13 @@ export default function AdminPage() {
       <Tabs defaultValue="users" className="space-y-3">
         <TabsList className="h-auto max-w-full flex-wrap justify-start">
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="access">Access requests</TabsTrigger>
           <TabsTrigger value="audit">Audit log</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
         <TabsContent value="users"><UsersPanel /></TabsContent>
+        <TabsContent value="access"><AccessPanel /></TabsContent>
         <TabsContent value="audit"><AuditPanel /></TabsContent>
         <TabsContent value="webhooks"><WebhooksPanel /></TabsContent>
         <TabsContent value="system"><SystemPanel /></TabsContent>
