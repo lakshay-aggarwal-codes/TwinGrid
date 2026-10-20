@@ -5,6 +5,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Response, status
 
 from api.auth import get_current_user
+from api.demo_guard import require_not_demo
 from api.rate_limit import http_limit
 from api.schemas.runs import RunCreate
 from api.services import run_service
@@ -16,7 +17,7 @@ router = APIRouter(tags=["runs"])
 @router.post(
     "/api/runs",
     status_code=status.HTTP_202_ACCEPTED,
-    dependencies=[Depends(http_limit("whatif"))],
+    dependencies=[Depends(http_limit("whatif")), Depends(require_not_demo)],  # T13: a demo token may not start runs
 )
 async def submit_run(
     body: RunCreate, response: Response, user: Annotated[User, Depends(get_current_user)]

@@ -177,6 +177,20 @@ def decode_token(token: str) -> dict:
         )
 
 
+# ---- T13 BEGIN ----
+def is_demo_claims(claims: dict) -> bool:
+    """True only for a token minted by ``POST /auth/demo-session`` (claim ``demo`` is the JSON boolean ``true``)."""
+    return claims.get("demo") is True
+
+
+def get_token_claims(credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]) -> dict:
+    """The verified claims of the bearer token (same 401s as ``get_current_user`` for a bad or expired token)."""
+    return decode_token(credentials.credentials)
+
+
+# ---- T13 END ----
+
+
 # -----------------------------------------------------------------------------
 # Refresh tokens (opaque, hashed at rest, rotated on every use)
 # -----------------------------------------------------------------------------
