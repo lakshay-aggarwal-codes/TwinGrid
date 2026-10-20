@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { createDebouncer, type Timers } from "./debounce";
 import { DIRECTION_WORD, METRICS, deltaOf, deltasOf, readMetrics, signed, signedPct, thermalMargin, OUTLET_LIMIT_C } from "./metrics";
-import { DEFAULT_INPUTS, inputsEqual, normalise, snap, toParams, type LabInputs } from "./model";
+import { defaultInputs, inputsEqual, normalise, snap, snapSetpoint, toParams, type LabInputs, type SetpointRange } from "./model";
 import { CSV_HEADER, MAX_NAME, MAX_SAVED, addSaved, csvCell, parseSaved, parseSavedList, removeSaved, serializeSaved, toCsv, type SavedScenario, type Snapshot } from "./saved";
 import { CAPTURED_SWEEP, CAPTURED_WHATIF, whatIfWith } from "./testFixtures";
 import { axisExtent, axisPos, tornadoRows } from "./tornadoRows";
 import { parseLabUrl, withLabParams } from "./url";
 
+/** The legacy-0 set-point range (5-15 C). These pure tests run under it; `setpointRange.test.ts` covers the physics-dependent range. */
+const RANGE: SetpointRange = { min: 5, max: 15, step: 0.5, unit: "°C", physics: "0" };
+const DEFAULT_INPUTS = defaultInputs(RANGE);
 const I = (over: Partial<LabInputs> = {}): LabInputs => ({ ...DEFAULT_INPUTS, ...over });
 
 /** A fake clock: `set` records the callback, `advance(ms)` runs what is due. */
@@ -44,12 +47,12 @@ describe("inputs", () => {
     expect(snap("itLoadPct", 140, 65)).toBe(100);
     expect(snap("itLoadPct", -5, 65)).toBe(0);
     expect(snap("ambientC", 22.3, 22)).toBe(22.5);
-    expect(snap("setpointC", 4, 7)).toBe(5);
-    expect(snap("setpointC", NaN, 7)).toBe(7);
+    expect(snapSetpoint(4, RANGE, 7)).toBe(5);
+    expect(snapSetpoint(NaN, RANGE, 7)).toBe(7);
   });
   it("normalise repairs only by clamping and an unknown mode falls back to auto", () => {
-    expect(normalise({ itLoadPct: 500, mode: "banana" as never })).toEqual(I({ itLoadPct: 100 }));
-    expect(inputsEqual(normalise({}), DEFAULT_INPUTS)).toBe(true);
+    expect(normalise({ itLoadPct: 500, mode: "banana" as never }, RANGE)).toEqual(I({ itLoadPct: 100 }));
+    expect(inputsEqual(normalise({}, RANGE), DEFAULT_INPUTS)).toBe(true);
   });
 });
 
@@ -113,26 +116,26 @@ describe("shareable URL", () => {
   it("round-trips a scenario and a baseline", () => {
     const scenario = I({ itLoadPct: 80, ambientC: 31.5, setpointC: 9, mode: "closed_loop" });
     const baseline = I({ itLoadPct: 50, mode: "hybrid" });
-    const search = withLabParams("", { scenario, baseline });
-    expect(parseLabUrl(search)).toEqual({ scenario, baseline });
+    const search = withLabParams("", { scenario, baseline }, RANGE);
+    expect(parseLabUrl(search, RANGE)).toEqual({ scenario, baseline });
   });
   it("omits defaults, so the plain page has a clean address", () => {
-    expect(withLabParams("", { scenario: DEFAULT_INPUTS, baseline: DEFAULT_INPUTS })).toBe("");
-    expect(parseLabUrl("")).toEqual({ scenario: DEFAULT_INPUTS, baseline: DEFAULT_INPUTS });
+    expect(withLabParams("", { scenario: DEFAULT_INPUTS, baseline: DEFAULT_INPUTS }, RANGE)).toBe("");
+    expect(parseLabUrl("", RANGE)).toEqual({ scenario: DEFAULT_INPUTS, baseline: DEFAULT_INPUTS });
   });
   it("keeps unrelated parameters and replaces its own", () => {
-    const search = withLabParams("?foo=bar&load=10", { scenario: I({ itLoadPct: 90 }), baseline: DEFAULT_INPUTS });
+    const search = withLabParams("?foo=bar&load=10", { scenario: I({ itLoadPct: 90 }), baseline: DEFAULT_INPUTS }, RANGE);
     const p = new URLSearchParams(search);
     expect(p.get("foo")).toBe("bar");
     expect(p.get("load")).toBe("90");
   });
   it("snaps out-of-range values and ignores junk instead of trusting it", () => {
-    const { scenario } = parseLabUrl("?load=900&amb=abc&set=2&mode=banana");
+    const { scenario } = parseLabUrl("?load=900&amb=abc&set=2&mode=banana", RANGE);
     expect(scenario).toEqual(I({ itLoadPct: 100, setpointC: 5 }));
-    expect(parseLabUrl("?load=").scenario).toEqual(DEFAULT_INPUTS);
+    expect(parseLabUrl("?load=", RANGE).scenario).toEqual(DEFAULT_INPUTS);
   });
   it("a partial baseline fills the rest from the defaults", () => {
-    expect(parseLabUrl("?bmode=hybrid").baseline).toEqual(I({ mode: "hybrid" }));
+    expect(parseLabUrl("?bmode=hybrid", RANGE).baseline).toEqual(I({ mode: "hybrid" }));
   });
 });
 

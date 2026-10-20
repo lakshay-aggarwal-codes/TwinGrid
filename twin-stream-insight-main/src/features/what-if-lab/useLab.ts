@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchWhatIf, type WhatIfParams, type WhatIfResponse } from "@/api/apiClient";
+import { ApiError } from "@/api/apiError";
 import { useApiQuery, type UseApiQueryResult } from "@/state/useApiQuery";
+import { fetchRecommendation } from "../optimizer-approvals/api";
+import type { Context } from "../optimizer-approvals/model";
 import { createDebouncer } from "./debounce";
-import { toParams, type LabInputs } from "./model";
+import { BACKEND_WHATIF_SETPOINT_C, setpointRangeOf, toParams, type LabInputs, type SetpointRange } from "./model";
 import { fetchSensitivity } from "./sensitivityApi";
 import { STORAGE_KEY, parseSavedList, serializeSaved, type SavedScenario } from "./saved";
 import type { Sweep } from "./schema";
@@ -10,6 +13,39 @@ import type { Sweep } from "./schema";
 /** One backend run is a constant-input preview: the same inputs are not refetched for a minute (same as the existing What-If tab). */
 export const RUN_STALE_MS = 60_000;
 export const DEBOUNCE_MS = 400;
+/** The set-point range follows the server's physics, which does not change while the page is open. */
+export const RANGE_STALE_MS = 10 * 60_000;
+export const RANGE_QUERY_KEY = ["whatif-lab-setpoint-range"] as const;
+
+/** The backend's what-if defaults as an optimizer context: only the `setpoint_check` of the answer is used. */
+const RANGE_PROBE: Context = {
+  utilisation: 0.65,
+  outside_temp: 22,
+  water_stress: 0,
+  mode: "auto",
+  chilled_water_temp: BACKEND_WHATIF_SETPOINT_C,
+  inlet_temp_c: null,
+};
+
+/**
+ * The chilled-water set-point range for the physics the server runs, from `setpoint_check.actuator_range_C` of
+ * `GET /api/optimizer/baseline-recommendation` (the field the recommendation form reads). No endpoint exposes the
+ * what-if range directly. An answer with no usable range is "unavailable": the lab does not guess one.
+ */
+export function useSetpointRange(): UseApiQueryResult<SetpointRange> {
+  return useApiQuery<SetpointRange>({
+    queryKey: RANGE_QUERY_KEY,
+    queryFn: async ({ signal }) => {
+      const recommendation = await fetchRecommendation(RANGE_PROBE, signal);
+      const range = setpointRangeOf(recommendation.predicted);
+      if (range === null) throw new ApiError({ kind: "unavailable" });
+      return range;
+    },
+    staleTime: RANGE_STALE_MS,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+}
 
 /** `value` after `ms` of quiet. The first value is immediate, so the page never opens on an empty state. */
 export function useDebouncedInputs(value: LabInputs, ms: number = DEBOUNCE_MS): LabInputs {
