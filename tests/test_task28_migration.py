@@ -52,7 +52,8 @@ def _tables(db: Path) -> set[str]:
 
 def test_the_revision_is_the_single_head_and_revises_the_previous_one():
     script = _script()
-    assert script.get_heads() == [REV]
+    assert script.get_heads() == ["20261101000000"]  # T9 (access_requests) is the head now; this revision is its parent
+    assert script.get_revision("20261101000000").down_revision == REV
     rev = script.get_revision(REV)
     assert rev.down_revision == PARENT and not rev.is_branch_point and not rev.is_merge_point
 

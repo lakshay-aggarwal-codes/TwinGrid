@@ -1,0 +1,18 @@
+# Task 9 (AUTH-A): access requests. Fragment format (Task 3): routes: - {method, path_template, anonymous, viewer, operator, admin}
+# Values are HTTP status classes: 2xx, 401, 403, 404, 422, 429 or `public` (no authentication is involved at all).
+#
+# Public routes take no token; their protection is a rate limit and a request/activation token in the request itself.
+# Admin routes use the `require_admin` of api/plugins/admin_console.py: 401 without a token, 403 (+ audited
+# `permission_denied`) for viewer and operator. For an admin the sample path id does not exist, so the answer after
+# authorization is 404 (the matrix asserts the AUTH outcome only).
+routes:
+  - {method: POST, path_template: /api/access-requests, anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: GET, path_template: "/api/access-requests/{ref}/status", anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: POST, path_template: /api/access-requests/resend-activation, anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: POST, path_template: /api/access-requests/activate, anonymous: public, viewer: public, operator: public, admin: public}
+  - {method: GET, path_template: /api/admin/access-requests, anonymous: 401, viewer: 403, operator: 403, admin: 2xx}
+  - {method: GET, path_template: "/api/admin/access-requests/{request_id}", anonymous: 401, viewer: 403, operator: 403, admin: 404}
+  - {method: POST, path_template: "/api/admin/access-requests/{request_id}/approve", anonymous: 401, viewer: 403, operator: 403, admin: 404}
+  - {method: POST, path_template: "/api/admin/access-requests/{request_id}/reject", anonymous: 401, viewer: 403, operator: 403, admin: 404}
+  - {method: POST, path_template: "/api/admin/access-requests/{request_id}/resend-notification", anonymous: 401, viewer: 403, operator: 403, admin: 404}
+  - {method: POST, path_template: "/api/admin/access-requests/{request_id}/resend-activation", anonymous: 401, viewer: 403, operator: 403, admin: 404}
