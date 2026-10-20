@@ -10,6 +10,8 @@ import { API_BASE_URL, assertApiConfigured } from "@/config";
 import { isFailure, parseApi } from "@/contract/parse";
 import { reportError } from "@/lib/errorReporter";
 import {
+  AccessRequestSchema,
+  AccessRequestsSchema,
   AuditSchema,
   DeliveriesSchema,
   SystemSchema,
@@ -17,6 +19,8 @@ import {
   UserSchema,
   UsersSchema,
   WebhooksSchema,
+  type AccessRequest,
+  type AccessRequests,
   type AuditPage,
   type Deliveries,
   type SystemStatus,
@@ -32,7 +36,10 @@ export const KEYS = {
   webhooks: ["admin-webhooks"] as const,
   deliveries: (webhookId: string | null) => ["admin-deliveries", webhookId] as const,
   system: ["admin-system"] as const,
+  accessList: (qs: string) => ["admin-access", "list", qs] as const,
+  accessOne: (id: string) => ["admin-access", "one", id] as const,
 };
+export const ACCESS_ROOT = ["admin-access"] as const;
 export const AUDIT_ROOT = ["admin-audit"] as const;
 export const DELIVERIES_ROOT = ["admin-deliveries"] as const;
 
@@ -189,3 +196,35 @@ export const fetchDeliveries = (webhookId: string | null, signal?: AbortSignal, 
 // ------------------------------------------------------------------------------------------ system
 export const fetchSystem = (signal?: AbortSignal, fetchImpl?: typeof fetch): Promise<SystemStatus> =>
   call({ method: "GET", path: "/api/admin/system", label: "GET /api/admin/system", signal, fetchImpl }, SystemSchema);
+
+// ------------------------------------------------------------------------------------------ access requests (Task 12)
+export type AccessDecision = "approve" | "reject";
+const accessPath = (id: string) => `/api/admin/access-requests/${encodeURIComponent(id)}`;
+
+export const fetchAccessRequests = (query: string, signal?: AbortSignal, fetchImpl?: typeof fetch): Promise<AccessRequests> =>
+  call({ method: "GET", path: `/api/admin/access-requests?${query}`, label: "GET /api/admin/access-requests", signal, fetchImpl }, AccessRequestsSchema);
+
+export const fetchAccessRequest = (id: string, signal?: AbortSignal, fetchImpl?: typeof fetch): Promise<AccessRequest> =>
+  call({ method: "GET", path: accessPath(id), label: "GET /api/admin/access-requests/{id}", signal, fetchImpl }, AccessRequestSchema);
+
+/** Resolves to the SERVER's row. Repeating an approve/reject is idempotent server-side; the list is refetched, never patched. */
+export const decideAccessRequest = (id: string, decision: AccessDecision, note: string | null, fetchImpl?: typeof fetch): Promise<AccessRequest> =>
+  call(
+    {
+      method: "POST",
+      path: `${accessPath(id)}/${decision}`,
+      label: `POST /api/admin/access-requests/{id}/${decision}`,
+      body: note === null ? {} : { note },
+      fetchImpl,
+    },
+    AccessRequestSchema,
+  );
+
+/** The resend responses are not specified beyond success, so only the status is checked (no body is parsed or shown). */
+export async function resendAccessNotification(id: string, fetchImpl?: typeof fetch): Promise<void> {
+  await authed({ method: "POST", path: `${accessPath(id)}/resend-notification`, label: "POST /api/admin/access-requests/{id}/resend-notification", fetchImpl });
+}
+
+export async function resendAccessActivation(id: string, fetchImpl?: typeof fetch): Promise<void> {
+  await authed({ method: "POST", path: `${accessPath(id)}/resend-activation`, label: "POST /api/admin/access-requests/{id}/resend-activation", fetchImpl });
+}

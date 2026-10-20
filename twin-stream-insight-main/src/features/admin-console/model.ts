@@ -1,5 +1,5 @@
 /** Task 29: pure helpers (filters, wording, formatting). No React. The server validates everything again. */
-import type { AuditItem, Delivery, User, Webhook } from "./schema";
+import type { AccessRequest, AuditItem, Delivery, User, Webhook } from "./schema";
 
 export const ROLES = ["viewer", "operator", "admin"] as const;
 export const ROLE_LABEL: Record<string, string> = { viewer: "Viewer", operator: "Operator", admin: "Admin" };
@@ -157,4 +157,70 @@ export function docsHref(base: string, path: string): string {
   } catch {
     return path;
   }
+}
+
+// ------------------------------------------------------------------------------------------ access requests (Task 12)
+export const ACCESS_PAGE_SIZE = 20;
+export const NOTE_MAX_CHARS = 500;
+export const ACCESS_STATUSES = ["pending", "approved", "activated", "rejected", "expired"] as const;
+export type AccessFilter = (typeof ACCESS_STATUSES)[number] | "all";
+export const ACCESS_STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  approved: "Approved, awaiting activation",
+  activated: "Activated",
+  rejected: "Rejected",
+  expired: "Expired",
+};
+export const accessStatusLabel = (status: string): string => ACCESS_STATUS_LABEL[status] ?? `${status} (unrecognised)`;
+
+const NOTIFY_LABEL: Record<string, string> = {
+  pending: "Email queued",
+  sent: "Email sent",
+  failed: "Email failed",
+  not_configured: "Email not configured",
+};
+export const notifyLabel = (state: string): string => NOTIFY_LABEL[state] ?? `Email: ${state} (unrecognised)`;
+
+/** The list query: the status filter (omitted for "all"), the page size and the cursor. */
+export function accessQuery(filter: AccessFilter, beforeId: string | number | null = null): string {
+  const q = new URLSearchParams();
+  if (filter !== "all") q.set("status", filter);
+  q.set("limit", String(ACCESS_PAGE_SIZE));
+  if (beforeId !== null) q.set("before_id", String(beforeId));
+  return q.toString();
+}
+
+/** UX hints only; the server enforces every transition (409 `invalid_transition`). */
+export const canDecide = (r: Pick<AccessRequest, "status">): boolean => r.status === "pending";
+export const canResendNotification = (r: Pick<AccessRequest, "status" | "notify_state">): boolean =>
+  r.status === "pending" && r.notify_state !== "sent";
+export const canResendActivation = (r: Pick<AccessRequest, "status">): boolean => r.status === "approved";
+
+/** The optional admin-only note: blank means none; longer than the limit is refused rather than cut. */
+export function parseNote(text: string): Parsed<string | null> {
+  const v = text.trim();
+  if (v.length > NOTE_MAX_CHARS) return { ok: false, error: `The note is longer than ${NOTE_MAX_CHARS} characters.` };
+  return { ok: true, value: v === "" ? null : v };
+}
+
+/** `2026-10-27T09:00:00Z` (or `+00:00`) -> `2026-10-27 09:00 UTC`; anything unparseable is shown as it came. */
+export function utcText(iso: string | null): string {
+  if (!iso) return "unknown";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)} UTC`;
+}
+
+/** `2026-10-27 09:00 UTC (in 6 days)`; a time in the past reads `(expired)`. */
+export function expiresText(iso: string | null, nowMs: number): string {
+  if (!iso) return "unknown";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return iso;
+  const left = t - nowMs;
+  if (left <= 0) return `${utcText(iso)} (expired)`;
+  const mins = Math.floor(left / 60_000);
+  if (mins < 60) return `${utcText(iso)} (in ${Math.max(mins, 1)} min)`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 48) return `${utcText(iso)} (in ${hours} h)`;
+  return `${utcText(iso)} (in ${Math.floor(hours / 24)} days)`;
 }

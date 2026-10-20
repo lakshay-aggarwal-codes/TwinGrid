@@ -95,6 +95,32 @@ export const SystemSchema = z
   })
   .passthrough();
 
+// ------------------------------------------------------------------------------------------ access requests (Task 12)
+/**
+ * `/api/admin/access-requests` (contract section 8.1). Deliberately NOT `.passthrough()`: zod drops unknown keys, so a token
+ * or token hash that a server bug leaked into a response never reaches component state, let alone the page. `status` and
+ * `notify_state` stay free strings (an unknown value is shown as unrecognised, never repaired). `decision_note` is admin-only.
+ */
+export const AccessRequestSchema = z.object({
+  id: z.string(),
+  ref: z.string(),
+  name: z.string(),
+  email: z.string(),
+  purpose: nstr,
+  status: z.string(),
+  created_at: nstr,
+  expires_at: nstr,
+  decided_at: nstr,
+  decided_by: int.nullable(),
+  notify_state: z.string(),
+  notify_attempts: int,
+  decision_note: nstr.optional(),
+});
+export const AccessRequestsSchema = z.object({
+  items: z.array(AccessRequestSchema),
+  next_before_id: z.union([z.string(), int]).nullable(),
+});
+
 export type User = z.output<typeof UserSchema>;
 export type Users = z.output<typeof UsersSchema>;
 export type AuditItem = z.output<typeof AuditItemSchema>;
@@ -105,3 +131,5 @@ export type Webhooks = z.output<typeof WebhooksSchema>;
 export type Deliveries = z.output<typeof DeliveriesSchema>;
 export type TestResult = z.output<typeof TestResultSchema>;
 export type SystemStatus = z.output<typeof SystemSchema>;
+export type AccessRequest = z.output<typeof AccessRequestSchema>;
+export type AccessRequests = z.output<typeof AccessRequestsSchema>;

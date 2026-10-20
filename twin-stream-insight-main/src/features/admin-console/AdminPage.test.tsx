@@ -66,9 +66,9 @@ describe("AdminPage gate (UX; the backend answers 403 regardless)", () => {
     for (const hook of [useUsers, useAudit, useWebhooks, useDeliveries, useSystem]) expect(hook).not.toHaveBeenCalled();
   });
 
-  it("an admin sees the four tabs and the Users panel first, and nothing else is fetched yet", () => {
+  it("an admin sees the five tabs and the Users panel first, and nothing else is fetched yet", () => {
     render(<AdminPage />);
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Users", "Audit log", "Webhooks", "System"]);
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Users", "Access requests", "Audit log", "Webhooks", "System"]);
     expect(screen.getByTestId("users-panel")).toBeInTheDocument();
     expect(useUsers).toHaveBeenCalled();
     for (const hook of [useAudit, useWebhooks, useSystem]) expect(hook).not.toHaveBeenCalled();
