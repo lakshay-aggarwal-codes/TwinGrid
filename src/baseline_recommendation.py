@@ -13,6 +13,13 @@ turns that into degrees C with the per-physics actuator range (``policies.actuat
 proved it equals the physics the API twin runs). So the degrees C returned here are the degrees C the evaluation
 EXECUTED for the same action, and the twin the API predicts with consumes degrees C directly. It used to convert with the
 legacy 5..15 C range under every physics, which reported 12 C for an action the evaluation ran at 22.3 C.
+
+Hard constraints (Task 5, ENG-001). The constraint set is the harness's (``policy_evaluation.HARD_CONSTRAINT_METRICS``:
+outlet, inlet-over, inlet-under, PUE), the same tuple the tuner uses. A config whose stored validation counts show any
+step over one of them is never recommended, whatever its ``status`` says. A config tuned BEFORE PUE was a counted
+constraint (its recorded ``feasibility_rule`` differs from the running tuner's) has no PUE count at all; that is "not
+measured", not zero. It stays usable, so a re-tune is not needed for the endpoint to answer, but the result says so
+(``selected.lineage`` and ``selected.caveats``). Re-tune the baselines to clear the caveat.
 """
 
 from __future__ import annotations
@@ -20,9 +27,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from src import policy_evaluation as pe
 from src.baselines import config as bc
+from src.baselines import tuning
 from src.baselines.policies import actuator_range_C
 from src.optimizer import COOLING_MODES
+from src.repro.canonical import sha256_input_file
+from src.rl.env import UnsupportedPhysicsVersionForRL
 from src.versions import LEGACY_PHYSICS_VERSION
 
 CANDIDATES = ("pid", "rule")  # an exact tie goes to the LATER entry: the simpler rule controller
@@ -53,6 +64,43 @@ def _to_policy_scale(current_c: float, physics_version: str, policy_physics_vers
     fraction = (min(max(current_c, lo), hi) - lo) / (hi - lo)
     plo, phi = actuator_range_C(policy_physics_version)
     return plo + fraction * (phi - plo), clipped
+
+
+def _stored_violation_counts(cfg: dict[str, Any]) -> dict[str, Any] | None:
+    """The validation step counts per constraint the tuner stored for the parameters this config selects (or None)."""
+    result = cfg.get("tuning", {}).get("result", {})
+    if not isinstance(result, dict):
+        return None
+    if cfg["name"] == "rule":
+        counts = result.get("validation_violation_steps")
+        return counts if isinstance(counts, dict) else None
+    gains = (cfg.get("parameters") or {}).get("selected_gains")
+    target = (cfg.get("parameters") or {}).get("target_inlet_C")
+    for cand in result.get("candidates") or []:
+        same_gains = isinstance(gains, dict) and all(cand.get(k) == gains.get(k) for k in ("kp", "ki", "kd"))
+        same_target = cand.get("target_inlet_C", target) == target  # a tuner/2 candidate has no target field
+        if same_gains and same_target and isinstance(cand.get("violation_steps"), dict):
+            return cand["violation_steps"]
+    return None
+
+
+def hard_constraint_status(cfg: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """``(violated, not_counted)`` hard constraints of the harness for the stored counts of ``cfg``.
+
+    ``violated``: stored count is not exactly zero (NaN or a non-number counts as violated). ``not_counted``: the
+    tuner stored no count for it (a config tuned before the constraint existed): unknown, not zero.
+    """
+    counts = _stored_violation_counts(cfg)
+    if counts is None:
+        return [], list(pe.HARD_CONSTRAINT_METRICS)
+    violated, not_counted = [], []
+    for metric in pe.HARD_CONSTRAINT_METRICS:
+        value = counts.get(metric)
+        if metric not in counts:
+            not_counted.append(metric)
+        elif isinstance(value, bool) or not isinstance(value, (int, float)) or value != 0:
+            violated.append(metric)
+    return violated, not_counted
 
 
 def _stored_reward(cfg: dict[str, Any]) -> float | None:
@@ -112,6 +160,31 @@ def _setpoint(
     }
 
 
+def _lineage(cfg: dict[str, Any], path: Path) -> dict[str, Any]:
+    """``lineage`` (the config's version record + hashes) and ``caveats`` for the selected config."""
+    rule = cfg["tuning"]["feasibility_rule"]
+    _, not_counted = hard_constraint_status(cfg)
+    current = rule == tuning.FEASIBILITY_RULE
+    caveats = []
+    if not current or not_counted:
+        caveats.append(
+            "tuned before the PUE limit was a counted hard constraint: its PUE feasibility on validation was not "
+            f"checked (not measured: {', '.join(not_counted) or 'none recorded'}); re-tune the baselines"
+        )
+    return {
+        "lineage": {
+            **cfg["lineage"],
+            "tuner_version": cfg["tuner_version"],
+            "config_sha256": sha256_input_file(path),
+            "feasibility_rule": rule,
+            "feasibility_rule_is_current": current,
+            "hard_constraints": list(pe.HARD_CONSTRAINT_METRICS),
+            "hard_constraints_not_counted": not_counted,
+        },
+        "caveats": caveats,
+    }
+
+
 def recommend(
     root: Path,
     *,
@@ -134,7 +207,12 @@ def recommend(
                 row["reason"] = f"config status is {cfg['status']}"
             else:
                 bc.check_lineage(cfg)
-                if row["validation_reward"] is None:
+                violated, _ = hard_constraint_status(cfg)
+                if violated:
+                    row["reason"] = "the stored validation counts show steps over a hard constraint: " + ", ".join(
+                        violated
+                    )
+                elif row["validation_reward"] is None:
                     row["reason"] = "the config stores no validation reward, so it cannot be ranked"
                 else:
                     bc.build_policy(
@@ -142,6 +220,8 @@ def recommend(
                     )  # a set-point the policy cannot hold must skip THIS config, not fail the request
                     row["usable"] = True
                     usable.append((row["validation_reward"], order, cfg, row))  # later in CANDIDATES wins a tie
+        except UnsupportedPhysicsVersionForRL:  # before ValueError (its base class): raise-and-skip, never clip
+            row["reason"] = "the config's physics version is not supported by the RL environment; re-tune it"
         except bc.BaselineConfigStale:
             row["reason"] = "tuned against different code or scenarios than the running ones; re-tune it"
         except bc.BaselineConfigError:
@@ -158,6 +238,7 @@ def recommend(
             "validation_reward": reward,
             "tuner_version": cfg["tuner_version"],
             "config": f"{bc.CONFIG_DIR}/{cfg['name']}.json",
+            **_lineage(cfg, bc.config_path(cfg["name"], root)),
             **_setpoint(
                 cfg,
                 outside_temp=outside_temp,

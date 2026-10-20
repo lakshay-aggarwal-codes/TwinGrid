@@ -11,10 +11,12 @@ Rules shared by all of them:
 * Every function takes a list of validation scenarios and never sees the test split.
   ``assert_validation_only`` raises ``TuningLeak`` for any scenario that is not a validation scenario.
 * Objective: highest mean total reward (the PPO objective) over the validation scenarios.
-* Feasibility: a candidate is feasible only if it has ZERO outlet-over-limit, inlet-over-max and
-  inlet-under-min steps in EVERY validation episode. The envelope is never loosened: if no candidate is
-  feasible the baseline is recorded as ``infeasible`` (with the least-violating candidate for
-  information) and is not evaluated on the test set.
+* Feasibility: a candidate is feasible only if it has ZERO steps over any HARD constraint of the evaluation harness
+  (``policy_evaluation.HARD_CONSTRAINT_METRICS``: outlet-over-limit, inlet-over-max, inlet-under-min and PUE-over-max)
+  in EVERY validation episode. The tuner imports that tuple; it does not keep a copy (Task 5, ENG-001: the tuner used
+  to omit PUE, so it could select a candidate the harness then counts as an envelope violation). The envelope is
+  never loosened: if no candidate is feasible the baseline is recorded as ``infeasible`` (with the least-violating
+  candidate for information) and is not evaluated on the test set.
 * Ties (rewards within ``tie_tolerance``) are broken lexicographically on the candidate's key, ascending:
   ``(chilled_C, mode index)`` for actions, ``(kp, ki, kd)`` for gains. No randomness anywhere.
 
@@ -58,10 +60,11 @@ PID_TARGET_MARGINS_C: tuple[float, ...] = (5.0, 3.0, 2.0, 1.0)
 OBJECTIVE = (
     "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates"
 )
-FEASIBILITY_RULE = (
-    "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode"
-)
-_ENVELOPE_METRICS = ("outlet_violation_steps", "inlet_over_max_steps", "inlet_under_min_steps")
+# The tuner's hard-constraint set IS the harness's (one definition, imported). The rule text is derived from it, so the
+# text a config records (``tuning.feasibility_rule``; ``baselines.evaluation`` refuses a config whose text differs) can
+# never drift from the metrics actually counted.
+_ENVELOPE_METRICS: tuple[str, ...] = tuple(pe.HARD_CONSTRAINT_METRICS)
+FEASIBILITY_RULE = f"zero {', '.join(_ENVELOPE_METRICS[:-1])} and {_ENVELOPE_METRICS[-1]} in every validation episode"
 Progress = Callable[[str], None]
 
 
@@ -144,7 +147,21 @@ def envelope_counts(results: Sequence[pe.EpisodeResult]) -> dict[str, int]:
 
 
 def is_feasible(counts: dict[str, int]) -> bool:
-    return sum(counts.values()) == 0
+    """Feasible only if every HARD constraint is counted (a missing key is an error, never a silent zero) and zero."""
+    missing = [m for m in _ENVELOPE_METRICS if m not in counts]
+    if missing:
+        raise ValueError(f"violation counts lack the hard constraint(s) {missing}; feasibility cannot be judged")
+    return sum(counts[m] for m in _ENVELOPE_METRICS) == 0
+
+
+def step_violates_envelope(state: dict[str, Any]) -> bool:
+    """One step's state against the same four hard limits the harness counts (a NaN PUE counts, as in the harness)."""
+    return bool(
+        state["outlet_temp"] > pe.OUTLET_MAX
+        or state["inlet_temp"] > pe.INLET_TEMP_MAX
+        or state["inlet_temp"] < pe.INLET_TEMP_MIN
+        or not float(state["pue"]) <= pe.PUE_MAX_SAFE
+    )
 
 
 def curve_sha256(curve: np.ndarray) -> str:
@@ -201,11 +218,7 @@ class ActionSweep:
                 rows: list[tuple[float, float, float, float]] = []
 
                 def on_step(before: dict[str, Any], reward: float, after: dict[str, Any], rows=rows) -> None:
-                    violated = (
-                        after["outlet_temp"] > pe.OUTLET_MAX
-                        or after["inlet_temp"] > pe.INLET_TEMP_MAX
-                        or after["inlet_temp"] < pe.INLET_TEMP_MIN
-                    )
+                    violated = step_violates_envelope(after)  # incl. PUE: Lookup's per-cell feasibility uses this
                     rows.append((float(before["utilisation"]), float(before["outside_temp"]), reward, float(violated)))
 
                 results.append(pe.run_episode(policy, scenario, self.eval_cfg, self.carbon, on_step=on_step))
