@@ -5,11 +5,14 @@ Real app, in-memory SQLite (tests/api/conftest.py). Nothing here uses a real fac
 
 from __future__ import annotations
 
+import inspect
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
+import yaml
 from jose import jwt
 from sqlalchemy import func, select
 
@@ -17,9 +20,11 @@ import api.auth as auth
 from api.demo_guard import ALLOWED_DEMO_WRITES, WRITE_METHODS, require_not_demo
 from api.errors import ApiError
 from api.main import app
+from api.plugins import copilot as copilot_plugin
 from api.plugins import demo_session
 from api.rate_limit import limiter
-from models.db_models import AuditLog, RefreshToken
+from models.db_models import AuditLog, Base, RefreshToken
+from src.copilot import tools as copilot_tools
 
 PATH = "/auth/demo-session"
 
@@ -228,3 +233,80 @@ async def test_logout_is_a_no_op_for_a_demo_token(client, enabled, demo_viewer):
     body = await _issue(client)
     r = await client.post("/auth/logout", json={"refresh_token": body["access_token"]})
     assert r.status_code == 204
+
+
+# ----------------------------------------------------------------------------- Task 3: assistant open, writes closed
+ASK = "/api/copilot/ask"
+T13_FRAGMENT = Path(__file__).resolve().parents[1] / "authz_matrix.d" / "T13.yaml"
+ASK_BODY = {"question": "What does the temperature signal mean?", "context": {"kind": "general"}}
+
+
+def _t13_rows() -> list[dict]:
+    return yaml.safe_load(T13_FRAGMENT.read_text(encoding="utf-8"))["routes"]
+
+
+async def _row_counts(session_maker) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    async with session_maker() as s:
+        for table in Base.metadata.sorted_tables:
+            counts[table.name] = (await s.execute(select(func.count()).select_from(table))).scalar_one()
+    return counts
+
+
+async def test_a_demo_token_can_ask_the_assistant(client, enabled, demo_viewer):
+    token = (await _issue(client))["access_token"]
+    r = await client.post(ASK, json=ASK_BODY, headers=_bearer(token))
+    assert r.status_code == 200, r.text
+    assert r.json()["mode"] in ("rule_based", "llm")
+
+
+async def test_a_demo_ask_changes_no_row_in_any_table(client, session_maker, enabled, demo_viewer):
+    token = (await _issue(client))["access_token"]
+    before = await _row_counts(session_maker)
+    assert (await client.post(ASK, json=ASK_BODY, headers=_bearer(token))).status_code == 200
+    assert await _row_counts(session_maker) == before
+
+
+def test_the_ask_route_is_the_only_assistant_path_open_to_demo_and_has_no_write_tool():
+    assert ASK in ALLOWED_DEMO_WRITES
+    assert not [p for p in ALLOWED_DEMO_WRITES if "copilot" in p and p != ASK]
+    for name in copilot_tools.TOOLS:
+        assert not any(w in name for w in ("write", "create", "update", "delete", "set_", "ack", "approve")), name
+    source = inspect.getsource(copilot_plugin)
+    for banned in (".add(", ".commit(", ".delete(", "insert(", "update("):
+        assert banned not in source, banned
+
+
+def _guarded_in_matrix() -> set[tuple[str, str]]:
+    """Write routes the matrix says a demo token is denied: ``demo: 403`` in T13, plus write rows of other fragments
+    that carry no ``demo`` column at all (the guard denies those by default; T9's public access-request routes)."""
+    found: set[tuple[str, str]] = set()
+    for fragment in sorted(T13_FRAGMENT.parent.glob("*.yaml")):
+        for row in yaml.safe_load(fragment.read_text(encoding="utf-8")).get("routes") or []:
+            key = (row["method"], row["path_template"])
+            if row.get("demo") == 403 or (
+                "demo" not in row and key[0] in WRITE_METHODS and key[1] not in ALLOWED_DEMO_WRITES
+            ):
+                found.add(key)
+    return found
+
+
+def test_the_matrix_marks_exactly_the_guarded_write_routes_as_denied_to_demo():
+    in_matrix = _guarded_in_matrix()
+    assert in_matrix == set(WRITE_ROUTES), {
+        "in_matrix_only": sorted(in_matrix - set(WRITE_ROUTES)),
+        "in_openapi_only": sorted(set(WRITE_ROUTES) - in_matrix),
+    }
+    ask = [r for r in _t13_rows() if r["path_template"] == ASK]
+    assert len(ask) == 1 and ask[0]["demo"] != 403  # passes the guard (the probe body is invalid: 422)
+
+
+async def test_every_t13_demo_403_route_is_denied_and_the_ask_route_is_not(client, enabled, demo_viewer):
+    token = (await _issue(client))["access_token"]
+    denied = sorted(_guarded_in_matrix())
+    assert len(denied) >= 10
+    for method, path in denied:
+        r = await client.request(method, _fill(path), headers=_bearer(token))
+        assert r.status_code == 403 and r.json()["type"] == "urn:twingrid:error:demo_read_only", (method, path)
+    probe = await client.post(ASK, json={}, headers=_bearer(token))  # invalid body: validation, not the demo guard
+    assert probe.status_code == 422, probe.text

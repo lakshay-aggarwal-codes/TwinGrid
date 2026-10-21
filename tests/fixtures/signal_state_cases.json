@@ -574,8 +574,8 @@
       }
     },
     {
-      "id": "observed_in_the_future_is_age_zero",
-      "description": "clock skew: a timestamp ahead of now is age 0",
+      "id": "observed_slightly_ahead_is_age_zero",
+      "description": "clock skew inside the 5 s allowance: a timestamp ahead of now is age 0",
       "input": {
         "value": 22.0,
         "observed_at": "2026-10-20T10:10:05Z",
@@ -600,6 +600,122 @@
         "observed_at": "2026-10-20T10:10:05Z",
         "age_s": 0.0,
         "unit": "°C"
+      }
+    },
+    {
+      "id": "observed_exactly_at_the_skew_limit_is_age_zero",
+      "description": "exactly 5 s ahead is still inside the allowance (strict comparison)",
+      "input": {
+        "value": 22.0,
+        "observed_at": "2026-10-20T10:10:05Z",
+        "now": "2026-10-20T10:10:00Z",
+        "rule": {
+          "rule_id": "test_band",
+          "warn_low": 20.0,
+          "warn_high": 25.0,
+          "crit_low": 15.0,
+          "crit_high": 30.0,
+          "unit": "°C"
+        },
+        "stale_after_s": 10,
+        "connected": true
+      },
+      "expected": {
+        "status": "normal",
+        "reason_code": "within_bounds",
+        "value": 22.0,
+        "observed_at": "2026-10-20T10:10:05Z",
+        "age_s": 0.0,
+        "rule_id": "test_band",
+        "unit": "°C",
+        "threshold": null
+      }
+    },
+    {
+      "id": "observed_just_beyond_the_skew_limit_is_future",
+      "description": "5.001 s ahead of now is unknown / future: no number, no age",
+      "input": {
+        "value": 22.0,
+        "observed_at": "2026-10-20T10:10:05.001Z",
+        "now": "2026-10-20T10:10:00Z",
+        "rule": {
+          "rule_id": "test_band",
+          "warn_low": 20.0,
+          "warn_high": 25.0,
+          "crit_low": 15.0,
+          "crit_high": 30.0,
+          "unit": "°C"
+        },
+        "stale_after_s": 10,
+        "connected": true
+      },
+      "expected": {
+        "status": "unknown",
+        "reason_code": "future",
+        "value": null,
+        "observed_at": "2026-10-20T10:10:05.001Z",
+        "age_s": null,
+        "rule_id": "test_band",
+        "unit": "°C",
+        "threshold": null
+      }
+    },
+    {
+      "id": "observed_an_hour_ahead_is_future",
+      "description": "a reading dated an hour ahead is unknown / future, never normal",
+      "input": {
+        "value": 22.0,
+        "observed_at": "2026-10-20T11:10:00Z",
+        "now": "2026-10-20T10:10:00Z",
+        "rule": {
+          "rule_id": "test_band",
+          "warn_low": 20.0,
+          "warn_high": 25.0,
+          "crit_low": 15.0,
+          "crit_high": 30.0,
+          "unit": "°C"
+        },
+        "stale_after_s": 10,
+        "connected": true
+      },
+      "expected": {
+        "status": "unknown",
+        "reason_code": "future",
+        "value": null,
+        "observed_at": "2026-10-20T11:10:00Z",
+        "age_s": null,
+        "rule_id": "test_band",
+        "unit": "°C",
+        "threshold": null
+      }
+    },
+    {
+      "id": "future_critical_value_is_still_unknown",
+      "description": "a future-dated out-of-band value is unknown / future, not a current alarm",
+      "input": {
+        "value": 99.0,
+        "observed_at": "2026-10-20T11:10:00Z",
+        "now": "2026-10-20T10:10:00Z",
+        "rule": {
+          "rule_id": "test_band",
+          "warn_low": 20.0,
+          "warn_high": 25.0,
+          "crit_low": 15.0,
+          "crit_high": 30.0,
+          "unit": "°C"
+        },
+        "stale_after_s": 10,
+        "connected": true
+      },
+      "expected": {
+        "status": "unknown",
+        "reason_code": "future",
+        "value": null,
+        "observed_at": "2026-10-20T11:10:00Z",
+        "age_s": null,
+        "rule_id": "test_band",
+        "unit": "°C",
+        "threshold": null
       }
     },
     {

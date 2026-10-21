@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Annotated, Any, Optional
 
@@ -33,10 +34,17 @@ from src.copilot.schemas import AskRequest, AskResponse
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["copilot"])
 
+# An alert id of this database: ASCII digits only, at most 18 of them (fits a signed 64-bit integer). ``str.isdigit()``
+# is NOT enough: it is True for characters such as "\u00b2" and "\u2460" that ``int()`` rejects (an HTTP 500), and
+# ``int()`` itself accepts full-width digits, underscores, signs and surrounding spaces that are not ids.
+_ALERT_ID = re.compile(r"[0-9]{1,18}")
+# The only stored telemetry quality values that may be shown as a reading (``ck_telemetry_quality``: 'ok' | 'invalid').
+_USABLE_QUALITY = "ok"
+
 
 def _loaders(db: AsyncSession, user: User) -> tools.ToolContext:
     async def load_alert(alert_id: str) -> Optional[dict[str, Any]]:
-        if not alert_id.isdigit() or len(alert_id) > 18:  # not an id of this database: the alert does not exist
+        if _ALERT_ID.fullmatch(alert_id) is None:  # not an id of this database: the alert does not exist
             return None
         alert = await data_repository.get_alert(db, int(alert_id))
         if alert is None:
@@ -56,7 +64,9 @@ def _loaders(db: AsyncSession, user: User) -> tools.ToolContext:
                 select(TelemetrySample, Sensor)
                 .join(Sensor, Sensor.id == TelemetrySample.sensor_id)
                 .where(
-                    Sensor.external_id == signal, TelemetrySample.stream_id == "live", TelemetrySample.quality == "good"
+                    Sensor.external_id == signal,
+                    TelemetrySample.stream_id == "live",
+                    TelemetrySample.quality == _USABLE_QUALITY,
                 )
                 .order_by(TelemetrySample.ts_event.desc(), TelemetrySample.id.desc())
                 .limit(1)

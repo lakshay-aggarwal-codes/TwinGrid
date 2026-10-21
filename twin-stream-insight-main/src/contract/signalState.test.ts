@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SIGNAL_RULES,
+  FUTURE_TOLERANCE_S,
   SIGNAL_REASON_CODES,
   SIGNAL_STATUSES,
   evaluateSignal,
@@ -58,6 +59,26 @@ describe('properties', () => {
         expect(s.threshold).toBeNull();
       }
     }
+  });
+
+  it('a future-dated reading is unknown / future with no number, never normal or an alarm', () => {
+    for (const value of [-1e9, 0, 14.9, 22, 25.1, 30.1, 1e9]) {
+      for (const ahead of [5.001, 6, 60, 3600]) {
+        const s = evaluateSignal(value, secondsAgo(-ahead), NOW, BAND, 10);
+        expect([s.status, s.reason_code]).toEqual(['unknown', 'future']);
+        expect(s.value).toBeNull();
+        expect(s.threshold).toBeNull();
+        expect(s.age_s).toBeNull();
+      }
+    }
+  });
+
+  it('clock skew up to the tolerance is age 0 and judged normally', () => {
+    for (const ahead of [0, 0.001, 1, 4.999, 5]) {
+      const s = evaluateSignal(22, secondsAgo(-ahead), NOW, BAND, 10);
+      expect([s.status, s.reason_code, s.age_s]).toEqual(['normal', 'within_bounds', 0]);
+    }
+    expect(FUTURE_TOLERANCE_S).toBe(5);
   });
 
   it('unknown and offline never carry a number', () => {

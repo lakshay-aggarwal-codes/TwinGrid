@@ -5,20 +5,26 @@
  * Precedence (first match wins):
  *   1. no usable value (null/undefined/non-finite)  -> `unknown` (no_value) while connected, `offline` (disconnected) when not
  *   2. value but no observation time                -> `unknown` (no_value): freshness cannot be judged, so it is not shown as current
- *   3. age_s > stale_after_s                        -> `stale` (too_old): the value is kept as "last known" with its age
- *   4. a critical bound crossed                     -> `critical`
- *   5. a warning bound crossed                      -> `warning`
- *   6. otherwise                                    -> `normal`
+ *   3. observed_at ahead of now by more than FUTURE_TOLERANCE_S -> `unknown` (future): no number, age_s null. Ahead by at most
+ *      the tolerance is clock skew and counts as age 0.
+ *   4. age_s > stale_after_s                        -> `stale` (too_old): the value is kept as "last known" with its age
+ *   5. a critical bound crossed                     -> `critical`
+ *   6. a warning bound crossed                      -> `warning`
+ *   7. otherwise                                    -> `normal`
  * A bound is crossed only by a STRICT comparison (same as `SafetyEnvelope.violations`). Stale beats critical on purpose:
  * an old number is never a current alarm and never green. Field names are snake_case, exactly as in the fixture/JSON.
  */
 import { staleAfterMs } from '@/hooks/liveness';
+
+/** Clock-skew allowance in seconds; mirrors `FUTURE_TOLERANCE_S` in `src/signal_state.py`. */
+export const FUTURE_TOLERANCE_S = 5;
 
 export const SIGNAL_STATUSES = ['normal', 'warning', 'critical', 'stale', 'offline', 'unknown'] as const;
 export type SignalStatus = (typeof SIGNAL_STATUSES)[number];
 
 export const SIGNAL_REASON_CODES = [
   'no_value',
+  'future',
   'disconnected',
   'too_old',
   'above_crit',
@@ -85,7 +91,9 @@ export function evaluateSignal(
 ): SignalState {
   const nowMs = instantMs(now);
   const obsMs = instantMs(observedAt);
-  const age = obsMs !== null && nowMs !== null ? Math.max(0, nowMs - obsMs) / 1000 : null;
+  const deltaMs = obsMs !== null && nowMs !== null ? nowMs - obsMs : null;
+  const future = deltaMs !== null && -deltaMs > FUTURE_TOLERANCE_S * 1000;
+  const age = deltaMs !== null && !future ? Math.max(0, deltaMs) / 1000 : null;
   const base = { rule_id: rule.rule_id, observed_at: formatInstant(obsMs), age_s: age, unit: rule.unit } as const;
   const make = (status: SignalStatus, reason_code: SignalReasonCode, keepValue: boolean, threshold: number | null = null): SignalState => ({
     status,
@@ -96,7 +104,9 @@ export function evaluateSignal(
   });
 
   if (!isNum(value)) return connected ? make('unknown', 'no_value', false) : make('offline', 'disconnected', false);
-  if (obsMs === null || age === null) return make('unknown', 'no_value', false);
+  if (obsMs === null || deltaMs === null) return make('unknown', 'no_value', false);
+  if (future) return make('unknown', 'future', false);
+  if (age === null) return make('unknown', 'no_value', false);
   if (age > staleAfterS) return make('stale', 'too_old', true);
   if (isNum(rule.crit_high) && value > rule.crit_high) return make('critical', 'above_crit', true, rule.crit_high);
   if (isNum(rule.crit_low) && value < rule.crit_low) return make('critical', 'below_crit', true, rule.crit_low);
