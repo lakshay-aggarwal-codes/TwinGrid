@@ -789,10 +789,8 @@ class TestEventTableAdapter:
 
     def test_required_columns_exist_in_the_t25_event_table(self):
         """If T25's pipeline is present, the columns this adapter reads must still be in its event table."""
-        import importlib
+        from src import (
+            data_pipeline as dp,  # a hard import: the module is in the tree, an ImportError is a real failure
+        )
 
-        try:
-            dp = importlib.import_module("src.data_pipeline")
-        except ImportError:
-            pytest.skip("T25 (src/data_pipeline.py) is not in this tree")
         assert set(ae.REQUIRED_EVENT_COLUMNS) <= set(dp.EVENT_COLUMNS)

@@ -26,10 +26,18 @@ if (-not (Test-Path $envFile)) {
   $lines = @(
     "POSTGRES_PASSWORD=$(New-Secret 32)",
     "REDIS_PASSWORD=$(New-Secret 32)",
-    "JWT_SECRET_KEY=$(New-Secret 64)"
+    "JWT_SECRET_KEY=$(New-Secret 64)",
+    "MQTT_BROKER=localhost"
   )
   [System.IO.File]::WriteAllLines((Join-Path (Get-Location) $envFile), $lines)
   Write-Host "Created $envFile (random local secrets; git-ignored)."
+}
+
+# docker-compose.yml requires MQTT_BROKER for the opt-in mqtt-ingest service, and Compose checks every service's variables
+# even when its profile is off. The demo never starts that service; the value only has to exist. Also repairs an older .env.demo.
+if (-not (Select-String -Path $envFile -Pattern '^MQTT_BROKER=' -Quiet)) {
+  Add-Content -Path $envFile -Value 'MQTT_BROKER=localhost'
+  Write-Host "Added MQTT_BROKER=localhost to $envFile (needed by docker-compose.yml; the mqtt profile is not started)."
 }
 
 $compose = @('compose', '--env-file', $envFile, '-f', 'docker-compose.yml', '-f', 'docker-compose.demo.yml')

@@ -257,7 +257,8 @@ def test_invalid_plan_is_rejected_before_any_twin_is_built():
 
 
 def test_plugin_wraps_the_planner_and_defaults_its_rate_limit(monkeypatch):
-    C = pytest.importorskip("api.plugins.capacity")
+    from api.plugins import capacity as C  # a hard import: FastAPI is a locked runtime dependency
+
     assert C.DEFAULT_LIMIT == "12/minute"
     monkeypatch.delenv("RATE_LIMIT_CAPACITY", raising=False)
     assert C._limit() == "12/minute"
