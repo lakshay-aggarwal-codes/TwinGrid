@@ -33,6 +33,7 @@ ALLOWED_DEMO_WRITES = frozenset(
         "/auth/demo-session",
         "/client-errors",
         "/api/client-errors",
+        "/api/copilot/ask",  # Task 27: POST but read-only (no write tool, src/copilot/tools.py); demo viewers are meant to use it
     }
 )
 

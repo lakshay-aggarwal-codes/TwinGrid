@@ -207,13 +207,42 @@ def test_a_viewer_can_only_write_where_the_allow_list_says():
     assert not bad, f"viewer-writable routes without an allow-list entry: {bad}"
 
 
-def test_the_demo_column_is_not_declared_before_the_harness_can_test_it():
-    """Task 13 adds a demo-session token. Until its fixture exists here, a `demo:` cell would go unchecked."""
-    declared = [k for k, cells in DECLARED_HTTP.items() if "demo" in cells]
-    assert not declared, (
-        "a `demo` cell is declared but this harness has no demo-token fixture yet; Task 13 must add one to "
-        f"tests/test_authz_matrix.py and then delete this test. Rows: {declared}"
-    )
+DEMO_ROUTES = [r for r in PROBED if "demo" in DECLARED_HTTP[r.key]]
+
+
+@pytest_asyncio.fixture
+async def demo_token(session_maker, monkeypatch):
+    """A token exactly as POST /auth/demo-session mints it, for a real ``demo_viewer`` row (Task 27)."""
+    from api.plugins import demo_session
+
+    monkeypatch.setenv("DEMO_PUBLIC_ENABLED", "true")
+    async with session_maker() as s:
+        user = User(username=demo_session.DEMO_USERNAME, hashed_password="not-a-real-hash", role="viewer")
+        s.add(user)
+        await s.commit()
+        await s.refresh(user)
+    return demo_session.mint_demo_token(user.id, 5)
+
+
+def test_the_demo_column_covers_every_write_route_that_needs_a_viewer_or_more():
+    """A write route with no ``demo`` cell would rely on nothing but the middleware; make that a visible decision."""
+    missing = [
+        f"{m} {p}"
+        for (m, p), cells in sorted(DECLARED_HTTP.items())
+        if m in am.WRITE_METHODS and cells["anonymous"] == "401" and "demo" not in cells
+    ]
+    assert not missing, f"write routes behind a sign-in without a demo cell in tests/authz_matrix.d/: {missing}"
+
+
+@pytest.mark.parametrize("route", DEMO_ROUTES, ids=lambda r: f"{r.method} {r.path_template}")
+async def test_a_demo_token_gets_the_declared_outcome(client, demo_token, route):
+    expected = DECLARED_HTTP[route.key]["demo"]
+    response = await _probe(client, route, "demo", {"demo": demo_token})
+    assert am.status_matches(
+        expected, response.status_code
+    ), f"{route.method} {route.path_template}: demo token expected {expected}, got {response.status_code}"
+    if expected == "403" and route.method in am.WRITE_METHODS:
+        assert "demo_read_only" in response.text, "a denied demo write must be the read-only guard, not another 403"
 
 
 # ------------------------------------------------------------------------------------------------ websockets

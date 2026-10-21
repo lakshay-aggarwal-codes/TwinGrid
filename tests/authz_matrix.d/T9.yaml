@@ -12,7 +12,7 @@ routes:
   - {method: POST, path_template: /api/access-requests/activate, anonymous: public, viewer: public, operator: public, admin: public}
   - {method: GET, path_template: /api/admin/access-requests, anonymous: 401, viewer: 403, operator: 403, admin: 2xx}
   - {method: GET, path_template: "/api/admin/access-requests/{request_id}", anonymous: 401, viewer: 403, operator: 403, admin: 404}
-  - {method: POST, path_template: "/api/admin/access-requests/{request_id}/approve", anonymous: 401, viewer: 403, operator: 403, admin: 404}
-  - {method: POST, path_template: "/api/admin/access-requests/{request_id}/reject", anonymous: 401, viewer: 403, operator: 403, admin: 404}
+  - {method: POST, path_template: "/api/admin/access-requests/{request_id}/approve", anonymous: 401, viewer: 403, operator: 403, admin: 422}
+  - {method: POST, path_template: "/api/admin/access-requests/{request_id}/reject", anonymous: 401, viewer: 403, operator: 403, admin: 422}
   - {method: POST, path_template: "/api/admin/access-requests/{request_id}/resend-notification", anonymous: 401, viewer: 403, operator: 403, admin: 404}
   - {method: POST, path_template: "/api/admin/access-requests/{request_id}/resend-activation", anonymous: 401, viewer: 403, operator: 403, admin: 404}
