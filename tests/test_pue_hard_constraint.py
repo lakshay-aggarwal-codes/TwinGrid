@@ -210,14 +210,23 @@ def test_a_report_with_an_unknown_schema_is_still_refused(reports):
 
 
 # --------------------------------------------------------------------------------------- baselines must be re-tuned
-def test_a_baseline_config_tuned_under_the_old_feasibility_rule_is_refused_by_the_run():
+def test_a_baseline_config_tuned_under_the_old_feasibility_rule_is_refused_by_the_run(tmp_path):
     prereg = ROOT / "reports" / "policy_evaluation_physics1"
     eval_cfg = pe.load_preregistered_config(prereg)
     val = pe.build_scenarios(eval_cfg)["validation"]
+    # Build the stale case instead of waiting for one to exist in the repo: copy the shipped configs and put the
+    # pre-A2 feasibility rule (no PUE term) into one of them. This test used to skip once the configs were re-tuned,
+    # which made the CI "no skipped tests" gate fail and left the refusal untested.
     paths = {n: f"configs/baselines/{n}.json" for n in bcfg.BASELINE_NAMES}
-    cfg = bcfg.load_config(ROOT / paths["rule"], "rule")
-    if cfg["tuning"]["feasibility_rule"] == tuning.FEASIBILITY_RULE:
-        pytest.skip("the shipped configs were already re-tuned under amendment A2")
+    (tmp_path / "configs" / "baselines").mkdir(parents=True)
+    for rel in paths.values():
+        shutil.copy(ROOT / rel, tmp_path / rel)
+    stale = tmp_path / paths["rule"]
+    cfg = json.loads(stale.read_text(encoding="utf-8"))
+    old_rule = "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode"
+    assert old_rule != tuning.FEASIBILITY_RULE
+    cfg["tuning"]["feasibility_rule"] = old_rule
+    stale.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
     with pytest.raises(bcfg.BaselineConfigStale) as exc:
-        bev.load_baselines(ROOT, paths, eval_cfg, val, "x")
+        bev.load_baselines(tmp_path, paths, eval_cfg, val, "x")
     assert exc.value.field == "tuning.feasibility_rule"
