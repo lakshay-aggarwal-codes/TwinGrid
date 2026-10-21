@@ -1,8 +1,9 @@
-"""``signal_status``: the playbook 8.5 ``SignalState`` shape, from ``src/signal_state.evaluate`` when it exists.
+"""``signal_status``: the playbook 8.5 ``SignalState`` shape, from ``src/signal_state.evaluate`` (Task 16).
 
-Task 16 supplies ``src/signal_state.py``. Until then (``ImportError``) every status is ``unknown`` with reason code
+When no rule exists for a signal, or the rule cannot be evaluated, the status is ``unknown`` with reason code
 ``rule_unavailable``: the adapter never invents a state, and in particular never answers ``normal`` without a rule.
-Do not create ``src/signal_state.py`` here.
+(Integration: the ``ImportError`` fallback that stood in for a missing ``src/signal_state.py`` is removed now that
+Task 16 is merged.)
 """
 
 from __future__ import annotations
@@ -10,13 +11,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Mapping
 
-from . import evidence
+from src.signal_state import SignalRule, evaluate
 
-try:  # Task 16
-    from src.signal_state import SignalRule, evaluate  # type: ignore[import-not-found]
-except ImportError:  # pragma: no cover - exercised by test_copilot_signal_adapter (the module does not exist yet)
-    SignalRule = None  # type: ignore[assignment,misc]
-    evaluate = None  # type: ignore[assignment]
+from . import evidence
 
 RULE_FIELDS = ("warn_low", "warn_high", "crit_low", "crit_high")
 
@@ -47,7 +44,7 @@ def signal_status(
     unit: str | None = None,
 ) -> dict[str, Any]:
     """The section 8.5 shape: ``status, reason_code, rule_id, value, threshold, observed_at, age_s, unit``."""
-    if evaluate is None or SignalRule is None or rule is None:
+    if rule is None:
         return _unknown(rule, value, observed_at, now, unit)
     try:
         state = evaluate(

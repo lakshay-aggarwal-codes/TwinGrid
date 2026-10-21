@@ -101,8 +101,9 @@ describe('ActivatePage', () => {
     activateAccount.mockReturnValue(new Promise((r) => (finish = r)));
     render(<ActivatePage />);
     fillBoth(PW);
-    fireEvent.submit(form());
-    fireEvent.submit(form());
+    const f = form(); // looked up once: after the first submit the button reads "Activating…" and form() would no longer find it
+    fireEvent.submit(f);
+    fireEvent.submit(f);
     expect(activateAccount).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: /activating/i })).toBeDisabled();
     finish({ kind: 'ok' });

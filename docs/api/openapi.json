@@ -1,0 +1,7096 @@
+{
+  "components": {
+    "schemas": {
+      "AlertPatch": {
+        "additionalProperties": false,
+        "description": "At least one of ``status``, ``assignee`` (null/\"\" clears it) or ``note`` must be present.",
+        "properties": {
+          "assignee": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "open",
+                  "acknowledged",
+                  "resolved"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "AlertPatch",
+        "type": "object"
+      },
+      "AnomalyScoreResponse": {
+        "description": "Response for anomaly detection.",
+        "properties": {
+          "alert": {
+            "description": "True if anomaly detected",
+            "title": "Alert",
+            "type": "boolean"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only populated when alert=True: which of the 5 input features drove the score (feature_contributions_pct, top_feature). See src/anomaly_explain.py.",
+            "title": "Explanation"
+          },
+          "message": {
+            "description": "Human-readable message",
+            "title": "Message",
+            "type": "string"
+          },
+          "score": {
+            "description": "Reconstruction error score",
+            "title": "Score",
+            "type": "number"
+          },
+          "threshold": {
+            "description": "Model's trained alert threshold (reconstruction error at the configured percentile; see threshold_percentile in the Model Passport)",
+            "title": "Threshold",
+            "type": "number"
+          },
+          "type": {
+            "description": "Anomaly type or 'normal'",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "threshold",
+          "alert",
+          "type",
+          "message"
+        ],
+        "title": "AnomalyScoreResponse",
+        "type": "object"
+      },
+      "AskRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/Context"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryItem"
+            },
+            "maxItems": 6,
+            "title": "History",
+            "type": "array"
+          },
+          "question": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest",
+        "type": "object"
+      },
+      "AskResponse": {
+        "properties": {
+          "answer": {
+            "maxLength": 1500,
+            "title": "Answer",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/Limits"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "rule_based",
+              "llm"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "unknowns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unknowns",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "request_id",
+          "mode",
+          "answer",
+          "evidence",
+          "unknowns",
+          "warnings",
+          "links",
+          "limits"
+        ],
+        "title": "AskResponse",
+        "type": "object"
+      },
+      "AssetOut": {
+        "properties": {
+          "asset_type": {
+            "title": "Asset Type",
+            "type": "string"
+          },
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "located_in": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocatedInOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pose": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PoseOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retired_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retired At"
+          }
+        },
+        "required": [
+          "id",
+          "external_id",
+          "name",
+          "asset_type",
+          "retired_at",
+          "pose",
+          "located_in"
+        ],
+        "title": "AssetOut",
+        "type": "object"
+      },
+      "AssetRef": {
+        "properties": {
+          "asset_type": {
+            "title": "Asset Type",
+            "type": "string"
+          },
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "external_id",
+          "asset_type"
+        ],
+        "title": "AssetRef",
+        "type": "object"
+      },
+      "AssetsResponse": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/AssetOut"
+            },
+            "title": "Assets",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "facility_id": {
+            "title": "Facility Id",
+            "type": "integer"
+          },
+          "frame_unit": {
+            "title": "Frame Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "facility_id",
+          "frame_unit",
+          "as_of",
+          "count",
+          "assets"
+        ],
+        "title": "AssetsResponse",
+        "type": "object"
+      },
+      "Context": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "kind": {
+            "default": "general",
+            "enum": [
+              "alert",
+              "signal",
+              "model",
+              "feature",
+              "general"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "title": "Context",
+        "type": "object"
+      },
+      "DemoSessionResponse": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "demo": {
+            "default": true,
+            "title": "Demo",
+            "type": "boolean"
+          },
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "role": {
+            "default": "viewer",
+            "title": "Role",
+            "type": "string"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token",
+          "expires_in"
+        ],
+        "title": "DemoSessionResponse",
+        "type": "object"
+      },
+      "EdgeCloseRequest": {
+        "properties": {
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "title": "EdgeCloseRequest",
+        "type": "object"
+      },
+      "EdgeCreateRequest": {
+        "properties": {
+          "parent_asset_id": {
+            "title": "Parent Asset Id",
+            "type": "integer"
+          },
+          "relation": {
+            "maxLength": 16,
+            "minLength": 1,
+            "title": "Relation",
+            "type": "string"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          }
+        },
+        "required": [
+          "parent_asset_id",
+          "relation"
+        ],
+        "title": "EdgeCreateRequest",
+        "type": "object"
+      },
+      "EdgeOut": {
+        "properties": {
+          "child": {
+            "$ref": "#/components/schemas/AssetRef"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "parent": {
+            "$ref": "#/components/schemas/AssetRef"
+          },
+          "relation": {
+            "title": "Relation",
+            "type": "string"
+          },
+          "valid_from": {
+            "format": "date-time",
+            "title": "Valid From",
+            "type": "string"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "required": [
+          "id",
+          "relation",
+          "parent",
+          "child",
+          "valid_from",
+          "valid_to"
+        ],
+        "title": "EdgeOut",
+        "type": "object"
+      },
+      "EdgesResponse": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "integer"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/EdgeOut"
+            },
+            "title": "Edges",
+            "type": "array"
+          },
+          "include_history": {
+            "title": "Include History",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "asset_id",
+          "as_of",
+          "include_history",
+          "edges"
+        ],
+        "title": "EdgesResponse",
+        "type": "object"
+      },
+      "EvidenceItem": {
+        "properties": {
+          "entity": {
+            "title": "Entity",
+            "type": "string"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "freshness": {
+            "enum": [
+              "fresh",
+              "stale",
+              "unavailable",
+              "static"
+            ],
+            "title": "Freshness",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "origin": {
+            "enum": [
+              "simulated",
+              "measured",
+              "replayed",
+              "assumed",
+              "documentation",
+              "unknown"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "alert_explanation",
+              "twin_state",
+              "threshold_rule",
+              "model_passport",
+              "claims_ledger",
+              "capability_catalogue"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "entity",
+          "field",
+          "origin",
+          "freshness"
+        ],
+        "title": "EvidenceItem",
+        "type": "object"
+      },
+      "FacilityOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "frame_note": {
+            "title": "Frame Note",
+            "type": "string"
+          },
+          "frame_unit": {
+            "title": "Frame Unit",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "frame_unit",
+          "frame_note",
+          "created_at"
+        ],
+        "title": "FacilityOut",
+        "type": "object"
+      },
+      "GapOut": {
+        "properties": {
+          "duration_s": {
+            "title": "Duration S",
+            "type": "number"
+          },
+          "end": {
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "duration_s"
+        ],
+        "title": "GapOut",
+        "type": "object"
+      },
+      "GapsResponse": {
+        "properties": {
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapOut"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "sampling_interval_s": {
+            "title": "Sampling Interval S",
+            "type": "number"
+          },
+          "stream": {
+            "title": "Stream",
+            "type": "string"
+          },
+          "threshold_s": {
+            "title": "Threshold S",
+            "type": "number"
+          },
+          "truncated": {
+            "default": false,
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "external_id",
+          "stream",
+          "sampling_interval_s",
+          "threshold_s",
+          "gaps"
+        ],
+        "title": "GapsResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HistoryItem": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 500,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "HistoryItem",
+        "type": "object"
+      },
+      "Limits": {
+        "properties": {
+          "provider_configured": {
+            "default": false,
+            "title": "Provider Configured",
+            "type": "boolean"
+          }
+        },
+        "title": "Limits",
+        "type": "object"
+      },
+      "Link": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "path"
+        ],
+        "title": "Link",
+        "type": "object"
+      },
+      "LocatedInOut": {
+        "properties": {
+          "edge_id": {
+            "title": "Edge Id",
+            "type": "integer"
+          },
+          "parent_asset_id": {
+            "title": "Parent Asset Id",
+            "type": "integer"
+          },
+          "parent_external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent External Id"
+          },
+          "valid_from": {
+            "format": "date-time",
+            "title": "Valid From",
+            "type": "string"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "required": [
+          "edge_id",
+          "parent_asset_id",
+          "parent_external_id",
+          "valid_from",
+          "valid_to"
+        ],
+        "title": "LocatedInOut",
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "password": {
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "MoveRequest": {
+        "properties": {
+          "rotation_deg": {
+            "default": 0.0,
+            "maximum": 360.0,
+            "minimum": -360.0,
+            "title": "Rotation Deg",
+            "type": "number"
+          },
+          "to_parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Also re-home: new located_in parent (a zone).",
+            "title": "To Parent Id"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Defaults to now. Idempotency key with the asset id.",
+            "title": "Valid From"
+          },
+          "x": {
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "title": "Y",
+            "type": "number"
+          },
+          "z": {
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "title": "Z",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "z"
+        ],
+        "title": "MoveRequest",
+        "type": "object"
+      },
+      "MoveResponse": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "integer"
+          },
+          "created": {
+            "title": "Created",
+            "type": "boolean"
+          },
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "located_in": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocatedInOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pose": {
+            "$ref": "#/components/schemas/PoseOut"
+          }
+        },
+        "required": [
+          "asset_id",
+          "external_id",
+          "created",
+          "pose",
+          "located_in"
+        ],
+        "title": "MoveResponse",
+        "type": "object"
+      },
+      "OptimizeRequest": {
+        "description": "Request body for the optimization endpoint.",
+        "properties": {
+          "alpha": {
+            "default": 0.5,
+            "description": "WUE weight",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Alpha",
+            "type": "number"
+          },
+          "beta": {
+            "default": 0.3,
+            "description": "(PUE-1) weight",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Beta",
+            "type": "number"
+          },
+          "gamma": {
+            "default": 0.2,
+            "description": "Carbon-emissions weight",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Gamma",
+            "type": "number"
+          },
+          "hours": {
+            "default": 24,
+            "description": "Simulation hours",
+            "maximum": 168.0,
+            "minimum": 1.0,
+            "title": "Hours",
+            "type": "integer"
+          },
+          "water_stress": {
+            "default": 0.0,
+            "description": "Water stress level",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Water Stress",
+            "type": "number"
+          }
+        },
+        "title": "OptimizeRequest",
+        "type": "object"
+      },
+      "PoseOut": {
+        "properties": {
+          "rotation_deg": {
+            "title": "Rotation Deg",
+            "type": "number"
+          },
+          "valid_from": {
+            "format": "date-time",
+            "title": "Valid From",
+            "type": "string"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          },
+          "z": {
+            "title": "Z",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "z",
+          "rotation_deg",
+          "valid_from",
+          "valid_to"
+        ],
+        "title": "PoseOut",
+        "type": "object"
+      },
+      "ProposalCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "chilled_water_temp_c": {
+            "title": "Chilled Water Temp C",
+            "type": "number"
+          },
+          "cooling_mode": {
+            "enum": [
+              "free_air",
+              "closed_loop",
+              "evaporative",
+              "hybrid"
+            ],
+            "title": "Cooling Mode",
+            "type": "string"
+          },
+          "current_chilled_water_temp": {
+            "default": 7.0,
+            "maximum": 15.0,
+            "minimum": 5.0,
+            "title": "Current Chilled Water Temp",
+            "type": "number"
+          },
+          "current_mode": {
+            "default": "auto",
+            "enum": [
+              "auto",
+              "free_air",
+              "closed_loop",
+              "evaporative",
+              "hybrid"
+            ],
+            "title": "Current Mode",
+            "type": "string"
+          },
+          "inlet_temp_c": {
+            "anyOf": [
+              {
+                "maximum": 60.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inlet Temp C"
+          },
+          "outside_temp": {
+            "default": 22.0,
+            "maximum": 50.0,
+            "minimum": -10.0,
+            "title": "Outside Temp",
+            "type": "number"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "utilisation": {
+            "default": 0.65,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Utilisation",
+            "type": "number"
+          },
+          "water_stress": {
+            "default": 0.0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Water Stress",
+            "type": "number"
+          }
+        },
+        "required": [
+          "chilled_water_temp_c",
+          "cooling_mode"
+        ],
+        "title": "ProposalCreate",
+        "type": "object"
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "minLength": 1,
+            "title": "Refresh Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
+        "type": "object"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "password": {
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          },
+          "role": {
+            "default": "viewer",
+            "pattern": "^(viewer|operator)$",
+            "title": "Role",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "RegisterRequest",
+        "type": "object"
+      },
+      "RoleChange": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "viewer",
+              "operator",
+              "admin"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "RoleChange",
+        "type": "object"
+      },
+      "RunCreate": {
+        "additionalProperties": false,
+        "description": "Body of POST /api/runs. ``scenario_id`` is required; ``parameters`` override the preset, key by key.",
+        "properties": {
+          "parameters": {
+            "$ref": "#/components/schemas/RunParameters"
+          },
+          "scenario_id": {
+            "description": "An id from GET /api/scenarios",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Scenario Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scenario_id"
+        ],
+        "title": "RunCreate",
+        "type": "object"
+      },
+      "RunParameters": {
+        "additionalProperties": false,
+        "description": "Optional overrides of a scenario's preset. Names are the descriptor names (``outside_temp``, not ``outside_temp_C``).",
+        "properties": {
+          "chilled_water_temp": {
+            "anyOf": [
+              {
+                "maximum": 15.0,
+                "minimum": 5.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chilled Water Temp"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "free_air",
+                  "closed_loop",
+                  "evaporative",
+                  "hybrid"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "outside_temp": {
+            "anyOf": [
+              {
+                "maximum": 50.0,
+                "minimum": -10.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outside Temp"
+          },
+          "utilisation": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utilisation"
+          },
+          "water_stress": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Stress"
+          }
+        },
+        "title": "RunParameters",
+        "type": "object"
+      },
+      "SampleOut": {
+        "properties": {
+          "invalid_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invalid Reason"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "quality": {
+            "title": "Quality",
+            "type": "string"
+          },
+          "stream_id": {
+            "title": "Stream Id",
+            "type": "string"
+          },
+          "ts_event": {
+            "title": "Ts Event",
+            "type": "string"
+          },
+          "ts_ingest": {
+            "title": "Ts Ingest",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "ts_event",
+          "ts_ingest",
+          "value",
+          "origin",
+          "stream_id",
+          "quality"
+        ],
+        "title": "SampleOut",
+        "type": "object"
+      },
+      "SamplesResponse": {
+        "properties": {
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SampleOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "quality": {
+            "title": "Quality",
+            "type": "string"
+          },
+          "sampling_interval_s": {
+            "title": "Sampling Interval S",
+            "type": "number"
+          },
+          "stream": {
+            "title": "Stream",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_id",
+          "unit",
+          "sampling_interval_s",
+          "stream",
+          "quality",
+          "items"
+        ],
+        "title": "SamplesResponse",
+        "type": "object"
+      },
+      "Source": {
+        "additionalProperties": false,
+        "properties": {
+          "alert_id": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Id"
+          },
+          "kind": {
+            "default": "manual",
+            "enum": [
+              "manual",
+              "alert",
+              "health"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "measurand": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measurand"
+          }
+        },
+        "title": "Source",
+        "type": "object"
+      },
+      "StatusChange": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "in_progress",
+              "done",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "StatusChange",
+        "type": "object"
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token",
+          "refresh_token",
+          "role"
+        ],
+        "title": "TokenResponse",
+        "type": "object"
+      },
+      "UserResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "role"
+        ],
+        "title": "UserResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WebhookBody": {
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "WebhookBody",
+        "type": "object"
+      },
+      "WorkOrderCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_external_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset External Id"
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "priority": {
+            "default": "medium",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source",
+            "default": {
+              "kind": "manual"
+            }
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "WorkOrderCreate",
+        "type": "object"
+      },
+      "WorkOrderPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "assignee": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "WorkOrderPatch",
+        "type": "object"
+      },
+      "WsTicketResponse": {
+        "properties": {
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "ticket": {
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "expires_in"
+        ],
+        "title": "WsTicketResponse",
+        "type": "object"
+      },
+      "api__plugins__access_requests__Decision": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "title": "Decision",
+        "type": "object"
+      },
+      "api__plugins__optimizer_proposals__Decision": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "Decision",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "Data centre digital twin simulation and optimization API",
+    "title": "Digital Twin API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/access-requests": {
+      "post": {
+        "operationId": "submit_request_api_access_requests_post",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Submit Request",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/access-requests/activate": {
+      "post": {
+        "operationId": "activate_account_api_access_requests_activate_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Activate Account",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/access-requests/resend-activation": {
+      "post": {
+        "operationId": "resend_activation_public_api_access_requests_resend_activation_post",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Resend Activation Public",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/access-requests/{ref}/status": {
+      "get": {
+        "operationId": "request_status_api_access_requests__ref__status_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ref",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "title": "Ref",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Request-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request Status",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/admin/access-requests": {
+      "get": {
+        "operationId": "admin_list_api_admin_access_requests_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 16,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 36,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Admin List Api Admin Access Requests Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin List",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/admin/access-requests/{request_id}": {
+      "get": {
+        "operationId": "admin_get_api_admin_access_requests__request_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Admin Get Api Admin Access Requests  Request Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Get",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/admin/access-requests/{request_id}/approve": {
+      "post": {
+        "operationId": "admin_approve_api_admin_access_requests__request_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/api__plugins__access_requests__Decision"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Admin Approve Api Admin Access Requests  Request Id  Approve Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Approve",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/admin/access-requests/{request_id}/reject": {
+      "post": {
+        "operationId": "admin_reject_api_admin_access_requests__request_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/api__plugins__access_requests__Decision"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Admin Reject Api Admin Access Requests  Request Id  Reject Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Reject",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/admin/access-requests/{request_id}/resend-activation": {
+      "post": {
+        "operationId": "admin_resend_activation_api_admin_access_requests__request_id__resend_activation_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Admin Resend Activation Api Admin Access Requests  Request Id  Resend Activation Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Resend Activation",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/admin/access-requests/{request_id}/resend-notification": {
+      "post": {
+        "operationId": "admin_resend_notification_api_admin_access_requests__request_id__resend_notification_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Admin Resend Notification Api Admin Access Requests  Request Id  Resend Notification Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Resend Notification",
+        "tags": [
+          "access-requests"
+        ]
+      }
+    },
+    "/api/admin/audit": {
+      "get": {
+        "operationId": "audit_log_api_admin_audit_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome"
+            }
+          },
+          {
+            "in": "query",
+            "name": "username",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Username"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resource_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resource Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Audit Log Api Admin Audit Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Audit Log",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/audit/export": {
+      "get": {
+        "description": "At most ``EXPORT_MAX_ROWS`` newest matching rows (``X-Export-Truncated: true`` says when there were more).",
+        "operationId": "audit_export_api_admin_audit_export_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "csv",
+              "enum": [
+                "csv",
+                "json"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome"
+            }
+          },
+          {
+            "in": "query",
+            "name": "username",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Username"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resource_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resource Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Audit Export",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/system": {
+      "get": {
+        "operationId": "system_status_api_admin_system_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response System Status Api Admin System Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "System Status",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "operationId": "list_users_api_admin_users_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Users Api Admin Users Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Users",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/users/{user_id}/role": {
+      "post": {
+        "operationId": "change_role_api_admin_users__user_id__role_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Change Role Api Admin Users  User Id  Role Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change Role",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/webhooks": {
+      "get": {
+        "operationId": "list_webhooks_api_admin_webhooks_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Webhooks Api Admin Webhooks Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Webhooks",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "create_webhook_api_admin_webhooks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Webhook Api Admin Webhooks Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Webhook",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/webhooks/deliveries": {
+      "get": {
+        "operationId": "webhook_deliveries_log_api_admin_webhooks_deliveries_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "webhook_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 16,
+                  "minLength": 16,
+                  "pattern": "^[0-9a-f]{16}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Webhook Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Webhook Deliveries Log Api Admin Webhooks Deliveries Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Webhook Deliveries Log",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/webhooks/{wid}": {
+      "delete": {
+        "operationId": "delete_webhook_api_admin_webhooks__wid__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wid",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{16}$",
+              "title": "Wid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Delete Webhook Api Admin Webhooks  Wid  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Webhook",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "replace_webhook_api_admin_webhooks__wid__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wid",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{16}$",
+              "title": "Wid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Replace Webhook Api Admin Webhooks  Wid  Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Replace Webhook",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/webhooks/{wid}/test": {
+      "post": {
+        "description": "Send one clearly-labelled test event. A subscriber that fails is a RESULT (``ok: false``), not an API error.",
+        "operationId": "fire_test_webhook_api_admin_webhooks__wid__test_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wid",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{16}$",
+              "title": "Wid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Fire Test Webhook Api Admin Webhooks  Wid  Test Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Fire Test Webhook",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/alerts": {
+      "get": {
+        "description": "List recent alerts, ordered by created_at descending.",
+        "operationId": "list_alerts_api_alerts_get",
+        "parameters": [
+          {
+            "description": "Max number of alerts to return",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Max number of alerts to return",
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Alerts Api Alerts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Alerts",
+        "tags": [
+          "anomaly"
+        ]
+      }
+    },
+    "/api/alerts/inbox": {
+      "get": {
+        "operationId": "alert_inbox_api_alerts_inbox_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "acknowledged",
+                    "resolved"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "INFO",
+                    "WARNING",
+                    "CRITICAL"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Alert Inbox Api Alerts Inbox Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Alert Inbox",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/api/alerts/{alert_id}": {
+      "patch": {
+        "operationId": "update_alert_api_alerts__alert_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "alert_id",
+            "required": true,
+            "schema": {
+              "title": "Alert Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Update Alert Api Alerts  Alert Id  Patch",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Alert",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/api/alerts/{alert_id}/acknowledge": {
+      "post": {
+        "description": "Acknowledge an alert. Requires 'operator' role; audit-logged.",
+        "operationId": "acknowledge_alert_api_alerts__alert_id__acknowledge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "alert_id",
+            "required": true,
+            "schema": {
+              "title": "Alert Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Acknowledge Alert Api Alerts  Alert Id  Acknowledge Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Acknowledge Alert",
+        "tags": [
+          "anomaly"
+        ]
+      }
+    },
+    "/api/alerts/{alert_id}/events": {
+      "get": {
+        "operationId": "alert_events_api_alerts__alert_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "alert_id",
+            "required": true,
+            "schema": {
+              "title": "Alert Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Alert Events Api Alerts  Alert Id  Events Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Alert Events",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/api/alerts/{alert_id}/explanation": {
+      "get": {
+        "operationId": "alert_explanation_api_alerts__alert_id__explanation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "alert_id",
+            "required": true,
+            "schema": {
+              "title": "Alert Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Alert Explanation Api Alerts  Alert Id  Explanation Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Alert Explanation",
+        "tags": [
+          "explainability"
+        ]
+      }
+    },
+    "/api/anomaly/status": {
+      "get": {
+        "description": "Current state of the server-owned anomaly pipeline (the same object the live WebSocket carries\nas ``anomaly_status``): warming_up | ok | anomalous | unavailable | error.",
+        "operationId": "anomaly_status_api_anomaly_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Anomaly Status Api Anomaly Status Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Anomaly Status",
+        "tags": [
+          "anomaly"
+        ]
+      }
+    },
+    "/api/anomaly_score": {
+      "get": {
+        "deprecated": true,
+        "description": "DEPRECATED -- TEMPORARY COMPATIBILITY LAYER (T3). Scores the window the CALLER supplies and\nreturns the result. It is PURE: it never persists an Alert and never dispatches a webhook,\nbecause a client-supplied window is not evidence of anything. Alerts are created only by the\nserver-owned pipeline (see GET /api/anomaly/status and the WebSocket ``anomaly_status``).\nA missing detector is reported as type \"unavailable\" and a failure as \"error\", never \"normal\".",
+        "operationId": "anomaly_score_api_anomaly_score_get",
+        "parameters": [
+          {
+            "description": "JSON array of recent sensor readings, shape (12, 5)",
+            "in": "query",
+            "name": "recent_data",
+            "required": true,
+            "schema": {
+              "description": "JSON array of recent sensor readings, shape (12, 5)",
+              "maxLength": 4096,
+              "title": "Recent Data",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnomalyScoreResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "DEPRECATED: pure scoring of a caller-supplied window",
+        "tags": [
+          "anomaly"
+        ]
+      }
+    },
+    "/api/assets": {
+      "get": {
+        "description": "Assets, poses and located_in parents as they were at ``as_of``.",
+        "operationId": "list_assets_api_assets_get",
+        "parameters": [
+          {
+            "description": "ISO-8601 instant; default now. No offset = UTC.",
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO-8601 instant; default now. No offset = UTC.",
+              "title": "As Of"
+            }
+          },
+          {
+            "in": "query",
+            "name": "facility_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Facility Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "asset_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asset Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_unplaced",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Unplaced",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 500,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Assets",
+        "tags": [
+          "facility"
+        ]
+      }
+    },
+    "/api/assets/{asset_id}/edges": {
+      "get": {
+        "description": "Relationships of an asset (as parent or child) in force at ``as_of``.",
+        "operationId": "list_asset_edges_api_assets__asset_id__edges_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "As Of"
+            }
+          },
+          {
+            "in": "query",
+            "name": "relation",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 16,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Relation"
+            }
+          },
+          {
+            "description": "All edges ever recorded; as_of is ignored.",
+            "in": "query",
+            "name": "include_history",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "All edges ever recorded; as_of is ignored.",
+              "title": "Include History",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdgesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Asset Edges",
+        "tags": [
+          "facility"
+        ]
+      },
+      "post": {
+        "description": "Open ``asset <relation> parent``. A second open/overlapping located_in is a 409 (use move).",
+        "operationId": "create_asset_edge_api_assets__asset_id__edges_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdgeCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdgeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Asset Edge",
+        "tags": [
+          "facility"
+        ]
+      }
+    },
+    "/api/assets/{asset_id}/move": {
+      "post": {
+        "description": "Close the asset's current pose and open a new one. The asset keeps its id and external_id.\n\n201 when a pose was created; 200 when the request replayed an earlier identical\n``(asset_id, valid_from)``. 409 on conflict (different content for the same key,\nstart not after the current pose, overlapping located_in history).",
+        "operationId": "move_asset_api_assets__asset_id__move_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Move Asset",
+        "tags": [
+          "facility"
+        ]
+      }
+    },
+    "/api/benchmark": {
+      "get": {
+        "description": "Current-state PUE classified against the Uptime Institute 2024\nindustry survey (see src/facility_benchmarking.py) instead of an\narbitrary hand-picked threshold.",
+        "operationId": "get_benchmark_api_benchmark_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "default": 0.5,
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Utilisation",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "default": 25.0,
+              "maximum": 50,
+              "minimum": -10,
+              "title": "Outside Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "water_stress",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Water Stress",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Benchmark Api Benchmark Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Benchmark",
+        "tags": [
+          "digital-twin"
+        ]
+      }
+    },
+    "/api/capacity/headroom": {
+      "get": {
+        "description": "Power, cooling and thermal headroom of the modelled facility now, and with ``add_racks`` racks of\n``kw_per_rack`` kW added (model-based estimate on simulated data). Same inputs, same answer.",
+        "operationId": "capacity_headroom_api_capacity_headroom_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "default": 0.65,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Utilisation",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "default": 22.0,
+              "maximum": 50.0,
+              "minimum": -10.0,
+              "title": "Outside Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "water_stress",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Water Stress",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "free_air",
+                "closed_loop",
+                "evaporative",
+                "hybrid"
+              ],
+              "title": "Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chilled_water_temp",
+            "required": false,
+            "schema": {
+              "default": 7.0,
+              "maximum": 15.0,
+              "minimum": 5.0,
+              "title": "Chilled Water Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "add_racks",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 200,
+              "minimum": 0,
+              "title": "Add Racks",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kw_per_rack",
+            "required": false,
+            "schema": {
+              "default": 8.0,
+              "maximum": 60.0,
+              "minimum": 0.1,
+              "title": "Kw Per Rack",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Capacity Headroom Api Capacity Headroom Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Capacity Headroom",
+        "tags": [
+          "capacity"
+        ]
+      }
+    },
+    "/api/carbon/schedule": {
+      "get": {
+        "description": "Best window for a flexible load of ``duration_h`` hours, from the hour-of-day carbon curve (site-local hours).\nWith the flat fallback signal the answer is \"No carbon variation in current data\" and no saving. Same inputs, same\nanswer.",
+        "operationId": "carbon_schedule_api_carbon_schedule_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "duration_h",
+            "required": false,
+            "schema": {
+              "default": 4,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Duration H",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "load_kw",
+            "required": false,
+            "schema": {
+              "default": 100.0,
+              "exclusiveMinimum": 0,
+              "maximum": 100000.0,
+              "title": "Load Kw",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "window_start",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 23,
+              "minimum": 0,
+              "title": "Window Start",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "window_hours",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Window Hours",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reference_start_hour",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 23,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reference Start Hour"
+            }
+          },
+          {
+            "in": "query",
+            "name": "profile",
+            "required": false,
+            "schema": {
+              "default": "data",
+              "enum": [
+                "data",
+                "synthetic_demo"
+              ],
+              "title": "Profile",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Carbon Schedule Api Carbon Schedule Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Carbon Schedule",
+        "tags": [
+          "carbon"
+        ]
+      }
+    },
+    "/api/client-errors": {
+      "post": {
+        "operationId": "receive_client_error_api_client_errors_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Key"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Receive Client Error",
+        "tags": [
+          "observability"
+        ]
+      }
+    },
+    "/api/copilot/ask": {
+      "post": {
+        "operationId": "ask_api_copilot_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ask",
+        "tags": [
+          "copilot"
+        ]
+      }
+    },
+    "/api/economics/summary": {
+      "get": {
+        "description": "Cost of the scenario and of the default baseline under the given tariff, and the difference (model estimate on\nsimulated data; the default tariff is labelled illustrative, not a quote). Same inputs, same answer.",
+        "operationId": "economics_summary_api_economics_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "default": 0.65,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Utilisation",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "default": 22.0,
+              "maximum": 50.0,
+              "minimum": -10.0,
+              "title": "Outside Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "water_stress",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Water Stress",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "free_air",
+                "closed_loop",
+                "evaporative",
+                "hybrid"
+              ],
+              "title": "Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chilled_water_temp",
+            "required": false,
+            "schema": {
+              "default": 7.0,
+              "maximum": 15.0,
+              "minimum": 5.0,
+              "title": "Chilled Water Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "required": false,
+            "schema": {
+              "default": "USD",
+              "pattern": "^[A-Za-z]{3}$",
+              "title": "Currency",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "off_peak_rate",
+            "required": false,
+            "schema": {
+              "default": 0.08,
+              "maximum": 1000,
+              "minimum": 0,
+              "title": "Off Peak Rate",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "peak_rate",
+            "required": false,
+            "schema": {
+              "default": 0.18,
+              "maximum": 1000,
+              "minimum": 0,
+              "title": "Peak Rate",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "peak_start_hour",
+            "required": false,
+            "schema": {
+              "default": 16,
+              "maximum": 24,
+              "minimum": 0,
+              "title": "Peak Start Hour",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "peak_end_hour",
+            "required": false,
+            "schema": {
+              "default": 21,
+              "maximum": 24,
+              "minimum": 0,
+              "title": "Peak End Hour",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "demand_charge_per_kw",
+            "required": false,
+            "schema": {
+              "default": 12.0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Demand Charge Per Kw",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "billing_days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 366,
+              "minimum": 1,
+              "title": "Billing Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Economics Summary Api Economics Summary Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Economics Summary",
+        "tags": [
+          "economics"
+        ]
+      }
+    },
+    "/api/edges/{edge_id}/close": {
+      "post": {
+        "description": "End a relationship (default: now). History is kept; as-of queries before the end still see it.",
+        "operationId": "close_edge_api_edges__edge_id__close_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edge_id",
+            "required": true,
+            "schema": {
+              "title": "Edge Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdgeCloseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdgeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Close Edge",
+        "tags": [
+          "facility"
+        ]
+      }
+    },
+    "/api/equipment/health": {
+      "get": {
+        "description": "Predictive-maintenance model's validated methodology performance\n(NASA C-MAPSS proxy dataset -- see dataset_caveat in the response).\nNot live per-rack RUL -- see module docstring in equipment_health_service.py.",
+        "operationId": "equipment_health_api_equipment_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Equipment Health Api Equipment Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Equipment Health",
+        "tags": [
+          "equipment-health"
+        ]
+      }
+    },
+    "/api/esg_report": {
+      "get": {
+        "description": "Generate and download a one-page ESG/sustainability PDF for the\ncurrent state (see api/services/esg_report_service.py). PDF generation\nis CPU-bound, so it runs in a worker thread under the compute bound\n(429 when too many run at once, 504 on timeout; api/rate_limit.py).",
+        "operationId": "esg_report_api_esg_report_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "default": 0.5,
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Utilisation",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "default": 25.0,
+              "maximum": 50,
+              "minimum": -10,
+              "title": "Outside Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "water_stress",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Water Stress",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Esg Report",
+        "tags": [
+          "esg-report"
+        ]
+      }
+    },
+    "/api/evaluations": {
+      "get": {
+        "description": "Policy-evaluation reports found under ``reports/policy_evaluation/`` (BC-11), newest first.\n\nA read-only projection of files the evaluation harness wrote: nothing is computed, ranked or re-estimated.\nEach item carries the report's own ``outcome`` and ``claim_allowed``. ``NOT_EVALUATED`` / ``none`` means no\nPPO candidate was evaluated. Everything is simulator-only.",
+        "operationId": "list_evaluations_api_evaluations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Evaluations Api Evaluations Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Evaluations",
+        "tags": [
+          "evaluation"
+        ]
+      }
+    },
+    "/api/evaluations/{evaluation_id}": {
+      "get": {
+        "description": "One evaluation report: decision, per-policy mean metrics in a fixed order (rule, best_constant, then PPO\nseeds), selection, scenario-set ids and the pre-registration text for metrics and outcomes A/B/C, copied\nverbatim when its hash matches the report. Per-policy means carry no uncertainty; confidence intervals exist\nonly inside ``decision.detail`` when PPO candidates were evaluated. 404 for any id that is not a report\ndirectory.",
+        "operationId": "get_evaluation_api_evaluations__evaluation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "evaluation_id",
+            "required": true,
+            "schema": {
+              "title": "Evaluation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Evaluation Api Evaluations  Evaluation Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Evaluation",
+        "tags": [
+          "evaluation"
+        ]
+      }
+    },
+    "/api/facility": {
+      "get": {
+        "description": "The facility and its coordinate-frame definition (default: the lowest-id facility).",
+        "operationId": "get_facility_api_facility_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "facility_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Facility Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Facility",
+        "tags": [
+          "facility"
+        ]
+      }
+    },
+    "/api/fleet/sites": {
+      "get": {
+        "description": "Five simulated sites with ranks by PUE, carbon and simulated alert conditions (lower is better).",
+        "operationId": "get_fleet_sites_api_fleet_sites_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Fleet Sites Api Fleet Sites Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Fleet Sites",
+        "tags": [
+          "fleet"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "description": "Health check endpoint. Requires valid JWT.",
+        "operationId": "health_check_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Check Api Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Health Check",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/maintenance/health": {
+      "get": {
+        "operationId": "maintenance_health_api_maintenance_health_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "hours",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 168,
+              "minimum": 1,
+              "title": "Hours",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Maintenance Health Api Maintenance Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Maintenance Health",
+        "tags": [
+          "maintenance"
+        ]
+      }
+    },
+    "/api/maintenance/work-orders": {
+      "get": {
+        "operationId": "list_work_orders_api_maintenance_work_orders_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "in_progress",
+                    "done",
+                    "cancelled"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "asset",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asset"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Work Orders Api Maintenance Work Orders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Work Orders",
+        "tags": [
+          "maintenance"
+        ]
+      },
+      "post": {
+        "operationId": "create_work_order_api_maintenance_work_orders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkOrderCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Work Order Api Maintenance Work Orders Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Work Order",
+        "tags": [
+          "maintenance"
+        ]
+      }
+    },
+    "/api/maintenance/work-orders/{order_id}": {
+      "get": {
+        "operationId": "get_work_order_api_maintenance_work_orders__order_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "title": "Order Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Work Order Api Maintenance Work Orders  Order Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Work Order",
+        "tags": [
+          "maintenance"
+        ]
+      },
+      "patch": {
+        "operationId": "update_work_order_api_maintenance_work_orders__order_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "title": "Order Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkOrderPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Update Work Order Api Maintenance Work Orders  Order Id  Patch",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Work Order",
+        "tags": [
+          "maintenance"
+        ]
+      }
+    },
+    "/api/maintenance/work-orders/{order_id}/status": {
+      "post": {
+        "operationId": "change_work_order_status_api_maintenance_work_orders__order_id__status_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "title": "Order Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Change Work Order Status Api Maintenance Work Orders  Order Id  Status Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change Work Order Status",
+        "tags": [
+          "maintenance"
+        ]
+      }
+    },
+    "/api/models/passport": {
+      "get": {
+        "operationId": "model_passport_api_models_passport_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Model Passport Api Models Passport Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Model Passport",
+        "tags": [
+          "explainability"
+        ]
+      }
+    },
+    "/api/optimize": {
+      "post": {
+        "description": "Run RL optimization. Minimizes J = alpha*W + beta*E + gamma*C. Requires 'operator' role. Rate limited: 10/minute.",
+        "operationId": "optimize_api_optimize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptimizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Optimize Api Optimize Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Optimize",
+        "tags": [
+          "optimization"
+        ]
+      }
+    },
+    "/api/optimize/jobs/{job_id}": {
+      "get": {
+        "description": "Status (queued/started/finished/failed) + result of a job enqueued by\nPOST /api/optimize/train_async. 404 for an unknown/expired job id.",
+        "operationId": "get_optimize_job_api_optimize_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Optimize Job Api Optimize Jobs  Job Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Optimize Job",
+        "tags": [
+          "optimization"
+        ]
+      }
+    },
+    "/api/optimize/train_async": {
+      "post": {
+        "description": "Enqueue PPO (re)training as an RQ job instead of running it inline\n(see src/task_queue.py, src/task_jobs.py). Returns immediately with a\njob_id -- poll GET /api/optimize/jobs/{job_id} for status/result. This\nis additive: POST /api/optimize above is unchanged and still works\nsynchronously with in-process fallback training. Requires a running\nRedis + `rq worker` (see docker-compose.yml's `worker` service) -- a\njob just sits queued forever with no worker running.",
+        "operationId": "train_optimizer_async_api_optimize_train_async_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptimizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Train Optimizer Async Api Optimize Train Async Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Train Optimizer Async",
+        "tags": [
+          "optimization"
+        ]
+      }
+    },
+    "/api/optimizer/baseline-recommendation": {
+      "get": {
+        "operationId": "baseline_recommendation_api_optimizer_baseline_recommendation_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "default": 0.65,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Utilisation",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "default": 22.0,
+              "maximum": 50.0,
+              "minimum": -10.0,
+              "title": "Outside Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "water_stress",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Water Stress",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current_mode",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "free_air",
+                "closed_loop",
+                "evaporative",
+                "hybrid"
+              ],
+              "title": "Current Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current_chilled_water_temp",
+            "required": false,
+            "schema": {
+              "default": 7.0,
+              "maximum": 15.0,
+              "minimum": 5.0,
+              "title": "Current Chilled Water Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "inlet_temp_c",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 60,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Inlet Temp C"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Baseline Recommendation Api Optimizer Baseline Recommendation Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Baseline Recommendation",
+        "tags": [
+          "optimizer"
+        ]
+      }
+    },
+    "/api/optimizer/proposals": {
+      "get": {
+        "operationId": "list_proposals_api_optimizer_proposals_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "pending",
+                    "approved",
+                    "rejected"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Proposals Api Optimizer Proposals Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Proposals",
+        "tags": [
+          "optimizer"
+        ]
+      },
+      "post": {
+        "operationId": "create_proposal_api_optimizer_proposals_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Proposal Api Optimizer Proposals Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Proposal",
+        "tags": [
+          "optimizer"
+        ]
+      }
+    },
+    "/api/optimizer/proposals/{proposal_id}/decision": {
+      "post": {
+        "operationId": "decide_proposal_api_optimizer_proposals__proposal_id__decision_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/api__plugins__optimizer_proposals__Decision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Decide Proposal Api Optimizer Proposals  Proposal Id  Decision Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Decide Proposal",
+        "tags": [
+          "optimizer"
+        ]
+      }
+    },
+    "/api/optimizer/sandbox": {
+      "get": {
+        "operationId": "sandbox_api_optimizer_sandbox_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "default": 0.65,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Utilisation",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "default": 22.0,
+              "maximum": 50.0,
+              "minimum": -10.0,
+              "title": "Outside Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "water_stress",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Water Stress",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current_mode",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "free_air",
+                "closed_loop",
+                "evaporative",
+                "hybrid"
+              ],
+              "title": "Current Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current_chilled_water_temp",
+            "required": false,
+            "schema": {
+              "default": 7.0,
+              "maximum": 15.0,
+              "minimum": 5.0,
+              "title": "Current Chilled Water Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "inlet_temp_c",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 60,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Inlet Temp C"
+            }
+          },
+          {
+            "in": "query",
+            "name": "proposed_chilled_water_temp",
+            "required": true,
+            "schema": {
+              "title": "Proposed Chilled Water Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "proposed_mode",
+            "required": true,
+            "schema": {
+              "enum": [
+                "free_air",
+                "closed_loop",
+                "evaporative",
+                "hybrid"
+              ],
+              "title": "Proposed Mode",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Sandbox Api Optimizer Sandbox Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Sandbox",
+        "tags": [
+          "optimizer"
+        ]
+      }
+    },
+    "/api/runs": {
+      "post": {
+        "description": "Submit a scenario from ``GET /api/scenarios`` as a queued run (BC-10).\n\n``parameters`` override the scenario preset key by key (descriptor names, bounds as in the registry).\nReturns 202 with the run record (``status: \"queued\"``); poll ``GET /api/runs/{run_id}``. The run is\none isolated 24 h what-if on the simulated plant; nothing is persisted in the database and nothing\nreaches a facility. Unknown ``scenario_id`` is 404, out-of-range values 422, queue down 503.",
+        "operationId": "submit_run_api_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Submit Run Api Runs Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit Run",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/runs/{run_id}": {
+      "get": {
+        "description": "Status of a run: ``queued | running | completed | failed | cancelled``, backend timestamps, and\n``failure_code`` when failed. ``result_url`` is set only when completed. 404 for an unknown,\nexpired or foreign id (readable by the submitter and by operators).",
+        "operationId": "get_run_api_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Run Api Runs  Run Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Run",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/runs/{run_id}/result": {
+      "get": {
+        "description": "The result of a completed run, carrying its own ``run_id``, ``scenario_id`` and ``scenario_set_id``\nplus provenance (physics version, weather source, plant). 409 until the run is ``completed``.",
+        "operationId": "get_run_result_api_runs__run_id__result_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Run Result Api Runs  Run Id  Result Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Run Result",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/scenarios": {
+      "get": {
+        "description": "Registry of named what-if presets (BC-09).\n\nEach descriptor has an opaque ``id`` and states its ``kind``, ``weather_source`` and ``plant``\nexplicitly, plus a parameter schema (bounds and preset values) generated from the same constants\n``/api/whatif`` enforces. Run one with ``GET /api/whatif?scenario_id=<id>``; parameters the caller\npasses explicitly override the preset. Scenarios are evaluated on the simulated plant only; nothing\nhere controls a real facility.",
+        "operationId": "list_scenarios_api_scenarios_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Scenarios Api Scenarios Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Scenarios",
+        "tags": [
+          "digital-twin"
+        ]
+      }
+    },
+    "/api/shadow_mode/sample": {
+      "post": {
+        "description": "One shadow-mode sample: log what PPO would have done vs. the\nrule-based baseline for the live twin's CURRENT state, without applying\neither. See api/services/shadow_mode_service.py -- not on a schedule;\ncall this periodically (e.g. from an external cron/task runner) to\nbuild up a real comparison history.\n\nT14: operator only (it appends to the shadow log and runs the policy), never trains, bounded like the\nother compute routes.",
+        "operationId": "shadow_mode_sample_api_shadow_mode_sample_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Shadow Mode Sample Api Shadow Mode Sample Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Shadow Mode Sample",
+        "tags": [
+          "shadow-mode"
+        ]
+      }
+    },
+    "/api/shadow_mode/summary": {
+      "get": {
+        "description": "Agreement rate between PPO's shadowed recommendations and the\nrule-based baseline, over whatever has been logged by\n/api/shadow_mode/sample so far.",
+        "operationId": "shadow_mode_summary_api_shadow_mode_summary_get",
+        "parameters": [
+          {
+            "description": "Max recent samples to summarize",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 500,
+              "description": "Max recent samples to summarize",
+              "maximum": 5000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Shadow Mode Summary Api Shadow Mode Summary Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Shadow Mode Summary",
+        "tags": [
+          "shadow-mode"
+        ]
+      }
+    },
+    "/api/simulate/{hours}": {
+      "get": {
+        "description": "Simulate for N hours, returning hourly snapshots.\n\n``hours`` outside 1-168 is rejected with 422 by request validation (it used\nto reach the service and surface as a 500). The simulation is CPU-bound, so\nit runs in a worker thread instead of blocking the event loop.\n\n``utilisation``/``outside_temp`` are the run's means; compute_simulation\nbuilds a diurnal curve around each rather than holding them flat for the\nwhole period.\n\n``server_utilisation`` in each element is a fraction of capacity in [0, 1] (ADR 004).\n\nT14: this GET writes NOTHING by default. ``persist=true`` (operator only) stores one SimulationRun plus one\nSensorReading per simulated hour (<= 168 rows). Concurrency and time are bounded (api/rate_limit.py\n``run_compute``): 429 when too many compute-heavy requests run, 504 on timeout.",
+        "operationId": "simulate_api_simulate__hours__get",
+        "parameters": [
+          {
+            "description": "Hours to simulate (1-168)",
+            "in": "path",
+            "name": "hours",
+            "required": true,
+            "schema": {
+              "description": "Hours to simulate (1-168)",
+              "maximum": 168,
+              "minimum": 1,
+              "title": "Hours",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "default": 0.7,
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Utilisation",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Mean outside temp (°C) for the run",
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "default": 25.0,
+              "description": "Mean outside temp (°C) for the run",
+              "maximum": 50,
+              "minimum": -10,
+              "title": "Outside Temp",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Water stress",
+            "in": "query",
+            "name": "stress",
+            "required": false,
+            "schema": {
+              "default": 0.3,
+              "description": "Water stress",
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Stress",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Store the run and its hourly readings (operator only, at most 168 rows). Default: write nothing.",
+            "in": "query",
+            "name": "persist",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Store the run and its hourly readings (operator only, at most 168 rows). Default: write nothing.",
+              "title": "Persist",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Simulate Api Simulate  Hours  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Simulate",
+        "tags": [
+          "digital-twin"
+        ]
+      }
+    },
+    "/api/state": {
+      "get": {
+        "description": "Stateless PREVIEW of one twin step for the given inputs. If mode='auto',\nuses rule-based selection.\n\nThis is a what-the-twin-would-do-now calculation, not the live state (the\nlive state is what the WebSocket broadcasts). It runs on a throwaway twin\n(``live=False``), so it does not advance the shared live twin, does not\ntouch its clock/thermal state/cumulative counters, and persists nothing.\n``server_utilisation`` in the response is a fraction of capacity in [0, 1], never a percentage (ADR 004).\n\nBecause the twin is fresh on every call, cumulative fields such as\n``water_consumed_L`` reflect a single step, not the live accumulator.",
+        "operationId": "get_state_api_state_get",
+        "parameters": [
+          {
+            "description": "Server utilisation as a fraction of capacity, 0-1 (not a percentage)",
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "default": 0.5,
+              "description": "Server utilisation as a fraction of capacity, 0-1 (not a percentage)",
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Utilisation",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Outside temp (°C)",
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "default": 25.0,
+              "description": "Outside temp (°C)",
+              "maximum": 50,
+              "minimum": -10,
+              "title": "Outside Temp",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Water stress [0-1]",
+            "in": "query",
+            "name": "water_stress",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "description": "Water stress [0-1]",
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Water Stress",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Cooling mode: auto, free_air, closed_loop, evaporative, hybrid",
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "description": "Cooling mode: auto, free_air, closed_loop, evaporative, hybrid",
+              "enum": [
+                "auto",
+                "free_air",
+                "closed_loop",
+                "evaporative",
+                "hybrid"
+              ],
+              "title": "Mode",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get State Api State Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get State",
+        "tags": [
+          "digital-twin"
+        ]
+      }
+    },
+    "/api/telemetry/sensors/{external_id}/gaps": {
+      "get": {
+        "operationId": "get_gaps_api_telemetry_sensors__external_id__gaps_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "external_id",
+            "required": true,
+            "schema": {
+              "title": "External Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "RFC 3339 instant with offset (inclusive)",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "RFC 3339 instant with offset (inclusive)",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "description": "RFC 3339 instant with offset (exclusive)",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "RFC 3339 instant with offset (exclusive)",
+              "title": "To",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stream",
+            "required": false,
+            "schema": {
+              "default": "live",
+              "maxLength": 64,
+              "title": "Stream",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GapsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Gaps",
+        "tags": [
+          "telemetry"
+        ]
+      }
+    },
+    "/api/telemetry/sensors/{external_id}/samples": {
+      "get": {
+        "operationId": "get_samples_api_telemetry_sensors__external_id__samples_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "external_id",
+            "required": true,
+            "schema": {
+              "title": "External Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "RFC 3339 instant with offset (inclusive)",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "RFC 3339 instant with offset (inclusive)",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "description": "RFC 3339 instant with offset (exclusive)",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "RFC 3339 instant with offset (exclusive)",
+              "title": "To",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stream",
+            "required": false,
+            "schema": {
+              "default": "live",
+              "maxLength": 64,
+              "title": "Stream",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quality",
+            "required": false,
+            "schema": {
+              "default": "ok",
+              "pattern": "^(ok|invalid|any)$",
+              "title": "Quality",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 1000,
+              "maximum": 5000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamplesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Samples",
+        "tags": [
+          "telemetry"
+        ]
+      }
+    },
+    "/api/webhooks": {
+      "delete": {
+        "operationId": "unregister_webhook_api_webhooks_delete",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "url",
+            "required": true,
+            "schema": {
+              "maxLength": 2048,
+              "title": "Url",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Unregister Webhook Api Webhooks Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unregister Webhook",
+        "tags": [
+          "anomaly"
+        ]
+      },
+      "post": {
+        "description": "Register a URL to receive POSTed alert events (see\napi/services/webhook_service.py). Operator-only. The URL must be https and\nresolve to a public address (SSRF guard: api/services/webhook_security.py).\nReturns the current subscriber list.",
+        "operationId": "register_webhook_api_webhooks_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "url",
+            "required": true,
+            "schema": {
+              "maxLength": 2048,
+              "title": "Url",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Register Webhook Api Webhooks Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Register Webhook",
+        "tags": [
+          "anomaly"
+        ]
+      }
+    },
+    "/api/whatif": {
+      "get": {
+        "description": "Run an isolated 24 h digital-twin scenario at constant inputs and return its\naggregate PUE / WUE / water / energy / CO2. Nothing is persisted and the\nshared live twin is not touched.\n\nParameter precedence: explicit query value > ``scenario_id`` preset > built-in default\n(utilisation 0.65, outside_temp 22, water_stress 0, mode auto, chilled_water_temp 7). The response\nechoes ``scenario_id`` (null for a raw what-if) and the resolved ``inputs``. An unknown\n``scenario_id`` is a 404, never silently ignored.",
+        "operationId": "whatif_api_whatif_get",
+        "parameters": [
+          {
+            "description": "Optional preset id from GET /api/scenarios; explicit parameters below override it",
+            "in": "query",
+            "name": "scenario_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional preset id from GET /api/scenarios; explicit parameters below override it",
+              "title": "Scenario Id"
+            }
+          },
+          {
+            "description": "Server utilisation [0-1]",
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 1.0,
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Server utilisation [0-1]",
+              "title": "Utilisation"
+            }
+          },
+          {
+            "description": "Outside temp (°C)",
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 50.0,
+                  "minimum": -10.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Outside temp (°C)",
+              "title": "Outside Temp"
+            }
+          },
+          {
+            "description": "Water stress [0-1]",
+            "in": "query",
+            "name": "water_stress",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 1.0,
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Water stress [0-1]",
+              "title": "Water Stress"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "auto",
+                    "free_air",
+                    "closed_loop",
+                    "evaporative",
+                    "hybrid"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mode"
+            }
+          },
+          {
+            "description": "Chilled-water setpoint (°C)",
+            "in": "query",
+            "name": "chilled_water_temp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 15.0,
+                  "minimum": 5.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Chilled-water setpoint (°C)",
+              "title": "Chilled Water Temp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Whatif Api Whatif Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Whatif",
+        "tags": [
+          "digital-twin"
+        ]
+      }
+    },
+    "/api/whatif/sensitivity": {
+      "get": {
+        "description": "One-at-a-time sensitivity of PUE, energy, CO2 and thermal margin around the given inputs (model estimate on\nsimulated data). Same inputs, same answer; at most ``max_runs`` twin runs per call.",
+        "operationId": "whatif_sensitivity_api_whatif_sensitivity_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "utilisation",
+            "required": false,
+            "schema": {
+              "default": 0.65,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Utilisation",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outside_temp",
+            "required": false,
+            "schema": {
+              "default": 22.0,
+              "maximum": 50.0,
+              "minimum": -10.0,
+              "title": "Outside Temp",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "water_stress",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Water Stress",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "free_air",
+                "closed_loop",
+                "evaporative",
+                "hybrid"
+              ],
+              "title": "Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chilled_water_temp",
+            "required": false,
+            "schema": {
+              "default": 7.0,
+              "maximum": 15.0,
+              "minimum": 5.0,
+              "title": "Chilled Water Temp",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Whatif Sensitivity Api Whatif Sensitivity Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Whatif Sensitivity",
+        "tags": [
+          "digital-twin"
+        ]
+      }
+    },
+    "/auth/demo-session": {
+      "post": {
+        "operationId": "create_demo_session_auth_demo_session_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoSessionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Create Demo Session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "description": "Authenticate and return a short-lived access token plus a refresh\ntoken. Rate limited: 10/minute per IP.",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "description": "Revoke a refresh token so it can no longer be used to mint new\naccess tokens. Idempotent: revoking an already-revoked/unknown token\nstill returns 204, since the caller's goal (this token no longer\nworks) is already true.",
+        "operationId": "logout_auth_logout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "description": "Exchange a valid, unrevoked refresh token for a new access token and\na new refresh token (the old refresh token is revoked -- see the\nmodule docstring's \"Refresh tokens\" section).",
+        "operationId": "refresh_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "description": "Create a new user with hashed password. Default role: viewer. Rate limited: 5/hour per IP.\n\nRole \"operator\" requires header ``X-Admin-Key`` matching the\nOPERATOR_REGISTRATION_KEY env var (403 otherwise, and always 403 if the\nvariable is unset -- operator self-registration is then disabled).\n\nWhen public registration is disabled (ALLOW_PUBLIC_REGISTRATION, see\n``public_registration_enabled``; the default in production) this returns\n403 unless a valid ``X-Admin-Key`` is supplied -- that is how an\nadministrator provisions accounts without opening sign-up to everyone.",
+        "operationId": "register_auth_register_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-admin-key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/ws-ticket": {
+      "post": {
+        "description": "Single-use, opaque, short-lived (``WS_TICKET_TTL_SECONDS``, default 30). 503 if no ticket store is usable;\nthe frontend then falls back to the token flow.",
+        "operationId": "create_ws_ticket_auth_ws_ticket_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WsTicketResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Ws Ticket",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/healthz": {
+      "get": {
+        "deprecated": true,
+        "description": "DEPRECATED alias (T18): use /livez (process alive) and /readyz (can serve traffic). Behaviour unchanged.\n\nUnauthenticated liveness/readiness check for infrastructure (Docker\nHEALTHCHECK, load balancers, uptime monitors) -- deliberately separate\nfrom GET /api/health, which requires a JWT and exists for authenticated\nclients confirming the API is reachable, not for infrastructure that\nhas no way to hold a token.\n\nReturns HTTP 503 (not 200-with-a-status-field) when the DB is\nunreachable, so a plain `curl -f` correctly detects failure -- a 200\nresponse with a \"degraded\" string inside it would NOT fail curl -f,\nand would make the Docker HEALTHCHECK below meaningless.",
+        "operationId": "liveness_check_healthz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Liveness Check Healthz Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Liveness Check",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/livez": {
+      "get": {
+        "description": "Process liveness (T18). Depends on NOTHING: no database, no auth, no Redis, no models. If this answers, the\nevent loop is running; whether the app can do useful work is /readyz's question.",
+        "operationId": "liveness_livez_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Liveness Livez Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Liveness",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Metrics",
+        "tags": [
+          "observability"
+        ]
+      }
+    },
+    "/readyz": {
+      "get": {
+        "description": "Readiness (T18, roadmap section 8.5). 200 only if ALL of:\n\n* the database answers ``SELECT 1``;\n* the schema is at the Alembic head (skip with READYZ_CHECK_SCHEMA=false for create_all-built dev databases);\n* the broadcast loop's heartbeat is fresh (< 3 x interval + 5 s) and the supervisor has not given up on it.\n\nRedis and model state are REPORTED under ``degraded`` but never fail the probe. Bodies carry statuses and\ncounts only: no exception text, paths or connection strings.",
+        "operationId": "readiness_readyz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Readiness",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "description": "Live state, 24h+ simulation, and what-if scenarios.",
+      "name": "digital-twin"
+    },
+    {
+      "description": "PPO cooling optimizer: run optimization, compare scenarios.",
+      "name": "optimization"
+    },
+    {
+      "description": "Autoencoder anomaly scoring, alert history, webhook subscriptions.",
+      "name": "anomaly"
+    },
+    {
+      "description": "Log PPO's recommended actions vs. the rule-based baseline without applying them.",
+      "name": "shadow-mode"
+    },
+    {
+      "description": "Downloadable PDF sustainability report.",
+      "name": "esg-report"
+    },
+    {
+      "description": "Predictive-maintenance model status (see docs/model_cards/).",
+      "name": "equipment-health"
+    },
+    {
+      "description": "Liveness/readiness.",
+      "name": "health"
+    }
+  ]
+}

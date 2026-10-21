@@ -111,10 +111,10 @@ def test_a_missing_signal_gives_an_unknown_not_a_status():
     assert "normal" not in r.answer.lower()
 
 
-def test_without_a_rule_engine_status_is_unknown_with_rule_unavailable():
+def test_a_fresh_in_bounds_signal_is_normal_by_the_task_16_rule_and_cites_it():
     r = ask("What is the current status?", "signal", "rack-01.inlet")
-    assert by_field(r, "status")["value"] == "unknown" and by_field(r, "reason_code")["value"] == "rule_unavailable"
-    assert any("unknown" in u for u in r.unknowns) and "not a statement that the signal is normal" in r.answer
+    assert by_field(r, "status")["value"] == "normal" and by_field(r, "reason_code")["value"] == "within_bounds"
+    assert by_field(r, "value")["freshness"] == "fresh" and "not a statement that the signal is normal" not in r.answer
     assert {e["field"] for e in r.evidence if e["source"] == "threshold_rule"} == {"crit_low", "crit_high"}
 
 
