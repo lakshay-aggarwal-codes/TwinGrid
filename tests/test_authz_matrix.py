@@ -245,6 +245,85 @@ async def test_a_demo_token_gets_the_declared_outcome(client, demo_token, route)
         assert "demo_read_only" in response.text, "a denied demo write must be the read-only guard, not another 403"
 
 
+# ------------------------------------------------------------------------------------------------ Task 6: coverage
+# Every route in app.openapi() must have a row, and every token type (anonymous, viewer, operator, admin, demo) must be
+# exercised against it. A demo token is a viewer token with a read-only guard, so on a READ route its expectation is the
+# viewer cell unless the row says otherwise; on a WRITE route it needs an explicit ``demo`` cell (see above). Public
+# write routes (open to anonymous callers) are the one place a demo cell is optional; they are listed, not hidden.
+
+TOKEN_TYPES = (*am.ROLES, "demo")
+
+
+def _documented_routes() -> set[tuple[str, str]]:
+    documented = set()
+    for path, item in app.openapi()["paths"].items():
+        for method in item:
+            if method.upper() in {"GET", "POST", "PUT", "PATCH", "DELETE"}:
+                documented.add((method.upper(), path))
+    return documented
+
+
+def _demo_expectation(key: tuple[str, str]) -> str | None:
+    """The status class a demo token must get for this route, or None when the matrix does not state one."""
+    cells = DECLARED_HTTP[key]
+    if "demo" in cells:
+        return cells["demo"]
+    if key[0] not in am.WRITE_METHODS:
+        return cells["viewer"]
+    return None
+
+
+def test_every_fragment_loads_and_the_demo_overlay_is_merged():
+    names = {p.stem for p in am.MATRIX_DIR.glob("*.yaml")}
+    assert {"core", "T9", "T13", "T14"} <= names, f"missing fragments: {sorted({'core', 'T9', 'T13', 'T14'} - names)}"
+    assert DECLARED_HTTP, "no routes were loaded from tests/authz_matrix.d/"
+    assert DECLARED_HTTP[("POST", "/api/runs")]["demo"] == "403", "the T13 demo overlay did not reach the merged row"
+
+
+def test_every_openapi_route_has_a_row_in_the_matrix():
+    missing = sorted(f"{m} {p}" for m, p in _documented_routes() - set(DECLARED_HTTP))
+    assert not missing, "routes in app.openapi() with no row in tests/authz_matrix.d/: " + ", ".join(missing)
+
+
+def test_every_declared_route_has_a_cell_for_every_signed_in_role():
+    incomplete = [f"{m} {p}" for (m, p), cells in DECLARED_HTTP.items() if not set(am.ROLES) <= set(cells)]
+    assert not incomplete, f"rows without all of {am.ROLES}: {incomplete}"
+
+
+def test_every_token_type_is_probed_on_every_route_or_the_gap_is_a_listed_public_write():
+    unprobed = sorted(key for key in DECLARED_HTTP if _demo_expectation(key) is None)
+    not_listed = [f"{m} {p}" for m, p in unprobed if not am.path_allowed(p, am.PUBLIC_WRITE_ALLOW_LIST)]
+    assert not not_listed, f"write routes with no demo expectation that are not public writes: {not_listed}"
+    for m, p in unprobed:
+        assert DECLARED_HTTP[(m, p)]["anonymous"] == "public", f"{m} {p}: only a public write may omit the demo cell"
+
+
+DEMO_READ_ROUTES = [r for r in PROBED if r.method not in am.WRITE_METHODS and "demo" not in DECLARED_HTTP[r.key]]
+
+
+@pytest.mark.parametrize("route", DEMO_READ_ROUTES, ids=lambda r: f"{r.method} {r.path_template}")
+async def test_a_demo_token_reads_exactly_what_a_viewer_reads(client, demo_token, route):
+    expected = DECLARED_HTTP[route.key]["viewer"]
+    response = await _probe(client, route, "demo", {"demo": demo_token})
+    assert am.status_matches(
+        expected, response.status_code
+    ), f"{route.method} {route.path_template}: demo expected {expected} (viewer cell), got {response.status_code}"
+
+
+def test_the_matrix_coverage_counts():
+    """Prints the counts the Task 6 report quotes (run with -s): rows, websockets and role x route cells."""
+    http_rows = len(DECLARED_HTTP)
+    demo_probed = sum(1 for key in DECLARED_HTTP if _demo_expectation(key) is not None)
+    cells = http_rows * len(am.ROLES) + demo_probed
+    print(
+        f"\nauthz-matrix-coverage: http_routes={http_rows} websockets={len(DECLARED_WS)} "
+        f"token_types={len(TOKEN_TYPES)} role_cells={http_rows * len(am.ROLES)} demo_cells={demo_probed} "
+        f"total_probed_cells={cells}"
+    )
+    assert http_rows == len(HTTP_ROUTES), "declared and served route counts differ; see the completeness tests"
+    assert len(TOKEN_TYPES) == 5
+
+
 # ------------------------------------------------------------------------------------------------ websockets
 
 

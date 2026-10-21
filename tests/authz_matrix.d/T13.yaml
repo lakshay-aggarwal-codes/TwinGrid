@@ -1,6 +1,7 @@
 # Task 13 matrix fragment (format: Task 3, tests/authz_matrix.d/*.yaml).
-# New column `demo`: the status class a demo token (POST /auth/demo-session) gets. Task 3's loader does not know this
-# column yet; until it does, tests/api/test_demo_session.py enforces it for every write route found in app.openapi().
+# New column `demo`: the status class a demo token (POST /auth/demo-session) gets. tests/authz_matrix.py merges it into
+# the row another fragment declares (a row with only method, path_template and demo is an overlay), and
+# tests/test_authz_matrix.py probes it; tests/api/test_demo_session.py also checks every write route in app.openapi().
 routes:
   - {method: POST, path_template: /auth/demo-session, anonymous: public, viewer: public, operator: public, admin: public, demo: 2xx}  # 404 when DEMO_PUBLIC_ENABLED is off; the matrix runs with it on
   # Every other write route: a demo token is denied before routing (api/demo_guard.py), except these:
