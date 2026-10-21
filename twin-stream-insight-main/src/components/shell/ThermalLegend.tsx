@@ -7,6 +7,9 @@ import {
 } from "@/three/thermalMapping";
 import { feedProvenance, noDataNotice, toReadout, type LiveFeed } from "@/three/visualizationModes";
 import { FreshnessChip, ProvenanceBadge, formatAge } from "@/provenance";
+import { DEFAULT_SIGNAL_RULES, type SignalState } from "@/contract/signalState";
+import { SignalStateBadge } from "@/components/signal/SignalStateBadge";
+import { stateFromAgedReading } from "@/components/signal/signalView";
 import { StatusMessage } from "./StatusMessage";
 
 interface ThermalLegendProps {
@@ -14,12 +17,15 @@ interface ThermalLegendProps {
   feed: LiveFeed;
 }
 
-function ScaleBar({ label, scale, currentC, lastKnown = false }: { label: string; scale: ThermalScale; currentC?: number; lastKnown?: boolean }) {
+function ScaleBar({ label, scale, currentC, lastKnown = false, signal }: { label: string; scale: ThermalScale; currentC?: number; lastKnown?: boolean; signal?: SignalState }) {
   const stops = [0, 0.25, 0.5, 0.75, 1];
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>{label}</span>
+        <span className="inline-flex items-center gap-1.5">
+          {label}
+          {signal && <SignalStateBadge state={signal} showValue={false} />}
+        </span>
         {currentC !== undefined && (
           <span className={lastKnown ? "font-mono text-muted-foreground" : "font-mono text-foreground"} data-thermal-value={lastKnown ? "last-known" : "current"}>
             {currentC.toFixed(1)}°C
@@ -57,6 +63,19 @@ export function ThermalLegend({ feed }: ThermalLegendProps) {
   const reading =
     readout.mode === "none" ? null : { inletTempC: readout.state.server_inlet_temp_C, outletTempC: readout.state.server_outlet_temp_C };
   const notice = readout.mode === "none" ? noDataNotice(readout.freshness) : null;
+  // Task 16: the one signal-state policy decides the badge. The feed's own freshness machine decides "not live" (a last-known
+  // number is always `stale`); with no frame the state is `unknown` while connecting and `offline` otherwise.
+  const staleAfterS = feed.freshness.staleAfterMs / 1000;
+  const signalFor = (rule: keyof typeof DEFAULT_SIGNAL_RULES, value: number | null): SignalState =>
+    stateFromAgedReading(DEFAULT_SIGNAL_RULES[rule], {
+      value,
+      ageMs: readout.mode === "current" ? (feed.freshness.ageMs ?? 0) : readout.mode === "last-known" ? readout.ageMs : null,
+      feedNotLive: readout.mode !== "current",
+      connected: readout.mode === "none" ? readout.freshness === "connecting" : true,
+      staleAfterS,
+    });
+  const inletSignal = signalFor("inlet_temp_c", reading ? reading.inletTempC : null);
+  const outletSignal = signalFor("outlet_temp_c", reading ? reading.outletTempC : null);
 
   return (
     <div
@@ -77,12 +96,18 @@ export function ThermalLegend({ feed }: ThermalLegendProps) {
               Last known · {formatAge(readout.ageMs)}. Scene colours are neutral until the feed is live.
             </p>
           )}
-          <ScaleBar label="Inlet (cold aisle)" scale={INLET_SCALE} currentC={reading.inletTempC} lastKnown={lastKnown} />
-          <ScaleBar label="Outlet (hot aisle)" scale={OUTLET_SCALE} currentC={reading.outletTempC} lastKnown={lastKnown} />
+          <ScaleBar label="Inlet (cold aisle)" scale={INLET_SCALE} currentC={reading.inletTempC} lastKnown={lastKnown} signal={inletSignal} />
+          <ScaleBar label="Outlet (hot aisle)" scale={OUTLET_SCALE} currentC={reading.outletTempC} lastKnown={lastKnown} signal={outletSignal} />
         </>
       ) : (
         <div className="space-y-1.5">
           <span className="block h-2 w-2 rounded-full" style={{ backgroundColor: WAITING_COLOR }} aria-hidden="true" />
+          <div className="flex flex-wrap gap-1.5" data-testid="thermal-no-data-states">
+            <span className="text-[10px] text-muted-foreground">Inlet</span>
+            <SignalStateBadge state={inletSignal} />
+            <span className="text-[10px] text-muted-foreground">Outlet</span>
+            <SignalStateBadge state={outletSignal} />
+          </div>
           {notice && <StatusMessage kind={notice.kind}>{notice.text}</StatusMessage>}
         </div>
       )}

@@ -6,6 +6,7 @@ import { isApiError, type AlertRecord } from '@/api/apiClient';
 import { AuthRequiredError } from '@/authClient';
 import { ERROR_COPY } from '@/state/errorCopy';
 import { ProvenanceBadge } from '@/provenance';
+import { AlertRuleFacts } from '@/components/signal/AlertRuleFacts';
 import { alertProvenance, alertTime, attributionEvidence, lifecycleOf, scoreLabel, severityView, type SeverityIcon } from './alertModel';
 
 const SEVERITY_ICON: Record<SeverityIcon, typeof Info> = { info: Info, warning: AlertTriangle, critical: XOctagon, unknown: HelpCircle };
@@ -149,6 +150,7 @@ export function AlertRowItem({ alert: a, role, queryKey, onSelect }: AlertRowIte
               </Field>
             ))}
           </div>
+          <AlertRuleFacts ruleId={a.type} value={a.score} valueLabel="Value (detector score)" threshold={null} observedAt={created.reported ? created.text : null} origin={a.origin} />
           <p className="text-[10px] text-muted-foreground">{scoreLabel(a.score)}. This is the detector's reconstruction error, not a probability or a percentage.</p>
           {extra.length === 0 && (
             <p className="text-[10px] text-muted-foreground leading-relaxed" data-testid="no-attribution">
