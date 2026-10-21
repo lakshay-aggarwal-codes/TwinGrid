@@ -13,8 +13,9 @@ Flags anomalous sequences of 5 sensor features (`water_flow_lpm`, `water_pressur
 (`anomaly == 0`) of the first 20736 rows; the last 5184 rows (rows 20736 to 25920) are the held-out part. The file is not
 shipped in this repository copy; the registry records its SHA-256.
 
-## Results (held-out rows, simulator data)
-- F1 0.96, precision 0.923, recall 1.0, from `notebooks/train_all.py`.
+## Preliminary figures (in-sample for the threshold; not a generalisation estimate)
+- Preliminary, in-sample: F1 0.96, precision 0.923, recall 1.0, from `notebooks/train_all.py`. These are kept for the record and
+  must not be quoted as held-out performance.
 - The alert threshold (the 99.5th percentile of the held-out scores, value 0.0122) was chosen by searching percentiles for the
   best F1 on **those same held-out rows**, and the metrics were then reported on them. The threshold therefore saw the labels
   it is scored against.
@@ -25,6 +26,16 @@ shipped in this repository copy; the registry records its SHA-256.
   define event recall with confidence intervals, detection delay and false alarms per day, with the threshold chosen on a
   validation split. The config's `caps_status` is `PROPOSED_UNCONFIRMED`, the registry entry has no `evaluation_ref`, and no
   result report for it exists in `reports/`. The 0.96 above is not that metric.
+- **Held-out evaluation: protocol and code are ready, no result exists.** The protocol is `reports/anomaly_eval/PROTOCOL.md`; its
+  hash was recorded in `reports/anomaly_eval/PROTOCOL.sha256.json` before any test scoring, and the runner
+  (`python -m src.anomaly_eval`) refuses to score if the text, the config or the dataset ids differ from it. It compares the
+  autoencoder with a simple rolling z-score rule, per event, with bootstrap intervals over scenarios, and applies this decision
+  rule: an interval that includes zero is reported as "no demonstrated advantage". It needs TensorFlow (not available where this
+  was prepared), a generated dataset, and the owner setting `caps_status` to `preregistered`. Until it is run, nothing above
+  supports any statement about how the detector compares with a simple rule.
+- **Expect a ceiling effect.** The two injected fault types have strong, abrupt signatures; a development run of the baseline on a
+  validation split already detected every validation event. The comparison may therefore be decided by false alarms and delay,
+  and cannot show the detector is better on subtler faults.
 - **Tiny positive class.** True anomalies are a very small share of the rows, so a high F1 rests on few positive rows; the
   registry stores no count and no confidence interval, and the data file is not shipped here, so this was not re-counted.
 - The entry still carries the waiver `legacy-0-physics-until-T26` (trained under physics `legacy-0`, parameters not recorded);
