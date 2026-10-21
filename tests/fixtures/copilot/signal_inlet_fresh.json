@@ -1,0 +1,8 @@
+{
+  "signal": "rack-01.inlet",
+  "value": 22.5,
+  "observed_at": "2026-10-20T03:14:30+00:00",
+  "unit": "degC",
+  "origin": "simulated",
+  "measurand": "inlet_temperature"
+}

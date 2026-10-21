@@ -1,0 +1,24 @@
+{
+  "models": [
+    {
+      "model_id": "anomaly-1",
+      "kind": "anomaly",
+      "status": "promoted",
+      "data_origin": "synthetic",
+      "limitations": [
+        "Trained only on simulator-generated data, not on measurements from a real facility."
+      ],
+      "claim_boundary": "Reports the registry and model cards; it does not re-evaluate anything."
+    },
+    {
+      "model_id": "ppo-1",
+      "kind": "ppo",
+      "status": "quarantined",
+      "data_origin": "synthetic",
+      "limitations": [
+        "Trained only on simulator-generated data, not on measurements from a real facility."
+      ],
+      "claim_boundary": "No claim is made that the optimizer saves energy."
+    }
+  ]
+}

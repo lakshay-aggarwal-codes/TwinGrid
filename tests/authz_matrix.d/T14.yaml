@@ -1,0 +1,10 @@
+# Task 14 authz fragment (playbook 8.4). The matrix harness (Task 3) merges every file in this directory.
+# The probe sends no body: an authorised caller gets past authentication and is then rejected by request validation
+# (422), which is what is asserted. Anonymous callers must be stopped first (401).
+routes:
+  - method: POST
+    path_template: /api/copilot/ask
+    anonymous: 401
+    viewer: 422
+    operator: 422
+    admin: 422

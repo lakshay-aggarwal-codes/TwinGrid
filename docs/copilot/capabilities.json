@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "features": [
+    {
+      "id": "live_twin",
+      "title": "Live twin",
+      "description": "The live dashboard: the simulated facility's current readings, cooling mode and alerts as they stream in.",
+      "ui_path": "/",
+      "api_paths": [
+        "/api/state"
+      ]
+    },
+    {
+      "id": "alerts_centre",
+      "title": "Alerts centre",
+      "description": "Anomaly alerts with an incident workflow: status, assignee and notes, an audit trail, and an explanation of why each alert fired.",
+      "ui_path": "/alerts",
+      "api_paths": [
+        "/api/alerts",
+        "/api/alerts/inbox",
+        "/api/alerts/{alert_id}/explanation",
+        "/api/alerts/{alert_id}/events"
+      ]
+    },
+    {
+      "id": "what_if_lab",
+      "title": "What-if lab",
+      "description": "Runs the simulator under changed load, ambient temperature, set-point or cooling mode and shows the differences, with a one-at-a-time sensitivity sweep.",
+      "ui_path": "/whatif-lab",
+      "api_paths": [
+        "/api/whatif",
+        "/api/whatif/sensitivity"
+      ]
+    },
+    {
+      "id": "optimizer",
+      "title": "Optimizer",
+      "description": "A rule-based baseline recommendation and a sandbox, and stored proposals that an admin approves or rejects. Nothing is sent to equipment.",
+      "ui_path": "/optimizer",
+      "api_paths": [
+        "/api/optimizer/baseline-recommendation",
+        "/api/optimizer/sandbox",
+        "/api/optimizer/proposals"
+      ]
+    },
+    {
+      "id": "fleet_view",
+      "title": "Fleet view",
+      "description": "Ranks five simulated sites, which are parameter sets of the same simulator, by PUE, carbon and rule-checked alert conditions.",
+      "ui_path": "/fleet",
+      "api_paths": [
+        "/api/fleet/sites"
+      ]
+    },
+    {
+      "id": "capacity",
+      "title": "Capacity",
+      "description": "Capacity headroom of the simulated facility.",
+      "ui_path": "/capacity",
+      "api_paths": [
+        "/api/capacity/headroom"
+      ]
+    },
+    {
+      "id": "maintenance",
+      "title": "Maintenance",
+      "description": "Equipment health and maintenance work orders.",
+      "ui_path": "/maintenance",
+      "api_paths": [
+        "/api/maintenance/health",
+        "/api/maintenance/work-orders"
+      ]
+    },
+    {
+      "id": "evaluation",
+      "title": "Evaluation reports",
+      "description": "Stored policy evaluation reports and their registered decisions.",
+      "ui_path": "/evaluation",
+      "api_paths": [
+        "/api/evaluations",
+        "/api/evaluations/{evaluation_id}"
+      ]
+    },
+    {
+      "id": "telemetry_history",
+      "title": "Telemetry history",
+      "description": "Stored telemetry samples of a sensor over a time range, and the gaps in them.",
+      "ui_path": "/telemetry",
+      "api_paths": [
+        "/api/telemetry/sensors/{external_id}/samples",
+        "/api/telemetry/sensors/{external_id}/gaps"
+      ]
+    },
+    {
+      "id": "runs",
+      "title": "Runs",
+      "description": "Recorded simulation and training runs and their results.",
+      "ui_path": "/runs",
+      "api_paths": [
+        "/api/runs/{run_id}",
+        "/api/runs/{run_id}/result"
+      ]
+    },
+    {
+      "id": "report",
+      "title": "Report",
+      "description": "A printable report page with a simulated-data banner.",
+      "ui_path": "/report",
+      "api_paths": [
+        "/api/esg_report"
+      ]
+    },
+    {
+      "id": "admin_console",
+      "title": "Admin console",
+      "description": "User roles, the audit log and webhooks. Admin only.",
+      "ui_path": "/admin",
+      "api_paths": [
+        "/api/admin/users",
+        "/api/admin/audit",
+        "/api/admin/system"
+      ]
+    }
+  ]
+}
