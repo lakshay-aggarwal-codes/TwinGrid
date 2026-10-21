@@ -1,0 +1,362 @@
+[
+  {
+    "evidence_paths": [
+      "docs/model_cards/DATA_TRUTH.md",
+      "src/digital_twin.py"
+    ],
+    "id": "C-01",
+    "kind": "fact",
+    "limit": "Not a twin of any real facility; no real measurements are used.",
+    "text": "TwinGrid is a simulation-based data-centre digital-twin platform: every number it shows comes from its own simulator."
+  },
+  {
+    "evidence_paths": [
+      "docs/architecture/system.md",
+      "docs/architecture/extension_points.md"
+    ],
+    "id": "C-02",
+    "kind": "fact",
+    "limit": "Approvals and recommendations are records in a database; nothing is sent anywhere.",
+    "text": "It is not connected to any real facility (no BACnet, Modbus or SNMP) and controls no equipment."
+  },
+  {
+    "evidence_paths": [
+      "docs/PHYSICS_V2.md",
+      "docs/architecture/system.md"
+    ],
+    "id": "C-03",
+    "kind": "assumption",
+    "limit": "Results describe the simulator's own behaviour. Three physics versions exist (legacy-0, 1, and the opt-in dynamic 2); the RL environment and the baselines support only legacy-0 and 1. Evaluation reports state the physics actually executed (physics_version_executed).",
+    "text": "The physics uses engineering values that are not calibrated to any facility."
+  },
+  {
+    "evidence_paths": [
+      "docs/model_cards/DATA_TRUTH.md",
+      "src/carbon_provider.py"
+    ],
+    "id": "C-04",
+    "kind": "assumption",
+    "limit": "Carbon figures and anything ranked by them reflect energy use, not a real grid.",
+    "text": "Carbon is a flat assumed 475 gCO2/kWh unless a carbon file is loaded; none ships."
+  },
+  {
+    "evidence_paths": [
+      "twin-stream-insight-main/src/provenance/labels.ts",
+      "twin-stream-insight-main/docs/frontend/PROVENANCE_AND_FRESHNESS.md",
+      "api/services/esg_report_service.py"
+    ],
+    "id": "C-05",
+    "kind": "fact",
+    "limit": "The label shows what the backend declares; an unknown origin reads \"Unverified source\".",
+    "text": "The interface labels data as simulated (origin badges, simulated wording, report banner)."
+  },
+  {
+    "evidence_paths": [
+      "docs/model_cards/forecaster.md",
+      "models/registry.json"
+    ],
+    "id": "C-06",
+    "kind": "result",
+    "limit": "One run, no seed on file, no baseline, no evaluation record; says nothing about real hardware.",
+    "text": "The thermal forecaster scored an RMSE of 0.523 °C and MAE of 0.421 °C, 30 minutes ahead, on held-out simulator data."
+  },
+  {
+    "evidence_paths": [
+      "docs/model_cards/anomaly_detector.md",
+      "models/registry.json"
+    ],
+    "id": "C-07",
+    "kind": "result",
+    "limit": "The threshold was tuned on the same rows, so the figure is optimistic; the event-level evaluation has not been run.",
+    "text": "The anomaly detector scored F1 0.96 on held-out simulator rows."
+  },
+  {
+    "evidence_paths": [
+      "docs/model_cards/ppo_optimizer.md",
+      "models/registry.json",
+      "reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json",
+      "reports/policy_evaluation_physics1/rerun_t17/full_0fcafef9d28fd539/results.json"
+    ],
+    "id": "C-08",
+    "kind": "result",
+    "limit": "Simulator only, flat assumed carbon, one training recipe and five seeds; says nothing about a real facility. Safety counters were zero for rule, best constant and every seed, so the comparison is about reward, water and energy. The registry entries and the Model Passport still carry older \"not evaluated\" text.",
+    "text": "Under the physics-1 protocol the five PPO candidates were scored once and the registered outcome is C (replace with a simpler controller), claim allowed: none: a fixed 22.75 C closed-loop setting scored higher than every PPO seed. An earlier legacy-physics PPO policy was worse than the rule baseline and is quarantined. No claim is made that the optimizer saves energy. After the baselines were re-tuned (Task 17: baselines-tuner/3, PUE counted as a hard constraint) the same registered evaluation was repeated unchanged under the same pre-registration and the outcome is C again."
+  },
+  {
+    "evidence_paths": [
+      "api/plugins/explainability.py",
+      "src/model_passport.py",
+      "docs/model_cards/LIMITATIONS.md"
+    ],
+    "id": "C-09",
+    "kind": "fact",
+    "limit": "It reports what the registry and cards say; it does not re-evaluate anything.",
+    "text": "A Model Passport shows each model's registry status, whether the API may load it, and its limitations."
+  },
+  {
+    "evidence_paths": [
+      "twin-stream-insight-main/src/features/facility-inspector/index.ts"
+    ],
+    "id": "C-10",
+    "kind": "fact",
+    "limit": "A simulated facility layout; not exercised in a real browser session by the author.",
+    "text": "The live dashboard has an interactive 3D facility view with hover and click inspection of racks."
+  },
+  {
+    "evidence_paths": [
+      "twin-stream-insight-main/src/features/replay/index.ts"
+    ],
+    "id": "C-11",
+    "kind": "fact",
+    "limit": "Only shows data that was stored; the simulator alone writes little stored telemetry.",
+    "text": "Replay lets a user scrub back through stored telemetry and alerts, at several speeds."
+  },
+  {
+    "evidence_paths": [
+      "src/whatif_sweep.py",
+      "twin-stream-insight-main/src/features/what-if-lab/index.ts"
+    ],
+    "id": "C-12",
+    "kind": "fact",
+    "limit": "Differences between two simulated runs, not forecasts of a real site.",
+    "text": "The what-if lab runs the simulator under changed load, ambient temperature, setpoint or cooling mode and shows the differences, with a one-at-a-time sensitivity sweep."
+  },
+  {
+    "evidence_paths": [
+      "twin-stream-insight-main/src/features/executive-dashboard/index.ts"
+    ],
+    "id": "C-13",
+    "kind": "fact",
+    "limit": "Simulated figures; the savings line carries the evaluation caveat.",
+    "text": "An executive dashboard shows PUE, energy, carbon and a comparison against a baseline controller, with plain-language insights."
+  },
+  {
+    "evidence_paths": [
+      "api/plugins/alerts_workflow.py",
+      "src/alert_workflow.py",
+      "twin-stream-insight-main/src/features/alerts-centre/index.ts"
+    ],
+    "id": "C-14",
+    "kind": "fact",
+    "limit": "Works on simulator-raised alerts.",
+    "text": "An alerts centre supports an incident workflow: status, assignee and notes, with an audit trail."
+  },
+  {
+    "evidence_paths": [
+      "api/plugins/optimizer_proposals.py",
+      "src/baseline_recommendation.py",
+      "twin-stream-insight-main/src/features/optimizer-approvals/index.ts"
+    ],
+    "id": "C-15",
+    "kind": "fact",
+    "limit": "An approval is a stored decision; no equipment is changed. The PPO panel states when no policy is promoted.",
+    "text": "The optimizer page shows a rule-based baseline recommendation and a sandbox, and records proposals that an admin (never the proposer) approves or rejects."
+  },
+  {
+    "evidence_paths": [
+      "twin-stream-insight-main/src/features/command-palette/index.ts",
+      "twin-stream-insight-main/src/features/guided-tour/index.ts",
+      "twin-stream-insight-main/src/features/app-states/index.ts"
+    ],
+    "id": "C-16",
+    "kind": "fact",
+    "limit": "Layout at small widths was not checked in a browser.",
+    "text": "A command palette (Ctrl or Cmd + K) and a guided Story Mode tour are available, and a status bar shows connection state, last-update age and data origin."
+  },
+  {
+    "evidence_paths": [
+      "api/plugins/fleet.py",
+      "src/fleet/ranking.py",
+      "twin-stream-insight-main/src/features/fleet-view/index.ts"
+    ],
+    "id": "C-17",
+    "kind": "fact",
+    "limit": "The sites are parameter sets of the same simulator; \"alert conditions\" are rule checks, not recorded alerts.",
+    "text": "A fleet view ranks five simulated sites by PUE, carbon and simulated alert conditions."
+  },
+  {
+    "evidence_paths": [
+      "twin-stream-insight-main/src/features/reports-export/index.ts",
+      "api/services/esg_report_service.py"
+    ],
+    "id": "C-18",
+    "kind": "fact",
+    "limit": "Run exports are not done (docs/tasks/Task22_REPORT.md).",
+    "text": "A printable report page and CSV or file export are available for alerts, telemetry history and what-if results; the PDF report opens with a simulated-data banner."
+  },
+  {
+    "evidence_paths": [
+      "twin-stream-insight-main/src/features/realtime-resilience/index.ts",
+      "docs/tasks/Task23_REPORT.md"
+    ],
+    "id": "C-19",
+    "kind": "fact",
+    "limit": "Unit-tested; not load-tested or run against a flaky network.",
+    "text": "The live feed reconnects with jitter, back-fills gaps from the history API and pauses rendering in a hidden tab."
+  },
+  {
+    "evidence_paths": [
+      "api/plugins/performance.py",
+      "scripts/bench_task24.py",
+      "docs/tasks/Task24_REPORT.md"
+    ],
+    "id": "C-20",
+    "kind": "fact",
+    "limit": "Micro-benchmarks only (the carbon load went from about 30 ms to 0.2 ms on a synthetic file); no Redis, HTTP or database timing; no SLO claim.",
+    "text": "Backend performance work is in place: ETag/304 and gzip on read-only GETs, a memoised carbon-file load, two list indexes, and an opt-in Redis response cache."
+  },
+  {
+    "evidence_paths": [
+      "api/auth.py"
+    ],
+    "id": "C-21",
+    "kind": "fact",
+    "limit": "Not penetration-tested; see C-22.",
+    "text": "Sign-in uses short-lived tokens with rotating refresh tokens and three roles: viewer, operator, admin."
+  },
+  {
+    "evidence_paths": [
+      "api/plugins/security.py",
+      "api/plugins/ws_tickets.py",
+      "api/plugins/login_lockout.py",
+      "docs/security/THREAT_MODEL.md"
+    ],
+    "id": "C-22",
+    "kind": "fact",
+    "limit": "No independent security audit.",
+    "text": "Security headers, single-use WebSocket tickets and login lockout are configured and unit-tested."
+  },
+  {
+    "evidence_paths": [
+      "src/log_redaction.py",
+      "api/plugins/client_errors.py"
+    ],
+    "id": "C-23",
+    "kind": "fact",
+    "limit": "Configured and tested; no production log pipeline exists.",
+    "text": "Logs are structured with request ids and secret redaction, and the browser can report its own errors to the API."
+  },
+  {
+    "evidence_paths": [
+      "docs/runbooks/README.md"
+    ],
+    "id": "C-24",
+    "kind": "fact",
+    "limit": "Written, never used in a real incident.",
+    "text": "Seven runbooks cover common failures (API down, database down, stale feed, high 5xx and others)."
+  },
+  {
+    "evidence_paths": [
+      "docs/SLO.md"
+    ],
+    "id": "C-25",
+    "kind": "hypothesis",
+    "limit": "Nothing in the repository claims they are met.",
+    "text": "The availability, error, latency and freshness targets in docs/SLO.md are hypotheses that have not been measured."
+  },
+  {
+    "evidence_paths": [
+      "scripts/demo.ps1",
+      "scripts/demo.sh",
+      "scripts/demo_seed.py",
+      "docker-compose.demo.yml"
+    ],
+    "id": "C-26",
+    "kind": "fact",
+    "limit": "Needs Docker; the run time was not measured; demo passwords are printed once.",
+    "text": "One command starts a demo with seeded simulated data and three demo accounts (viewer, operator, admin)."
+  },
+  {
+    "evidence_paths": [
+      ".github/workflows/release.yml",
+      ".github/workflows/codeql.yml",
+      ".github/workflows/secret-scan.yml",
+      ".github/workflows/sbom.yml",
+      "docs/release/RELEASE_PROCESS.md"
+    ],
+    "id": "C-27",
+    "kind": "fact",
+    "limit": "Configured, never run on a real release tag; \"scanning configured\", not \"scanning passing\".",
+    "text": "A release pipeline, code scanning, secret scanning and an SBOM job are configured."
+  },
+  {
+    "evidence_paths": [
+      "tests/test_alembic_chain.py",
+      "audit_alembic_graph.py",
+      "alembic/versions"
+    ],
+    "id": "C-28",
+    "kind": "fact",
+    "limit": "Not run against a managed Postgres.",
+    "text": "The database schema is managed by Alembic migrations with a single head, checked by a test."
+  },
+  {
+    "evidence_paths": [
+      "scripts/gen_api_reference.py"
+    ],
+    "id": "C-29",
+    "kind": "fact",
+    "limit": "The generated files are checked by a test when docs/api/ is committed.",
+    "text": "The API reference can be regenerated from the code."
+  },
+  {
+    "evidence_paths": [
+      "docs/tasks/Task21_REPORT.md",
+      "twin-stream-insight-main/docs/frontend/STATUS.md"
+    ],
+    "id": "C-30",
+    "kind": "fact",
+    "limit": "No axe run or screen-reader sign-off has been recorded.",
+    "text": "Accessibility fixes were applied in code (focus, labels, reduced motion, contrast tokens). The product is not claimed to be WCAG-compliant."
+  },
+  {
+    "evidence_paths": [
+      "twin-stream-insight-main/docs/frontend/perf/FE-20.md"
+    ],
+    "id": "C-31",
+    "kind": "hypothesis",
+    "limit": "Harness only.",
+    "text": "The frontend performance budgets have not been measured."
+  },
+  {
+    "evidence_paths": [
+      "tests",
+      "twin-stream-insight-main/package.json",
+      ".github/workflows/ci.yml"
+    ],
+    "id": "C-32",
+    "kind": "fact",
+    "limit": "A green run of the whole suite on the current tree was not seen by the author of this ledger.",
+    "text": "Backend and frontend automated tests exist and CI is configured to run them."
+  },
+  {
+    "evidence_paths": [
+      "docs/architecture/system.md"
+    ],
+    "id": "C-33",
+    "kind": "future",
+    "limit": "Each needs infrastructure, hardware or a product decision this repository does not have.",
+    "text": "Real facility integration, multi-tenancy, SOC 2, Kubernetes, multi-region and real 3D facility import are not built."
+  },
+  {
+    "evidence_paths": [
+      "twin-stream-insight-main/docs/frontend/STATUS.md",
+      "docs/tasks/Task24_REPORT.md"
+    ],
+    "id": "C-34",
+    "kind": "fact",
+    "limit": "Absence of a recorded run, not a known failure.",
+    "text": "These have not been confirmed by a recorded run: the full test suite on this tree, the PDF report render, an asynchronous optimize job through the worker, migrations on a managed PostgreSQL, and any real deployment."
+  },
+  {
+    "evidence_paths": [
+      "README.md",
+      "docs/model_cards/LIMITATIONS.md",
+      "docs/PHYSICS_V2.md"
+    ],
+    "id": "C-35",
+    "kind": "fact",
+    "limit": "A statement of what the project does not claim; it does not make the limits smaller.",
+    "text": "The README states the system's limits: simulated, a lumped model, an assumed carbon intensity, and no calibration to any facility."
+  }
+]

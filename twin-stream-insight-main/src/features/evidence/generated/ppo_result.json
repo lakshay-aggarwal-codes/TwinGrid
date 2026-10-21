@@ -1,0 +1,87 @@
+{
+  "claim_allowed": "none",
+  "outcome": "C",
+  "policies": [
+    {
+      "energy_kwh": 9414.4256,
+      "mean_pue": 1.2091,
+      "policy": "best_constant",
+      "total_reward": -36.3272,
+      "water_L": 451.4503
+    },
+    {
+      "energy_kwh": 9764.3383,
+      "mean_pue": 1.2537,
+      "policy": "ppo_seed_0",
+      "total_reward": -56.2376,
+      "water_L": 4871.7484
+    },
+    {
+      "energy_kwh": 9768.4594,
+      "mean_pue": 1.2544,
+      "policy": "ppo_seed_1",
+      "total_reward": -56.3015,
+      "water_L": 4874.7745
+    },
+    {
+      "energy_kwh": 9727.9171,
+      "mean_pue": 1.247,
+      "policy": "ppo_seed_2",
+      "total_reward": -50.2938,
+      "water_L": 3831.586
+    },
+    {
+      "energy_kwh": 9748.2341,
+      "mean_pue": 1.2505,
+      "policy": "ppo_seed_3",
+      "total_reward": -55.703,
+      "water_L": 4816.8313
+    },
+    {
+      "energy_kwh": 9752.9749,
+      "mean_pue": 1.2517,
+      "policy": "ppo_seed_4",
+      "total_reward": -56.0614,
+      "water_L": 4864.6743
+    },
+    {
+      "energy_kwh": 9622.2259,
+      "mean_pue": 1.2359,
+      "policy": "rule",
+      "total_reward": -54.8517,
+      "water_L": 4850.7916
+    }
+  ],
+  "policies_source": "reports/policy_evaluation_physics1/rerun_t17/full_0fcafef9d28fd539/results.json",
+  "reason": "A simpler controller (best_constant) is within the primary tolerance of PPO and respects the safety envelope.",
+  "runs": [
+    {
+      "best_constant": "constant[22.75C,closed_loop]",
+      "carbon_is_real": false,
+      "claim_allowed": "none",
+      "generated_at_utc": "2026-10-19T07:49:28+00:00",
+      "n_test_scenarios": 60,
+      "outcome": "C",
+      "physics_version_executed": "1",
+      "preregistration_sha256": "fe76f6691857ef267c6fc958fda22f187b8a077110ae3dfc0d9d4e65835d9105",
+      "reason": "A simpler controller (best_constant) is within the primary tolerance of PPO and respects the safety envelope.",
+      "scenario_set_id": "0fcafef9d28fd539",
+      "selected_seed": 2,
+      "source_path": "reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json"
+    },
+    {
+      "best_constant": "constant[22.75C,closed_loop]",
+      "carbon_is_real": false,
+      "claim_allowed": "none",
+      "generated_at_utc": "2026-10-21T02:32:42+00:00",
+      "n_test_scenarios": 60,
+      "outcome": "C",
+      "physics_version_executed": "1",
+      "preregistration_sha256": "fe76f6691857ef267c6fc958fda22f187b8a077110ae3dfc0d9d4e65835d9105",
+      "reason": "A simpler controller (best_constant) is within the primary tolerance of PPO and respects the safety envelope.",
+      "scenario_set_id": "0fcafef9d28fd539",
+      "selected_seed": 2,
+      "source_path": "reports/policy_evaluation_physics1/rerun_t17/full_0fcafef9d28fd539/results.json"
+    }
+  ]
+}
