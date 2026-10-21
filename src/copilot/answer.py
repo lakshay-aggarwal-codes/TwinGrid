@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import HISTORY_UNAVAILABLE, MODE_RULE_BASED, evidence, tools
+from . import HISTORY_UNAVAILABLE, MODE_RULE_BASED, evidence, llm, tools
 from .evidence import EvidenceBook
 
 MAX_ANSWER = 1500
@@ -206,7 +206,9 @@ _BUILDERS = {
 }
 
 
-async def answer_question(inp: AskInput, ctx: tools.ToolContext) -> Answer:
+async def answer_question(
+    inp: AskInput, ctx: tools.ToolContext, *, llm_settings: llm.LlmSettings | None = None
+) -> Answer:
     """Route, collect evidence, fill the template. Raises ``tools.NotFound`` for an unknown alert."""
     intent = classify(inp.question, inp.kind)
     book = EvidenceBook()
@@ -217,4 +219,5 @@ async def answer_question(inp: AskInput, ctx: tools.ToolContext) -> Answer:
     if stray:  # a template or tool bug, never a user-visible guess: drop the numbers' sentence rather than show them
         warnings = [*warnings, "answer_numbers_unbacked"]
         text = "The answer could not be built from the available evidence."
-    return Answer(text, items, _dedupe(unknowns), _dedupe(warnings), links, intent)
+    rule_based = Answer(text, items, _dedupe(unknowns), _dedupe(warnings), links, intent)
+    return await llm.enhance(rule_based, question=inp.question, settings=llm_settings)  # Task 24: no-op unless enabled

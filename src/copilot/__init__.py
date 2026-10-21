@@ -8,5 +8,6 @@ Pure Python on purpose (no FastAPI, no database, no pydantic outside ``schemas.p
 """
 
 MODE_RULE_BASED = "rule_based"
+MODE_LLM = "llm"
 ROOT_CAUSE_UNKNOWN = "Root cause is not determined by available evidence."
 HISTORY_UNAVAILABLE = "Stored history comparison is not available in this version."
