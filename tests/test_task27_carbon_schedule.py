@@ -228,8 +228,7 @@ def test_plan_refuses_a_bad_curve():
 
 # ------------------------------------------------------------------------------------------ the plugin
 def test_plugin_computes_from_the_loaded_signal_and_declares_its_route(tmp_path, monkeypatch):
-    pytest.importorskip("fastapi")
-    from api.plugins import carbon_schedule as C
+    from api.plugins import carbon_schedule as C  # a hard import: FastAPI is a locked runtime dependency
 
     assert [r.path for r in C.router.routes] == ["/api/carbon/schedule"]
     assert C._limit() == "30/minute"

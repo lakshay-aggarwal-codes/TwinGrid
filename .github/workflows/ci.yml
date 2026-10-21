@@ -33,6 +33,7 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -67,6 +68,7 @@ jobs:
 
   types:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -118,6 +120,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -226,6 +229,7 @@ jobs:
 
   test-postgres:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     services:
       postgres:
         image: postgres:16
@@ -298,6 +302,7 @@ jobs:
 
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -319,6 +324,7 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: twin-stream-insight-main
@@ -373,6 +379,7 @@ jobs:
     # ADVISORY OWNER: Lakshay. EXPIRY: 2026-11-30 (Task 21 default). By then either record one green run in
     # reports/postT9/T11_ci_run.md and delete `continue-on-error`, or write the blocker there and renew this date.
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     continue-on-error: true
     env:
       # Test-only values, none of them secret. POSTGRES/REDIS passwords must be URL-safe (compose embeds them in URLs).
@@ -463,6 +470,7 @@ jobs:
     # ADVISORY OWNER: Lakshay. EXPIRY: 2026-11-30 (Task 21 default). Same exit rule as frontend-e2e, plus: commit the
     # real fixtures (twin-stream-insight-main/src/contract/fixtures/) first; without them this job cannot go green.
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     continue-on-error: true
     env:
       POSTGRES_PASSWORD: ci_pg_password_not_secret
@@ -568,6 +576,7 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -620,11 +629,30 @@ jobs:
             echo "- image size: $(docker image inspect digital-twin-backend:ci --format '{{.Size}}' 2>/dev/null || echo n/a) bytes"
           } >> "$GITHUB_STEP_SUMMARY"
 
+  gate:
+    # ONE status check for branch protection: require `gate` and every blocking job below is required with it. The two
+    # advisory Docker-stack jobs (frontend-e2e, frontend-contract) are deliberately not listed; they join `needs` on the
+    # day their `continue-on-error` is removed (Task 7 exit rule in reports/postT9/T11_ci_run.md).
+    # `if: always()` so a failed, cancelled or skipped dependency fails this job instead of skipping it (a skipped
+    # required check reads as green on GitHub).
+    if: always()
+    needs: [lint, types, test, test-postgres, audit, frontend, docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every blocking job succeeded
+        run: |
+          echo "results: ${{ join(needs.*.result, ' ') }}"
+          for r in ${{ join(needs.*.result, ' ') }}; do
+            [ "$r" = "success" ] || { echo "::error::a blocking job did not succeed ($r)"; exit 1; }
+          done
+
   bootstrap:
     # Manual (Run workflow). Produces what could not be generated offline: the hash-pinned lock, the base-image
     # digest, and the first pyrefly count (printed by the `types` job). Commit the artifact; nothing is auto-committed.
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
