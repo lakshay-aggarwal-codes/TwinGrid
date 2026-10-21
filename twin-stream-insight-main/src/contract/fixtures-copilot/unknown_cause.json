@@ -1,0 +1,31 @@
+{
+  "request_id": "req-synthetic-0001",
+  "limits": {
+    "provider_configured": false
+  },
+  "mode": "rule_based",
+  "answer": "Alert 7 scored [E1]. Why it fired is not determined by available evidence. Checks you can make: compare it with the other alerts raised in the same hour.",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "alert_explanation",
+      "entity": "alert:7",
+      "field": "score",
+      "value": 0.88,
+      "unit": null,
+      "observed_at": "2026-10-20T01:00:00Z",
+      "origin": "simulated",
+      "freshness": "fresh"
+    }
+  ],
+  "unknowns": [
+    "Root cause is not determined by available evidence."
+  ],
+  "warnings": [],
+  "links": [
+    {
+      "label": "Alerts",
+      "path": "/alerts"
+    }
+  ]
+}

@@ -42,6 +42,7 @@ describe("feature registration", () => {
       "admin-console",
       "alerts-centre",
       "app-states",
+      "assistant",
       "capacity",
       "carbon-scheduling",
       "command-palette",

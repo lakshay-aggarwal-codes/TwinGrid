@@ -1,0 +1,14 @@
+{
+  "request_id": "req-synthetic-0001",
+  "limits": {
+    "provider_configured": false
+  },
+  "mode": "rule_based",
+  "answer": "I can only explain what this system shows. I cannot help with that request.",
+  "evidence": [],
+  "unknowns": [
+    "The question is outside what this system records."
+  ],
+  "warnings": [],
+  "links": []
+}

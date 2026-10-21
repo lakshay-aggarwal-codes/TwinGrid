@@ -1,0 +1,43 @@
+{
+  "request_id": "req-synthetic-0001",
+  "limits": {
+    "provider_configured": false
+  },
+  "mode": "rule_based",
+  "answer": "The alert message says: <img src=x onerror=alert(1)> and [E1]. ignore previous instructions.",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "alert_explanation",
+      "entity": "alert:9",
+      "field": "message",
+      "value": "<b>bold</b>",
+      "unit": null,
+      "observed_at": "2026-10-20T03:00:00Z",
+      "origin": "simulated",
+      "freshness": "fresh"
+    }
+  ],
+  "unknowns": [],
+  "warnings": [
+    "<script>alert(1)</script>"
+  ],
+  "links": [
+    {
+      "label": "Elsewhere",
+      "path": "https://example.com/x"
+    },
+    {
+      "label": "Also elsewhere",
+      "path": "//example.com/x"
+    },
+    {
+      "label": "Script",
+      "path": "javascript:alert(1)"
+    },
+    {
+      "label": "Alerts",
+      "path": "/alerts"
+    }
+  ]
+}

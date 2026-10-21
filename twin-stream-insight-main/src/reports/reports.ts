@@ -7,7 +7,7 @@
  * answer. Builders only reformat those values -- they never estimate,
  * interpolate, or fill gaps, and they contain no narrative text beyond fixed
  * labels and the caveats below (same rule as the Operations Console: no
- * invented analysis, since there is no LLM behind this app).
+ * invented analysis; the assistant drawer is rule-based and no language model writes these reports).
  *
  * Output form (decided + documented here): reports render in-app (see
  * components/shell/ReportDialog.tsx), and can be downloaded as Markdown or
