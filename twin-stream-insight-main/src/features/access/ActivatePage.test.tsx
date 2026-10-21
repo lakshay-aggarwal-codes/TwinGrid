@@ -16,7 +16,7 @@ function fillBoth(a: string, b = a) {
   fireEvent.change(p, { target: { value: a } });
   fireEvent.change(c, { target: { value: b } });
 }
-const form = () => screen.getByRole('button', { name: /activate/i }).closest('form')!;
+const form = () => screen.getByLabelText('New password').closest('form')!; // the submit button is named "Activating…" mid-submit
 
 beforeEach(() => {
   activateAccount.mockReset();
@@ -101,9 +101,8 @@ describe('ActivatePage', () => {
     activateAccount.mockReturnValue(new Promise((r) => (finish = r)));
     render(<ActivatePage />);
     fillBoth(PW);
-    const f = form(); // looked up once: after the first submit the button reads "Activating…" and form() would no longer find it
-    fireEvent.submit(f);
-    fireEvent.submit(f);
+    fireEvent.submit(form());
+    fireEvent.submit(form());
     expect(activateAccount).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: /activating/i })).toBeDisabled();
     finish({ kind: 'ok' });

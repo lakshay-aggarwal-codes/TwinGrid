@@ -1,5 +1,5 @@
 /** Task 15: saved scenarios and CSV export. PURE (storage access lives in `useSavedScenarios`). */
-import { modeLabel, normalise, type LabInputs } from "./model";
+import { isMode, modeLabel, snap, type LabInputs } from "./model";
 import { csvCell } from "../reports-export/exportTable";
 import { ESTIMATE_LABEL, METRICS, type MetricId, type MetricValues } from "./metrics";
 
@@ -30,7 +30,14 @@ export function parseSaved(raw: unknown): SavedScenario | null {
   if (!i || typeof i !== "object" || !m || typeof m !== "object") return null;
   if (!isNum(i.itLoadPct) || !isNum(i.ambientC) || !isNum(i.setpointC) || typeof i.mode !== "string") return null;
   if (!METRICS.every((x) => isNum(m[x.id]))) return null;
-  const inputs = normalise(i as Partial<LabInputs>);
+  // Range-free on purpose: the set-point range comes from the server (Task 4) and is not known while storage is read, so
+  // the stored set-point is kept as written (never replaced by a constant); the fixed controls are snapped to their bounds.
+  const inputs: LabInputs = {
+    itLoadPct: snap("itLoadPct", i.itLoadPct, i.itLoadPct),
+    ambientC: snap("ambientC", i.ambientC, i.ambientC),
+    setpointC: i.setpointC,
+    mode: isMode(i.mode) ? i.mode : "auto",
+  };
   const metrics = Object.fromEntries(METRICS.map((x) => [x.id, m[x.id] as number])) as MetricValues;
   return { id: r.id, name: r.name.trim().slice(0, MAX_NAME), inputs, metrics, carbonIsReal: r.carbonIsReal };
 }
