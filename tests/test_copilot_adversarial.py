@@ -616,10 +616,7 @@ async def test_what_a_viewer_and_a_demo_session_cannot_read_stays_unreachable_th
                 r = await client.post(
                     URL, json=body(question, kind, "x" if kind != "general" else None), headers=headers
                 )
-                assert r.status_code in (
-                    200,
-                    403,
-                )  # 403 for the demo token today (see the xfail below); 200 once allowed
+                assert r.status_code == 200, (question, kind, r.text)  # the assistant is open to both
                 assert ADMIN_CANARY not in r.text and HASH_CANARY not in r.text and "hashed_password" not in r.text
 
 
@@ -630,13 +627,6 @@ async def test_the_demo_session_cannot_write(client, demo_headers, session_maker
     assert await snapshot(session_maker) == before
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="KNOWN CROSS-TASK DEFECT: api/demo_guard.py (Task 13) refuses every POST with a demo token except the paths in "
-    "ALLOWED_DEMO_WRITES, and POST /api/copilot/ask (Task 14, read-only, documented as open to demo viewers) is not in "
-    "it, so the public demo cannot use the assistant (403 demo_read_only). Request: add '/api/copilot/ask' to "
-    "ALLOWED_DEMO_WRITES. Remove this marker when fixed (strict: an unexpected pass fails the run).",
-)
 async def test_the_demo_session_may_ask_and_gets_what_a_viewer_gets(
     client, demo_headers, viewer_headers, session_maker, detector_dir
 ):
