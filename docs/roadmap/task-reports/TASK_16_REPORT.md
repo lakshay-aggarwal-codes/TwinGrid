@@ -35,7 +35,7 @@ MODIFY `.../components/shell/ThermalLegend.tsx` (badge per reading; a no-data bl
 - Not run: Playwright e2e, the whole Python suite (no Python file other than the new ones changed).
 
 ## Decisions and defaults used
-- A value without an observation time -> `unknown` / `no_value` with no number (freshness cannot be judged). A non-finite value (NaN, inf) -> treated as no value. A timestamp ahead of `now` -> age 0, not stale. Naive datetimes raise in Python.
+- A value without an observation time -> `unknown` / `no_value` with no number (freshness cannot be judged). A non-finite value (NaN, inf) -> treated as no value. A timestamp ahead of `now` by at most 5 s (`FUTURE_TOLERANCE_S`, clock skew) -> age 0, not stale; further ahead -> `unknown` / `future` with no number and no age (changed in roadmap R1 Task 2; before that it read as `normal`). Naive datetimes raise in Python.
 - Bounds are crossed only by strict `>` / `<` (same as `SafetyEnvelope`). `threshold` is the crossed bound for warning/critical, else null. `stale` keeps its value and age but has no threshold.
 - Ages are whole milliseconds in both languages; `observed_at` is output as canonical UTC text (`...SSZ`, `.fff` only if non-zero).
 - Rule ids: `inlet_temp_c`, `outlet_temp_c`, `pue` (`default_rules()` / `DEFAULT_SIGNAL_RULES`).

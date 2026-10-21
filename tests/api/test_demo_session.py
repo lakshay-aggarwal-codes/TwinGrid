@@ -277,20 +277,33 @@ def test_the_ask_route_is_the_only_assistant_path_open_to_demo_and_has_no_write_
         assert banned not in source, banned
 
 
-def test_the_t13_fragment_marks_exactly_the_guarded_write_routes_as_demo_403():
-    rows = _t13_rows()
-    in_yaml = {(r["method"], r["path_template"]) for r in rows if r.get("demo") == 403}
-    assert in_yaml == set(WRITE_ROUTES), {
-        "in_yaml_only": sorted(in_yaml - set(WRITE_ROUTES)),
-        "in_openapi_only": sorted(set(WRITE_ROUTES) - in_yaml),
+def _guarded_in_matrix() -> set[tuple[str, str]]:
+    """Write routes the matrix says a demo token is denied: ``demo: 403`` in T13, plus write rows of other fragments
+    that carry no ``demo`` column at all (the guard denies those by default; T9's public access-request routes)."""
+    found: set[tuple[str, str]] = set()
+    for fragment in sorted(T13_FRAGMENT.parent.glob("*.yaml")):
+        for row in yaml.safe_load(fragment.read_text(encoding="utf-8")).get("routes") or []:
+            key = (row["method"], row["path_template"])
+            if row.get("demo") == 403 or (
+                "demo" not in row and key[0] in WRITE_METHODS and key[1] not in ALLOWED_DEMO_WRITES
+            ):
+                found.add(key)
+    return found
+
+
+def test_the_matrix_marks_exactly_the_guarded_write_routes_as_denied_to_demo():
+    in_matrix = _guarded_in_matrix()
+    assert in_matrix == set(WRITE_ROUTES), {
+        "in_matrix_only": sorted(in_matrix - set(WRITE_ROUTES)),
+        "in_openapi_only": sorted(set(WRITE_ROUTES) - in_matrix),
     }
-    ask = [r for r in rows if r["path_template"] == ASK]
+    ask = [r for r in _t13_rows() if r["path_template"] == ASK]
     assert len(ask) == 1 and ask[0]["demo"] != 403  # passes the guard (the probe body is invalid: 422)
 
 
 async def test_every_t13_demo_403_route_is_denied_and_the_ask_route_is_not(client, enabled, demo_viewer):
     token = (await _issue(client))["access_token"]
-    denied = [(r["method"], r["path_template"]) for r in _t13_rows() if r.get("demo") == 403]
+    denied = sorted(_guarded_in_matrix())
     assert len(denied) >= 10
     for method, path in denied:
         r = await client.request(method, _fill(path), headers=_bearer(token))

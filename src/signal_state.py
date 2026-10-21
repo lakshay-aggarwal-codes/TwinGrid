@@ -6,10 +6,13 @@ The TypeScript mirror is ``twin-stream-insight-main/src/contract/signalState.ts`
 Precedence (first match wins)
 1. no usable value (``None`` or non-finite)  -> ``unknown`` (``no_value``) while connected, ``offline`` (``disconnected``) when not
 2. value present but ``observed_at`` missing -> ``unknown`` (``no_value``): freshness cannot be judged, so the number is not shown as current
-3. ``age_s > stale_after_s``                  -> ``stale`` (``too_old``): the value is kept (it is "last known") together with its age
-4. a critical bound crossed                   -> ``critical`` (``above_crit`` / ``below_crit``)
-5. a warning bound crossed                    -> ``warning`` (``above_warn`` / ``below_warn``)
-6. otherwise                                  -> ``normal`` (``within_bounds``)
+3. ``observed_at`` ahead of ``now`` by more than ``FUTURE_TOLERANCE_S`` -> ``unknown`` (``future``): a reading from the future
+   cannot be current, so no number is shown and ``age_s`` is ``None``. A timestamp ahead by at most the tolerance is ordinary
+   clock skew and counts as age 0.
+4. ``age_s > stale_after_s``                  -> ``stale`` (``too_old``): the value is kept (it is "last known") together with its age
+5. a critical bound crossed                   -> ``critical`` (``above_crit`` / ``below_crit``)
+6. a warning bound crossed                    -> ``warning`` (``above_warn`` / ``below_warn``)
+7. otherwise                                  -> ``normal`` (``within_bounds``)
 
 A bound is "crossed" only by a STRICT comparison (``value > high`` / ``value < low``), the same convention as
 ``SafetyEnvelope.violations`` (a value exactly on a limit is inside it). Stale beats critical on purpose: an old number
@@ -30,6 +33,7 @@ from typing import Any
 STATUSES = ("normal", "warning", "critical", "stale", "offline", "unknown")
 REASON_CODES = (
     "no_value",
+    "future",
     "disconnected",
     "too_old",
     "above_crit",
@@ -44,6 +48,9 @@ REASON_CODES = (
 DEFAULT_INTERVAL_S = 3.0
 STALE_INTERVAL_MULTIPLIER = 3.0
 MIN_STALE_AFTER_S = 5.0
+# Clock-skew allowance: a timestamp up to this far ahead of ``now`` is read as "just now" (age 0); further ahead is ``future``.
+# Mirrored in twin-stream-insight-main/src/contract/signalState.ts (FUTURE_TOLERANCE_S).
+FUTURE_TOLERANCE_S = 5.0
 
 
 @dataclass(frozen=True)
@@ -120,10 +127,12 @@ def evaluate(
     usable = value is not None and math.isfinite(value)
     obs = _utc(observed_at) if observed_at is not None else None
     age: float | None = None
+    future = False
     if obs is not None:
-        age = (
-            max(0, _ms(now) - _ms(obs)) / 1000
-        )  # whole ms, like the browser; a timestamp ahead of ``now`` (skew) is age 0, not stale
+        delta_ms = _ms(now) - _ms(obs)  # whole ms, like the browser
+        future = -delta_ms > FUTURE_TOLERANCE_S * 1000  # strictly beyond the skew allowance
+        if not future:
+            age = max(0, delta_ms) / 1000  # skew inside the allowance is age 0, not stale
 
     def state(status: str, reason: str, *, keep_value: bool, threshold: float | None = None) -> SignalState:
         return SignalState(
@@ -146,6 +155,8 @@ def evaluate(
     assert value is not None
     if obs is None:
         return state("unknown", "no_value", keep_value=False)
+    if future:
+        return state("unknown", "future", keep_value=False)
     if age is not None and age > stale_after_s:
         return state("stale", "too_old", keep_value=True)
     if rule.crit_high is not None and value > rule.crit_high:

@@ -55,6 +55,8 @@ def test_every_expected_value_is_internally_consistent():
         assert e["status"] in ss.STATUSES and e["reason_code"] in ss.REASON_CODES
         if e["status"] in {"unknown", "offline"}:
             assert e["value"] is None  # never a number for unknown / offline
+        if e["reason_code"] == "future":
+            assert e["status"] == "unknown" and e["age_s"] is None
         if e["status"] == "stale":
             assert e["value"] is not None and e["age_s"] > c["input"]["stale_after_s"]
         if e["status"] in {"warning", "critical"}:
@@ -108,7 +110,46 @@ def test_age_is_in_whole_milliseconds_and_clamped_at_zero():
     assert (
         evaluate(1.0, NOW - timedelta(seconds=1, microseconds=499100), NOW, SignalRule("r"), 10).age_s == 1.5
     )  # observed ...58.500900 -> 500 ms
-    assert evaluate(1.0, NOW + timedelta(hours=2), NOW, SignalRule("r"), 10).age_s == 0.0
+    assert evaluate(1.0, NOW + timedelta(seconds=2), NOW, SignalRule("r"), 10).age_s == 0.0  # skew inside the allowance
+
+
+# ------------------------------------------------------------------------------------------ future-dated samples (Task 2)
+@pytest.mark.parametrize("value", [-1e9, 0.0, 14.9, 22.0, 25.1, 30.1, 1e9])
+@pytest.mark.parametrize("ahead", [5.001, 6, 60, 3600, 86400 * 365])
+def test_a_future_dated_reading_is_unknown_with_no_number_never_normal_or_an_alarm(value, ahead):
+    got = evaluate(value, NOW + timedelta(seconds=ahead), NOW, BAND, 10)
+    assert (got.status, got.reason_code) == ("unknown", "future")
+    assert got.value is None and got.threshold is None and got.age_s is None
+    assert got.observed_at is not None  # the claimed time is kept so the caller can show why it is distrusted
+
+
+def test_future_beats_the_in_band_check_which_is_the_original_defect():
+    got = evaluate(22.0, NOW + timedelta(hours=1), NOW, BAND, 10)  # 22 is inside every band
+    assert got.status != "normal" and got.reason_code != "within_bounds"
+
+
+@pytest.mark.parametrize("ahead", [0.0, 0.001, 1.0, 4.999, 5.0])
+def test_clock_skew_up_to_the_tolerance_is_age_zero_and_judged_normally(ahead):
+    got = evaluate(22.0, NOW + timedelta(seconds=ahead), NOW, BAND, 10)
+    assert (got.status, got.reason_code, got.age_s) == ("normal", "within_bounds", 0.0)
+    assert evaluate(31.0, NOW + timedelta(seconds=ahead), NOW, BAND, 10).status == "critical"
+
+
+def test_the_tolerance_is_five_seconds_and_future_is_a_documented_reason():
+    assert ss.FUTURE_TOLERANCE_S == 5.0
+    assert "future" in ss.REASON_CODES
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_future_does_not_depend_on_connectivity_when_a_value_is_present(connected):
+    got = evaluate(22.0, NOW + timedelta(hours=1), NOW, BAND, 10, connected)
+    assert (got.status, got.reason_code) == ("unknown", "future")  # offline is only for a missing value
+
+
+def test_a_future_result_is_json_ready_with_a_null_age():
+    d = evaluate(22.0, NOW + timedelta(hours=1), NOW, BAND, 10).to_dict()
+    json.dumps(d)
+    assert d["observed_at"] == "2026-10-20T11:10:00Z" and d["age_s"] is None and d["value"] is None
 
 
 def test_a_naive_timestamp_is_refused_not_guessed():

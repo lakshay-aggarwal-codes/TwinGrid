@@ -6,8 +6,8 @@ Static audit of `TwinGrid-main.zip`. `api/demo_guard.py` already lists `/api/cop
 ## Acceptance checklist
 - Xfail for demo assistant access removed: MET (file edit; not run).
 - Demo token gets 200 from `/api/copilot/ask`: test added, NOT RUN.
-- Demo token gets 403 `demo_read_only` on every write route in `tests/authz_matrix.d/T13.yaml` (`demo: 403` rows): test added, NOT RUN.
-- T13.yaml `demo: 403` rows equal the guarded write routes in `app.openapi()`: test added, NOT RUN.
+- Demo token gets 403 `demo_read_only` on every guarded write route in the matrix (T13 `demo: 403` rows plus the three T9 public access-request routes, which have no `demo` column): test added; first run 146 passed, 1 failed (T9 rows missing from my first version), fixed.
+- Matrix-denied set equals guarded write routes in `app.openapi()`: test fixed after your run, NOT re-run.
 - Ask route has no write tool: tools registry has no write name and the route plugin has no write call (static test added, NOT RUN); a demo ask leaves every table's row count unchanged (test added, NOT RUN).
 - The two other `xfail` markers left in `test_copilot_adversarial.py` belong to Tasks 1 and 2.
 
@@ -25,5 +25,8 @@ No FastAPI, httpx, SQLAlchemy or ruff in my sandbox, so no pytest, ruff check or
 ## Decisions used
 Guard unchanged, since it is correct. Tightened the 200/403 assertion, because accepting 403 is what hid the defect.
 
+## Run by owner (first version)
+`pytest tests/api/test_demo_session.py tests/test_copilot_adversarial.py -q`: 146 passed, 1 failed, 3 xfailed (Tasks 1, 2 and one more pinned defect). `ruff check .` and `ruff format --check .` passed on the first version.
+
 ## Requested cross-task changes
-None.
+Task 6 (owns `tests/authz_matrix.d/*.yaml`): add `demo: 403` to the three T9 rows `POST /api/access-requests`, `/activate`, `/resend-activation`. The test already treats them as denied.
