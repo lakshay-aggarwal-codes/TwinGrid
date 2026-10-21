@@ -211,7 +211,10 @@ def build_blocks(
     carbon = results.get("carbon")
     if isinstance(carbon, dict):
         if carbon.get("is_real"):
-            text = "Carbon intensity is marked REAL by the run."
+            text = (
+                "Carbon intensity is marked real by the run (is_real = true). The run record does not carry its "
+                "source, region or date, so this report makes no carbon-saving statement."
+            )
         else:
             text = "Carbon intensity is an ASSUMED constant (is_real = false), not measured grid data."
         blocks += [("h2", "Carbon signal"), ("p", text + (" The curve is flat." if carbon.get("flat_curve") else ""))]
