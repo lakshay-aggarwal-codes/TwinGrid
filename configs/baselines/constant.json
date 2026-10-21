@@ -21,7 +21,7 @@
   },
   "schema": "twingrid-baseline-config/1",
   "status": "feasible",
-  "tuner_version": "baselines-tuner/2",
+  "tuner_version": "baselines-tuner/3",
   "tuning": {
     "actuator_range_C": [
       16.0,
@@ -33,7 +33,7 @@
       "is_real": false
     },
     "eval_config_sha256": "fe76f6691857ef267c6fc958fda22f187b8a077110ae3dfc0d9d4e65835d9105",
-    "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
+    "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps, inlet_under_min_steps and pue_over_max_steps in every validation episode",
     "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
     "result": {
       "candidates": [
@@ -45,7 +45,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -56,7 +57,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -67,7 +69,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -78,7 +81,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -89,7 +93,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -100,7 +105,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -111,7 +117,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -122,7 +129,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -133,7 +141,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -144,7 +153,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -155,7 +165,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -166,7 +177,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -177,7 +189,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -188,7 +201,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -199,7 +213,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -210,7 +225,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -221,7 +237,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 3456
+            "outlet_violation_steps": 3456,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -232,7 +249,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 3456
+            "outlet_violation_steps": 3456,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -243,7 +261,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 3456
+            "outlet_violation_steps": 3456,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -254,7 +273,8 @@
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 3456
+            "outlet_violation_steps": 3456,
+            "pue_over_max_steps": 0
           }
         }
       ],
@@ -266,7 +286,8 @@
         "violation_steps": {
           "inlet_over_max_steps": 0,
           "inlet_under_min_steps": 0,
-          "outlet_violation_steps": 0
+          "outlet_violation_steps": 0,
+          "pue_over_max_steps": 0
         }
       },
       "tie_break": "lexicographic ascending on (chilled_C, mode index)",
