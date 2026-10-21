@@ -34,9 +34,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -68,9 +68,9 @@ jobs:
   types:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -110,7 +110,7 @@ jobs:
 
       - name: Upload pyrefly report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pyrefly-report
           path: pyrefly.json
@@ -119,9 +119,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -140,7 +140,7 @@ jobs:
 
       # tests/test_ig05_rack_id_parity.py and tests/test_facility_seed.py run the frontend .ts fixtures with node and
       # skip when node is missing. Pin the same Node as the frontend job so they run, identically, every time.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22.20.0"
 
@@ -219,7 +219,7 @@ jobs:
 
       - name: Upload JUnit
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: junit
           path: junit.xml
@@ -250,9 +250,9 @@ jobs:
       TEST_POSTGRES_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/twingrid_ci
       TWINGRID_TEST_PG_ASYNC_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/twingrid_ci
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -299,9 +299,9 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -329,10 +329,10 @@ jobs:
       VITE_DEMO_USERNAME: ci_viewer
       VITE_DEMO_PASSWORD: ci-placeholder-not-a-real-password
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node (Vite 7 needs >= 20.19 / 22.12)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22.20.0"
           cache: "npm"
@@ -387,7 +387,7 @@ jobs:
       E2E_OPERATOR_USERNAME: e2e_operator
       E2E_OPERATOR_PASSWORD: ci-e2e-operator-password-1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Start the backend stack (compose services db, redis, backend)
         run: docker compose up -d --build db redis backend
@@ -413,7 +413,7 @@ jobs:
           echo
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22.20.0"
           cache: "npm"
@@ -438,7 +438,7 @@ jobs:
 
       - name: Upload Playwright report and traces
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: |
@@ -474,7 +474,7 @@ jobs:
       E2E_OPERATOR_USERNAME: e2e_operator
       E2E_OPERATOR_PASSWORD: ci-e2e-operator-password-1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Start the backend stack (compose services db, redis, backend)
         run: docker compose up -d --build db redis backend
@@ -497,7 +497,7 @@ jobs:
           echo
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22.20.0"
           cache: "npm"
@@ -550,7 +550,7 @@ jobs:
 
       - name: Upload the fresh capture and capture log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: contract-fixtures
           path: |
@@ -569,7 +569,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Base image must be pinned by digest
         run: |
@@ -626,9 +626,9 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -650,7 +650,7 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: requirements.lock
           path: requirements.lock.new
