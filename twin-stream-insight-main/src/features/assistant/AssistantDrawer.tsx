@@ -22,6 +22,7 @@ const BTN =
   "rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 /** Client-held history for the next request: the answered turns as user/assistant items, newest last, at most 6. */
+// eslint-disable-next-line react-refresh/only-export-components -- pure helper exported for tests; only costs a full reload in dev
 export function historyOf(turns: readonly Turn[]): HistoryItem[] {
   const items: HistoryItem[] = [];
   for (const t of turns) {
@@ -46,7 +47,7 @@ function Conversation({ context, ask, knownRoutes, onClose }: { context: Context
 
   async function submit(questionRaw: string, replaceId?: number) {
     const built = buildRequest(questionRaw, context, historyOf(turnsRef.current.filter((t) => t.id !== replaceId)));
-    if (!built.ok) {
+    if (built.ok === false) {
       setFormError(built.reason === "empty" ? "Type a question first." : built.reason === "too_long" ? `Questions are limited to ${LIMITS.question} characters.` : "This item cannot be asked about.");
       return;
     }

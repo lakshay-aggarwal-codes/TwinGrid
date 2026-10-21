@@ -58,7 +58,7 @@ export function CreateOrderForm({ form, onChange, canCreate, onCreated }: Props)
     setDone(null);
     setFailure(null);
     const parsed = parseCreate(form);
-    if (!parsed.ok) {
+    if (parsed.ok === false) {
       setErrors(parsed.errors);
       return;
     }

@@ -12,13 +12,13 @@ describe("parsePlan", () => {
   it.each(["", "abc", "-1", "1.5", "201", "1e2", "0x10"])("rejects %j racks by name, without clamping", (racks) => {
     const r = parsePlan(racks, "8");
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors).toEqual({ racks: "Enter a whole number from 0 to 200." });
+    if (r.ok === false) expect(r.errors).toEqual({ racks: "Enter a whole number from 0 to 200." });
   });
 
   it.each(["", "abc", "0", "0.09", "60.1", "-3", "8,5", ".5"])("rejects %j kW by name, without clamping", (kw) => {
     const r = parsePlan("5", kw);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors).toEqual({ kw: "Enter a number from 0.1 to 60 kW." });
+    if (r.ok === false) expect(r.errors).toEqual({ kw: "Enter a number from 0.1 to 60 kW." });
   });
 
   it("names both fields when both are wrong", () => {

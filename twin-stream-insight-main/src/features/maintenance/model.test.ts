@@ -60,7 +60,7 @@ describe("parseCreate", () => {
   it("names too-long fields instead of cutting them", () => {
     const r = parseCreate(form({ title: "x".repeat(MAX_TITLE + 1), description: "y".repeat(MAX_DESCRIPTION + 1), assignee: "z".repeat(MAX_ASSIGNEE + 1) }));
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(Object.keys(r.errors).sort()).toEqual(["assignee", "description", "title"]);
+    if (r.ok === false) expect(Object.keys(r.errors).sort()).toEqual(["assignee", "description", "title"]);
     expect(parseCreate(form({ title: "x".repeat(MAX_TITLE) })).ok).toBe(true);
   });
 });

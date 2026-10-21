@@ -50,7 +50,7 @@ export function AuditPanel() {
 
   const apply = () => {
     const check = auditQuery(form);
-    if (!check.ok) {
+    if (check.ok === false) {
       setFormError(check.error);
       return;
     }

@@ -39,7 +39,7 @@ export function TariffDrawer({ open, onOpenChange, tariff, storageOk, onSave, on
 
   const save = () => {
     const v = validateDraft(draft);
-    if (!v.ok) return setErrors(v.errors);
+    if (v.ok === false) return setErrors(v.errors);
     onSave(v.tariff);
     onOpenChange(false);
   };

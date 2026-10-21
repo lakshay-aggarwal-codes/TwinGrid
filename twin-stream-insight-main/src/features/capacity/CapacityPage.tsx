@@ -28,7 +28,7 @@ export default function CapacityPage() {
   const apply = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     const r = parsePlan(racks, kw);
-    if (!r.ok) {
+    if (r.ok === false) {
       setErrors(r.errors);
       return;
     }

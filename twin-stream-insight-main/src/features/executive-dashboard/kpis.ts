@@ -144,7 +144,7 @@ export function savingsKpi(facts: SavingsFacts | null, reason = "No policy-evalu
 }
 
 /** Newest report by `generated_at_utc` (ISO text sorts correctly); reports without a date come last; ties keep list order. */
-export function newestEvaluationId(list: ReadonlyArray<{ evaluation_id: string; generated_at_utc?: string | null }>): string | null {
+export function newestEvaluationId(list: ReadonlyArray<{ evaluation_id?: string; generated_at_utc?: string | null }>): string | null {
   if (list.length === 0) return null;
   let best = list[0];
   for (const e of list.slice(1)) {
@@ -152,7 +152,7 @@ export function newestEvaluationId(list: ReadonlyArray<{ evaluation_id: string; 
     const b = best.generated_at_utc ?? "";
     if (a > b) best = e;
   }
-  return best.evaluation_id;
+  return best.evaluation_id ?? null; // optional only because the runtime-validated payload type is loose under strict:false
 }
 
 // ------------------------------------------------------------------------------------------------ sparklines

@@ -1,33 +1,35 @@
 # Task 13 matrix fragment (format: Task 3, tests/authz_matrix.d/*.yaml).
-# New column `demo`: the status class a demo token (POST /auth/demo-session) gets. Task 3's loader does not know this
-# column yet; until it does, tests/api/test_demo_session.py enforces it for every write route found in app.openapi().
+# Only the route Task 13 adds is declared here. The harness (tests/authz_matrix.py) requires all four role cells and
+# rejects a `demo` cell until it has a demo-token fixture (test_the_demo_column_is_not_declared_before_the_harness_can_test_it);
+# the demo-token behaviour is enforced instead by tests/api/test_demo_session.py for every write route in app.openapi().
 routes:
-  - {method: POST, path_template: /auth/demo-session, anonymous: 2xx, viewer: 2xx, operator: 2xx, admin: 2xx, demo: 2xx}  # 404 when DEMO_PUBLIC_ENABLED is off; the matrix runs with it on
-  # Every other write route: a demo token is denied before routing (api/demo_guard.py), except these:
-  - {method: POST, path_template: /auth/ws-ticket, demo: 2xx}   # live feed ticket
-  - {method: POST, path_template: /auth/refresh, demo: 401}     # no refresh token exists
-  - {method: POST, path_template: /auth/logout, demo: 2xx}      # 204, a no-op
-  - {method: POST, path_template: /auth/login, demo: 401}
-  - {method: POST, path_template: /api/client-errors, demo: public}
-  - {method: POST, path_template: /api/runs, demo: 403}         # viewer stays 2xx; see run_routes.py
-  - {method: POST, path_template: /api/optimize, demo: 403}
-  - {method: POST, path_template: /api/optimize/train_async, demo: 403}
-  - {method: POST, path_template: /api/webhooks, demo: 403}
-  - {method: DELETE, path_template: /api/webhooks, demo: 403}
-  - {method: POST, path_template: "/api/alerts/{alert_id}/acknowledge", demo: 403}
-  - {method: PATCH, path_template: "/api/alerts/{alert_id}", demo: 403}
-  - {method: POST, path_template: /api/shadow_mode/sample, demo: 403}
-  - {method: POST, path_template: "/api/assets/{asset_id}/move", demo: 403}
-  - {method: POST, path_template: "/api/assets/{asset_id}/edges", demo: 403}
-  - {method: POST, path_template: "/api/edges/{edge_id}/close", demo: 403}
-  - {method: POST, path_template: /api/maintenance/work-orders, demo: 403}
-  - {method: PATCH, path_template: "/api/maintenance/work-orders/{order_id}", demo: 403}
-  - {method: POST, path_template: "/api/maintenance/work-orders/{order_id}/status", demo: 403}
-  - {method: POST, path_template: /api/optimizer/proposals, demo: 403}
-  - {method: POST, path_template: "/api/optimizer/proposals/{proposal_id}/decision", demo: 403}
-  - {method: POST, path_template: "/api/admin/users/{user_id}/role", demo: 403}
-  - {method: POST, path_template: /api/admin/webhooks, demo: 403}
-  - {method: PUT, path_template: "/api/admin/webhooks/{wid}", demo: 403}
-  - {method: DELETE, path_template: "/api/admin/webhooks/{wid}", demo: 403}
-  - {method: POST, path_template: "/api/admin/webhooks/{wid}/test", demo: 403}
-  - {method: POST, path_template: /auth/register, demo: 403}
+  # Public by design: obtains a read-only demo token, no credential. Answers 404 when DEMO_PUBLIC_ENABLED is off; the matrix runs with it on.
+  - {method: POST, path_template: /auth/demo-session, anonymous: public, viewer: public, operator: public, admin: public}
+# What a demo token gets on every other write route (kept as comments until the harness can check a `demo` column):
+# - {method: POST, path_template: /auth/ws-ticket, demo: 2xx}   # live feed ticket
+# - {method: POST, path_template: /auth/refresh, demo: 401}     # no refresh token exists
+# - {method: POST, path_template: /auth/logout, demo: 2xx}      # 204, a no-op
+# - {method: POST, path_template: /auth/login, demo: 401}
+# - {method: POST, path_template: /api/client-errors, demo: public}
+# - {method: POST, path_template: /api/runs, demo: 403}         # viewer stays 2xx; see run_routes.py
+# - {method: POST, path_template: /api/optimize, demo: 403}
+# - {method: POST, path_template: /api/optimize/train_async, demo: 403}
+# - {method: POST, path_template: /api/webhooks, demo: 403}
+# - {method: DELETE, path_template: /api/webhooks, demo: 403}
+# - {method: POST, path_template: "/api/alerts/{alert_id}/acknowledge", demo: 403}
+# - {method: PATCH, path_template: "/api/alerts/{alert_id}", demo: 403}
+# - {method: POST, path_template: /api/shadow_mode/sample, demo: 403}
+# - {method: POST, path_template: "/api/assets/{asset_id}/move", demo: 403}
+# - {method: POST, path_template: "/api/assets/{asset_id}/edges", demo: 403}
+# - {method: POST, path_template: "/api/edges/{edge_id}/close", demo: 403}
+# - {method: POST, path_template: /api/maintenance/work-orders, demo: 403}
+# - {method: PATCH, path_template: "/api/maintenance/work-orders/{order_id}", demo: 403}
+# - {method: POST, path_template: "/api/maintenance/work-orders/{order_id}/status", demo: 403}
+# - {method: POST, path_template: /api/optimizer/proposals, demo: 403}
+# - {method: POST, path_template: "/api/optimizer/proposals/{proposal_id}/decision", demo: 403}
+# - {method: POST, path_template: "/api/admin/users/{user_id}/role", demo: 403}
+# - {method: POST, path_template: /api/admin/webhooks, demo: 403}
+# - {method: PUT, path_template: "/api/admin/webhooks/{wid}", demo: 403}
+# - {method: DELETE, path_template: "/api/admin/webhooks/{wid}", demo: 403}
+# - {method: POST, path_template: "/api/admin/webhooks/{wid}/test", demo: 403}
+# - {method: POST, path_template: /auth/register, demo: 403}

@@ -120,7 +120,7 @@ export function mergeBackfill(input: MergeInput, backfill: BackfillState | undef
   const short = recovered < win.missedFrames;
   const gaps: TelemetryGap[] = short
     ? [...input.gaps, { start: win.from, end: win.to, duration_s: (Date.parse(win.to) - Date.parse(win.from)) / 1000, origin: 'backfill-shortfall' }]
-    : input.gaps;
+    : [...input.gaps];
 
   return {
     items: merged,
