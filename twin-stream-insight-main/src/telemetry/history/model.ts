@@ -89,7 +89,7 @@ export interface BuiltSeries {
   readonly orderViolations: number;
 }
 
-function eventMs(text: string): number | null {
+export function eventMs(text: string): number | null {
   const parsed = parseInstant(text, 'event');
   // The backend always sends `Z`. An offset-less string would mean assuming a zone: refuse it.
   return parsed.ok && parsed.kind === 'event' && !parsed.offsetAssumed ? parsed.epochMs : null;

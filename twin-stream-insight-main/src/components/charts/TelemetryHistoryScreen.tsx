@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { StateBoundary, StateNotice } from '@/state/StateBoundary';
+import { useBackfillState } from '@/features/realtime-resilience/backfillState';
 import { MEASURANDS, WINDOWS, requestWindow, sensorIdFor } from '@/telemetry/history/model';
 import { useFacilityId, useTelemetryHistory } from '@/telemetry/history/useTelemetryHistory';
 import { HistoryView } from './HistoryView';
@@ -17,13 +18,21 @@ export interface TelemetryHistoryScreenProps {
 function HistoryPanel({ sensorId, hours, windowEndMs }: { sensorId: string; hours: number; windowEndMs: number }) {
   const window = useMemo(() => requestWindow(windowEndMs, hours), [windowEndMs, hours]);
   const { state, refetch } = useTelemetryHistory(sensorId, window);
+  const backfill = useBackfillState();
   if (state.status === 'error' && state.kind === 'not_found') {
     return <StateNotice kind="unavailable" title="Sensor not registered" text="Sensor not registered on this backend." />;
   }
   return (
-    <StateBoundary state={state} onRetry={refetch} messages={{ empty: 'No stored telemetry for this window.' }}>
-      {(data) => <HistoryView data={data} window={window} />}
-    </StateBoundary>
+    <>
+      <StateBoundary state={state} onRetry={refetch} messages={{ empty: 'No stored telemetry for this window.' }}>
+        {(data) => <HistoryView data={data} window={window} backfill={backfill} />}
+      </StateBoundary>
+      {state.status === 'empty' && (
+        <p className="text-xs text-muted-foreground" data-testid="history-not-stored">
+          Not stored in this mode: if telemetry storage is turned off, or the facility sensors are not seeded, history stays empty.
+        </p>
+      )}
+    </>
   );
 }
 

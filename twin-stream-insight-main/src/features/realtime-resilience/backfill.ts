@@ -72,6 +72,8 @@ export function gapBetween(prev: FrameMark | null, next: FrameMark, maxWindowMs 
 export interface BackfilledSeries {
   measurand: string;
   sensorId: string;
+  /** Unit the history API reported for this sensor (Task 23: the history chart refuses a mismatch). */
+  unit?: string | null;
   samples: readonly TelemetrySample[];
 }
 
@@ -97,13 +99,13 @@ export async function loadGap(window: GapWindow, signal: AbortSignal | undefined
     MEASURANDS.map(async (m) => {
       const sensorId = sensorIdFor(facility, m.id);
       const page = await deps.samples(sensorId, { from: window.from, to: window.to, limit: BACKFILL_PAGE_LIMIT }, signal);
-      return { measurand: m.id, sensorId, samples: page.items, more: page.next_cursor !== null };
+      return { measurand: m.id, sensorId, unit: page.unit ?? null, samples: page.items, more: page.next_cursor !== null };
     })
   );
   const ok = settled.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
   if (ok.length === 0) throw new Error('backfill: no sensor could be read');
   return {
-    series: ok.map(({ measurand, sensorId, samples }): BackfilledSeries => ({ measurand, sensorId, samples })),
+    series: ok.map(({ measurand, sensorId, unit, samples }): BackfilledSeries => ({ measurand, sensorId, unit, samples })),
     moreAvailable: ok.some((o) => o.more),
   };
 }
