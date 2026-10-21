@@ -18,7 +18,24 @@ records the file's SHA-256.
 ## Results (held-out last 20%, simulator data)
 - RMSE 0.523 °C and MAE 0.421 °C for the 30-minute-ahead outlet temperature.
 - These are errors in the target's own units (the target is not rescaled before scoring).
-- One training run. The registry records no seed for it, so there is no spread or confidence interval.
+- One training run. The registry records no seed for it, so there is no spread or confidence interval. Do not quote these figures without that caveat.
+
+## Evaluation against baselines (Task 19)
+The single-run figures above are **superseded as a headline**: they have no baseline and no spread. The replacement is
+`python -m src.forecast_eval`, protocol-first (`reports/forecast_eval/PROTOCOL.md`): chronological row split in which no
+training window touches a test row, five baselines (persistence, moving average, seasonal-naive, seasonal-delta and a ridge
+regression on the same input window), at least five LSTM seeds, horizon-specific RMSE and MAE with block-bootstrap
+intervals, errors by operating regime, and three leakage checks. The verdict is one of `model_better`, `model_worse`,
+`inconclusive` or `unevaluated`, from a paired interval against the strongest baseline.
+
+**Status: the learned-model comparison has not been run in this repository.** It needs TensorFlow and `sensor_data.csv`.
+Until `reports/forecast_eval/results.json` exists with a learned-model result, the verdict is `unevaluated` and nothing in
+this card says the forecaster is better than a simple baseline. If the verdict is `model_worse` or `inconclusive`, this card
+and the Model Passport must say so.
+
+Differences from the legacy pipeline that the evaluation fixes: that pipeline removed rows with whole-file statistics, and
+its validation block for early stopping overlaps neighbouring training windows. The evaluation never drops rows and keeps the
+test rows out of every fit.
 
 ## Negative and unevaluated results
 - **No baseline.** A persistence ("same as now") forecast was never computed (`ML_DOCUMENTATION.md` lists it as a follow-up),
