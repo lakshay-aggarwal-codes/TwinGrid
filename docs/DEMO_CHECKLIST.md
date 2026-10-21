@@ -36,7 +36,9 @@ To simulate afresh instead of reading the stored run: `python -m src.baselines.c
 measured; the rehearsal's `-Simulate` switch measures it). A fresh run from an edited tree is marked DIRTY and cannot be promoted.
 
 What the stored run shows, and does not show: a fixed 22.75 C setpoint and a lookup table scored better than the rule baseline inside
-the simulator; the tuned PID collapsed to the rule baseline (all gains 0), so it is not a working PID result. Carbon is a flat assumed
+the simulator; in this stored run (`baselines-v4`) the tuned PID collapsed to the rule baseline (all gains 0), so it is not a working PID result.
+The shipped `configs/baselines/*.json` were re-tuned afterwards (`baselines-tuner/3`, PUE counted) and `baselines-v5` is meant to be produced on your machine
+(`docs/roadmap/task-reports/TASK_17_REPORT.md`); it is not in this tree, so do not describe `baselines-v4` as the current configuration. Carbon is a flat assumed
 figure. This is a comparison of simple controllers in a simulator, not evidence for any real facility. [C-04] [C-08]
 
 ## If asked (simulated, checked, assumed)
@@ -76,3 +78,42 @@ figure. This is a comparison of simple controllers in a simulator, not evidence 
 
 ## Do not say
 See the list in [`CLAIMS.md`](CLAIMS.md). Say "simulated", "uncalibrated", "not evaluated".
+
+
+## Demo script, 4 to 6 minutes (not yet rehearsed; step lengths are targets)
+
+Open a fresh private window. Say "simulated" in the first sentence. Steps marked **(not in this tree)** need a feature that is missing
+or has not been run; skip them and say so rather than improvising.
+
+| Step | Do | Say |
+|---|---|---|
+| 1. Start | Open the dashboard, sign in (`demo_viewer`). A one-click read-only demo button is **(not in this tree)**. | "Everything you will see is simulated." |
+| 2. Data origin | Point at the status bar and an origin badge. | "Each figure says where it comes from. Carbon is a flat assumed figure." |
+| 3. Facility | Hover and click a rack in the 3D facility. | "A simulated layout; per-rack values are not measurements." |
+| 4. Alert | Open a seeded alert, then **Explain this**; click a citation chip and show its row in the evidence table. | "The answer is a template filled from evidence the server fetched; it lists what it does not know." |
+| 5. Model limits | Open the Model Passport. | "Each model shows its status and its limits, including the weak ones." |
+| 6. What-if | Run one what-if comparison. | "Two simulated runs; no claim about a real site." |
+| 7. Access | Admin window: open the access-request queue and the audit trail for a separate test request. The public request form is **(not in this tree)**. | "Access is a recorded owner decision." |
+| 8. Evidence | Show the latest recorded test or CI result, and one measured performance number **only if** `reports/perf/2026-10/` has one. Today it has none. | "Nothing is quoted that we did not measure." |
+| 9. Boundaries | Show `docs/CLAIMS.md`. | "What is and is not checked, and why." |
+
+## Five-minute script for a viewer (Playbook v3.1, Task 32 draft)
+
+Status: **drafted from the code, not rehearsed.** Run it twice before presenting (Task 31 asks for this) and write down what broke. Say
+"simulated" in the first sentence. Steps that depend on parts not in this tree are marked.
+
+| Min | Do | Say |
+|---|---|---|
+| 0:00 | Open a private window; start `.\scripts\demo.ps1`; sign in as `demo_viewer`. (A public read-only demo button does not exist yet; the API route does.) | "Everything is simulated; the bar says so." |
+| 0:30 | Status bar and data-origin badges. | "Each number says where it came from." |
+| 1:00 | 3D facility: click a rack. | "A simulated layout; no per-rack physics behind it." |
+| 1:40 | Alerts: open a seeded alert, press "Explain this", open the evidence table. (Needs the assistant UI applied and a stack run; not checked.) | "The answer is a template over these rows; unknowns are listed." |
+| 2:30 | Model Passport. | "Limits first, including the model that did badly." |
+| 3:00 | What-if lab: one comparison. Carbon is an assumption. | "Two simulated runs; carbon is a flat assumed 475." |
+| 3:50 | Admin queue: show a separate test access request and its audit trail. (A public request form is not in this tree; create the test request with the API.) | "Access is decided by the owner, and recorded." |
+| 4:20 | Show the last CI result and one measured number **only if** it exists in `reports/perf/2026-10/` (none yet). | "This is what was measured, and this is what was not." |
+| 4:40 | `docs/CLAIMS.md`: what is and is not validated. | "Every claim has evidence and a boundary." |
+
+Caution: the stored run used in the three-minute path above is `baselines-v4`, recorded before the baselines were re-tuned
+(`baselines-tuner/3`); its PID row (all gains 0) does not match the shipped `configs/baselines/pid.json`. The re-tuned run is created on your machine
+(`docs/roadmap/task-reports/TASK_17_REPORT.md`); until then say the stored run is older than the shipped configs.

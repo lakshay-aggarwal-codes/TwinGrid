@@ -90,11 +90,14 @@ def _norm(value: Any) -> str:
     return str(value).strip()
 
 
-def _load_one(path: Path) -> tuple[dict[tuple[str, str], dict[str, str]], dict[str, dict[str, str]]]:
+def _load_one(
+    path: Path,
+) -> tuple[dict[tuple[str, str], dict[str, str]], dict[str, dict[str, str]], dict[tuple[str, str], str]]:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(data, dict) or not set(data) <= {"routes", "websockets"}:
         raise MatrixError(f"{path.name}: top level may only contain 'routes' and 'websockets'")
     routes: dict[tuple[str, str], dict[str, str]] = {}
+    overlays: dict[tuple[str, str], str] = {}
     for i, entry in enumerate(data.get("routes") or []):
         where = f"{path.name} routes[{i}]"
         if not isinstance(entry, dict):
@@ -103,6 +106,18 @@ def _load_one(path: Path) -> tuple[dict[tuple[str, str], dict[str, str]], dict[s
         extra = set(entry) - allowed
         if extra:
             raise MatrixError(f"{where}: unknown keys {sorted(extra)}")
+        if set(entry) == {
+            "method",
+            "path_template",
+            "demo",
+        }:  # Task 27: a demo-token overlay on a route declared elsewhere
+            okey = (_norm(entry["method"]).upper(), _norm(entry["path_template"]))
+            if _norm(entry["demo"]) not in STATUS_CLASSES:
+                raise MatrixError(f"{where} {okey[0]} {okey[1]}: demo={_norm(entry['demo'])!r} is not a status class")
+            if okey in routes or okey in overlays:
+                raise MatrixError(f"{where}: {okey[0]} {okey[1]} is declared twice in one file")
+            overlays[okey] = _norm(entry["demo"])
+            continue
         missing = [k for k in ("method", "path_template", *ROLES) if k not in entry]
         if missing:
             raise MatrixError(f"{where}: missing keys {missing}")
@@ -129,18 +144,20 @@ def _load_one(path: Path) -> tuple[dict[tuple[str, str], dict[str, str]], dict[s
         if _norm(entry["anonymous"]) != "rejected":
             raise MatrixError(f"{where}: anonymous must be 'rejected'")
         sockets[_norm(entry["path_template"])] = {"anonymous": "rejected"}
-    return routes, sockets
+    return routes, sockets, overlays
 
 
 def load_fragments(
     directory: Path = MATRIX_DIR,
 ) -> tuple[dict[tuple[str, str], dict[str, str]], dict[str, dict[str, str]]]:
-    """Merge every ``*.yaml`` fragment. A route declared in two files is an error (one owner per route)."""
+    """Merge every ``*.yaml`` fragment. A route declared in two files is an error (one owner per route). A row that
+    carries only ``demo`` (Task 27) adds the demo-token cell to a route another fragment declares."""
     merged: dict[tuple[str, str], dict[str, str]] = {}
     owner: dict[tuple[str, str], str] = {}
     sockets: dict[str, dict[str, str]] = {}
+    overlays: dict[tuple[str, str], tuple[str, str]] = {}
     for path in sorted(directory.glob("*.yaml")):
-        routes, socks = _load_one(path)
+        routes, socks, demo = _load_one(path)
         for key, cells in routes.items():
             if key in merged:
                 raise MatrixError(f"{key[0]} {key[1]} is declared in both {owner[key]} and {path.name}")
@@ -150,6 +167,16 @@ def load_fragments(
             if template in sockets:
                 raise MatrixError(f"websocket {template} is declared twice")
             sockets[template] = cells
+        for key, value in demo.items():
+            if key in overlays:
+                raise MatrixError(
+                    f"demo cell for {key[0]} {key[1]} is declared in both {overlays[key][1]} and {path.name}"
+                )
+            overlays[key] = (value, path.name)
+    for key, (value, fname) in overlays.items():  # a demo overlay needs a full row somewhere (one owner per route)
+        if key not in merged:
+            raise MatrixError(f"{fname}: demo cell for {key[0]} {key[1]}, which no fragment declares")
+        merged[key]["demo"] = value
     return merged, sockets
 
 

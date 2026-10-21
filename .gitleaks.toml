@@ -28,4 +28,13 @@ regexes = [
   '''change-me-url-safe-redis-password''',
   '''your_electricity_maps_api_key_here''',
   '''your_nrel_nsrdb_api_key_here''',
+  # Task 27: made-up values written inside test files, each used to prove that a secret is redacted or rejected.
+  # None is a credential for anything: the pepper strings are test-only (src/access/tokens.py refuses no value, the
+  # tests set them through monkeypatch), the others are strings the redaction tests expect NOT to appear in output.
+  '''test-pepper-0123456789abcdef-0123456789abcdef''',
+  '''probe-pepper-0123456789abcdef-0123456789abcdef''',
+  '''wrong-key-0123456789''',
+  '''INGESTKEY0123456789''',
+  '''SECRETFOUR1234''',
+  '''hunter2-SECRET''',
 ]

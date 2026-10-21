@@ -47,7 +47,7 @@ Needs Docker Desktop. On Windows PowerShell, from the repository root:
 It creates `.env.demo` with random local secrets, starts the database, cache and API, seeds simulated data, and prints the
 URLs and three demo logins (the passwords are printed once). The API is on `http://localhost:8000` and the dashboard on
 `http://localhost:8080`. [C-26] On macOS or Linux use `scripts/demo.sh`. The first run builds an image; how long it takes was
-not measured.
+not measured, and no run of this quickstart from a clean clone has been recorded.
 
 Without Docker, the manual path is in [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`DEPLOYMENT.md`](DEPLOYMENT.md): install
 `requirements.txt`, run `alembic upgrade head`, start `uvicorn api.main:app`, then in `twin-stream-insight-main` run `npm ci`
@@ -68,6 +68,61 @@ and `npm run dev` with `VITE_API_BASE_URL` set (see `twin-stream-insight-main/.e
 - **Fleet view:** five simulated sites ranked by PUE, carbon and simulated alert conditions. [C-17] <!-- screenshot: fleet view -->
 - **Reports and export:** a printable report, exports, and a PDF that opens with a simulated-data banner. [C-18] <!-- screenshot: report -->
 - **Live feed resilience:** reconnect with jitter and gap back-fill. [C-19]
+
+## Access, demo mode and the assistant (built; not yet confirmed end to end)
+
+What exists in the code, and what a reader can and cannot do today. Every item below is **unconfirmed by a recorded run** (see
+[the evidence matrix](docs/roadmap/EVIDENCE_MATRIX.md)); none is listed in the claims ledger.
+
+- **Requesting viewer access.** The API accepts `POST /api/access-requests`, answers with a reference and a status token, and
+  `GET /api/access-requests/{ref}/status` reports the decision; the owner is emailed approve/deny links and an admin queue exists in
+  the dashboard. A public request form page is **not in this tree**, so today a request is sent to the API directly or you ask the
+  owner for an account.
+- **Read-only demo session.** `POST /auth/demo-session` exists behind `DEMO_PUBLIC_ENABLED` (off unless set), with
+  `DEMO_SESSION_MINUTES` and `DEMO_SESSION_RATE_LIMIT`. No dashboard button uses it yet.
+- **Assistant ("Explain this").** `POST /api/copilot/ask` answers from templates filled with evidence the server fetched (cited as
+  `[E1]`, `[E2]`...), and says what it does not know. There is **no language model** in the tree, so there is nothing to configure
+  for one, and it cannot write numbers of its own.
+- **Carbon on every new report surface** is labelled assumed unless a dated real series is loaded (`src/carbon_label.py`).
+
+## Configure mail, and run the checks
+
+Mail for access requests is read from the environment at call time: `ACCESS_NOTIFY_BACKEND` (`smtp`, or a file outbox under
+`ACCESS_NOTIFY_FILE_DIR`, default `reports/dev_outbox`, for development), `ACCESS_NOTIFY_SMTP_USER`, `ACCESS_NOTIFY_SMTP_HOST`,
+`ACCESS_NOTIFY_SMTP_PORT`, `ACCESS_NOTIFY_SMTP_TLS`, `ACCESS_NOTIFY_OWNER_EMAIL`, `ACCESS_NOTIFY_FROM`, `ACCESS_PUBLIC_BASE_URL`
+(`src/notify/settings.py`; `docs/env/` has the full lists). Sending through a real mailbox has not been run.
+
+All checks (PowerShell, repository root; none of these has a recorded green run on this exact tree):
+
+```powershell
+pip install -r requirements.txt -r tests/test_requirements.txt
+ruff check .; ruff format --check .; pytest tests/ -q
+alembic upgrade head; alembic check
+cd twin-stream-insight-main; npm ci; npm run verify; cd ..
+```
+
+## Access, demo mode and the assistant (built; not yet checked end to end)
+
+These parts are in the code and have tests, but none has been run against a live stack, a real mailbox or a browser, so they are
+not in the claims ledger. Per-task detail: [`docs/roadmap/task-reports/`](docs/roadmap/task-reports/).
+
+- **Viewer access.** The API takes access requests (`POST /api/access-requests`), lets the requester poll a status with a one-time token, and
+  emails the owner decision links; the dashboard has an admin queue. A public request form page is not in this tree, so today a
+  request is made through the API or by asking the owner for an account.
+- **Read-only demo.** `POST /auth/demo-session` issues a short read-only session when `DEMO_PUBLIC_ENABLED` is true (length and rate
+  limit: `DEMO_SESSION_MINUTES`, `DEMO_SESSION_RATE_LIMIT`). There is no dashboard button for it yet.
+- **Assistant ("Explain this").** `POST /api/copilot/ask` answers from templates filled with evidence the server fetched itself (alert,
+  signal, model, feature); the drawer shows the evidence table and what is unknown. **No language model is connected**, so there is
+  nothing to configure for one. It cannot write numbers: every figure in an answer is copied from an evidence row.
+
+## Configure mail and run the checks
+
+- **Mail** (access-request notices): set `ACCESS_NOTIFY_BACKEND` (`file` writes to `ACCESS_NOTIFY_FILE_DIR`, default `reports/dev_outbox`; `smtp` sends),
+  then `ACCESS_NOTIFY_SMTP_USER`, `ACCESS_NOTIFY_SMTP_HOST`/`PORT`/`TLS`, `ACCESS_NOTIFY_OWNER_EMAIL`, `ACCESS_NOTIFY_FROM` and
+  `ACCESS_PUBLIC_BASE_URL`. Real delivery to a mailbox has not been tried by the maintainers.
+- **Checks** (PowerShell, repository root): `ruff check .; ruff format --check .; pytest -q`, then in `twin-stream-insight-main`:
+  `npm ci; npm run verify`. The Playwright specs need the demo stack running. CI runs the same jobs; a green run of all of them on one commit
+  is not recorded (see Status).
 
 ## What the machine-learning results show
 
@@ -107,10 +162,13 @@ Details: [`docs/model_cards/LIMITATIONS.md`](docs/model_cards/LIMITATIONS.md), [
 [Model cards](docs/model_cards/) · [Data truth](docs/model_cards/DATA_TRUTH.md) · [Security](SECURITY.md) ·
 [Threat model](docs/security/THREAT_MODEL.md) · [Runbooks](docs/runbooks/README.md) · [SLO hypotheses](docs/SLO.md) ·
 [Architecture decisions](docs/adr/) · [Operations](docs/OPERATIONS.md) · [Release process](docs/release/RELEASE_PROCESS.md) ·
-[Frontend status](twin-stream-insight-main/docs/frontend/STATUS.md) · [Contributing](CONTRIBUTING.md)
+[Evidence matrix](docs/roadmap/EVIDENCE_MATRIX.md) · [Frontend status](twin-stream-insight-main/docs/frontend/STATUS.md) · [Contributing](CONTRIBUTING.md)
 
 ## Status
 
+- No release-candidate gate has been recorded (playbook Task 31), so there is **no overall readiness verdict**. Per-item evidence or blocker: [`docs/roadmap/EVIDENCE_MATRIX.md`](docs/roadmap/EVIDENCE_MATRIX.md). [C-34]
+- No release-candidate gate has been recorded (no clean-clone install, failure drills or demo run), so there is **no readiness verdict**. [C-34] Every
+  acceptance item and what backs it is in [`docs/roadmap/EVIDENCE_MATRIX.md`](docs/roadmap/EVIDENCE_MATRIX.md).
 - Not confirmed by a recorded run: the full test suite on this tree, the PDF report render, an asynchronous optimize job through the worker, migrations on a managed PostgreSQL, and any real deployment. [C-34]
 
 What has and has not been run is recorded in [`twin-stream-insight-main/docs/frontend/STATUS.md`](twin-stream-insight-main/docs/frontend/STATUS.md)

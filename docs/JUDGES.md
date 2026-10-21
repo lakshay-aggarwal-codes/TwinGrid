@@ -44,3 +44,28 @@ Backup if the stack fails: the guided Story Mode (command palette, "Start Story 
 | Engineering discipline | Plugins, migrations, runbooks, generated API reference, a claims ledger. | It has run in production. | [C-24] [C-28] [C-29] |
 
 Related: [`LIMITATIONS.md`](model_cards/LIMITATIONS.md) · [`DATA_TRUTH.md`](model_cards/DATA_TRUTH.md) · [`SLO.md`](SLO.md).
+
+
+## Engineering talking points (for an interview, not a claims list)
+
+- **Why status is polled rather than pushed over the WebSocket.** The WebSocket carries the high-rate simulated frames; status
+  (health, model state, access decisions) is low-rate, must be correct after a reconnect, and is easier to make honest as a
+  request that can say "unavailable" than as a message that may simply never arrive.
+- **Why the assistant cannot write numbers.** Answers are templates filled from evidence the server fetched, each value carries a
+  reference, and anything the evidence does not hold is listed as unknown. There is no language model in the tree to make one up.
+- **Why PPO is reported negative.** Its result was registered before it was scored, and the registered outcome is C: a fixed
+  setting scored higher than every PPO seed. Reporting that is what the protocol is for. See the optimizer question above.
+- **What real facility data would change.** Parameters would be fitted and checked against held-out measurements, carbon would come
+  from a licensed time series, and the models would be re-scored on that data first. The design is described in
+  `docs/tasks/Task23_calibration_REPORT.md`.
+- **Trade-offs worth naming.** One process with a simulator-first design is simple to run and to reason about, and not
+  horizontally scaled; the checks and runs that would show otherwise are listed as not run in `docs/roadmap/EVIDENCE_MATRIX.md`.
+
+## Engineering talking points (design choices, not results)
+
+- **Simulation first.** One simulator is the single source of every number, and each surface says so. The trade-off is that nothing here says how a real facility behaves. [C-01]
+- **Evidence the assistant cannot change.** The assistant is templates over evidence the server fetched; it has no language model and cannot write a number, so a wrong answer can only come from a wrong source row, which is shown beside it. [C-05]
+- **Why the status is polled, not pushed.** The WebSocket carries telemetry; model and run status are fetched on request so a dropped socket can never leave a stale "all good" on screen. [C-19]
+- **Why PPO is reported as it is.** The registered rule was written before the scores existed, a fixed setting beat every PPO seed, and the result is shown as registered. [C-08]
+- **Carbon.** A flat assumed figure, labelled assumed everywhere; a series counts as real only when dated and documented. [C-04]
+- **With real facility data.** The next step would be calibration, designed in [`docs/PHYSICS_V2.md`](PHYSICS_V2.md) and `docs/tasks/Task23_calibration_REPORT.md` if present; none of it is done. [C-03]

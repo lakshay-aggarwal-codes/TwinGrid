@@ -21,7 +21,9 @@ skips this plugin (logged at ERROR) instead of serving routes that would hash to
 
 from __future__ import annotations
 
+import asyncio
 import os
+import time
 from typing import Annotated, Any, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, Path, Query, Request
@@ -91,6 +93,19 @@ async def _json_body(request: Request) -> object:
         return None
 
 
+def submit_floor_seconds() -> float:
+    """ACCESS_SUBMIT_MIN_MS (default 100, 0 switches it off): every accepted submission takes at least this long.
+
+    Task 27 (SEC-002-M2): a new address writes a row and an audit line, an address that already has an account or an
+    approved request writes nothing, and the difference (about 10 ms in-process) tells an attacker which addresses have
+    accounts. Waiting up to a fixed floor hides it as long as the slow path stays under the floor."""
+    try:
+        ms = float(os.getenv("ACCESS_SUBMIT_MIN_MS", "").strip() or 100)
+    except ValueError:
+        ms = 100.0
+    return max(0.0, min(ms, 2000.0)) / 1000.0
+
+
 def _owner_email() -> str | None:
     return (os.getenv("ACCESS_NOTIFY_OWNER_EMAIL") or "").strip() or None
 
@@ -141,9 +156,11 @@ async def submit_request(request: Request, background: BackgroundTasks, session:
     except rules.InvalidRequest:
         return _json(422, {"error": "invalid_request"})  # generic: nothing about existing accounts
     _enforce("submit_email", tokens.hash_email_for_limit(submission.email), 3, 86400)
+    started = time.monotonic()
     outcome = await service.create(session, submission, ip_hash=tokens.hash_ip(ip))
     if outcome.created and outcome.row is not None:
         _schedule_owner_mail(background, outcome.row)
+    await asyncio.sleep(max(0.0, submit_floor_seconds() - (time.monotonic() - started)))
     return _json(
         202,
         {

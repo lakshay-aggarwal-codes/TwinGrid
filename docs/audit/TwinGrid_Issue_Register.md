@@ -26,7 +26,7 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 ### TG-A-04 — Baseline lineage records the running physics, tuning could use another  (High, FIXED, medium-high)
 - Files: `src/baselines/{config,evaluation,cli}.py`. Guard `assert_eval_physics_matches_lineage`; `--prereg` option added.
 
-### TG-A-05 — "Optimized" twin is not numerically equivalent  (High, CONFIRMED-OPEN, high)
+### TG-A-05 — "Optimized" twin is not numerically equivalent  (High, FIXED, resolved by removal, high)
 - Files: `src/digital_twin_optimized.py`, `benchmark_performance.py`, `PERFORMANCE_OPTIMIZATION.md`.
 - Evidence: on the benchmark inputs max |d outlet| ~ 20 C, max |d PUE| ~ 0.10 vs `DigitalTwin(legacy-0)`. Used only by the benchmark and two tests.
 - Done: strict xfail documenting it; benchmark success banner removed; perf doc rewritten. Not done: fix or retire the module.
@@ -34,7 +34,7 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 ### TG-A-06 — Performance claims false and unreproducible  (High, FIXED in docs, high)
 - Doc claimed 45 s / 3.844 s -> 0.003 s and cited non-existent modules. Measured: main twin ~3.3 ms per simulated day. Single run, one machine; rewritten as indicative only.
 
-### TG-A-07 — Shipped baseline configs stale vs environment v2  (High, CONFIRMED-OPEN, high)
+### TG-A-07 — Shipped baseline configs stale vs environment v2  (High, PARTIAL, high)
 - 6 failing tests in `tests/test_baselines.py` on the unmodified repo: `lineage.environment_version` recorded `1`, code is `2`; `requirements.lock` hash differs.
 - Fix requires re-tuning under a physics-1 protocol on the owner's machine (commands in the verification summary). Not done here: artifacts generated in the audit sandbox would carry the sandbox's hashes.
 
@@ -44,13 +44,13 @@ Severity: Critical / High / Medium / Low as defined in the audit brief. "Confide
 ### TG-A-09 — Stale docs  (Medium, FIXED for two items)
 - Migration count/head in `docs/architecture/system.md` (10/`20261004000000` -> 14/`20261008000000`); `docs/CLAIMS.md` C-03 physics versions. NOT checked: frontend STATUS.md contradictions (audit claim unverified by me).
 
-### TG-A-10 — "PATENT" labels in source  (Low, CONFIRMED-OPEN)
+### TG-A-10 — "PATENT" labels in source  (Low, MOSTLY FIXED)
 - 30 occurrences in `src`/`api` (`grep -i patent`). Unsupported unless a filing exists; rename to neutral wording. If a real filing exists, keep that wording and cite the filing; otherwise rename.
 
 ### TG-A-11 — Flat assumed carbon intensity  (Medium, CONFIRMED-OPEN)
 - `data/cleaned/carbon_intensity.csv` absent; every run logs the 475 g/kWh fallback and reports `is_real: False`. Carbon-aware conclusions reduce to energy ranking. Needs a licensed time series.
 
-### TG-A-12 — PUE envelope limit not counted per step in evaluation  (Medium, CONFIRMED-OPEN, medium)
+### TG-A-12 — PUE envelope limit not counted per step in evaluation  (Medium, FIXED in code, medium)
 - `SAFETY_ENVELOPE` includes a PUE limit; `HARD_CONSTRAINT_METRICS` has no PUE counter. Adding a metric changes the results schema consumed by the frontend; do with a contract update.
 
 ## Audit claims I did NOT verify
@@ -86,7 +86,7 @@ Forecaster has no baseline; anomaly-threshold leakage; missing `data/cleaned|fea
 - `optimizer-approvals/model.ts::setpointProblem` rejected any physics-1 recommendation (16..25 C) with "must be between 5 and 15", blocking the sandbox/propose flow for the baseline's own output; the card had no provenance strip, physics or evidence note.
 - Fixed with a range derived from `predicted.setpoint_check` (mirrors the server's union), a strip, an evidence note and out-of-range notices.
 
-### TG-A-19 — The legacy 5..15 C assumption remains elsewhere in the frontend  (Medium, CONFIRMED-OPEN)
+### TG-A-19 — The legacy 5..15 C assumption remains elsewhere in the frontend  (Medium, FIXED in source)
 - `src/features/what-if-lab/model.ts` (`setpointC: { min: 5, max: 15 }`) and the sidebar "Chilled Water Setpoint" slider. Not changed in Task 14 (scope). Follow-up: one shared physics-derived accepted range fed by the backend.
 
 ### TG-A-20 — `npm run typecheck` fails on the uploaded frontend (16 errors, 12 files) and 10 vitest tests fail  (Medium, CONFIRMED-OPEN, pre-existing)
@@ -120,3 +120,39 @@ Full table with evidence: `docs/audit/TwinGrid_Final_Assessment.md` (section 3).
 | TG-A-20 | PARTIAL: the 10 vitest failures are gone (Task 15); typecheck 16 errors, eslint 3 warnings remain |
 
 New entries: N-01 stale shipped baseline configs, N-02 PUE missing from tuner feasibility, N-03 run registry cannot verify older runs (shared mutable `PREREGISTRATION.json`), N-04 stale registry text for PPO, N-05 incomplete test log and missing Task 18 test file, N-06 `docs/api/` missing.
+
+
+## Reconciliation 2026-10-21 (Task 32): one status per ID
+
+Method: each row was checked against the tree on this date (file present/absent, config contents, workflow text, grep). **No test or
+CI run was possible**, so "fixed" means "the code or file shows the fix"; it is not "a test passed today". Earlier sections above are
+historical and kept as written.
+
+| ID | Status | Evidence |
+|---|---|---|
+| TG-A-01 | FIXED (code; test not re-run) | `src/policy_evaluation.py` resolves and passes the physics version; `tests/test_audit_regressions.py` |
+| TG-A-02 | FIXED (code; test not re-run) | `HARD_CONSTRAINT_METRICS` in `src/policy_evaluation.py` (three counted limits plus PUE), all required to be zero |
+| TG-A-03 | FIXED (guard); physics v2 RL still unsupported | `src/rl/env.py` `UnsupportedPhysicsVersionForRL` |
+| TG-A-04 | FIXED (code; test not re-run) | `src/baselines/*` lineage guard |
+| TG-A-05 | RESOLVED BY REMOVAL | `src/digital_twin_optimized.py` is absent |
+| TG-A-06 | FIXED in docs; benchmarks not re-measured | `PERFORMANCE_OPTIMIZATION.md`; `reports/perf/2026-10/README.md` lists every measurement as not run |
+| TG-A-07 | PARTLY FIXED | shipped `configs/baselines/{rule,lookup,constant,pid}.json` are `baselines-tuner/3`, environment 2, physics 1; `test_baselines` result not seen; stored run is `baselines-v4` (older), `baselines-v5` not in tree |
+| TG-A-08 | OPEN | `.github/workflows/ci.yml`: `PYREFLY_ERROR_CEILING: "881"` set, but `frontend-e2e` and `frontend-contract` still `continue-on-error: true`; no recorded green run |
+| TG-A-09 | FIXED for migrations (15 revisions, head `20261101000000`); frontend `STATUS.md` updated in this task | `alembic/versions/*`; `twin-stream-insight-main/docs/frontend/STATUS.md` |
+| TG-A-10 | MOSTLY FIXED | one occurrence left: `src/optimizer.py:361` key `patent_objective` |
+| TG-A-11 | OPEN (by design) | `data/cleaned/carbon_intensity.csv` absent; carbon labelled assumed (`src/carbon_label.py`, Task 20) |
+| TG-A-12 | FIXED in code; test not re-run | `PUE_METRIC` is in `HARD_CONSTRAINT_METRICS`; `src/baselines/tuning.py` takes `_ENVELOPE_METRICS` from it (so N-02 is closed) |
+| TG-A-13 | FIXED in code (Tasks 1, 2, 5 of the earlier series); recommendation tests not re-run | `src/baselines/policies.py`, `tests/test_baseline_physics_ranges.py` |
+| TG-A-15 | VERIFIED (re-registration A3) | `configs/prereg/prereg_v2.json`; no run references the old hash |
+| TG-A-16 | FIXED in config | `configs/baselines/pid.json`: `selected_gains` kp 1.0, `target_inlet_C` 26.0, status `feasible` (no longer all-zero); the stored demo run `baselines-v4` still shows the old collapse |
+| TG-A-17 | FIXED (code) | `twin-stream-insight-main/src/evaluation/*` |
+| TG-A-18 | FIXED (code) | `features/optimizer-approvals/model.ts` range derived from the server check |
+| TG-A-19 | FIXED in source | `features/what-if-lab/model.ts` has a physics-derived set-point range (`setpointRange.test.ts`); Task 4 report; typecheck not run |
+| TG-A-20 | UNVERIFIED | `npm run typecheck` not run in any task of this series; Task 4 report says only a syntax-level check was possible |
+| TG-A-21 | FIXED (feature) | `PolicyComparison`; cross-report comparison deliberately not offered |
+| N-01 | PARTLY FIXED | see TG-A-07 |
+| N-02 | FIXED in code | see TG-A-12 |
+| N-03 | OPEN | run registry still cannot verify older runs (shared `PREREGISTRATION.json`); Task 7 added immutable provenance for new runs |
+| N-04 | UNVERIFIED | registry text for PPO not re-read in this task |
+| N-05 | OPEN | no complete test log for this tree exists |
+| N-06 | OPEN | `docs/api/` absent (playbook Task 21 not applied) |
