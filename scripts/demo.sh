@@ -18,8 +18,15 @@ if [ ! -f "$ENV_FILE" ]; then
     echo "POSTGRES_PASSWORD=$(secret 32)"
     echo "REDIS_PASSWORD=$(secret 32)"
     echo "JWT_SECRET_KEY=$(secret 64)"
+    echo "MQTT_BROKER=localhost"
   } > "$ENV_FILE"
   echo "Created $ENV_FILE (random local secrets; git-ignored)."
+fi
+# docker-compose.yml requires MQTT_BROKER for the opt-in mqtt-ingest service and Compose checks every service's variables
+# even when its profile is off. The demo never starts that service; the value only has to exist. Also repairs an older file.
+if ! grep -q '^MQTT_BROKER=' "$ENV_FILE"; then
+  echo "MQTT_BROKER=localhost" >> "$ENV_FILE"
+  echo "Added MQTT_BROKER=localhost to $ENV_FILE (needed by docker-compose.yml; the mqtt profile is not started)."
 fi
 
 compose() { docker compose --env-file "$ENV_FILE" -f docker-compose.yml -f docker-compose.demo.yml "$@"; }
