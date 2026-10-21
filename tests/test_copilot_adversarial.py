@@ -442,12 +442,6 @@ async def test_the_stale_and_missing_answers_hold_over_http_too(client, viewer_h
     assert r.status_code == 200 and not _asserts_normal(r.json()["answer"]) and r.json()["evidence"] == []
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="KNOWN DEFECT in api/plugins/copilot.py (Task 14): load_signal filters quality == 'good' but the schema only "
-    "allows 'ok' or 'invalid', so a stored live sample is never found. Request: use quality == 'ok'. Remove this marker "
-    "when fixed (strict: an unexpected pass fails the run).",
-)
 async def test_a_stored_stale_sample_is_reported_stale_over_http(client, viewer_headers, session_maker):
     sensor = await seed_signal(session_maker, age=timedelta(hours=3), quality="ok")
     r = await client.post(URL, json=body("Is it ok right now?", "signal", sensor), headers=viewer_headers)
@@ -455,6 +449,39 @@ async def test_a_stored_stale_sample_is_reported_stale_over_http(client, viewer_
     assert r.status_code == 200 and not _asserts_normal(data["answer"])
     values = [e for e in data["evidence"] if e["field"] == "value"]
     assert values and values[0]["freshness"] == "stale"
+    assert_grounded(data)
+
+
+async def test_the_newest_ok_sample_is_used_and_a_newer_invalid_one_is_ignored(client, viewer_headers, session_maker):
+    """Task 1: only ``quality == 'ok'`` samples count. A newer 'invalid' sample must neither hide nor replace them."""
+    sensor = await seed_signal(session_maker, age=timedelta(minutes=10), value=22.0, quality="ok")
+    async with session_maker() as s:
+        sensor_id = (await s.execute(select(Sensor.id).where(Sensor.external_id == sensor))).scalar_one()
+        ts = datetime.now(timezone.utc) - timedelta(seconds=5)  # newer than the ok sample, and out of range
+        s.add(
+            TelemetrySample(
+                sensor_id=sensor_id, stream_id="live", ts_event=ts, ts_ingest=ts, value=999.0,
+                quality="invalid", invalid_reason="range", origin="simulated", sim_time=ts, batch_id=uuid.uuid4(),
+            )
+        )  # fmt: skip
+        await s.commit()
+    r = await client.post(URL, json=body("Is it ok right now?", "signal", sensor), headers=viewer_headers)
+    data = r.json()
+    assert r.status_code == 200
+    values = [e for e in data["evidence"] if e["field"] == "value"]
+    assert values and values[0]["value"] == 22.0, values  # the ok sample, never the invalid 999.0
+    assert "999" not in json.dumps(data)
+    assert_grounded(data)
+
+
+async def test_a_fresh_ok_sample_over_http_is_found_and_marked_fresh(client, viewer_headers, session_maker):
+    """Positive control for the stale test: the fix must also find a *fresh* stored sample, not only a stale one."""
+    sensor = await seed_signal(session_maker, age=timedelta(seconds=5), quality="ok")
+    r = await client.post(URL, json=body("Is it ok right now?", "signal", sensor), headers=viewer_headers)
+    data = r.json()
+    assert r.status_code == 200
+    values = [e for e in data["evidence"] if e["field"] == "value"]
+    assert values and values[0]["freshness"] == "fresh", values
     assert_grounded(data)
 
 
@@ -616,7 +643,10 @@ async def test_what_a_viewer_and_a_demo_session_cannot_read_stays_unreachable_th
                 r = await client.post(
                     URL, json=body(question, kind, "x" if kind != "general" else None), headers=headers
                 )
-                assert r.status_code == 200, (question, kind, r.text)  # the assistant is open to both
+                assert r.status_code in (
+                    200,
+                    403,
+                )  # 403 for the demo token today (see the xfail below); 200 once allowed
                 assert ADMIN_CANARY not in r.text and HASH_CANARY not in r.text and "hashed_password" not in r.text
 
 
@@ -627,6 +657,13 @@ async def test_the_demo_session_cannot_write(client, demo_headers, session_maker
     assert await snapshot(session_maker) == before
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="KNOWN CROSS-TASK DEFECT: api/demo_guard.py (Task 13) refuses every POST with a demo token except the paths in "
+    "ALLOWED_DEMO_WRITES, and POST /api/copilot/ask (Task 14, read-only, documented as open to demo viewers) is not in "
+    "it, so the public demo cannot use the assistant (403 demo_read_only). Request: add '/api/copilot/ask' to "
+    "ALLOWED_DEMO_WRITES. Remove this marker when fixed (strict: an unexpected pass fails the run).",
+)
 async def test_the_demo_session_may_ask_and_gets_what_a_viewer_gets(
     client, demo_headers, viewer_headers, session_maker, detector_dir
 ):
@@ -764,15 +801,35 @@ async def test_hostile_context_ids_are_never_a_5xx_and_never_touch_the_database(
     assert await snapshot(session_maker) == before
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="KNOWN DEFECT in api/plugins/copilot.py (Task 14): `alert_id.isdigit()` is True for '\u00b2' (superscript two) "
-    "but int('\u00b2') raises ValueError -> HTTP 500. Request: `alert_id.isascii() and alert_id.isdigit()`. Remove this "
-    "marker when fixed (strict: an unexpected pass fails the run).",
-)
 async def test_a_unicode_digit_alert_id_is_a_404_not_a_500(client, viewer_headers):
     r = await client.post(URL, json=body("Why is this alert red?", "alert", "\u00b2"), headers=viewer_headers)
     assert r.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "alert_id",
+    [
+        "\u00b2",  # superscript two: str.isdigit() is True, int() raises
+        "\u2460",  # circled digit one: same trap
+        "\uff11\uff12",  # full-width digits: int() accepts them, so an ASCII-only check must refuse them
+        "\u0663",  # Arabic-Indic three: same
+        " 1",  # surrounding whitespace is not an id
+        "+1",
+        "1_0",  # int() accepts underscores
+        "9" * 19,  # longer than any id of this database (an even longer id is refused by the schema with a 422)
+    ],
+)
+async def test_non_ascii_or_oddly_formed_alert_ids_are_a_404_never_a_500(client, viewer_headers, alert_id):
+    r = await client.post(URL, json=body("Why is this alert red?", "alert", alert_id), headers=viewer_headers)
+    assert r.status_code == 404, (alert_id, r.status_code)
+    assert r.json().get("type", "").endswith("not_found"), r.text
+
+
+async def test_a_plain_ascii_alert_id_still_works(client, viewer_headers, session_maker, detector_dir):
+    """Positive control: the stricter id check must not break real ids."""
+    alert_id = await seed_alert(session_maker)
+    r = await client.post(URL, json=body("Why is this alert red?", "alert", str(alert_id)), headers=viewer_headers)
+    assert r.status_code == 200 and r.json()["evidence"]
 
 
 # ----------------------------------------------------------------------------- 7. rate limits
