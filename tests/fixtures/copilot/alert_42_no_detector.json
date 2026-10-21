@@ -1,0 +1,23 @@
+{
+  "alert": {
+    "id": 42,
+    "created_at": "2026-10-20T03:10:00+00:00",
+    "message": "Thermal spike on rack row A",
+    "severity": "WARNING",
+    "type": "thermal_spike",
+    "origin": "simulated",
+    "score": 0.91
+  },
+  "explanation": {
+    "alert_id": 42,
+    "model_version": "m1",
+    "method": "range-deviation",
+    "threshold_basis": "the alert threshold of the currently configured detector, not necessarily the one in force when the alert was raised",
+    "score_vs_threshold": null,
+    "features": null,
+    "unavailable": [
+      "The detector configuration is not readable, so no threshold or training range is available."
+    ],
+    "reading_origin": "simulated"
+  }
+}

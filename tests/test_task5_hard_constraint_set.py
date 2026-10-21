@@ -195,6 +195,32 @@ def _retuned_under_the_current_rule(cfg: dict) -> None:
             cand["violation_steps"] = dict(zero)
 
 
+_OLD_RULE = "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode"
+
+
+def _tuned_before_pue_was_counted(cfg: dict) -> None:
+    """What the configs shipped before Task 17 looked like: the three-metric rule text and no stored PUE count."""
+    cfg["tuning"]["feasibility_rule"] = _OLD_RULE
+    result = cfg["tuning"]["result"]
+    if cfg["name"] == "rule":
+        result["validation_violation_steps"].pop(PUE, None)
+    else:
+        for cand in result["candidates"]:
+            cand["violation_steps"].pop(PUE, None)
+
+
+def test_the_shipped_configs_were_tuned_under_the_current_rule_with_every_hard_constraint_counted(configs):
+    # Task 17 (ML-002): the re-tune records today's rule and a stored count for all four hard constraints, none violated.
+    for name in ("constant", "lookup", "pid", "rule"):
+        cfg = bc.load_config(bc.config_path(name, configs), name)
+        assert cfg["tuner_version"] == tuning.TUNER_VERSION, name
+        assert cfg["tuning"]["feasibility_rule"] == tuning.FEASIBILITY_RULE, name
+    for name in ("rule", "pid"):
+        assert br.hard_constraint_status(bc.load_config(bc.config_path(name, configs), name)) == ([], []), name
+    lineage = _rec(configs)["selected"]["lineage"]
+    assert lineage["feasibility_rule_is_current"] is True and lineage["hard_constraints_not_counted"] == []
+
+
 def test_a_config_with_stored_pue_violations_is_never_recommended(configs):
     for name in ("rule", "pid"):
         _edit(configs, name, _retuned_under_the_current_rule)
@@ -220,7 +246,12 @@ def test_a_config_with_stored_pue_violations_is_never_recommended(configs):
 
 def test_hard_constraint_status_separates_violated_from_not_counted(configs):
     cfg = bc.load_config(bc.config_path("rule", configs), "rule")
-    assert br.hard_constraint_status(cfg) == ([], [PUE])  # shipped: tuned before PUE was counted -> NOT MEASURED
+    assert br.hard_constraint_status(cfg) == (
+        [],
+        [],
+    )  # shipped (Task 17 re-tune): every constraint counted, none violated
+    _tuned_before_pue_was_counted(cfg)
+    assert br.hard_constraint_status(cfg) == ([], [PUE])  # an older config: PUE NOT MEASURED, which is not a zero
     _retuned_under_the_current_rule(cfg)
     assert br.hard_constraint_status(cfg) == ([], [])
     cfg["tuning"]["result"]["validation_violation_steps"]["inlet_under_min_steps"] = 2
@@ -229,13 +260,15 @@ def test_hard_constraint_status_separates_violated_from_not_counted(configs):
 
 
 def test_the_recommendation_carries_config_lineage_and_flags_an_old_feasibility_rule(configs):
+    for name in ("rule", "pid"):
+        _edit(configs, name, _tuned_before_pue_was_counted)
     sel = _rec(configs)["selected"]
     lineage = sel["lineage"]
     assert lineage["physics_version"] == sel["physics_version"] and lineage["tuner_version"] == sel["tuner_version"]
     assert set(bc.LINEAGE_FIELDS) <= set(lineage)
     assert len(lineage["config_sha256"]) == 64
     assert lineage["hard_constraints"] == list(pe.HARD_CONSTRAINT_METRICS)
-    # the shipped configs predate the PUE constraint: say so instead of implying PUE was checked
+    # a config that predates the PUE constraint: say so instead of implying PUE was checked
     assert lineage["feasibility_rule_is_current"] is False and lineage["hard_constraints_not_counted"] == [PUE]
     assert sel["caveats"] and "re-tune" in sel["caveats"][0]
 

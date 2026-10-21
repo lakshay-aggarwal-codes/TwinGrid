@@ -25,13 +25,13 @@
     "selected_gains": {
       "kd": 0.0,
       "ki": 0.0,
-      "kp": 0.0
+      "kp": 1.0
     },
-    "target_inlet_C": 22.0
+    "target_inlet_C": 26.0
   },
   "schema": "twingrid-baseline-config/1",
   "status": "feasible",
-  "tuner_version": "baselines-tuner/2",
+  "tuner_version": "baselines-tuner/3",
   "tuning": {
     "actuator_range_C": [
       16.0,
@@ -43,7 +43,7 @@
       "is_real": false
     },
     "eval_config_sha256": "fe76f6691857ef267c6fc958fda22f187b8a077110ae3dfc0d9d4e65835d9105",
-    "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps and inlet_under_min_steps in every validation episode",
+    "feasibility_rule": "zero outlet_violation_steps, inlet_over_max_steps, inlet_under_min_steps and pue_over_max_steps in every validation episode",
     "objective": "highest mean total_reward over the validation scenarios (the PPO objective), among envelope-feasible candidates",
     "result": {
       "candidates": [
@@ -52,11 +52,13 @@
           "kd": 0.0,
           "ki": 0.0,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.809498221131,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -64,11 +66,13 @@
           "kd": 0.5,
           "ki": 0.0,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.81180269449411,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -76,11 +80,13 @@
           "kd": 1.0,
           "ki": 0.0,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.81448866484891,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -88,11 +94,13 @@
           "kd": 0.0,
           "ki": 0.02,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.93828881283743,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -100,11 +108,13 @@
           "kd": 0.5,
           "ki": 0.02,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.938262507812084,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -112,11 +122,13 @@
           "kd": 1.0,
           "ki": 0.02,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.938259518164024,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -124,11 +136,13 @@
           "kd": 0.0,
           "ki": 0.05,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.95741341954035,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -136,11 +150,13 @@
           "kd": 0.5,
           "ki": 0.05,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.95739838067375,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -148,11 +164,13 @@
           "kd": 1.0,
           "ki": 0.05,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.957410125182555,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -160,11 +178,13 @@
           "kd": 0.0,
           "ki": 0.1,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96381700274562,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -172,11 +192,13 @@
           "kd": 0.5,
           "ki": 0.1,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96377582006793,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -184,11 +206,13 @@
           "kd": 1.0,
           "ki": 0.1,
           "kp": 0.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96376690870723,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -196,11 +220,13 @@
           "kd": 0.0,
           "ki": 0.0,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.86688944088216,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -208,11 +234,13 @@
           "kd": 0.5,
           "ki": 0.0,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.868327984549914,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -220,11 +248,13 @@
           "kd": 1.0,
           "ki": 0.0,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.86978905126072,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -232,11 +262,13 @@
           "kd": 0.0,
           "ki": 0.02,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.94380022414221,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -244,11 +276,13 @@
           "kd": 0.5,
           "ki": 0.02,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.943758235514046,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -256,11 +290,13 @@
           "kd": 1.0,
           "ki": 0.02,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.94373864910485,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -268,11 +304,13 @@
           "kd": 0.0,
           "ki": 0.05,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96221038543684,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -280,11 +318,13 @@
           "kd": 0.5,
           "ki": 0.05,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96216384799352,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -292,11 +332,13 @@
           "kd": 1.0,
           "ki": 0.05,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96214217331672,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -304,11 +346,13 @@
           "kd": 0.0,
           "ki": 0.1,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.968587489275656,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -316,11 +360,13 @@
           "kd": 0.5,
           "ki": 0.1,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96855390097684,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -328,11 +374,13 @@
           "kd": 1.0,
           "ki": 0.1,
           "kp": 0.5,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96852647523408,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -340,11 +388,13 @@
           "kd": 0.0,
           "ki": 0.0,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.896139483709035,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -352,11 +402,13 @@
           "kd": 0.5,
           "ki": 0.0,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.896916001976464,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -364,11 +416,13 @@
           "kd": 1.0,
           "ki": 0.0,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.89796293773494,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -376,11 +430,13 @@
           "kd": 0.0,
           "ki": 0.02,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.950001807257664,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -388,11 +444,13 @@
           "kd": 0.5,
           "ki": 0.02,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.94999933704039,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -400,11 +458,13 @@
           "kd": 1.0,
           "ki": 0.02,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.949994395360044,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -412,11 +472,13 @@
           "kd": 0.0,
           "ki": 0.05,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.967109837886234,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -424,11 +486,13 @@
           "kd": 0.5,
           "ki": 0.05,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.967091402721934,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -436,11 +500,13 @@
           "kd": 1.0,
           "ki": 0.05,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96705700775075,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -448,11 +514,13 @@
           "kd": 0.0,
           "ki": 0.1,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.97348098325346,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -460,11 +528,13 @@
           "kd": 0.5,
           "ki": 0.1,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.973459851963376,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -472,11 +542,13 @@
           "kd": 1.0,
           "ki": 0.1,
           "kp": 1.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.97344822326024,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -484,11 +556,13 @@
           "kd": 0.0,
           "ki": 0.0,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.925073238377536,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -496,11 +570,13 @@
           "kd": 0.5,
           "ki": 0.0,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.92568241466084,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -508,11 +584,13 @@
           "kd": 1.0,
           "ki": 0.0,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.9265857369044,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -520,11 +598,13 @@
           "kd": 0.0,
           "ki": 0.02,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.95614053098029,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -532,11 +612,13 @@
           "kd": 0.5,
           "ki": 0.02,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.95642165452695,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -544,11 +626,13 @@
           "kd": 1.0,
           "ki": 0.02,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.95733722748567,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -556,11 +640,13 @@
           "kd": 0.0,
           "ki": 0.05,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.97034230686093,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -568,11 +654,13 @@
           "kd": 0.5,
           "ki": 0.05,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.9705792010024,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -580,11 +668,13 @@
           "kd": 1.0,
           "ki": 0.05,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.97165120141544,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -592,11 +682,13 @@
           "kd": 0.0,
           "ki": 0.1,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.97658507250665,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -604,11 +696,13 @@
           "kd": 0.5,
           "ki": 0.1,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.97681642741373,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -616,11 +710,13 @@
           "kd": 1.0,
           "ki": 0.1,
           "kp": 2.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.97842158794488,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -628,11 +724,13 @@
           "kd": 0.0,
           "ki": 0.0,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.94833103774023,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -640,11 +738,13 @@
           "kd": 0.5,
           "ki": 0.0,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.95498743239745,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -652,11 +752,13 @@
           "kd": 1.0,
           "ki": 0.0,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.949075837408664,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -664,11 +766,13 @@
           "kd": 0.0,
           "ki": 0.02,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.96251401599411,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -676,11 +780,13 @@
           "kd": 0.5,
           "ki": 0.02,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.94088224232101,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -688,11 +794,13 @@
           "kd": 1.0,
           "ki": 0.02,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.9527386976249,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -700,11 +808,13 @@
           "kd": 0.0,
           "ki": 0.05,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.97207182856948,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -712,11 +822,13 @@
           "kd": 0.5,
           "ki": 0.05,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.969647943470065,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -724,11 +836,13 @@
           "kd": 1.0,
           "ki": 0.05,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.958278098127685,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -736,11 +850,13 @@
           "kd": 0.0,
           "ki": 0.1,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.977792506210804,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -748,11 +864,13 @@
           "kd": 0.5,
           "ki": 0.1,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.939892579535616,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
           }
         },
         {
@@ -760,11 +878,2533 @@
           "kd": 1.0,
           "ki": 0.1,
           "kp": 4.0,
+          "target_inlet_C": 22.0,
           "validation_reward": -54.967631434332404,
           "violation_steps": {
             "inlet_over_max_steps": 0,
             "inlet_under_min_steps": 0,
-            "outlet_violation_steps": 0
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.809498221131,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.81180269449411,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.81448866484891,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.343347079510444,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.343403977148874,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.34348353069599,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.289871329571746,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.28992230281041,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.290001057310505,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.27246149056316,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.27246535837582,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 0.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.27251342586298,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.62964455636022,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.63094805224445,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.63264014084648,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.34947611333324,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.34951462641011,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.34956792998357,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.296943564618005,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.296934050672185,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.29695039346072,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.28635699146614,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.28634828428064,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 0.5,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.28636654655629,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.54141076785043,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.542333544251406,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.54328084471203,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.359917710433066,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.359963010292994,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.36003217557557,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.31028097256473,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.31024455666353,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.310231959144254,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.29250949645276,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.29247337930425,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 1.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.292461291766145,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.453599151897336,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.45401245168567,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.45451804085557,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.3589069951612,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.356537487976105,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.35658003542739,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.317781718963836,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.31495375838269,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.31490881441395,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.30008788039301,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.297264211315714,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 2.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.29724845630054,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.385086115589644,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.39769980987194,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.35977682315068,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.343538453071226,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.3809254292759,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.368329426588396,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.316093881572996,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.37461211316221,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.391059027366666,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.30004700602706,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.37699854433552,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 4.0,
+          "target_inlet_C": 24.0,
+          "validation_reward": -54.384795178326954,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.809498221131,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.81180269449411,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.81448866484891,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -94.25910526713284,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 603,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -95.05921530551223,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 615,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -96.85934769803639,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 642,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -117.17201744303864,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 948,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -117.57211222366605,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 954,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -117.57223542206096,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 954,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -124.74362747205718,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1062,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -124.94365447849654,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1065,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 0.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -125.343724451376,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1071,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.51322766197386,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.51452464366665,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.51606846348836,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -74.47318417905227,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 306,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -75.27325994092001,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 318,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -75.67336064270307,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 324,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -114.58809037389918,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 909,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -114.78809772980678,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 912,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -114.78813114689387,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 912,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -117.55942095473034,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 954,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -117.75941953246654,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 957,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 0.5,
+          "target_inlet_C": 25.0,
+          "validation_reward": -117.75944526755325,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 957,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.368531205587765,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.3695722836643,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.370637545174404,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -65.88109464897677,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 177,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -66.27568272656842,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 183,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -66.47577673587058,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 186,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -109.00105939793094,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 825,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -109.40102861630496,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 831,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -110.99529497509944,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 855,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -116.97219737375787,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 945,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -116.97218159679322,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 945,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 1.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -117.16651415663218,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 948,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.22667262346551,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.227120617068145,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.22734090020415,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -60.871491160302504,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 102,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -60.871571460443235,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 102,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -60.87170009723414,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 102,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -100.6047421997512,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 699,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -100.60471443293758,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 699,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -100.60478027708886,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 699,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -114.97613903774057,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 915,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -115.17610528326546,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 918,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 2.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -115.77616953636428,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 927,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.314749429223326,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 3,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.31135807045691,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 3,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -54.532179478977156,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 6,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -58.6488192492548,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 69,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -57.706116684485394,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 54,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -65.29879941050476,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 168,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -92.80497920200413,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 582,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -73.0833191675869,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 285,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -69.49345526099086,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 231,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -111.7791449697991,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 867,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -81.06238396090275,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 405,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 4.0,
+          "target_inlet_C": 25.0,
+          "validation_reward": -78.06861096209562,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 360,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -54.809498221131,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -54.81180269449411,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -54.81448866484891,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -191.5831540437778,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2067,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -192.3833239699271,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2079,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -192.98351596997162,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2088,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -217.06410496916206,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2451,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -217.46424978007397,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2457,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -218.06442372074613,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2466,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -223.2253052891758,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2544,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -223.02536053965824,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2541,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 0.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -223.22545042034724,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2544,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -54.39811640655034,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -54.3995252227782,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -54.40096037162653,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -182.59783831673883,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1932,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -182.59794923610636,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1932,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -183.19808511384886,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1941,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -207.2819316929497,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2304,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -207.88195268517057,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2313,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -208.0819999848131,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2316,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -221.44286044016522,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2517,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -221.4428790404285,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2517,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 0.5,
+          "target_inlet_C": 26.0,
+          "validation_reward": -221.64291778957005,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2520,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -54.19899665913554,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -54.19975734140016,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": true,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -54.200884006862154,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 0,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -177.00566399988665,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1848,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -177.2057888975626,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1851,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -177.4059270126891,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1854,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -200.50170461122056,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2202,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -201.0967455367649,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2211,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -201.49676166717856,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2217,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -216.2624061131206,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2439,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -218.65749145178543,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2475,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 1.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -218.6575231827844,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2475,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -84.40442719025451,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 456,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -84.40447385154629,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 456,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -84.60540042669928,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 459,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -178.39470227940038,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1869,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -178.39476855493982,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1869,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -179.39244406364696,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1884,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -205.50425741898533,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2277,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -205.50426629555557,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2277,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -204.70142084216653,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2265,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -216.86538710263008,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2448,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -216.66538800794999,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2445,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 2.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -216.86271996981765,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2448,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.0,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -164.2517407798783,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1656,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.0,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -158.46179468929049,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1569,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.0,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -161.8533860599081,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1620,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.02,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -190.56159522763534,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2052,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.02,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -170.4260928488143,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1749,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.02,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -173.62186039274997,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1797,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.05,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -206.30189385884233,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2289,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.05,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -181.19161748942537,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1911,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.05,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -179.60061316059952,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 1887,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.0,
+          "ki": 0.1,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -215.6668189220637,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2430,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 0.5,
+          "ki": 0.1,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -192.7562826746586,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2085,
+            "pue_over_max_steps": 0
+          }
+        },
+        {
+          "feasible": false,
+          "kd": 1.0,
+          "ki": 0.1,
+          "kp": 4.0,
+          "target_inlet_C": 26.0,
+          "validation_reward": -189.76465423897298,
+          "violation_steps": {
+            "inlet_over_max_steps": 0,
+            "inlet_under_min_steps": 0,
+            "outlet_violation_steps": 2040,
+            "pue_over_max_steps": 0
           }
         }
       ],
@@ -772,16 +3412,18 @@
         "feasible": true,
         "kd": 0.0,
         "ki": 0.0,
-        "kp": 0.0,
-        "validation_reward": -54.809498221131,
+        "kp": 1.0,
+        "target_inlet_C": 26.0,
+        "validation_reward": -54.19899665913554,
         "violation_steps": {
           "inlet_over_max_steps": 0,
           "inlet_under_min_steps": 0,
-          "outlet_violation_steps": 0
+          "outlet_violation_steps": 0,
+          "pue_over_max_steps": 0
         }
       },
-      "tie_break": "lexicographic ascending on (kp, ki, kd)",
-      "validation_reward": -54.809498221131
+      "tie_break": "lexicographic ascending on (target_inlet_C, kp, ki, kd)",
+      "validation_reward": -54.19899665913554
     },
     "scenario_ids": [
       "stress_0.0/validation/100000",
@@ -835,7 +3477,12 @@
         2.0,
         4.0
       ],
-      "target_inlet_C": 22.0,
+      "target_inlet_C": [
+        22.0,
+        24.0,
+        25.0,
+        26.0
+      ],
       "tie_tolerance": 1e-09
     },
     "split": "validation"

@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PREREG = "reports/policy_evaluation/PREREGISTRATION.json"  # location inside the scratch "world" project roots
 # the shipped baselines are tuned and run under the physics-1 protocol (Task 4); the legacy-0 one is frozen history
 SHIPPED_PREREG = evaluation.PHYSICS1_PREREG
-SHIPPED_RUN = "baselines-v3"
+SHIPPED_RUN = "baselines-v5"  # Task 17: the run made with the baselines-tuner/3 configs
 SMALL = replace(pe.EvalConfig(), n_validation_per_family=2, n_test_per_family=2, constant_chilled_C=(18.0, 22.0))
 CURVE = np.full(24, 475.0)
 

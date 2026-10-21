@@ -5,7 +5,8 @@ a simple fixed setting (the best constant, 22.75 C closed loop) scored higher th
 is to replace PPO with the simpler controller, not to promote it.** The one earlier PPO policy (legacy physics) is `quarantined`
 and was worse than the rule baseline. No candidate is `promoted`. Nothing here supports calling this optimizer effective, safe
 or better than simple controllers. Machine-checked facts are the `EVIDENCE` lines at the bottom; the full tables are in
-`reports/policy_evaluation_physics1/full_0fcafef9d28fd539/REPORT.md`.
+`reports/policy_evaluation_physics1/full_0fcafef9d28fd539/REPORT.md`. The evaluation was repeated unchanged after the baseline controllers
+were re-tuned (Task 17) and the outcome is `C` again.
 
 ## Intended use
 A research module that proposes cooling-mode and chilled-water-setpoint actions in the simulator, aiming to reduce
@@ -41,6 +42,16 @@ allowed: none. On the test set:
 - Carbon is the flat assumed intensity, so carbon columns reflect energy only.
 - What this does not show: anything about a real facility, about other physics versions, about longer training, or about
   stress cases outside the registered families.
+
+**Repeat after the baseline re-tune (Task 17).** The four baseline controllers were re-tuned on the validation scenarios only, under the
+current tuner (`baselines-tuner/3`, with PUE counted as a hard constraint), and the registered evaluation was then run again, unchanged,
+under the same pre-registration: same decision rule, seeds, scenarios and candidates. It was written to a new directory
+(`reports/policy_evaluation_physics1/rerun_t17/`); the first run was not touched. The outcome is `C` again with claim allowed: none and the
+same selected seed, and the per-episode summary equals the first run's (per-scenario values differ only in the last floating-point digits,
+so the result reproduces). On the validation scenarios the re-tuned PID, which ended with a proportional gain only, scored slightly higher
+than the rule baseline and both stayed far below the best constant; the lookup-table baseline scored marginally higher than the best
+constant. The registered comparator is the best constant, so the decision is unchanged, and a stronger simple baseline only makes the
+benchmark harder for PPO. This repeat produced no evidence that the optimizer saves energy, and none is claimed.
 
 **Older baselines-only run, legacy physics (frozen; 60 test scenarios, 30 validation scenarios, no PPO supplied).** Outcome `NOT_EVALUATED`, claim
 allowed: none. It predates the physics-1 protocol and is kept as history. It showed the benchmark a PPO would have to beat:
@@ -102,6 +113,18 @@ allowed: none. It predates the physics-1 protocol and is kept as history. It sho
 - EVIDENCE full_validation_scenarios = 30 | reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json | scenario_sets.validation.n
 - EVIDENCE full_best_constant_name = constant[22.75C,closed_loop] | reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json | selection.best_constant.name
 - EVIDENCE full_physics_executed = 1 | reports/policy_evaluation_physics1/full_0fcafef9d28fd539/results.json | physics_version_executed
+- EVIDENCE rerun_decision_outcome = C | reports/policy_evaluation_physics1/rerun_t17/full_0fcafef9d28fd539/results.json | decision.outcome
+- EVIDENCE rerun_decision_claim_allowed = none | reports/policy_evaluation_physics1/rerun_t17/full_0fcafef9d28fd539/results.json | decision.claim_allowed
+- EVIDENCE rerun_selected_seed = 2 | reports/policy_evaluation_physics1/rerun_t17/full_0fcafef9d28fd539/results.json | selection.selected_ppo_seed
+- EVIDENCE rerun_preregistration_sha256 = fe76f6691857ef267c6fc958fda22f187b8a077110ae3dfc0d9d4e65835d9105 | reports/policy_evaluation_physics1/rerun_t17/full_0fcafef9d28fd539/results.json | preregistration_sha256
+- EVIDENCE retuned_rule_validation_reward = -54.809498221131 | configs/baselines/rule.json | tuning.result.validation_reward
+- EVIDENCE retuned_pid_validation_reward = -54.19899665913554 | configs/baselines/pid.json | tuning.result.validation_reward
+- EVIDENCE retuned_pid_kp = 1.0 | configs/baselines/pid.json | parameters.selected_gains.kp
+- EVIDENCE retuned_pid_ki = 0.0 | configs/baselines/pid.json | parameters.selected_gains.ki
+- EVIDENCE retuned_pid_kd = 0.0 | configs/baselines/pid.json | parameters.selected_gains.kd
+- EVIDENCE retuned_constant_validation_reward = -36.32471519118651 | configs/baselines/constant.json | tuning.result.validation_reward
+- EVIDENCE retuned_lookup_validation_reward = -36.068554769249474 | configs/baselines/lookup.json | tuning.result.validation_reward_closed_loop
+- EVIDENCE retuned_tuner_version = baselines-tuner/3 | configs/baselines/pid.json | tuner_version
 - EVIDENCE decision_outcome = NOT_EVALUATED | reports/policy_evaluation/baselines_only_0fcafef9d28fd539/results.json | decision.outcome
 - EVIDENCE decision_claim_allowed = none | reports/policy_evaluation/baselines_only_0fcafef9d28fd539/results.json | decision.claim_allowed
 - EVIDENCE test_scenarios = 60 | reports/policy_evaluation/baselines_only_0fcafef9d28fd539/results.json | scenario_sets.test.n

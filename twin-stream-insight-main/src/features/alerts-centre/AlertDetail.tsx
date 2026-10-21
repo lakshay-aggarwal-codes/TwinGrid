@@ -6,6 +6,7 @@ import { changeErrorText } from "./errors";
 import { ACTION_LABEL, MAX_ASSIGNEE_CHARS, MAX_NOTE_CHARS, formatUtc, nextStatuses, replayHref, type AlertPatch, type InboxAlert } from "./model";
 import { Timeline } from "./Timeline";
 import { AlertExplanation } from "../explainability/AlertExplanation";
+import { ExplainButton } from "../assistant/ExplainButton";
 
 interface Props {
   alert: InboxAlert;
@@ -60,6 +61,7 @@ export function AlertDetail({ alert, isOperator, apply }: Props) {
         <div className="flex flex-wrap items-center gap-1.5">
           <SeverityBadge severity={alert.severity} />
           <StatusBadge status={alert.status} />
+          <ExplainButton context={{ kind: "alert", id: String(alert.id) }} />
         </div>
         <p className="break-words text-sm">{alert.message}</p>
       </header>

@@ -162,9 +162,22 @@ def test_rule_setpoints_are_the_stored_chilled_c_and_the_production_mode(configs
 
 
 def _pid_only(configs, **gains):
-    """Only the PID is usable, with explicit physics-1 gains (the shipped tuned PID has kp = ki = kd = 0)."""
+    """Only the PID is usable, with explicit physics-1 parameters.
+
+    Task 17: the shipped tuned PID's gains and target move with every re-tune, so every parameter the assertions below
+    rely on (gains, target inlet, nominal set-point, rate limit) is pinned HERE instead of read from the shipped file.
+    """
     _edit(configs, "rule", lambda c: c.update(status="infeasible", infeasible_reason="x"))
-    _edit(configs, "pid", lambda c: c["parameters"].update(selected_gains={"kp": 1.0, "ki": 0.0, "kd": 0.0, **gains}))
+    _edit(
+        configs,
+        "pid",
+        lambda c: c["parameters"].update(
+            selected_gains={"kp": 1.0, "ki": 0.0, "kd": 0.0, **gains},
+            target_inlet_C=22.0,
+            nominal_setpoint_C=20.5,
+            max_rate_C_per_step=2.0,
+        ),
+    )
 
 
 def test_pid_without_an_inlet_reports_its_nominal_set_point_and_says_so(configs):

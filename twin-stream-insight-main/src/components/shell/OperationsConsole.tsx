@@ -9,6 +9,7 @@ import type { EventItem, LatestAnomaly } from "@/hooks/useSimulation";
 import { usePanelFocus } from "./usePanelFocus.ts";
 import { SimulationContext } from "@/hooks/simulationContext";
 import { toAnomalyView } from "@/telemetry/anomalyView";
+import { ExplainButton } from "@/features/assistant/ExplainButton";
 
 interface OperationsConsoleProps {
   open: boolean;
@@ -71,7 +72,7 @@ function AnomalyStatusBlock() {
 
 /**
  * Frontend-only Operations Console (see Stage 10 prompt + user confirmation:
- * there is no LLM/agent backend in this project -- "agent" elsewhere in the
+ * there is no LLM/agent backend behind this console -- "agent" elsewhere in the
  * codebase refers to the PPO reinforcement-learning policy, a real trained
  * control model, not an autonomous reasoning system). Everything shown here
  * is either a real current value dropped into a fixed template, or a
@@ -119,12 +120,16 @@ export function OperationsConsole({
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         <p className="text-[11px] text-muted-foreground leading-relaxed">
           Real values from the live twin and its trained models, not a reasoning agent -- there's
-          no LLM behind this panel. Every line below traces to a specific endpoint.
+          no LLM behind this panel. Every line below traces to a specific endpoint. The separate assistant
+          drawer answers from evidence with rules (no LLM unless the answer says so).
         </p>
 
         {/* Real current status, templated from real values -- no generated commentary. */}
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Current status</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Current status</p>
+            <ExplainButton context={{ kind: "signal", id: "pue" }} />
+          </div>
           {!liveState ? (
             <StatusMessage kind="loading">Connecting to live feed…</StatusMessage>
           ) : (

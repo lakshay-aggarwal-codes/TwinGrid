@@ -1,0 +1,26 @@
+{
+  "request_id": "req-synthetic-0001",
+  "limits": {
+    "provider_configured": true
+  },
+  "mode": "rule_based",
+  "answer": "Alert 42 scored [E1].",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "alert_explanation",
+      "entity": "alert:42",
+      "field": "score",
+      "value": 0.91,
+      "unit": null,
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "freshness": "fresh"
+    }
+  ],
+  "unknowns": [],
+  "warnings": [
+    "llm_unavailable"
+  ],
+  "links": []
+}

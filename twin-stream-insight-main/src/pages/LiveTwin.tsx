@@ -40,7 +40,8 @@ type LeftPanel = "none" | "simulation" | "operations" | "incidents";
  * Stage 9/10: `leftPanel` picks which single left-rail tool is open
  * (Simulation Lab or the Operations Console) -- mutually exclusive so the
  * viewport never has to shrink for both at once. Confirmed with the user
- * before building Stage 10: there is no LLM/agent backend in this project,
+ * before building Stage 10: there was no LLM/agent backend in this project
+ * (the assistant drawer added later is rule-based and says if a model is configured),
  * so the console surfaces real trained-model endpoints (anomaly detector,
  * PPO cooling optimizer) directly rather than any agent/reasoning layer.
  *

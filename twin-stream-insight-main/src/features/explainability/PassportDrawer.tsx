@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { StateBoundary } from "@/state/StateBoundary";
 import { SYNTHETIC_LABEL, formatMetric, kindLabel, metricLabel, modelsFor, statusView, type Passport, type PassportModel, type StatusIcon } from "./model";
 import { usePassport } from "./usePassport";
+import { ExplainButton } from "../assistant/ExplainButton";
 
 const ICON: Record<StatusIcon, LucideIcon> = {
   promoted: CheckCircle2,
@@ -185,6 +186,9 @@ export function PassportDrawer({ open, kind, onClose }: Props) {
             {SYNTHETIC_LABEL}s, not statements about a real facility.
           </SheetDescription>
         </SheetHeader>
+        <div className="mt-2">
+          <ExplainButton context={{ kind: "model" }} />
+        </div>
         <div className="mt-4">
           <StateBoundary state={state} onRetry={refetch} messages={{ loading: "Loading the model passport…", empty: "The model registry holds no models." }}>
             {(passport) => <Body passport={passport} kind={effectiveKind} onShowAll={() => setShowAllFor(kind)} />}

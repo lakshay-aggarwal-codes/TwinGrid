@@ -66,7 +66,9 @@ def test_recommended_celsius_is_what_the_environment_executes_under_physics_1(co
     _only(configs, name)
     sel = _rec(configs)["selected"]
     cfg = bc.load_config(bc.config_path(name, configs), name)
-    state = {"outside_temp": 22.0, "water_stress": 0.0, "inlet_temp": 22.0}  # PID: inlet == target -> nominal
+    # PID: inlet == its own target -> zero error -> the nominal set-point (the target moves with every re-tune)
+    target = cfg["parameters"].get("target_inlet_C", 22.0)
+    state = {"outside_temp": 22.0, "water_stress": 0.0, "inlet_temp": target}
     assert sel["name"] == name
     assert sel["chilled_water_temp_C"] == pytest.approx(_env_executed_c(cfg, PHYSICS_V1, state), abs=1e-3)
     lo, hi = bp.actuator_range_C(PHYSICS_V1)
@@ -161,7 +163,16 @@ def test_pid_step_starts_from_the_current_celsius_on_the_executed_scale(configs,
 @pytest.mark.skipif(active_physics_version() != PHYSICS_V1, reason="the shipped configs are tuned under physics 1")
 def test_a_physics_1_pid_steps_in_physics_1_degrees_without_conversion(configs):
     _only(configs, "pid")
-    _edit(configs, "pid", lambda c: c["parameters"].update(selected_gains={"kp": 1.0, "ki": 0.0, "kd": 0.0}))
+    _edit(
+        configs,
+        "pid",
+        lambda c: c["parameters"].update(
+            selected_gains={"kp": 1.0, "ki": 0.0, "kd": 0.0},
+            target_inlet_C=22.0,
+            nominal_setpoint_C=20.5,
+            max_rate_C_per_step=2.0,
+        ),
+    )
     # nominal 20.5 + kp * (22 - 21) = 21.5 C, inside the +-2 C rate window around the current 22 C
     sel = _rec(configs, current_chilled_c=22.0, inlet_temp_c=21.0)["selected"]
     assert sel["chilled_water_temp_C"] == pytest.approx(21.5, abs=1e-3)
