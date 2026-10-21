@@ -1,6 +1,6 @@
 # Frontend status (FE-00 … FE-21)
 
-Last updated 2026-10-17 (Task 33). **TwinGrid is simulator-only.** "Done" below means code and tests exist; it does **not** mean a scientific claim is validated.
+Last updated 2026-10-21 (playbook Task 32); older rows below are as of 2026-10-17. **TwinGrid is simulator-only.** "Done" below means code and tests exist; it does **not** mean a scientific claim is validated.
 
 > **IG-00 note (2026-10-11):** FE-17 and FE-18 are confirmed present in the tree at commit `0c5b98a`. The rest of this file was written from an earlier snapshot and has not been re-audited except where stated.
 
@@ -42,6 +42,19 @@ and tests exist; none of it has been run in a browser by the author, and none of
 | T33 | README, claims ledger, judges pack | [Task33](../../../docs/tasks/Task33_REPORT.md) |
 
 Tasks 25 to 29 were not present in the snapshot this table was written from; add them when they are merged.
+
+## Playbook v3.1 tasks present in this tree (2026-10-21)
+
+From `docs/roadmap/task-reports/`; each is PARTIAL (frontend gates not run) unless stated. Not present: Tasks 11, 19, 21 to 22, 24 to 28, 30, 31.
+
+| Task | Frontend-relevant result |
+|---|---|
+| 4 | What-if set-point range derived from the server's physics |
+| 8, 23 | History/backfill reality check; backfilled samples merged into the history chart (11 pure tests ran under a stand-in runner) |
+| 12 | Admin access-request queue (`features/admin-console`) |
+| 15 | Assistant drawer and "Explain this" (`features/assistant`), gates not run |
+| 16 | One signal/alert state policy |
+| 29 | Performance tooling only; **still not measured** |
 
 ## Open items
 
