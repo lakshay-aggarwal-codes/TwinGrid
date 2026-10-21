@@ -44,12 +44,12 @@ export default function CarbonScheduleCard() {
         <div className="space-y-1">
           <label htmlFor={durId} className="block text-xs text-foreground">Run length (hours, 1–{MAX_DURATION_H})</label>
           <input id={durId} className={FIELD} inputMode="numeric" value={durText} onChange={(e) => setDurText(e.target.value)} aria-invalid={!dur.ok} aria-describedby={dur.ok ? undefined : `${durId}-err`} />
-          {!dur.ok && <p id={`${durId}-err`} role="alert" className="max-w-[14rem] text-[11px] text-destructive-text">{dur.error}</p>}
+          {dur.ok === false && <p id={`${durId}-err`} role="alert" className="max-w-[14rem] text-[11px] text-destructive-text">{dur.error}</p>}
         </div>
         <div className="space-y-1">
           <label htmlFor={loadId} className="block text-xs text-foreground">Flexible load (kW, up to {MAX_LOAD_KW})</label>
           <input id={loadId} className={FIELD} inputMode="decimal" value={loadText} onChange={(e) => setLoadText(e.target.value)} aria-invalid={!load.ok} aria-describedby={load.ok ? undefined : `${loadId}-err`} />
-          {!load.ok && <p id={`${loadId}-err`} role="alert" className="max-w-[14rem] text-[11px] text-destructive-text">{load.error}</p>}
+          {load.ok === false && <p id={`${loadId}-err`} role="alert" className="max-w-[14rem] text-[11px] text-destructive-text">{load.error}</p>}
         </div>
       </div>
       <div className="flex items-start gap-2">
@@ -87,7 +87,7 @@ export default function CarbonScheduleCard() {
                       <dd className="font-mono">{formatKg(c.best.emissions_kg)}</dd>
                     </dl>
                     {saving && <p className="text-xs font-medium text-foreground" data-testid="carbon-saving" data-kind={saving.kind}>{saving.text}</p>}
-                    {c.curve_gco2_per_kwh && <HourStrip curve={c.curve_gco2_per_kwh} best={c.best} durationH={c.inputs.duration_h} synthetic={c.status === "synthetic_demo"} />}
+                    {c.curve_gco2_per_kwh && <HourStrip curve={c.curve_gco2_per_kwh} best={typeof c.best?.start_hour === "number" && typeof c.best?.end_hour === "number" ? { start_hour: c.best.start_hour, end_hour: c.best.end_hour } : null} durationH={c.inputs.duration_h} synthetic={c.status === "synthetic_demo"} />}
                   </>
                 )}
                 {c.status === "no_variation" && c.curve_gco2_per_kwh && (

@@ -27,7 +27,8 @@ describe('startDemoSession', () => {
   });
 
   it('POSTs /auth/demo-session with no credentials and signs in as a read-only demo viewer', async () => {
-    const f = vi.fn().mockResolvedValue(ok(demoBody()));
+    const body = demoBody(); // built once: its exp is the current second, so a second call can differ by 1 s
+    const f = vi.fn().mockResolvedValue(ok(body));
     const a = await load(f);
     await a.startDemoSession();
     const [url, init] = f.mock.calls[0];
@@ -35,7 +36,7 @@ describe('startDemoSession', () => {
     expect(init.method).toBe('POST');
     expect(init.body).not.toMatch(/password|username/);
     expect(a.getAuthSnapshot()).toMatchObject({ status: 'signed-in', role: 'viewer', demo: true, notice: null });
-    expect(await a.getToken()).toBe(demoBody().access_token);
+    expect(await a.getToken()).toBe(body.access_token);
   });
 
   it('decodes the demo claim from the access token', async () => {

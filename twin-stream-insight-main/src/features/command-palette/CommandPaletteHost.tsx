@@ -33,7 +33,10 @@ function ScenarioSource({ onItems, openScenario }: { onItems: (items: PaletteIte
   const { state } = useScenarios();
   const scenarios = state.status === "ready" ? state.data.scenarios : null;
   useEffect(() => {
-    onItems(scenarios ? scenarioItems(scenarios, openScenario) : []);
+    onItems(scenarios ? scenarioItems(
+            scenarios.flatMap((s) => (typeof s.id === "string" && typeof s.label === "string" ? [{ id: s.id, label: s.label, description: s.description }] : [])),
+            openScenario,
+          ) : []);
     return () => onItems([]);
   }, [scenarios, onItems, openScenario]);
   return null;

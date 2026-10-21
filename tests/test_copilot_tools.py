@@ -127,12 +127,17 @@ def _status(**kw):
     return signal_adapter.signal_status(**{**base, **kw})
 
 
-def test_until_task_16_every_status_is_unknown_rule_unavailable():
-    assert signal_adapter.evaluate is None  # src/signal_state.py does not exist yet; this test marks the day it does
+def test_the_adapter_resolves_the_task_16_rule_engine_and_is_unknown_only_without_a_rule():
+    assert (
+        signal_adapter.evaluate is not None and signal_adapter.SignalRule is not None
+    )  # src/signal_state.py (Task 16)
     s = _status()
-    assert (s["status"], s["reason_code"], s["value"], s["threshold"]) == ("unknown", "rule_unavailable", 22.5, None)
+    assert (s["status"], s["reason_code"], s["value"], s["threshold"]) == ("normal", "within_bounds", 22.5, None)
     assert set(s) == {"status", "reason_code", "rule_id", "value", "threshold", "observed_at", "age_s", "unit"}
-    assert _status(rule=None)["status"] == "unknown" and _status(value=None)["status"] == "unknown"
+    assert _status(value=40.0)["status"] == "critical"
+    # no rule, or no value: never "normal"
+    assert (_status(rule=None)["status"], _status(rule=None)["reason_code"]) == ("unknown", "rule_unavailable")
+    assert _status(value=None)["status"] == "unknown"
 
 
 def test_the_adapter_uses_the_rule_engine_when_it_exists_and_never_raises(monkeypatch):

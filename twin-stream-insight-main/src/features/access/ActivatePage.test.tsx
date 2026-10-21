@@ -16,7 +16,7 @@ function fillBoth(a: string, b = a) {
   fireEvent.change(p, { target: { value: a } });
   fireEvent.change(c, { target: { value: b } });
 }
-const form = () => screen.getByRole('button', { name: /activate/i }).closest('form')!;
+const form = () => screen.getByLabelText('New password').closest('form')!; // the submit button is named "Activating…" mid-submit
 
 beforeEach(() => {
   activateAccount.mockReset();

@@ -31,7 +31,7 @@ function WebhookRow({ w }: { w: Webhook }) {
   };
   const save = () => {
     const parsed = parseWebhookUrl(url);
-    if (!parsed.ok) {
+    if (parsed.ok === false) {
       setError(parsed.error);
       return;
     }
@@ -99,7 +99,7 @@ function AddWebhook() {
   const [added, setAdded] = useState(false);
   const submit = async () => {
     const parsed = parseWebhookUrl(url);
-    if (!parsed.ok) {
+    if (parsed.ok === false) {
       setError(parsed.error);
       return;
     }

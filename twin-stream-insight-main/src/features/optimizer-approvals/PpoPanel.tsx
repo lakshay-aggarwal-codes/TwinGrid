@@ -10,6 +10,7 @@ const BTN =
   "rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 /** Whether the optimizer is unavailable, for the host page (the baseline card says so). */
+// eslint-disable-next-line react-refresh/only-export-components -- non-component export used elsewhere; only costs a full reload in dev
 export function usePpoState() {
   const { query } = usePassport();
   return { passport: query.data, passportFailed: query.isError };

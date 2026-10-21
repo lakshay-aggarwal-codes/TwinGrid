@@ -91,7 +91,8 @@ describe("alert explanation (rule-based fixture)", () => {
     expect(screen.getByTestId("evidence-freshness-E1")).toHaveTextContent("Stale");
     expect(screen.getByTestId("answer-warnings")).toHaveTextContent("evidence_stale"); // unknown code is shown as received
     expect(screen.queryByTestId("turn-error")).toBeNull(); // not styled as an error
-    expect(screen.getByTestId("answer").textContent ?? "").not.toMatch(/\bnormal\b/i);
+    // the page's own caveat says "not as normal"; remove that negation, then no other use of the word may remain
+    expect((screen.getByTestId("answer").textContent ?? "").replace(/not as normal/gi, "")).not.toMatch(/\bnormal\b/i);
   });
 
   it("a refusal shows no values and says why", async () => {

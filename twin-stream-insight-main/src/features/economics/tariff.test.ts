@@ -9,7 +9,7 @@ describe("validateDraft", () => {
   it("names every bad field and repairs none", () => {
     const v = validateDraft({ currency: "US", offPeakRate: "-1", peakRate: "abc", peakStartHour: "25", peakEndHour: "1.5", demandChargePerKw: "", billingDays: "0" });
     expect(v.ok).toBe(false);
-    if (!v.ok) expect(Object.keys(v.errors).sort()).toEqual(["billingDays", "currency", "demandChargePerKw", "offPeakRate", "peakEndHour", "peakRate", "peakStartHour"]);
+    if (v.ok === false) expect(Object.keys(v.errors).sort()).toEqual(["billingDays", "currency", "demandChargePerKw", "offPeakRate", "peakEndHour", "peakRate", "peakStartHour"]);
   });
   it("refuses a rate above the backend limit", () => {
     expect(validateDraft({ ...toDraft(DEFAULT_TARIFF), peakRate: "1001" }).ok).toBe(false);
