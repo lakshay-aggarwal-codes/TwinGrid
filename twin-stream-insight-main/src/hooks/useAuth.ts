@@ -2,6 +2,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import {
   getAuthSnapshot,
   login as authLogin,
+  startDemoSession,
   logout as authLogout,
   subscribeAuth,
   type AuthRole,
@@ -11,6 +12,8 @@ import {
 export interface UseAuth extends AuthSnapshot {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Start the read-only demo session (no credentials). Rejects with DemoError. */
+  startDemo: () => Promise<void>;
 }
 
 /** Reactive view of the sign-in state held by authClient.ts. */
@@ -18,7 +21,8 @@ export function useAuth(): UseAuth {
   const snapshot = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getAuthSnapshot);
   const login = useCallback((username: string, password: string) => authLogin(username, password), []);
   const logout = useCallback(() => authLogout(), []);
-  return { ...snapshot, login, logout };
+  const startDemo = useCallback(() => startDemoSession(), []);
+  return { ...snapshot, login, logout, startDemo };
 }
 
 /** Exact text for a control only an operator may use (optimise, acknowledge). */

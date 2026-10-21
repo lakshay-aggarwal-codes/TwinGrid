@@ -4,6 +4,7 @@ import { initAuth } from "@/authClient";
 import { useAuth } from "@/hooks/useAuth.ts";
 import { LoginScreen } from "@/components/LoginScreen";
 import { AccountMenu } from "@/components/AccountMenu.tsx";
+import { DemoBanner } from "@/components/DemoBanner";
 
 /**
  * Nothing behind the gate (and so no API request and no WebSocket) exists until
@@ -33,6 +34,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (status === "signed-out") return <LoginScreen />;
   return (
     <>
+      <DemoBanner />
       {children}
       <AccountMenu />
     </>
