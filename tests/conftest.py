@@ -2,6 +2,7 @@
 Pytest configuration and shared fixtures for the digital twin test suite.
 """
 
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -131,8 +132,25 @@ def pytest_configure(config):
         config.addinivalue_line("markers", f"{name}: {description}")
 
 
+_PG_ENV_IN_REASON = re.compile(r"TEST_POSTGRES_URL|TWINGRID_TEST_PG_\w*URL")
+
+
+def _skips_without_a_postgres_url(item) -> bool:
+    """True if the test carries a skipif whose reason names one of the PostgreSQL test URL variables."""
+    for marker in item.iter_markers("skipif"):
+        if _PG_ENV_IN_REASON.search(str(marker.kwargs.get("reason", ""))):
+            return True
+    return False
+
+
 def pytest_collection_modifyitems(config, items):
-    """Mark the existing PostgreSQL-only tests (they carry no marker, only a skipif on TWINGRID_TEST_PG_URL)."""
+    """Mark the PostgreSQL-only tests so `-m "not postgres"` really leaves them to the test-postgres job.
+
+    They carry no marker, only a skipif on a URL variable; some are not named "postgres" (test_pg_*, the pg parameter of
+    test_telemetry_ingest.py). Unmarked, they skip in the main job and the CI skip gate fails.
+    """
     for item in items:
-        if "postgres" in item.name and item.get_closest_marker("postgres") is None:
+        if item.get_closest_marker("postgres") is not None:
+            continue
+        if "postgres" in item.name or _skips_without_a_postgres_url(item):
             item.add_marker(pytest.mark.postgres)

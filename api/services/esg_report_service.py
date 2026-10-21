@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from src.carbon_label import current_carbon_label
 from src.carbon_provider import FALLBACK_FLAT_INTENSITY_GCO2_PER_KWH
 from src.facility_benchmarking import benchmark_pue
 
@@ -25,19 +26,34 @@ SIMULATED_NOTICE = (
 )
 
 
-def carbon_report_section(state: dict[str, Any]) -> dict[str, Any]:
+def carbon_report_section(state: dict[str, Any], carbon_label: dict[str, Any] | None = None) -> dict[str, Any]:
     """The carbon wording of the report, as plain data (no reportlab needed, so it is unit-testable).
 
     ``carbon_data_is_real`` False (or missing) means the flat assumed intensity: the table says ASSUMPTION, never
     "Real", and ``warning`` is a paragraph the report must print. When it is True the report still does not claim
     a live grid feed: the series' source and average/marginal basis live in the backend carbon label.
+
+    Task 20: when ``carbon_label`` (``src.carbon_label``) is given it must agree. A label that is not real (undated,
+    undocumented, unavailable) overrides the flag and the section says ASSUMPTION; a stale real series is shown
+    as stale with its source, region and date.
     """
-    if state.get("carbon_data_is_real") is True:
+    if state.get("carbon_data_is_real") is True and (carbon_label is None or carbon_label.get("is_real")):
+        note = (
+            "Hour-of-day mean of a loaded series, not a live grid feed. Source and "
+            "average/marginal basis: see the backend carbon label."
+        )
+        warning = None
+        if carbon_label is not None:
+            note += (
+                f" Source: {carbon_label.get('source') or 'not stated'}; region: {carbon_label.get('region') or 'not stated'};"
+                f" retrieved: {carbon_label.get('timestamp') or 'not stated'}; unit: {carbon_label.get('unit')}."
+            )
+            if not carbon_label.get("is_fresh"):
+                warning = f"CARBON SERIES IS STALE. {carbon_label.get('statement')}"
         return {
-            "value": "Loaded series",
-            "note": "Hour-of-day mean of a loaded series, not a live grid feed. Source and "
-            "average/marginal basis: see the backend carbon label.",
-            "warning": None,
+            "value": "Loaded series" if warning is None else "Loaded series (STALE)",
+            "note": note,
+            "warning": warning,
         }
     shown = state.get("carbon_intensity_gco2_per_kwh")
     intensity = float(shown) if isinstance(shown, (int, float)) else FALLBACK_FLAT_INTENSITY_GCO2_PER_KWH
@@ -84,7 +100,10 @@ def generate_report(state: dict[str, Any], output_path: str | Path) -> Path:
 
     pue = float(state.get("pue", 0.0))
     bm = benchmark_pue(pue)
-    carbon = carbon_report_section(state)
+    label = state.get("carbon_label") if isinstance(state.get("carbon_label"), dict) else None
+    if label is None and state.get("carbon_data_is_real") is True:
+        label = current_carbon_label()  # the flag alone is not enough: the series must be dated and documented
+    carbon = carbon_report_section(state, label)
 
     rows = [
         ["Metric", "Value", "Note"],

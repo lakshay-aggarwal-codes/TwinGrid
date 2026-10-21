@@ -1,0 +1,116 @@
+[
+  {
+    "files": [
+      {
+        "path": "api/auth.py",
+        "what": "Short-lived tokens, rotating refresh tokens, roles"
+      },
+      {
+        "path": "api/plugins/ws_tickets.py",
+        "what": "Single-use WebSocket tickets"
+      },
+      {
+        "path": "api/plugins/login_lockout.py",
+        "what": "Login lockout"
+      },
+      {
+        "path": "api/plugins/security.py",
+        "what": "Security headers"
+      },
+      {
+        "path": "src/log_redaction.py",
+        "what": "Secret redaction in logs"
+      },
+      {
+        "path": "docs/security/THREAT_MODEL.md",
+        "what": "Threat model"
+      }
+    ],
+    "id": "security",
+    "title": "Security engineering"
+  },
+  {
+    "files": [
+      {
+        "path": "api/supervisor.py",
+        "what": "Live broadcast loop"
+      },
+      {
+        "path": "twin-stream-insight-main/src/features/realtime-resilience/index.ts",
+        "what": "Reconnect with jitter, gap back-fill"
+      },
+      {
+        "path": "docs/architecture/data_flow.md",
+        "what": "Request-time and training-time flows"
+      }
+    ],
+    "id": "realtime",
+    "title": "Real-time systems"
+  },
+  {
+    "files": [
+      {
+        "path": "reports/policy_evaluation_physics1/PREREGISTRATION.md",
+        "what": "Pre-registered evaluation protocol"
+      },
+      {
+        "path": "reports/policy_evaluation_physics1/full_0fcafef9d28fd539/REPORT.md",
+        "what": "Decision-gate report, kept as it came out"
+      },
+      {
+        "path": "src/artifacts/loaders.py",
+        "what": "Artifact gate for model loading"
+      },
+      {
+        "path": "docs/model_cards/LIMITATIONS.md",
+        "what": "Shared limitations of every model"
+      }
+    ],
+    "id": "ml",
+    "title": "ML rigor"
+  },
+  {
+    "files": [
+      {
+        "path": "twin-stream-insight-main/src/provenance/labels.ts",
+        "what": "Origin and simulated labels"
+      },
+      {
+        "path": "twin-stream-insight-main/src/features/alerts-centre/index.ts",
+        "what": "Alerts centre"
+      },
+      {
+        "path": "twin-stream-insight-main/src/features/replay/index.ts",
+        "what": "Replay and time travel"
+      },
+      {
+        "path": "twin-stream-insight-main/src/features/what-if-lab/index.ts",
+        "what": "What-if lab"
+      }
+    ],
+    "id": "ux",
+    "title": "Product and UX"
+  },
+  {
+    "files": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "what": "CI workflow"
+      },
+      {
+        "path": "tests/test_alembic_chain.py",
+        "what": "Single migration head, checked by a test"
+      },
+      {
+        "path": "docs/runbooks/README.md",
+        "what": "Runbooks"
+      },
+      {
+        "path": "docs/CLAIMS.md",
+        "what": "Claims ledger"
+      }
+    ],
+    "id": "devops",
+    "title": "Delivery discipline"
+  }
+]

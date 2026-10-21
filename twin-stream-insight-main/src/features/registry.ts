@@ -6,7 +6,7 @@ import { SLOT_NAMES, type Command, type FeatureComponent, type FeatureModule, ty
  * Paths owned by the core router in App.tsx. A feature may not claim one (or anything under one, except "/"
  * which is exact-only). features.registry.test.ts reads App.tsx and fails if this list drifts from it.
  */
-export const CORE_ROUTE_PATHS: readonly string[] = ["/", "/analytics", "/runs", "/evaluation", "/telemetry", "/legacy"];
+export const CORE_ROUTE_PATHS: readonly string[] = ["/", "/analytics", "/runs", "/evaluation", "/telemetry", "/legacy", "/access", "/activate"];
 
 export interface FeatureRoute {
   featureId: string;

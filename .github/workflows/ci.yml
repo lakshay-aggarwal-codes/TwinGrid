@@ -51,6 +51,15 @@ jobs:
       - name: ruff format --check
         run: ruff format --check .
 
+      - name: Job summary (runtime versions)
+        if: always()
+        run: |
+          {
+            echo "### lint"
+            echo "- python $(python --version 2>&1 | cut -d' ' -f2) (pinned: ${PYTHON_VERSION})"
+            echo "- $(ruff --version)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: External-data register (T22)
         # stdlib only. Fails on unregistered datasets, missing used_by paths, claim verbs without a code path,
         # unverified licences marked redistributable, and references to datasets that must stay out of the repo.
@@ -86,6 +95,11 @@ jobs:
           count = len(errors)
           ceiling = os.environ["PYREFLY_ERROR_CEILING"]
           print(f"pyrefly errors: {count} (ceiling: {ceiling})")
+          import subprocess
+
+          version = subprocess.run(["pyrefly", "--version"], capture_output=True, text=True).stdout.strip()
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+              fh.write(f"### types\n- python {sys.version.split()[0]}\n- {version}\n- errors: {count}, ceiling: {ceiling}\n")
           if ceiling == "unset":
               sys.exit(f"No baseline recorded. Set PYREFLY_ERROR_CEILING to {count} in ci.yml and record it in reports/postT9/T11_ci_run.md.")
           if count > int(ceiling):
@@ -120,6 +134,20 @@ jobs:
           pip install --require-hashes --extra-index-url "$TORCH_CPU_INDEX" -r requirements.lock
           pip install -r requirements-dev.txt
 
+      - name: Install locust (tests/test_load_harness.py skips without it, and this job allows no skips)
+        # TEMPORARY: belongs in requirements-dev.txt (Task 21 "Requested cross-task change"). Delete this step when it is there.
+        run: pip install "locust>=2.20,<3"
+
+      # tests/test_ig05_rack_id_parity.py and tests/test_facility_seed.py run the frontend .ts fixtures with node and
+      # skip when node is missing. Pin the same Node as the frontend job so they run, identically, every time.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+
+      - name: API reference is in sync (docs/api/)
+        # Named failure instead of burying it in the full run (tests/test_task9_api_reference.py is the in-suite twin).
+        run: python scripts/gen_api_reference.py --check
+
       - name: TensorFlow and stable-baselines3 must be importable
         run: python -c "import tensorflow, stable_baselines3, torch; print(tensorflow.__version__, stable_baselines3.__version__, torch.__version__)"
 
@@ -152,6 +180,43 @@ jobs:
           print("no skipped tests")
           PY
 
+      - name: Job summary (runtime versions and test counts)
+        if: always()
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+          from importlib import metadata
+
+          def version(name):
+              try:
+                  return metadata.version(name)
+              except metadata.PackageNotFoundError:
+                  return "not installed"
+
+          lines = ["### test", f"- python {sys.version.split()[0]}, node {os.popen('node --version').read().strip()}"]
+          lines.append("- " + ", ".join(f"{n} {version(n)}" for n in ("pytest", "tensorflow", "torch", "stable-baselines3", "numpy")))
+          try:
+              total = failed = errored = skipped = xfailed = 0
+              for case in ET.parse("junit.xml").getroot().iter("testcase"):
+                  total += 1
+                  failed += case.find("failure") is not None
+                  errored += case.find("error") is not None
+                  node = case.find("skipped")
+                  if node is not None:
+                      if node.get("type") == "pytest.xfail":
+                          xfailed += 1
+                      else:
+                          skipped += 1
+              passed = total - failed - errored - skipped - xfailed
+              lines.append(f"- tests: {total} collected, {passed} passed, {failed} failed, {errored} errors, {skipped} skipped, {xfailed} xfail")
+          except (OSError, ET.ParseError) as exc:
+              lines.append(f"- junit.xml not readable: {exc}")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+              fh.write("\n".join(lines) + "\n")
+          PY
+
       - name: Upload JUnit
         if: always()
         uses: actions/upload-artifact@v4
@@ -180,6 +245,10 @@ jobs:
       # (psycopg2) by tests/test_provenance_m1.py.
       TWINGRID_TEST_PG_URL: postgresql://postgres:postgres@localhost:5432/twingrid_ci
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/twingrid_ci
+      # Async (asyncpg) URL for the tests that call create_async_engine directly:
+      # tests/test_audit_migration.py reads TEST_POSTGRES_URL, tests/test_telemetry_ingest.py TWINGRID_TEST_PG_ASYNC_URL.
+      TEST_POSTGRES_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/twingrid_ci
+      TWINGRID_TEST_PG_ASYNC_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/twingrid_ci
     steps:
       - uses: actions/checkout@v4
 
@@ -208,8 +277,11 @@ jobs:
       - name: Chain test + PostgreSQL-marked tests (none may be skipped)
         run: |
           pytest tests/test_alembic_chain.py -rs --junitxml=junit-pg-chain.xml
-          pytest tests -m postgres -rs --junitxml=junit-pg.xml
+          # `-k "not sqlite"`: PG-only tests in test_telemetry_ingest.py are parametrised over sqlite and pg and
+          # skip the sqlite variant by design; the sqlite variants run in the `test` job.
+          pytest tests -m postgres -k "not sqlite" -rs --junitxml=junit-pg.xml
           python - <<'PY'
+          import os
           import sys
           import xml.etree.ElementTree as ET
 
@@ -220,6 +292,8 @@ jobs:
                   if case.find("skipped") is not None:
                       sys.exit(f"skipped: {case.get('classname')}::{case.get('name')}")
           print(f"{total} PostgreSQL-side tests ran, none skipped")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+              fh.write(f"### test-postgres\n- postgres:16 service, {total} PostgreSQL-side tests ran, none skipped\n")
           PY
 
   audit:
@@ -239,7 +313,9 @@ jobs:
       - name: pip-audit on the lock (no suppressions)
         # Fails on any known vulnerability. Do not add --ignore-vuln without recording the id, the reason and an
         # expiry in reports/postT9/T11_ci_run.md.
-        run: pip-audit --requirement requirements.lock --require-hashes --disable-pip --strict
+        run: |
+          pip-audit --version >> "$GITHUB_STEP_SUMMARY"
+          pip-audit --requirement requirements.lock --require-hashes --disable-pip --strict
 
   frontend:
     runs-on: ubuntu-latest
@@ -265,6 +341,14 @@ jobs:
       - name: Install (exact lockfile)
         run: npm ci
 
+      - name: Job summary (runtime versions)
+        run: |
+          {
+            echo "### frontend"
+            echo "- node $(node --version), npm $(npm --version)"
+            echo '- '"$(npm ls --depth=0 vite vitest typescript eslint 2>/dev/null | tr '\n' ' ')"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Type check
         run: npm run typecheck
 
@@ -286,6 +370,8 @@ jobs:
     # (`continue-on-error`) ONLY because the stack has not yet been recorded green in CI: after one recorded green run,
     # delete the `continue-on-error` line below and this comment. If the backend cannot start here, keep it advisory,
     # document the blocker, and do NOT substitute stubbed data.
+    # ADVISORY OWNER: Lakshay. EXPIRY: 2026-11-30 (Task 21 default). By then either record one green run in
+    # reports/postT9/T11_ci_run.md and delete `continue-on-error`, or write the blocker there and renew this date.
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
@@ -374,6 +460,8 @@ jobs:
     # (2) diffs fresh vs COMMITTED fixtures by shape and the OpenAPI typed-model property names, and (3) proves the gate
     # can fail by running the diff against a deliberately mutated copy. Advisory until recorded green once (same rule as
     # frontend-e2e); it also fails while no real fixtures are committed: capture them from the uploaded artifact.
+    # ADVISORY OWNER: Lakshay. EXPIRY: 2026-11-30 (Task 21 default). Same exit rule as frontend-e2e, plus: commit the
+    # real fixtures (twin-stream-insight-main/src/contract/fixtures/) first; without them this job cannot go green.
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
@@ -522,6 +610,15 @@ jobs:
       - name: Container logs
         if: always()
         run: docker logs app || true
+
+      - name: Job summary (versions)
+        if: always()
+        run: |
+          {
+            echo "### docker"
+            echo "- docker $(docker --version)"
+            echo "- image size: $(docker image inspect digital-twin-backend:ci --format '{{.Size}}' 2>/dev/null || echo n/a) bytes"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   bootstrap:
     # Manual (Run workflow). Produces what could not be generated offline: the hash-pinned lock, the base-image

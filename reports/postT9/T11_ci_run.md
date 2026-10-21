@@ -33,3 +33,11 @@ tests/test_artifact_gate.py 31, tests/test_physics_v2.py 28.
 ## Other CI recorded facts (Task 7)
 - `frontend-e2e` and `frontend-contract` keep `continue-on-error: true`: no green-run log was supplied, and
   `frontend-contract` additionally requires committed real fixtures. Remove the flag only after one recorded green run each.
+
+## Task 21 (QA-002) record, 2026-10-21
+- Environment of the author of this change: no network, no fastapi/torch/Postgres/Node/ruff. **No CI job was run.** Everything below is static.
+- `PYREFLY_ERROR_CEILING` is unchanged (881): no new count was measured. Lower it to the owner's measured count (command in TASK_21_REPORT.md).
+- Advisory jobs `frontend-e2e` and `frontend-contract` stay `continue-on-error`: no green run recorded. Owner: Lakshay. Expiry: 2026-11-30.
+- Skip-gate defects found by reading the tests (hypotheses until the jobs run): PostgreSQL opt-in tests not marked `postgres` (skip in the main job);
+  PG env vars `TEST_POSTGRES_URL` / `TWINGRID_TEST_PG_ASYNC_URL` unset in `test-postgres`; `locust` missing from requirements-dev.txt;
+  `test_a_baseline_config_tuned_under_the_old_feasibility_rule...` skips once the configs are re-tuned.

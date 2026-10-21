@@ -1,19 +1,26 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LoginError } from "@/authClient";
+import { DemoError, LoginError } from "@/authClient";
 import { useAuth } from "@/hooks/useAuth.ts";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { RequestAccessForm } from "@/features/access/RequestAccessForm";
+import { navigateTo, saveTicket } from "@/features/access/ticket";
 
 /**
- * Sign-in screen. There is deliberately no "create account" control: accounts are
- * provisioned by an administrator (see ALLOW_PUBLIC_REGISTRATION on the backend).
+ * Sign-in screen. There is deliberately no "create account" control: accounts are provisioned by an administrator
+ * (see ALLOW_PUBLIC_REGISTRATION on the backend). A visitor without one can ASK for read-only access (reviewed by the
+ * owner, then activated from an emailed link) or explore the read-only demo, which needs no account at all.
  */
 export function LoginScreen() {
-  usePageTitle("Sign in – TwinGrid");
-  const { login, notice } = useAuth();
+  const [view, setView] = useState<"signin" | "request">("signin");
+  usePageTitle(view === "request" ? "Request viewer access – TwinGrid" : "Sign in – TwinGrid");
+  const { login, notice, startDemo } = useAuth();
+  const [demoError, setDemoError] = useState<string | null>(null);
+  const [demoStarting, setDemoStarting] = useState(false);
+  const demoStartingRef = useRef(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +41,38 @@ export function LoginScreen() {
     }
   }
 
+  async function onDemo() {
+    if (demoStartingRef.current) return;
+    demoStartingRef.current = true;
+    setDemoStarting(true);
+    setDemoError(null);
+    try {
+      await startDemo();
+      // On success the auth gate swaps this screen out.
+    } catch (e) {
+      setDemoError(e instanceof DemoError ? e.message : "The demo could not be started. Please try again.");
+      demoStartingRef.current = false;
+      setDemoStarting(false);
+    }
+  }
+
+  if (view === "request") {
+    return (
+      <main className="min-h-screen flex items-start justify-center bg-background p-4 sm:items-center">
+        <RequestAccessForm
+          onBack={() => setView("signin")}
+          onSubmitted={(created) => {
+            saveTicket({ ref: created.ref, token: created.status_token });
+            navigateTo("/access/pending");
+          }}
+        />
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-background p-4">
+    <main className="min-h-screen flex items-start justify-center bg-background p-4 sm:items-center">
+      <div className="w-full min-w-0 max-w-sm space-y-4">
       <form
         onSubmit={onSubmit}
         aria-labelledby="login-heading"
@@ -102,6 +138,38 @@ export function LoginScreen() {
           {submitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>
+
+      <section aria-labelledby="visitor-heading" className="space-y-3 rounded-lg border border-border bg-card p-4 sm:p-6">
+        <div className="space-y-1">
+          <h2 id="visitor-heading" className="text-base font-semibold">
+            Just visiting?
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Ask the owner for read-only access, or look around a read-only demo that uses simulated data.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button type="button" variant="outline" className="w-full" onClick={() => setView("request")}>
+            Request viewer access
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => void onDemo()}
+            disabled={demoStarting}
+            aria-describedby={demoError ? "demo-error" : undefined}
+          >
+            {demoStarting ? "Starting demo…" : "Explore read-only demo"}
+          </Button>
+        </div>
+        {demoError && (
+          <p id="demo-error" role="alert" className="text-sm text-destructive-text">
+            {demoError}
+          </p>
+        )}
+      </section>
+      </div>
     </main>
   );
 }

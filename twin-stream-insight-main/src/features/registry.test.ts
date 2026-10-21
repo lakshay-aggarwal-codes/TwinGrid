@@ -48,6 +48,7 @@ describe("feature registration", () => {
       "command-palette",
       "design-polish",
       "economics",
+      "evidence",
       "executive-dashboard",
       "explainability",
       "facility-inspector",

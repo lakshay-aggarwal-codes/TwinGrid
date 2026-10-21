@@ -13,6 +13,8 @@ import { AuthGate } from "@/components/AuthGate";
 import { AppErrorBoundary, RouteErrorBoundary } from "@/state/AppErrorBoundary";
 import { createAppQueryClient } from "@/state/queryClient";
 import { featureRouteElements } from "@/features/FeatureRoutes";
+import { PendingPage } from "@/features/access/PendingPage";
+import { ActivatePage } from "@/features/access/ActivatePage";
 
 // The Analytics view (KPI cards, 24h simulation, what-if, sustainability --
 // and recharts with it) is only needed on /analytics,
@@ -35,6 +37,12 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <Routes>
+        {/* AUTH-C: public visitor pages. They render OUTSIDE the sign-in gate (a visitor has no session), so the gate,
+            the live socket and every API call behind it never start for them. Keep in CORE_ROUTE_PATHS. */}
+        <Route path="/access/pending" element={<PendingPage />} />
+        <Route path="/activate" element={<ActivatePage />} />
+        <Route path="*" element={
         <AuthGate>
         <SimulationProvider>
         <RotateTransition>
@@ -73,6 +81,8 @@ const App = () => (
         </RotateTransition>
         </SimulationProvider>
         </AuthGate>
+        } />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

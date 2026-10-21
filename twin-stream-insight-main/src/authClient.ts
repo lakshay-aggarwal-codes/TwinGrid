@@ -20,6 +20,7 @@
 
 import { API_BASE_URL, assertApiConfigured } from './config.ts';
 import { TokenResponse, isUnknown, isFailure, parseApi } from './contract';
+import { DemoSessionResponse } from './features/access/schemas';
 
 /** Roles this client knows. The backend's vocabulary is authoritative: any other value is kept as-is (see AuthRole). */
 export type Role = 'viewer' | 'operator';
@@ -31,6 +32,8 @@ export type AuthRole = Role | (string & {});
 
 /** Shown on the sign-in screen when the session ended without the user asking for it (expired, revoked, rejected). */
 export const SESSION_ENDED_NOTICE = 'Session ended — sign in again';
+/** Shown when a read-only demo session runs out (it has no refresh token, so it cannot be renewed). */
+export const DEMO_ENDED_NOTICE = 'Demo session ended — start the demo again or sign in';
 export type AuthStatus = 'restoring' | 'signed-out' | 'signed-in';
 
 export interface AuthSnapshot {
@@ -39,6 +42,11 @@ export interface AuthSnapshot {
   role: AuthRole | null;
   /** Why the user is signed out, when it was not their own doing (e.g. server unreachable on reload). */
   notice: string | null;
+  /**
+   * The session is the read-only demo (decoded from the access token's `demo` claim). A PRESENTATION hint only,
+   * like `role`: the server enforces what a demo session may do.
+   */
+  demo: boolean;
 }
 
 /** Thrown when there is no usable session. The UI reacts by showing the sign-in screen. */
@@ -46,6 +54,16 @@ export class AuthRequiredError extends Error {
   constructor(message = 'Sign-in required') {
     super(message);
     this.name = 'AuthRequiredError';
+  }
+}
+
+/** Starting the demo failed. `message` is safe to show to the user; `status` is the HTTP status when there was one. */
+export class DemoError extends Error {
+  readonly status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = 'DemoError';
+    this.status = status;
   }
 }
 
@@ -87,24 +105,26 @@ interface Internal {
   refreshToken: string | null;
   username: string | null;
   role: AuthRole | null;
+  demo: boolean;
 }
 
-const EMPTY: Internal = { accessToken: null, expiresAtMs: 0, refreshToken: null, username: null, role: null };
+const EMPTY: Internal = { accessToken: null, expiresAtMs: 0, refreshToken: null, username: null, role: null, demo: false };
 
 let internal: Internal = { ...EMPTY };
 let status: AuthStatus = 'signed-out';
 let notice: string | null = null;
-let snapshot: AuthSnapshot = { status, username: null, role: null, notice: null };
+let snapshot: AuthSnapshot = { status, username: null, role: null, notice: null, demo: false };
 /** Bumped by every sign-out so a response that arrives late cannot resurrect a dead session. */
 let generation = 0;
 let refreshInFlight: Promise<string> | null = null;
 let initPromise: Promise<void> | null = null;
 let devDemoDisabled = false;
+let demoTimer: ReturnType<typeof setTimeout> | null = null;
 const listeners = new Set<() => void>();
 
 // ------------------------------------------------------------------ store plumbing (useSyncExternalStore)
 function publish(): void {
-  snapshot = { status, username: internal.username, role: internal.role, notice };
+  snapshot = { status, username: internal.username, role: internal.role, notice, demo: internal.demo };
   listeners.forEach((l) => l());
 }
 
@@ -163,6 +183,16 @@ function decodeExpiryMs(token: string): number {
   return Date.now() + 2 * REFRESH_MARGIN_MS;
 }
 
+/** The `demo` claim of an access token. Unreadable or absent means "not demo". Presentation hint only. */
+function decodeDemoClaim(token: string): boolean {
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(b64)).demo === true;
+  } catch {
+    return false;
+  }
+}
+
 function applyTokens(data: Tokens, username: string, forGeneration: number): void {
   if (forGeneration !== generation) return; // signed out while the request was in flight
   internal = {
@@ -171,6 +201,7 @@ function applyTokens(data: Tokens, username: string, forGeneration: number): voi
     refreshToken: data.refresh_token,
     username,
     role: data.role,
+    demo: false,
   };
   status = 'signed-in';
   notice = null;
@@ -178,8 +209,16 @@ function applyTokens(data: Tokens, username: string, forGeneration: number): voi
   publish();
 }
 
+function clearDemoTimer(): void {
+  if (demoTimer !== null) {
+    clearTimeout(demoTimer);
+    demoTimer = null;
+  }
+}
+
 function clearSession(message: string | null = null, keepStored = false): void {
   generation += 1;
+  clearDemoTimer();
   internal = { ...EMPTY };
   status = 'signed-out';
   notice = message;
@@ -226,6 +265,55 @@ export async function login(username: string, password: string): Promise<void> {
   const data = await readTokens(response, 'POST /auth/login');
   if (!data) throw new LoginError('Sign-in failed: the server response was not understood.', response.status);
   applyTokens(data, name, generation);
+}
+
+/**
+ * Start the read-only demo (POST /auth/demo-session). There is no username or password and the server issues NO refresh
+ * token, so this session lives in memory only (never written to storage), cannot be renewed, and ends at the access
+ * token's expiry with DEMO_ENDED_NOTICE. Throws DemoError (message is user-safe).
+ */
+export async function startDemoSession(): Promise<void> {
+  const requestedIn = generation;
+  let response: Response;
+  try {
+    response = await postJson('/auth/demo-session', {});
+  } catch {
+    throw new DemoError('Could not reach the server. Check your connection and try again.');
+  }
+  if (response.status === 404) throw new DemoError('Demo is not enabled on this server.', 404);
+  if (response.status === 503) throw new DemoError('The demo is temporarily unavailable. Try again in a moment.', 503);
+  if (response.status === 429) throw new DemoError('Too many attempts. Wait a minute and try again.', 429);
+  if (!response.ok) throw new DemoError(`The demo could not be started (${response.status}).`, response.status);
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  const parsed = parseApi(DemoSessionResponse, body, 'POST /auth/demo-session');
+  if (isFailure(parsed)) throw new DemoError('The demo could not be started: the server response was not understood.', response.status);
+  const data = parsed.data;
+  if (requestedIn !== generation) return; // signed out (or signed in another way) while this was in flight
+  const expiresAtMs = decodeExpiryMs(data.access_token);
+  generation += 1; // a demo session replaces whatever was there; late responses for the old session are ignored
+  clearDemoTimer();
+  internal = {
+    accessToken: data.access_token,
+    expiresAtMs,
+    refreshToken: null,
+    username: 'Demo visitor',
+    role: data.role,
+    demo: data.demo === true || decodeDemoClaim(data.access_token),
+  };
+  status = 'signed-in';
+  notice = null;
+  writeStored(); // no refresh token: this clears any stale stored session rather than persisting the demo
+  const endedGeneration = generation;
+  const delay = Math.min(Math.max(expiresAtMs - Date.now(), 0), 2_147_000_000);
+  demoTimer = setTimeout(() => {
+    if (endedGeneration === generation) clearSession(DEMO_ENDED_NOTICE);
+  }, delay);
+  publish();
 }
 
 async function refreshAccessToken(): Promise<string> {
@@ -294,16 +382,20 @@ export function initAuth(): Promise<void> {
 
 /** An access token that is valid right now, refreshing it first if it is close to expiry. */
 export async function getToken(): Promise<string> {
-  if (internal.accessToken && internal.expiresAtMs - REFRESH_MARGIN_MS > Date.now()) {
+  // A demo session cannot be refreshed, so it is usable until its real expiry (no early-refresh margin).
+  const margin = internal.demo ? 0 : REFRESH_MARGIN_MS;
+  if (internal.accessToken && internal.expiresAtMs - margin > Date.now()) {
     return internal.accessToken;
   }
   if (internal.refreshToken) return refreshAccessToken();
+  if (internal.demo) clearSession(DEMO_ENDED_NOTICE);
   throw new AuthRequiredError();
 }
 
 /** Force a new access token (e.g. after the server answered 401). */
 export async function forceRefresh(): Promise<string> {
   if (internal.refreshToken) return refreshAccessToken();
+  if (internal.demo) clearSession(DEMO_ENDED_NOTICE); // the server rejected the demo token: it cannot be renewed
   throw new AuthRequiredError();
 }
 
