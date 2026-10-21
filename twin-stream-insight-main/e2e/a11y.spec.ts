@@ -200,3 +200,241 @@ test("reduced motion: no infinite animation is running on the Live Twin or Analy
   await expect(page).toHaveURL(/\/analytics$/);
   expect(await running()).toEqual([]);
 });
+
+// ------------------------------------------------------------------------------------------------------------------
+// Task 28 (QA-003): the sweep widened to the routes and surfaces added since FE-19 (alerts centre, what-if lab, optimizer
+// approvals, report, fleet, admin incl. the access-request queue, the request / pending / activation pages, the model
+// passport and assistant drawers). Same rules: real backend, nothing intercepted, gate = zero serious/critical axe findings,
+// every full result attached. Extra environment for this block: E2E_ADMIN_USERNAME / E2E_ADMIN_PASSWORD (an admin account).
+// There is no /evidence route in this tree (Task 26 is not merged): that row of the sweep is recorded as absent, not scanned.
+// Reflow checks are automated approximations (320 px width; 640 x 512 stands in for 200 % zoom of 1280 x 1024). They do not
+// replace the manual pass listed in docs/frontend/a11y/FE-19.md.
+// ------------------------------------------------------------------------------------------------------------------
+
+function adminCredentials(): { username: string; password: string } {
+  const username = process.env.E2E_ADMIN_USERNAME;
+  const password = process.env.E2E_ADMIN_PASSWORD;
+  if (!username || !password) throw new Error("Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD (an existing admin account on the backend under test).");
+  return { username, password };
+}
+
+async function signInAsAdmin(page: Page): Promise<void> {
+  const { username, password } = adminCredentials();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Sign in to TwinGrid/ })).toBeVisible({ timeout: 15_000 });
+  await page.getByLabel("Username").fill(username);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Live Twin" })).toBeVisible({ timeout: 30_000 });
+}
+
+/** Move to a route client-side (the session is in memory; a full page.goto would drop it). */
+async function goClient(page: Page, path: string): Promise<void> {
+  await page.evaluate((to) => {
+    window.history.pushState({}, "", to);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, path);
+  await expect(page).toHaveURL((url) => url.pathname === path);
+}
+
+/** Keyboard focus must be visible: an outline or a ring (box-shadow) on the focused element. */
+async function expectVisibleFocus(page: Page, label: string): Promise<void> {
+  const style = await page.evaluate(() => {
+    const el = document.activeElement as HTMLElement | null;
+    if (!el || el === document.body) return null;
+    const cs = getComputedStyle(el);
+    return { outline: cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0, ring: cs.boxShadow !== "none" };
+  });
+  expect(style, `${label}: nothing has focus`).not.toBeNull();
+  expect(style && (style.outline || style.ring), `${label}: focused element has no visible focus indicator`).toBe(true);
+}
+
+async function horizontalOverflow(page: Page): Promise<number> {
+  return page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+}
+
+const VIEWER_ROUTES: ReadonlyArray<{ path: string; heading: RegExp }> = [
+  { path: "/alerts", heading: /^Alerts centre$/ },
+  { path: "/whatif-lab", heading: /^What-if lab$/ },
+  { path: "/optimizer", heading: /^Optimizer$/ },
+  { path: "/report", heading: /./ },
+  { path: "/fleet", heading: /^Fleet view$/ },
+];
+
+for (const colorScheme of ["light", "dark"] as const) {
+  for (const route of VIEWER_ROUTES) {
+    test(`T28 route ${route.path} has no serious/critical axe violations (${colorScheme})`, async ({ page }, testInfo) => {
+      await page.emulateMedia({ colorScheme });
+      await signInAndGo(page, route.path);
+      await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
+      await page.waitForLoadState("networkidle", { timeout: 30_000 });
+      await scan(page, testInfo, `t28${route.path.replace(/\//g, "-")}-${colorScheme}`);
+    });
+  }
+}
+
+test("T28 model passport drawer: axe clean, focus moves in, Escape returns focus to the opener", async ({ page }, testInfo) => {
+  await signIn(page, "viewer");
+  const opener = page.getByTestId("model-passport-button").first();
+  await opener.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: /Model passport/i });
+  await expect(dialog).toBeVisible({ timeout: 20_000 });
+  expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+  await page.waitForLoadState("networkidle", { timeout: 30_000 });
+  await scan(page, testInfo, "t28-passport-drawer");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test("T28 assistant drawer: axe clean, focus trapped, live region present, Escape returns focus to Ask", async ({ page }, testInfo) => {
+  await signIn(page, "viewer");
+  const ask = page.getByTestId("assistant-open");
+  await ask.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByTestId("assistant-drawer");
+  await expect(dialog).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("assistant-live")).toHaveAttribute("aria-live", "polite");
+  for (let i = 0; i < 8; i++) {
+    await page.keyboard.press("Tab");
+    expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+  }
+  await scan(page, testInfo, "t28-assistant-drawer");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(ask).toBeFocused();
+});
+
+// Admin console: every tab, including the access-request queue. Needs an admin account.
+for (const tab of ["Users", "Access requests", "Audit log", "Webhooks", "System"] as const) {
+  test(`T28 admin console tab "${tab}" has no serious/critical axe violations`, async ({ page }, testInfo) => {
+    await signInAsAdmin(page);
+    await goClient(page, "/admin");
+    await expect(page.getByRole("heading", { name: "Admin console" })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole("tab", { name: tab }).click();
+    await page.waitForLoadState("networkidle", { timeout: 30_000 });
+    await scan(page, testInfo, `t28-admin-${tab.toLowerCase().replace(/ /g, "-")}`);
+  });
+}
+
+// Public access pages. The request form is submitted through the real UI (limit: 5 requests/hour/IP), which also gives the
+// pending page a real request to show. The approve dialog is then opened by keyboard in the admin queue and cancelled.
+test.describe.serial("T28 access pages", () => {
+  const email = `a11y-visitor-${Date.now()}@example.com`;
+  let ref = "";
+
+  test("request form and pending page: axe clean, keyboard-reachable, visible focus", async ({ browser }, testInfo) => {
+    const page = await (await browser.newContext()).newPage();
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: /Sign in to TwinGrid/ })).toBeVisible({ timeout: 15_000 });
+    const open = page.getByRole("button", { name: "Request viewer access" });
+    await open.focus();
+    await expectVisibleFocus(page, "Request viewer access button");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { name: /request/i }).first()).toBeVisible();
+    await scan(page, testInfo, "t28-request-form");
+
+    // Empty submit: the error summary must appear and take focus (keyboard users are told what is wrong).
+    await page.getByRole("button", { name: "Send request" }).click();
+    await scan(page, testInfo, "t28-request-form-errors");
+
+    await page.getByLabel("Name").fill("A11y Visitor");
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Purpose (optional)").fill("Accessibility sweep");
+    await page.getByLabel("Purpose (optional)").press("Tab");
+    await page.keyboard.press("Enter"); // the submit button must be next in the tab order
+    await expect(page.getByRole("heading", { name: "Your access request" })).toBeVisible({ timeout: 20_000 });
+    ref = ((await page.getByTestId("request-ref").textContent()) ?? "").trim();
+    await scan(page, testInfo, "t28-pending-page");
+  });
+
+  test("activation page: incomplete link, password form and dead-link states are axe clean", async ({ page }, testInfo) => {
+    await page.goto("/activate");
+    await expect(page.getByRole("heading", { name: "Activation link problem" })).toBeVisible({ timeout: 15_000 });
+    await scan(page, testInfo, "t28-activate-incomplete-link");
+
+    await page.goto(`/activate#token=${"A".repeat(43)}`); // well-formed but unknown: the real backend refuses it
+    await expect(page.getByRole("heading", { name: "Set your password" })).toBeVisible({ timeout: 15_000 });
+    await page.getByLabel("New password").fill("x");
+    await page.getByLabel("Confirm password").fill("y");
+    await page.getByRole("button", { name: "Activate access" }).click();
+    await scan(page, testInfo, "t28-activate-client-errors");
+    await page.getByLabel("New password").fill("correct horse battery staple");
+    await page.getByLabel("Confirm password").fill("correct horse battery staple");
+    await page.getByRole("button", { name: "Activate access" }).click();
+    await expect(page.getByRole("heading", { name: "Activation link problem" })).toBeVisible({ timeout: 30_000 });
+    await scan(page, testInfo, "t28-activate-dead-link");
+  });
+
+  test("admin approve dialog: axe clean, focus inside, Escape leaves no focus lost", async ({ page }, testInfo) => {
+    test.skip(!ref, "needs the request made by the first test in this block");
+    await signInAsAdmin(page);
+    await goClient(page, "/admin");
+    await page.getByRole("tab", { name: "Access requests" }).click();
+    const card = page.locator("li", { hasText: ref });
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    const approve = card.getByRole("button", { name: "Approve" });
+    await approve.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+    await scan(page, testInfo, "t28-admin-approve-dialog");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    // focus must not be dropped on <body>: back on the opener (or the notices region)
+    const active = await page.evaluate(() => (document.activeElement && document.activeElement !== document.body ? "element" : "body"));
+    expect(active).toBe("element");
+  });
+});
+
+// Reflow. 320 px wide (WCAG 1.4.10) and 640 x 512 as a stand-in for 200 % zoom (WCAG 1.4.4): no horizontal page scroll.
+const REFLOW_VIEWPORTS = [
+  { name: "320px", width: 320, height: 640 },
+  { name: "zoom200-approx", width: 640, height: 512 },
+] as const;
+
+for (const vp of REFLOW_VIEWPORTS) {
+  test(`T28 reflow (${vp.name}): sign-in, request form and activation pages need no horizontal scroll`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: /Sign in to TwinGrid/ })).toBeVisible({ timeout: 15_000 });
+    expect(await horizontalOverflow(page), "sign-in").toBeLessThanOrEqual(1);
+    await page.getByRole("button", { name: "Request viewer access" }).click();
+    await expect(page.getByRole("button", { name: "Send request" })).toBeVisible();
+    expect(await horizontalOverflow(page), "request form").toBeLessThanOrEqual(1);
+    await page.goto(`/activate#token=${"A".repeat(43)}`);
+    await expect(page.getByRole("heading", { name: "Set your password" })).toBeVisible({ timeout: 15_000 });
+    expect(await horizontalOverflow(page), "activation form").toBeLessThanOrEqual(1);
+    await context.close();
+  });
+
+  test(`T28 reflow (${vp.name}): signed-in routes, measured and attached (soft: the shell is desktop-first)`, async ({ browser }, testInfo) => {
+    const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+    const page = await context.newPage();
+    await signIn(page, "viewer");
+    const rows: Array<{ path: string; overflow_px: number }> = [{ path: "/", overflow_px: await horizontalOverflow(page) }];
+    for (const route of [...ROUTES.slice(1), ...VIEWER_ROUTES]) {
+      await goClient(page, route.path);
+      await page.waitForLoadState("networkidle", { timeout: 30_000 });
+      rows.push({ path: route.path, overflow_px: await horizontalOverflow(page) });
+    }
+    await testInfo.attach(`reflow-${vp.name}.json`, { body: JSON.stringify(rows, null, 2), contentType: "application/json" });
+    for (const r of rows) expect.soft(r.overflow_px, `${r.path} overflows by ${r.overflow_px}px at ${vp.name}`).toBeLessThanOrEqual(1);
+    await context.close();
+  });
+}
+
+test("T28 reduced motion: access pages run no infinite animation", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Sign in to TwinGrid/ })).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Request viewer access" }).click();
+  await expect(page.getByRole("button", { name: "Send request" })).toBeVisible();
+  const running = await page.evaluate(() =>
+    document.getAnimations().filter((a) => a.playState === "running" && a.effect?.getTiming().iterations === Infinity).length
+  );
+  expect(running).toBe(0);
+});
