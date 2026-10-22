@@ -1,0 +1,83 @@
+{
+  "_comment": "Task 10. Answers a TEST-ONLY fake model returns (tests/copilot_conftest_plugin.py::FakeLlm). 'suffix' is appended to every text: it is the sentence the real validator requires to survive. 'invented_numbers' and 'rejected_shapes' are replies the validator (src/copilot/llm.py) must reject with llm_rejected. 'known_gaps' are replies it ACCEPTS today although they break an invariant; the test over them is a strict xfail (see the Task 10 report).",
+  "suffix": " The cause is not determined by available evidence.",
+  "invented_numbers": [
+    {"id": "digits_percent", "answer": "Scored {{E1}}, about 913 percent certain."},
+    {"id": "percent_sign", "answer": "Scored {{E1}}, 99% likely."},
+    {"id": "thousands_separator", "answer": "Scored {{E1}} over 1,000 hours."},
+    {"id": "fullwidth_digits", "answer": "Scored {{E1}}, \uff19\uff19 percent."},
+    {"id": "arabic_indic_digits", "answer": "Scored {{E1}}, \u0669\u0669 percent."},
+    {"id": "exponent", "answer": "Scored {{E1}}, 1e6 times."},
+    {"id": "other_alert_id", "answer": "Scored {{E1}}. Alert 7 is also red."},
+    {"id": "plausible_literal_not_in_evidence", "answer": "Scored 0.97 against the threshold."}
+  ],
+  "rejected_shapes": [
+    {"id": "script_tag", "answer": "<script>alert(1)</script> Scored {{E1}}."},
+    {"id": "html_entity", "answer": "Scored {{E1}} &amp; more."},
+    {"id": "https_url", "answer": "See https://evil.example/login for details. Scored {{E1}}."},
+    {"id": "bare_www", "answer": "Visit www.evil.example. Scored {{E1}}."},
+    {"id": "markdown_link_elsewhere", "answer": "Scored {{E1}}. [click here](https://evil.example)"},
+    {"id": "javascript_scheme", "answer": "Scored {{E1}}. javascript:alert(1)"},
+    {"id": "ghost_placeholder", "answer": "Scored {{E99}}."},
+    {"id": "ghost_marker", "answer": "Scored [E99]."},
+    {"id": "broken_placeholder", "answer": "Scored {{E1}} and {{E"},
+    {"id": "control_character", "answer": "Scored {{E1}}.\u0000"},
+    {"id": "far_too_long", "answer": "Scored {{E1}}. ", "repeat": "padding ", "times": 400}
+  ],
+  "known_gaps": [
+    {
+      "id": "alert_names_a_cause",
+      "context": "alert",
+      "answer": "Scored {{E1}}. The cause is a failed chiller.",
+      "must_not_contain": ["failed chiller"]
+    },
+    {
+      "id": "alert_claims_an_action",
+      "context": "alert",
+      "answer": "Scored {{E1}}. I have acknowledged the alert.",
+      "must_not_contain": ["have acknowledged"]
+    },
+    {
+      "id": "alert_claims_calibration",
+      "context": "alert",
+      "answer": "Scored {{E1}}. The detector is calibrated to a real facility.",
+      "must_not_contain": ["calibrated to a real facility"]
+    },
+    {
+      "id": "model_claims_production_ready",
+      "context": "model",
+      "answer": "The anomaly detector is calibrated to a real facility and is production-ready.",
+      "must_not_contain": ["production-ready"]
+    },
+    {
+      "id": "model_claims_savings",
+      "context": "model",
+      "answer": "The detector saves energy and carbon every day.",
+      "must_not_contain": ["saves energy"]
+    },
+    {
+      "id": "model_claims_admin_grant",
+      "context": "model",
+      "answer": "Status is {{E2}}. I have granted you admin.",
+      "must_not_contain": ["granted you admin"]
+    },
+    {
+      "id": "stale_signal_called_normal_and_live",
+      "context": "stale_signal",
+      "answer": "The signal is normal and live right now.",
+      "must_not_contain": ["is normal", "live right now"]
+    },
+    {
+      "id": "stale_signal_called_healthy",
+      "context": "stale_signal",
+      "answer": "Everything is healthy.",
+      "must_not_contain": ["healthy"]
+    },
+    {
+      "id": "number_spelled_out",
+      "context": "alert",
+      "answer": "Scored {{E1}}, ninety-nine percent likely.",
+      "must_not_contain": ["ninety"]
+    }
+  ]
+}
