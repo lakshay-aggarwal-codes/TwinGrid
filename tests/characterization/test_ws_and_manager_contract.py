@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import asyncio
 
-import pytest
-
 from api.services.live_broadcast_service import ConnectionManager
 from tests.characterization import golden_support as gs
 
@@ -84,11 +82,18 @@ async def test_broadcast_with_no_connections_is_a_noop():
     await ConnectionManager().broadcast({"x": 1})
 
 
+async def _settle():
+    """T4b/T18: ``broadcast`` only enqueues; each client has its own writer task. Let those writers run."""
+    for _ in range(5):
+        await asyncio.sleep(0)
+
+
 async def test_broadcast_delivers_same_payload_to_every_client():
     m, a, b = ConnectionManager(), FakeSocket(), FakeSocket()
     m.connect(a)
     m.connect(b)
     await m.broadcast({"pue": 1.3})
+    await _settle()
     assert a.received == b.received == [{"pue": 1.3}]
 
 
@@ -97,6 +102,7 @@ async def test_broadcast_drops_failed_clients_and_keeps_good_ones():
     m.connect(good)
     m.connect(dead)
     await m.broadcast({"n": 1})
+    await _settle()
     assert good.received == [{"n": 1}]
     assert dead not in m._connections and good in m._connections
 
@@ -116,17 +122,16 @@ def test_disconnect_of_unknown_socket_is_safe():
     ConnectionManager().disconnect(FakeSocket())
 
 
-@pytest.mark.legacy_behavior("T4b")
-async def test_broadcast_does_not_complete_while_any_client_is_stalled():
-    """Sends are awaited sequentially with no timeout: one stalled client holds the whole fan-out.
-    (Which client is visited first is set-order dependent, so only completion is asserted.)"""
+async def test_a_stalled_client_does_not_hold_up_the_others():
+    """T4b/T18 (replaces the legacy test that pinned the old serial fan-out): ``broadcast`` returns at once, the
+    normal client is served while the stalled one is still blocked, and the stalled one gets its frame when released."""
     gate = asyncio.Event()
     m, stalled, normal = ConnectionManager(), FakeSocket(gate=gate), FakeSocket()
     m.connect(stalled)
     m.connect(normal)
-    task = asyncio.ensure_future(m.broadcast({"n": 1}))
-    done, pending = await asyncio.wait({task}, timeout=0.1)
-    assert not done and pending == {task}
+    await asyncio.wait_for(m.broadcast({"n": 1}), timeout=1)  # never awaits a client
+    await _settle()
+    assert normal.received == [{"n": 1}] and stalled.received == []
     gate.set()
-    await asyncio.wait_for(task, timeout=2)
+    await _settle()
     assert stalled.received == normal.received == [{"n": 1}]

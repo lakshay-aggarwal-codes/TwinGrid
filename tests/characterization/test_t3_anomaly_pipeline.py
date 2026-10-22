@@ -361,6 +361,7 @@ async def test_tick_runs_pipeline_once_per_tick_independent_of_clients(session_m
             payloads.append(p)
             await mgr.broadcast(p)
 
+    await asyncio.sleep(0.05)  # T4b/T18: broadcast only enqueues; let each client's writer task drain its queue
     assert [p["anomaly_status"]["status"] for p in payloads] == ["warming_up"] * 11 + ["anomalous"] * 4
     assert det.calls == 4  # once per full-window tick, NOT 25x
     assert all(s.n == 15 for s in socks)

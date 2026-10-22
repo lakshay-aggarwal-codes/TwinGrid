@@ -210,7 +210,7 @@ async function requestAccess(page: Page, email: string, purpose: string): Promis
   await page.getByRole("button", { name: "Send request" }).click();
   await expect(page.getByRole("heading", { name: "Your access request" })).toBeVisible({ timeout: 20_000 });
   await expect(page).toHaveURL(/\/access\/pending$/);
-  await expect(page.getByTestId("request-status")).toHaveText("Awaiting decision");
+  await expect(page.getByTestId("request-status")).toHaveText("Awaiting decision", { timeout: 20_000 });
   const ref = (await page.getByTestId("request-ref").textContent())?.trim() ?? "";
   expect(ref).toMatch(/^[A-Z2-7]{12}$/);
   return ref;
@@ -456,6 +456,7 @@ test("E2E-22 [api] the public access routes answer 429 with Retry-After when the
 // ----------------------------------------------------------------------------- [demo] J1 and its write controls
 
 test("E2E-22 [demo] J1: the read-only demo is labelled and needs no account", async ({ page }) => {
+  test.setTimeout(120_000); // the first load of the 3D page compiles it in the dev server
   test.skip(process.env.E2E_DEMO_DISABLED === "1", "E2E_DEMO_DISABLED=1: this backend has the demo switched off");
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Sign in to TwinGrid/ })).toBeVisible({ timeout: 15_000 });

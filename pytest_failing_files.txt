@@ -1,0 +1,35 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Lakshay\Desktop\data center\DigitalTwin-main
+configfile: pytest.ini
+plugins: anyio-4.15.1, locust-2.46.7, platformdirs-4.12.2, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+timeout: 180.0s
+timeout method: thread
+timeout func_only: False
+collected 554 items
+
+tests\api\test_error_contract.py ......................s........FFFFFFFF [  7%]
+FFFFFF.                                                                  [  8%]
+tests\api\test_provenance_writers.py FFFFF.                              [  9%]
+tests\api\test_physics_v1_api.py ......F....                             [ 11%]
+tests\api\test_routes_health_metrics.py .F............                   [ 13%]
+tests\api\test_state_preview_isolation.py ....F                          [ 14%]
+tests\api\test_task15_whatif_sensitivity.py ...........F.                [ 17%]
+tests\api\test_task27_carbon_schedule_route.py ..................F.      [ 20%]
+tests\api\test_task29_admin_console.py ................................. [ 26%]
+..................................F...........                           [ 35%]
+tests\characterization\test_determinism.py .........                     [ 36%]
+tests\characterization\test_golden_physics.py ........                   [ 38%]
+tests\characterization\test_route_contracts_and_targets.py FF...FF...    [ 39%]
+tests\characterization\test_t3_anomaly_pipeline.py ..................... [ 43%]
+F..                                                                      [ 44%]
+tests\characterization\test_t3_routes_repo_migration.py ............     [ 46%]
+tests\characterization\test_ws_and_manager_contract.py .......FF..F      [ 48%]
+tests\characterization\test_ws_payload_provenance.py .........F..        [ 50%]
+tests\test_artifact_gate.py ............................................ [ 58%]
+.................................FFFFFFFFFFFF....................        [ 70%]
+tests\test_baselines.py ................................................ [ 79%]
+..........................................FF                             [ 87%]
+tests\test_build_evidence.py .........F.                                 [ 88%]
+tests\test_datasets_v2.py ........................................F.     [ 96%]

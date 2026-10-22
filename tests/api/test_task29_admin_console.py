@@ -372,9 +372,8 @@ async def test_create_refuses_duplicates_unsafe_urls_and_overflow(
     assert (
         await client.post("/api/admin/webhooks", json={"url": "https://other.example.com/x"}, headers=admin_headers)
     ).status_code == 409
-    assert await audit_rows(session_maker, "webhook_registered") == [
-        r for r in await audit_rows(session_maker, "webhook_registered") if r.resource_id == WID
-    ]  # the refused one wrote nothing
+    rows = await audit_rows(session_maker, "webhook_registered")  # two separate reads give distinct ORM objects
+    assert [r.resource_id for r in rows] == [WID]  # the refused ones wrote nothing
     assert (await client.post("/api/admin/webhooks", json={"url": ""}, headers=admin_headers)).status_code == 422
     assert (
         await client.post(
