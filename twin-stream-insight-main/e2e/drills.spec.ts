@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+import { resolve } from "node:path";
 import { test, expect, type Browser, type Page } from "@playwright/test";
 
 /**
@@ -8,6 +10,11 @@ import { test, expect, type Browser, type Page } from "@playwright/test";
  * Environment: E2E_ADMIN_USERNAME / E2E_ADMIN_PASSWORD. Token-expiry drill: backend started with DEMO_PUBLIC_ENABLED=true,
  * DEMO_SESSION_MINUTES=1 and a seeded `demo_viewer` (set E2E_DRILL_DEMO_SHORT=1 to say so; otherwise it is skipped, not passed).
  * The refresh drill creates one real access request (limit 5/hour/IP).
+ *
+ * Sequence-restart drill (R1 Task 11): stops and starts the REAL backend container, so it runs only with E2E_DRILL_RESTART=1
+ * (needs Docker and the demo stack; otherwise it is skipped, not passed). Compose command: E2E_COMPOSE_ARGS (default
+ * "--env-file .env.demo -f docker-compose.yml -f docker-compose.demo.yml"), service E2E_BACKEND_SERVICE (default "backend"),
+ * run from the repo root. Account: E2E_VIEWER_USERNAME / E2E_VIEWER_PASSWORD.
  */
 function need(name: string): string {
   const v = process.env[name];
@@ -95,4 +102,62 @@ test("DRILL empty/unknown data: an unknown run id shows an explicit not-found st
   await expect(page.getByRole("heading", { level: 1, name: /^Run$/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/not found|no such run|unknown run|could not/i).first()).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/completed|succeeded/i)).toHaveCount(0);
+});
+
+/** Run `docker compose <args> <verb> <service>` from the repo root (the folder above the frontend package). */
+function compose(verb: "stop" | "start"): void {
+  const args = (process.env.E2E_COMPOSE_ARGS ?? "--env-file .env.demo -f docker-compose.yml -f docker-compose.demo.yml").split(/\s+/).filter(Boolean);
+  execFileSync("docker", ["compose", ...args, verb, process.env.E2E_BACKEND_SERVICE ?? "backend"], {
+    cwd: resolve(process.cwd(), ".."),
+    stdio: "inherit",
+    timeout: 120_000,
+  });
+}
+
+test("DRILL sequence restart: the server's seq goes backwards after a real backend restart and the page recovers without a stale-looking value", async ({ page }) => {
+  test.skip(process.env.E2E_DRILL_RESTART !== "1", "restarts the real backend container; set E2E_DRILL_RESTART=1 (needs Docker and the demo stack)");
+  test.setTimeout(300_000);
+
+  // OBSERVE the real frames: each is forwarded unchanged in both directions; only its `seq` is recorded.
+  const seqs: number[] = [];
+  await page.routeWebSocket(/\/ws\/live/, (ws) => {
+    const server = ws.connectToServer();
+    server.onMessage((msg) => {
+      try {
+        const frame = JSON.parse(typeof msg === "string" ? msg : msg.toString("utf8")) as { seq?: unknown };
+        if (typeof frame.seq === "number") seqs.push(frame.seq);
+      } catch {
+        /* not JSON: forwarded as is */
+      }
+      ws.send(msg);
+    });
+    ws.onMessage((msg) => server.send(msg));
+  });
+
+  const { signIn } = await import("./helpers");
+  await signIn(page, "viewer", "/");
+  const liveness = page.getByTestId("liveness");
+  await expect(liveness).toHaveAttribute("data-liveness", "live", { timeout: 45_000 });
+  // Let the server counter climb, so that a restart (counter back to 1) is a visible regression and not a coincidence.
+  await expect.poll(() => seqs[seqs.length - 1] ?? 0, { timeout: 150_000, intervals: [2_000] }).toBeGreaterThanOrEqual(20);
+  const lastBefore = seqs[seqs.length - 1];
+  const framesBefore = seqs.length;
+
+  compose("stop");
+  await expect(liveness).not.toHaveAttribute("data-liveness", "live", { timeout: 60_000 });
+  await expect(page.getByTestId("live-readings")).toHaveAttribute("data-readout", "last-known");
+  await expect(page.locator("[data-readout='current']")).toHaveCount(0);
+
+  compose("start");
+  await expect(liveness).toHaveAttribute("data-liveness", "live", { timeout: 180_000 });
+  await expect(page.getByTestId("live-readings")).toHaveAttribute("data-readout", "current");
+  await expect.poll(() => seqs.length - framesBefore, { timeout: 60_000, intervals: [2_000] }).toBeGreaterThanOrEqual(3);
+
+  const after = seqs.slice(framesBefore);
+  expect(after[0], `first seq after the restart (${after[0]}) must be below the last one before it (${lastBefore})`).toBeLessThan(lastBefore);
+  const regressions = seqs.filter((v, i) => i > 0 && v < seqs[i - 1]).length;
+  expect(regressions, `seq regressions seen: ${seqs.join(",")}`).toBe(1);
+  expect(seqs.filter((v, i) => i > 0 && v === seqs[i - 1]), "duplicate adjacent seq values").toEqual([]);
+  expect(after.every((v, i) => i === 0 || v > after[i - 1]), "seq must rise strictly after the restart").toBe(true);
+  await page.screenshot({ path: "test-results/drill-seq-restart.png" });
 });

@@ -48,13 +48,13 @@ Harness written in this task: `scripts/drill_*.sh` and `e2e/drills.spec.ts`. Eve
 | LLM timeout / 429 | none | assistant falls back to the rule-based evidence answer, says the phrasing step failed, no invented numbers | - | **not drillable: Task 24 (LLM adapter) and Task 25 are not delivered; `src/copilot/llm.py` absent** |
 | WebSocket drop / reconnect | existing `e2e/stale-surfaces.spec.ts` | no current-looking value while dropped; live again only after a fresh valid frame | - | NOT RUN |
 | Stale telemetry | same spec (liveness chip, `last-known` readout) | not "live" / "normal"; last-known labelled | - | NOT RUN |
-| Sequence restart | none | feed consumer detects `seq` going backwards and resets, no duplicate or lost-looking points | - | **no drill written**: needs a backend restart under a live socket; `RT-001.md` says the consumer uses `seq`/`ts_ingest` but this was never exercised end to end |
-| History gap | none | gap markers only above 450 s (RT-001 item 5); UI states the 7.5 min limit | - | **not drillable yet**: RT-001 says Task 23 (backfill consumer) is needed and it is absent |
+| Sequence restart | `e2e/drills.spec.ts` ("DRILL sequence restart"; `E2E_DRILL_RESTART=1`, stops and starts the real backend container) | server `seq` goes backwards exactly once; no duplicate adjacent seq; liveness not `live` and readout `last-known` while down; `live` / `current` again after a fresh frame | - | NOT RUN |
+| History gap | `scripts/drill_history_gap.sh` (server side: a 600 s hole and a 420 s hole seeded on a drill stream) | `/gaps` reports only the 600 s hole (threshold 450 s); the 420 s hole is not reported; no value invented in either (UI note: `HistoryView.tsx` "Gaps shorter than ... are not marked") | - | NOT RUN. Task 23's backfill consumer exists (`backfillMerge.ts`, `BackfillHost.tsx`); a browser leg on the drill stream is not written (the history screen reads the `live` stream) |
 | Token expiry | `e2e/drills.spec.ts` (demo, `DEMO_SESSION_MINUTES=1`, `E2E_DRILL_DEMO_SHORT=1`) | auto sign-out, notice "Demo session ended", no data left on screen | - | NOT RUN |
 | Refresh mid-approval | `e2e/drills.spec.ts` | pending page survives reload, status follows the real decision | - | NOT RUN |
 | Dead / replayed activation links | `e2e/drills.spec.ts` (+ backend tests in Tasks 9 and 22) | one generic dead-link page, no half-working form | - | NOT RUN |
 | Empty / unknown data | `e2e/drills.spec.ts` (unknown run id) | explicit not-found, no "completed" | - | NOT RUN |
-| Large data (>= 5,000 samples) | none | history pages with the cursor, bounded response | - | **no drill written**: belongs with Task 29's measured run |
+| Large data (>= 5,000 samples) | `scripts/drill_large_data.sh` (seeds 5,200 simulator ticks on a drill stream, then pages the real endpoint) | every page <= `limit`; cursor pages chain with no duplicate or skipped row; total equals stored; `limit` 5001 / 0, a garbage cursor and a window over the max span answer 422 | - | NOT RUN |
 
 Rules to check on every run: nothing shows "healthy/normal" on missing data; no unbounded retries or queues; no unrecoverable blocking page.
 
