@@ -161,7 +161,25 @@ async def test_refresh_reuse_revokes_whole_family(client):
 
 
 # ----------------------------------------------------------------------------- rate limits
+def _dedupe_route_limits() -> None:
+    """``importlib.reload(api.auth)`` (tests/test_auth_security.py) re-registers ``login``'s "10/minute" on the shared
+    limiter once per reload, so one request is counted several times. Keep one copy of each limit per route."""
+    registry = getattr(limiter, "_route_limits", None)
+    if not isinstance(registry, dict):
+        return
+    for key, limits in registry.items():
+        seen: set[str] = set()
+        unique = []
+        for item in limits:
+            signature = str(getattr(item, "limit", item))
+            if signature not in seen:
+                seen.add(signature)
+                unique.append(item)
+        registry[key] = unique
+
+
 async def test_login_is_rate_limited(client):
+    _dedupe_route_limits()
     limiter.enabled = True
     limiter.reset()
     try:
