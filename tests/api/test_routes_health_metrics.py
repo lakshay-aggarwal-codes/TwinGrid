@@ -33,7 +33,8 @@ async def test_healthz_returns_503_when_db_down(client, caplog):
     finally:
         app.dependency_overrides[get_db] = previous
     assert r.status_code == 503
-    assert r.json() == {"detail": "Service unavailable"}
+    body = r.json()  # the section 8.2 problem body (status, detail, request_id, ...)
+    assert (body["status"], body["detail"]) == (503, "Service unavailable")
     assert "hunter2" not in r.text and "internal-db" not in r.text and "RuntimeError" not in r.text
     # The raw exception is still recorded server-side.
     assert any("hunter2" in (rec.exc_text or "") or rec.exc_info for rec in caplog.records)

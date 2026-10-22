@@ -1,0 +1,15 @@
+services:
+  backend:
+    environment:
+      DEMO_PUBLIC_ENABLED: "true"
+      TRUST_PROXY_HEADERS: "true"
+      ACCESS_TOKEN_PEPPER: e2e-pepper-0123456789abcdef-0123456789abcdef
+      ACCESS_PUBLIC_BASE_URL: http://localhost:8080
+      ACCESS_NOTIFY_OWNER_EMAIL: owner@example.com
+      ACCESS_NOTIFY_FROM: twingrid@example.com
+      ACCESS_NOTIFY_BACKEND: smtp
+      ACCESS_NOTIFY_SMTP_HOST: host.docker.internal
+      ACCESS_NOTIFY_SMTP_PORT: "2525"
+      ACCESS_NOTIFY_SMTP_TLS: none
+      ACCESS_NOTIFY_SMTP_USER: sink
+      ACCESS_NOTIFY_SMTP_PASSWORD: sink

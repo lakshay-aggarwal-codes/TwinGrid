@@ -7,7 +7,7 @@ covered in test_routes_state_whatif.py.
 
 import random
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -94,13 +94,9 @@ async def _next_tick_payload(monkeypatch, session_maker, before_tick=None):
         async with session_maker() as s:
             yield s
 
-    class _FixedNow(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return datetime(2025, 6, 1, 15, 30)
-
+    # The tick reads ONE clock, ``utc_now`` (T12); pin it so both runs see the same instant.
     monkeypatch.setattr(live_broadcast_service, "get_session", fake_get_session)
-    monkeypatch.setattr(live_broadcast_service, "datetime", _FixedNow)
+    monkeypatch.setattr(live_broadcast_service, "utc_now", lambda: datetime(2025, 6, 1, 15, 30, tzinfo=timezone.utc))
     twin_service._twin = DigitalTwin(start_time=FIXED_START)
     live_broadcast_service._water_stress_state = 0.2
     random.seed(1234)

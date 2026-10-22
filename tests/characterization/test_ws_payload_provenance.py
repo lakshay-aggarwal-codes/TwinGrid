@@ -122,7 +122,10 @@ def test_provenance_fields_are_not_persisted_with_the_sensor_reading():
     added = asyncio.run(go())
     assert len(added) == 1 and added[0].source == "ws"
     cols = {c.name for c in type(added[0]).__table__.columns}
-    assert not (NEW_KEYS & cols)
+    # ``origin`` is the one wire field that IS persisted: T1b stamps every writer's row with it (see
+    # tests/api/test_provenance_writers.py). Every other wire-only field must stay out of the table.
+    assert added[0].origin == "simulated"
+    assert not ((NEW_KEYS - {"origin"}) & cols)
 
 
 def test_seq_still_increments_when_persistence_fails():

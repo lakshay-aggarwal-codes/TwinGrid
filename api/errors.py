@@ -128,9 +128,27 @@ async def validation_exception_handler(request: Request, exc: Exception) -> Resp
     return problem_response(request.scope, 422, summary, errors=errors)
 
 
+def _slowapi_retry_after(exc: Exception) -> str | None:
+    """Seconds a client should wait after a slowapi ``RateLimitExceeded``: the length of the limit's window.
+
+    That is an upper bound (the oldest hit leaves the window sooner), never an invented value. ``None`` when the
+    exception does not carry a limit, so no misleading header is sent.
+    """
+    try:
+        return str(max(1, int(exc.limit.limit.get_expiry())))  # type: ignore[attr-defined]
+    except Exception:  # noqa: BLE001 -- anything unexpected means "no header", never a failing error handler
+        return None
+
+
 async def rate_limit_exceeded_handler(request: Request, exc: Exception) -> Response:
-    """slowapi (/auth/* routes): same body as every other 429."""
-    return problem_response(request.scope, 429, f"Rate limit exceeded: {getattr(exc, 'detail', 'too many requests')}")
+    """slowapi (``@limiter.limit`` routes: /auth/*, plugins): same body and ``Retry-After`` as every other 429."""
+    retry_after = _slowapi_retry_after(exc)
+    return problem_response(
+        request.scope,
+        429,
+        f"Rate limit exceeded: {getattr(exc, 'detail', 'too many requests')}",
+        headers={"Retry-After": retry_after} if retry_after else None,
+    )
 
 
 def unhandled_response(scope: Scope, exc: BaseException) -> Response:

@@ -9,7 +9,6 @@ silent xfail). Verify the failure reasons with:  pytest tests/characterization -
 from __future__ import annotations
 
 import json
-from datetime import timedelta
 
 import pytest
 
@@ -29,20 +28,8 @@ def target(task_id: str):
 
 
 # ----------------------------------------------------------------------------- /api/state (T2)
-@pytest.mark.legacy_behavior("T2")
-async def test_api_state_today_persists_one_api_row_and_advances_shared_twin(
-    client, viewer_headers, count_rows, isolated_shared_twin
-):
-    twin = twin_service.get_twin()
-    t0 = twin._time
-    r = await client.get("/api/state", params=STATE_PARAMS, headers=viewer_headers)
-    assert r.status_code == 200
-    assert await count_rows(SensorReading, SensorReading.source == "api") == 1
-    assert twin._time == t0 + timedelta(minutes=5)
-    assert twin._water_consumed_cumulative_L > 0
-
-
-@target("T2")
+# T2 landed: GET /api/state is a stateless preview. The legacy test that pinned the old write is deleted (marker contract),
+# and the target below is now an ordinary test.
 async def test_api_state_is_side_effect_free(client, viewer_headers, count_rows, isolated_shared_twin):
     twin = twin_service.get_twin()
     t0, w0 = twin._time, twin._water_consumed_cumulative_L
@@ -99,14 +86,8 @@ async def _healthz_with_broken_db(client):
         app.dependency_overrides[get_db] = previous
 
 
-@pytest.mark.legacy_behavior("T0b")
-async def test_healthz_today_echoes_the_raw_exception_text(client):
-    r = await _healthz_with_broken_db(client)
-    assert r.status_code == 503
-    assert r.json()["detail"] == f"Database unreachable: {LEAK_MARKER}"
-
-
-@target("T0b")
+# T0b landed: the 503 body no longer carries the exception text. The legacy test that pinned the leak is deleted, and
+# the target below is now an ordinary test.
 async def test_healthz_503_body_contains_no_raw_exception_text(client):
     r = await _healthz_with_broken_db(client)
     assert r.status_code == 503

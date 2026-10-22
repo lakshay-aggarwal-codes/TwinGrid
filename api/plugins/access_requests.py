@@ -158,6 +158,9 @@ async def submit_request(request: Request, background: BackgroundTasks, session:
     _enforce("submit_email", tokens.hash_email_for_limit(submission.email), 3, 86400)
     started = time.monotonic()
     outcome = await service.create(session, submission, ip_hash=tokens.hash_ip(ip))
+    # commit BEFORE responding: get_db commits only after the response (and any background task) has finished, so a
+    # client that reads straight away (the status page, the admin queue, sign-in) would not see this change yet.
+    await session.commit()
     if outcome.created and outcome.row is not None:
         _schedule_owner_mail(background, outcome.row)
     await asyncio.sleep(max(0.0, submit_floor_seconds() - (time.monotonic() - started)))
@@ -210,6 +213,7 @@ async def resend_activation_public(request: Request, background: BackgroundTasks
         except ApiError:
             return _json(202, {"message": RESEND_MESSAGE})  # same answer; nothing is sent
         new_token = await service.resend_activation(session, row)
+        await session.commit()  # see submit_request: durable before the response and the mail task
         _schedule_activation_mail(background, row, new_token)
     return _json(202, {"message": RESEND_MESSAGE})
 
@@ -227,6 +231,7 @@ async def activate_account(request: Request, session: Session) -> JSONResponse:
     except service.ActivationFailed as exc:
         await service.record_activation_failure(exc.code, exc.ref)
         return _json(400, {"error": "invalid_or_expired"})  # one body for every bad token
+    await session.commit()  # see submit_request: the new account must exist before the visitor signs in
     return _json(200, {"status": "activated"})
 
 
@@ -320,6 +325,7 @@ async def admin_approve(
         raise ApiError(404, "not_found", "Access request not found") from None
     except service.InvalidTransition:
         return _invalid_transition()
+    await session.commit()  # see submit_request: durable before the response and the mail task
     if token is not None:
         _schedule_activation_mail(background, row, token)
     return item_to_dict(row, detail=True)
@@ -340,6 +346,7 @@ async def admin_reject(
         raise ApiError(404, "not_found", "Access request not found") from None
     except service.InvalidTransition:
         return _invalid_transition()
+    await session.commit()  # see submit_request: durable before the response and the mail task
     if changed:  # generic, optional: the decision note is never mailed
         background.add_task(
             service.dispatch_notification, "rejected", row.id, row.email_normalized, {"name": row.display_name}
@@ -373,5 +380,6 @@ async def admin_resend_activation(
         token = await service.resend_activation(session, row)
     except service.InvalidTransition:
         return _invalid_transition()
+    await session.commit()  # see submit_request: durable before the response and the mail task
     _schedule_activation_mail(background, row, token)
     return item_to_dict(row, detail=True)

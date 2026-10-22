@@ -137,8 +137,11 @@ def compute_utilisation(
 
 
 # ----------------------------------------------------------------------------- cleaned inputs (strict)
-def load_cleaned_weather(path: Path = CLEANED_WEATHER_PATH) -> pd.DataFrame:
-    """The cleaned Open-Meteo table (``timestamp_utc, city, outside_temp_C, humidity_pct``). Raises if missing."""
+def load_cleaned_weather(path: Path | None = None) -> pd.DataFrame:
+    """The cleaned Open-Meteo table (``timestamp_utc, city, outside_temp_C, humidity_pct``). Raises if missing.
+
+    ``path=None`` means the module's ``CLEANED_WEATHER_PATH`` AT CALL TIME (a default argument would freeze it at import)."""
+    path = CLEANED_WEATHER_PATH if path is None else path
     if not Path(path).is_file():
         raise MissingInputError(
             f"required cleaned input is missing: {path}. Supply realData/open_meteo and run "
@@ -161,9 +164,11 @@ def city_weather_5min(weather: pd.DataFrame, city: str) -> pd.DataFrame | None:
     return series.resample(f"{INTERVAL_MINUTES}min").interpolate("linear").dropna()
 
 
-def load_water_stress_baseline(country: str, path: Path = CLEANED_WATER_STRESS_PATH) -> float:
+def load_water_stress_baseline(country: str, path: Path | None = None) -> float:
     """The real Aqueduct baseline water-stress score for ``country``, min-max normalised to [0, 1] across the table.
-    Raises MissingInputError if the file, its columns, or the country are missing."""
+    Raises MissingInputError if the file, its columns, or the country are missing. ``path=None`` means the module's
+    ``CLEANED_WATER_STRESS_PATH`` at call time."""
+    path = CLEANED_WATER_STRESS_PATH if path is None else path
     if not Path(path).is_file():
         raise MissingInputError(
             f"required cleaned input is missing: {path}. Run `python scripts/run_ingestion.py --only "
