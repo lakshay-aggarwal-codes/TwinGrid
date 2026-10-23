@@ -3,6 +3,7 @@ import { AlertTriangle, Loader2, WifiOff } from "lucide-react";
 import { isApiError } from "@/api/apiError";
 import { AuthRequiredError } from "@/authClient";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useReturnFocus } from "@/lib/returnFocus";
 import { askCopilot } from "./api";
 import { AnswerView } from "./AnswerView";
 import { ERROR_COPY, LIMITS, buildRequest, errorKindOf, modeLabel, suggestionsFor, type AssistantErrorKind } from "./model";
@@ -185,11 +186,12 @@ interface Props {
   ask?: Ask;
 }
 
-/** The assistant drawer: a Radix dialog, so focus is trapped, Esc closes it and focus returns to the button that opened it. */
+/** The assistant drawer: a Radix dialog, so focus is trapped, Esc closes it and useReturnFocus gives focus back to the button that opened it (the drawer has no Radix trigger). */
 export function AssistantDrawer({ open, context, nonce, onClose, knownRoutes, ask = askCopilot }: Props) {
+  const returnFocus = useReturnFocus();
   return (
     <Sheet open={open} onOpenChange={(o) => (o ? undefined : onClose())}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl" data-testid="assistant-drawer">
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl" data-testid="assistant-drawer" {...returnFocus}>
         <SheetHeader>
           <SheetTitle>Assistant: {CONTEXT_TITLE[context.kind]}{context.id ? ` ${context.id}` : ""}</SheetTitle>
           <SheetDescription>Explains what this system shows, from evidence. It does not change anything.</SheetDescription>

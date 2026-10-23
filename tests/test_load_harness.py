@@ -3,9 +3,11 @@
 The stub stands in for the app (the real app is exercised only by the manual workflow, .github/workflows/load.yml).
 """
 
+import ast
 import asyncio
 import importlib.util
 import json
+import os
 import socket
 from pathlib import Path
 
@@ -109,14 +111,18 @@ def test_credentials_required_no_defaults(monkeypatch):
 def test_locustfile_has_no_default_credentials(monkeypatch):
     src = (ROOT / "locustfile.py").read_text(encoding="utf-8")
     assert "password123" not in src and "viewer1" not in src
-    pytest.importorskip("locust")
-    spec = importlib.util.spec_from_file_location("lf", ROOT / "locustfile.py")
-    lf = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(lf)
+    # Do NOT import locustfile.py: importing locust monkey-patches threading/sockets with gevent, which hangs or breaks
+    # other tests in this session. Compile and run only the credential check, with nothing but ``os`` in scope.
+    func = next(n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name == "require_credentials")
+    namespace: dict = {"os": os}
+    exec(compile(ast.Module(body=[func], type_ignores=[]), "locustfile.py", "exec"), namespace)  # noqa: S102
     for k in ("LOAD_USER", "LOAD_PASSWORD"):
         monkeypatch.delenv(k, raising=False)
     with pytest.raises(RuntimeError):
-        lf.require_credentials()
+        namespace["require_credentials"]()
+    monkeypatch.setenv("LOAD_USER", "u")
+    monkeypatch.setenv("LOAD_PASSWORD", "p")
+    assert namespace["require_credentials"]() == ("u", "p")
 
 
 def _free_port():

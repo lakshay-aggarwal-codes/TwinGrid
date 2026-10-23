@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { StateBoundary } from "@/state/StateBoundary";
 import { SYNTHETIC_LABEL, formatMetric, kindLabel, metricLabel, modelsFor, statusView, type Passport, type PassportModel, type StatusIcon } from "./model";
 import { usePassport } from "./usePassport";
+import { takePassportOpener } from "./passportStore";
 import { ExplainButton } from "../assistant/ExplainButton";
 
 const ICON: Record<StatusIcon, LucideIcon> = {
@@ -178,7 +179,18 @@ export function PassportDrawer({ open, kind, onClose }: Props) {
         onClose();
       }}
     >
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md" data-testid="passport-drawer">
+      <SheetContent
+        side="right"
+        className="w-full overflow-y-auto sm:max-w-md"
+        data-testid="passport-drawer"
+        onCloseAutoFocus={(event) => {
+          const el = takePassportOpener();
+          if (el) {
+            event.preventDefault();
+            el.focus();
+          }
+        }}
+      >
         <SheetHeader>
           <SheetTitle>Model passport</SheetTitle>
           <SheetDescription>

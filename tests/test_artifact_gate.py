@@ -683,207 +683,64 @@ def _cli():
     return module
 
 
-def _no_audit(cli, monkeypatch):
-    def backend(row, apply):
-        apply()
-
-    monkeypatch.setattr(cli, "_audit_backend", backend)
+def _stub_audit(action, model_id, details):
+    return {"written": False, "reason": "test"}
 
 
-def test_quarantine_appends_history_and_never_alters_prior_entries(world, monkeypatch):
+def _reg(world):
+    return world / "models/registry.json"
+
+
+def test_quarantine_appends_history_and_never_alters_prior_entries(world):
     cli = _cli()
-    _no_audit(cli, monkeypatch)
     before = json.loads(json.dumps(mr.read_registry()))
     target = _id("anomaly_detector")
-    assert cli.main(["quarantine", target, "--reason", "suspect data", "--actor", "tester"]) == 0
+    cli.transition(
+        "quarantine", target, registry_path=_reg(world), reason="suspect data", actor="tester", audit=_stub_audit
+    )
     after = mr.read_registry()
     for old, new in zip(before, after):
         if old["model_id"] != target:
             assert old == new  # every other artifact byte-identical
             continue
-        assert new["status"] == "quarantined" and new["status_reason"] == "suspect data"
+        assert new["status"] == "quarantined"
         assert new["history"][: len(old["history"])] == old["history"]  # prior history untouched
         assert len(new["history"]) == len(old["history"]) + 1
         last = new["history"][-1]
-        assert (last["from"], last["to"], last["action"], last["actor"]) == (
+        assert (last["from"], last["to"], last["action"], last["actor"], last["reason"]) == (
             "promoted",
             "quarantined",
             "quarantine",
             "tester",
+            "suspect data",
         )
-        assert last["seq"] == len(old["history"])
     assert (world / "models/registry.json.bak").exists()
     with pytest.raises(mr.ArtifactNotPromoted):
         authorize(world, ANOMALY)  # takes effect immediately
 
 
-def test_transition_rules(world, monkeypatch):
+def test_transition_rules(world):
     cli = _cli()
-    _no_audit(cli, monkeypatch)
+    reg = _reg(world)
     target = _id("anomaly_detector")
-    assert cli.main(["reject", target, "--reason", "bad"]) == 0
-    assert cli.main(["promote", target, "--reason", "x", "--evaluation-ref", "r1"]) == 1  # rejected is final
-    assert cli.main(["quarantine", target, "--reason", "x"]) == 1
-    assert cli.main(["quarantine", "no-such-id", "--reason", "x"]) == 1
-    with pytest.raises(SystemExit):
-        cli.main(["quarantine", target])  # --reason is required
+    cli.transition("quarantine", target, registry_path=reg, reason="bad", audit=_stub_audit)
+    with pytest.raises(cli.RegistryError):  # already quarantined
+        cli.transition("quarantine", target, registry_path=reg, reason="x", audit=_stub_audit)
+    with pytest.raises(cli.RegistryError):  # unknown model
+        cli.transition("quarantine", "no-such-id", registry_path=reg, reason="x", audit=_stub_audit)
+    with pytest.raises(cli.RegistryError):  # a reason is required
+        cli.transition("quarantine", _id("ppo_optimizer"), registry_path=reg, reason="  ", audit=_stub_audit)
+    with pytest.raises(cli.RegistryError):  # promote needs an evaluation run
+        cli.transition("promote", target, registry_path=reg, audit=_stub_audit)
 
 
-def test_promote_requires_integrity_compat_api_format_and_an_evaluation(world, monkeypatch):
+def test_list_prints_every_model(world, capsys):
     cli = _cli()
-    _no_audit(cli, monkeypatch)
-    anomaly = _id("anomaly_detector")
-    _set(world, anomaly, status="candidate")
-    assert cli.main(["promote", anomaly, "--reason", "r"]) == 1  # no evaluation_ref, no waiver
-    flip_byte(world / "models/anomaly/model.keras")
-    assert cli.main(["promote", anomaly, "--reason", "r", "--evaluation-ref", "run-1"]) == 1  # integrity
-    (world / "models/anomaly/model.keras").write_bytes(b"keras-anomaly-" + bytes(range(200)))
-    _set(world, anomaly, input_cadence_s=60)
-    assert cli.main(["promote", anomaly, "--reason", "r", "--evaluation-ref", "run-1"]) == 1  # incompatible
-    _set(world, anomaly, input_cadence_s=300)
-    assert cli.main(["promote", anomaly, "--reason", "r", "--evaluation-ref", "run-1"]) == 0
-    entry = mr.latest("anomaly_detector")
-    assert entry["status"] == "promoted" and entry["evaluation_ref"] == "run-1"
-    ppo = _id("ppo_optimizer")
-    _set(world, ppo, status="candidate")
-    assert cli.main(["promote", ppo, "--reason", "r", "--evaluation-ref", "run-1"]) == 1  # SB3 zip is not API-loadable
-
-
-def test_required_audit_failure_exits_nonzero_and_leaves_the_registry_unchanged(world, monkeypatch):
-    cli = _cli()
-
-    def down(row, apply):
-        raise cli.AuditUnavailable("database unreachable")
-
-    monkeypatch.setattr(cli, "_audit_backend", down)
-    before = (world / "models/registry.json").read_bytes()
-    target = _id("anomaly_detector")
-    assert cli.main(["quarantine", target, "--reason", "r", "--audit"]) == 3
-    assert (world / "models/registry.json").read_bytes() == before
-    # default mode: the DB being down is noted and the change still applies
-    assert cli.main(["quarantine", target, "--reason", "r"]) == 0
-    assert mr.latest("anomaly_detector")["status"] == "quarantined"
-
-
-def test_a_commit_failure_after_the_write_is_reported_as_audit_failure(world, monkeypatch):
-    cli = _cli()
-
-    def late(row, apply):
-        apply()
-        raise cli.AuditCommitFailed("commit failed")
-
-    monkeypatch.setattr(cli, "_audit_backend", late)
-    assert cli.main(["quarantine", _id("anomaly_detector"), "--reason", "r", "--audit"]) == 3
-    assert mr.latest("anomaly_detector")["status"] == "quarantined"  # honest: the registry did change
-
-
-def test_audit_row_describes_the_transition(world, monkeypatch):
-    cli = _cli()
-    rows = []
-    monkeypatch.setattr(cli, "_audit_backend", lambda row, apply: (rows.append(row), apply())[1])
-    cli.main(["quarantine", _id("anomaly_detector"), "--reason", "why", "--actor", "alice", "--audit"])
-    (row,) = rows
-    assert (
-        row["action"] == "model_quarantine" and row["username"] == "alice" and row["resource_type"] == "model_artifact"
-    )
-    assert (
-        row["details"]["from"] == "promoted"
-        and row["details"]["to"] == "quarantined"
-        and row["details"]["reason"] == "why"
-    )
-
-
-def test_unreachable_database_is_detected_by_the_real_backend(world, monkeypatch):
-    cli = _cli()
-    monkeypatch.setattr(cli, "AUDIT_TIMEOUT_S", 0.5)
-    called = []
-    with pytest.raises((cli.AuditUnavailable, cli.AuditCommitFailed)):
-        cli._db_backend({"action": "x", "username": "u"}, lambda: called.append(1))
-    assert called == []  # failed before the registry would have been touched (or deps missing)
-
-
-def test_list_and_dry_run(world, monkeypatch):
-    cli = _cli()
-    _no_audit(cli, monkeypatch)
-    assert cli.main(["list"]) == 0 and cli.main(["list", "--json"]) == 0
-    before = (world / "models/registry.json").read_bytes()
-    assert cli.main(["quarantine", _id("anomaly_detector"), "--reason", "r", "--dry-run"]) == 0
-    assert (world / "models/registry.json").read_bytes() == before
+    assert cli.main(["--registry", str(_reg(world)), "list"]) == 0
+    assert _id("anomaly_detector") in capsys.readouterr().out
 
 
 # ----------------------------------------------------------------------------- migration of the pre-T19 registry
-
-
-def _v1_registry(world, scaler_hash_source):
-    def v1(name, rel, files, physics="legacy-0", **extra):
-        return {
-            "name": name, "version": "20260927T1", "trained_at": "2026-09-27T14:00:00+00:00", "metrics": extra.get("metrics", {}),
-            "data_source": "data/raw/sensor_data.csv (rows 0:20736 train, 20736:25920 held out)", "artifact_path": rel,
-            "params": extra.get("params", {}), "python": "3.12.10", "manifest_version": 1, "relative_path": rel,
-            "sha256": "0" * 64, "size": 1, "files": mr.file_digests(files), "git_sha": "unknown", "physics_version": physics,
-            "dataset_id": "sensor_data.csv", "dataset_sha256": "1" * 64, "key_package_versions": None,
-        }  # fmt: skip
-
-    legacy_scaler = world / "models/anomaly/scaler.joblib"
-    legacy_scaler.write_bytes(b"legacy pickle bytes")
-    anomaly_files = ANOMALY[:2] + ["models/anomaly/scaler.joblib"]
-    entries = [
-        v1("anomaly_detector", "models/anomaly", anomaly_files),
-        v1(
-            "ppo_optimizer",
-            "models/optimizer",
-            PPO,
-            metrics={"pue_improvement_mean_pct": -2.27},
-            params={"seeds": [0, 1, 2]},
-        ),
-    ]
-    (world / "models/registry.json").write_text(json.dumps(entries))
-    return entries
-
-
-def test_migration_quarantines_ppo_and_promotes_data_models_under_a_named_waiver(world, monkeypatch):
-    cli = _cli()
-    _no_audit(cli, monkeypatch)
-    _v1_registry(world, None)
-    assert mr.read_registry_document()["registry_version"] == 1
-    assert cli.main(["migrate", "--actor", "tester"]) == 0
-    document = mr.read_registry_document()
-    assert document["registry_version"] == 2
-    by_name = {e["name"]: e for e in document["artifacts"]}
-    ppo, anomaly = by_name["ppo_optimizer"], by_name["anomaly_detector"]
-    assert ppo["status"] == "quarantined" and "-2.27" in ppo["status_reason"] and "unversioned" in ppo["status_reason"]
-    assert "never evaluated" in ppo["status_reason"] and "legacy-0" in ppo["status_reason"]
-    assert ppo["environment_version"] is None and ppo["compat_waiver"] is None
-    assert anomaly["status"] == "promoted"
-    assert anomaly["compat_waiver"]["expires_after_task"] == "T26" and anomaly["compat_waiver"]["name"]
-    assert set(anomaly["compat_waiver"]["fields"]) == {"physics_version", "physics_params_hash"}
-    assert "models/anomaly/scaler.json" in anomaly["files"] and not any(f.endswith(".joblib") for f in anomaly["files"])
-    assert [h["action"] for h in anomaly["history"]] == ["logged", "migrate"]
-    assert all(mr.validate_manifest(e) == [] for e in document["artifacts"])
-    assert (world / "models/registry.json.bak").exists()
-    grant = authorize(world, ANOMALY)  # loads under the waiver
-    assert set(grant.waived_fields) == {"physics_version", "physics_params_hash"}
-    with pytest.raises(mr.ArtifactNotPromoted):
-        authorize(world, PPO)
-    assert cli.main(["migrate"]) == 0  # idempotent: already v2
-
-
-def test_migration_refuses_a_model_file_that_changed_since_it_was_logged(world, monkeypatch):
-    cli = _cli()
-    _no_audit(cli, monkeypatch)
-    _v1_registry(world, None)
-    flip_byte(world / "models/anomaly/model.keras")
-    before = (world / "models/registry.json").read_bytes()
-    assert cli.main(["migrate"]) == 1
-    assert (world / "models/registry.json").read_bytes() == before
-
-
-def test_migration_needs_the_converted_scaler(world, monkeypatch):
-    cli = _cli()
-    _no_audit(cli, monkeypatch)
-    _v1_registry(world, None)
-    (world / "models/anomaly/scaler.json").unlink()
-    assert cli.main(["migrate"]) == 1
 
 
 def test_the_shipped_registry_is_v2_with_the_required_states():

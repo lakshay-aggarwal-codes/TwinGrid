@@ -297,11 +297,16 @@ def test_training_the_same_config_twice_is_refused_not_duplicated(trained, capsy
 
 def test_rollback_reject_makes_a_candidate_unservable_and_keeps_history(trained):
     registry_cli = _load("t29_registry_cli", ROOT / "scripts" / "registry_cli.py")
-    entries = mr.read_registry()
-    victim = entries[0]["model_id"]
-    mr.write_registry(registry_cli.transition(entries, victim, "rejected", actor="test", reason="rollback"))
+    victim = mr.read_registry()[0]["model_id"]
+    registry_cli.transition(
+        "quarantine",
+        victim,
+        registry_path=mr.REGISTRY_PATH,
+        reason="rollback",
+        audit=lambda *a: {"written": False, "reason": "test"},
+    )
     after = {e["model_id"]: e for e in mr.read_registry()}
-    assert after[victim]["status"] == "rejected"
+    assert after[victim]["status"] == "quarantined"
     assert [h["action"] for h in after[victim]["history"]][0] == "logged" and len(after[victim]["history"]) == 2
 
 

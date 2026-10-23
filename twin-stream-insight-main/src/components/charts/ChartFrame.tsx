@@ -55,7 +55,13 @@ export function ChartFrame({ title, summary, columns, rows, note, children }: Ch
       >
         {showTable ? "Hide data table" : "View data table"}
       </button>
-      <div id={tableId} hidden={!showTable} className="mt-2 max-h-72 overflow-auto">
+      {/* A scrollable region must be reachable by keyboard (WCAG 2.1.1): focusable, with a name, only while it is shown. */}
+      <div
+        id={tableId}
+        hidden={!showTable}
+        className="mt-2 max-h-72 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        {...(showTable ? { tabIndex: 0, role: "region", "aria-label": `Data table: ${title}` } : {})}
+      >
         {showTable && (
           <table className="w-full text-left text-xs" data-testid="chart-table">
             <caption className="sr-only">{`Data behind the chart: ${title}`}</caption>

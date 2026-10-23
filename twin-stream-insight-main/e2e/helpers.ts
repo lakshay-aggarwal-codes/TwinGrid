@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 /**
  * FE-11: real-backend E2E helpers.
@@ -8,7 +8,7 @@ import { expect, type Page } from "@playwright/test";
  * dropping/restoring the WebSocket (`page.routeWebSocket`, see stale-surfaces.spec.ts), to test how the UI REACTS.
  * `page.waitForResponse` only OBSERVES real traffic.
  */
-export type Role = "viewer" | "operator";
+export type Role = "viewer" | "operator" | "admin";
 
 export function credentials(role: Role): { username: string; password: string } {
   const prefix = `E2E_${role.toUpperCase()}`;
@@ -45,7 +45,10 @@ export async function signIn(page: Page, role: Role = "viewer", path = "/"): Pro
 
     const text = (await alert.first().textContent()) ?? "";
     if (/too many/i.test(text) && attempt < 5) {
-      await page.waitForTimeout(15_000); // login limiter: 10 per minute per IP
+      // login limiter: 10 per minute per IP. Waiting it out is not a failure, so give this test the time it spends
+      // waiting (otherwise the 30 s test timeout fires inside the wait and a rate limit reads as a broken page).
+      test.setTimeout(test.info().timeout + 25_000);
+      await page.waitForTimeout(20_000);
       continue;
     }
     throw new Error(`sign-in failed for the seeded ${role} account: ${text.trim()}`);
