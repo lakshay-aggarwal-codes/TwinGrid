@@ -48,6 +48,20 @@ test("login screen: credentials the backend rejects produce an alert associated 
 // ------------------------------------------------------------------------------------------------------------------
 
 async function scan(page: Page, testInfo: TestInfo, label: string) {
+  // Route changes fade in (RotateTransition). Axe must not sample mid-fade (it reads blended colours, e.g. 3.74:1 for a
+  // token that is 4.5:1+ at full opacity), so wait until the page <h1> and all its ancestors are fully opaque.
+  // Pages without an <h1> (dialogs, drawers) have nothing to wait for.
+  await page.waitForFunction(
+    () => {
+      const h = document.querySelector("h1");
+      if (!h) return true;
+      let opacity = 1;
+      for (let e: Element | null = h; e; e = e.parentElement) opacity *= parseFloat(getComputedStyle(e).opacity || "1");
+      return opacity >= 0.999;
+    },
+    undefined,
+    { timeout: 10_000 }
+  );
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   await testInfo.attach(`axe-${label}.json`, { body: JSON.stringify(results.violations, null, 2), contentType: "application/json" });
   const blocking = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
@@ -219,13 +233,9 @@ function adminCredentials(): { username: string; password: string } {
 }
 
 async function signInAsAdmin(page: Page): Promise<void> {
-  const { username, password } = adminCredentials();
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: /Sign in to TwinGrid/ })).toBeVisible({ timeout: 15_000 });
-  await page.getByLabel("Username").fill(username);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Live Twin" })).toBeVisible({ timeout: 30_000 });
+  adminCredentials(); // fails early with the admin-specific message when E2E_ADMIN_* is not set
+  // The shared helper waits out the backend's 10/minute sign-in limiter; a single click here read a 429 as a broken page.
+  await signIn(page, "admin");
 }
 
 /** Move to a route client-side (the session is in memory; a full page.goto would drop it). */
@@ -354,6 +364,9 @@ test.describe.serial("T28 access pages", () => {
     await expect(page.getByRole("heading", { name: "Activation link problem" })).toBeVisible({ timeout: 15_000 });
     await scan(page, testInfo, "t28-activate-incomplete-link");
 
+    // A goto that only changes the #fragment is not a page load, so the activation page would keep the empty-token state it
+    // already rendered. Leave the page first so the link opens the way an emailed link does.
+    await page.goto("about:blank");
     await page.goto(`/activate#token=${"A".repeat(43)}`); // well-formed but unknown: the real backend refuses it
     await expect(page.getByRole("heading", { name: "Set your password" })).toBeVisible({ timeout: 15_000 });
     await page.getByLabel("New password").fill("x");

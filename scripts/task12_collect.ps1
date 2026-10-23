@@ -23,6 +23,7 @@ param(
   [switch]$IncludeDrills,
   [switch]$IncludePerf,
   [switch]$SkipPlaywright,
+  [switch]$SkipGates,          # skip the backend/frontend/audit gates (round1_collect.ps1 already covers them)
   [string]$ApiUrl = "http://localhost:8000",
   [int]$PauseSeconds = 65
 )
@@ -30,7 +31,7 @@ $ErrorActionPreference = "Continue"
 Set-Location (Split-Path -Parent $PSScriptRoot)
 $repo = (Get-Location).Path
 $stamp = Get-Date -Format "yyyyMMdd-HHmm"
-$out = Join-Path "reports\task12" $stamp
+$out = Join-Path $repo ("reports\task12\" + $stamp)
 New-Item -ItemType Directory -Force $out | Out-Null
 $rows = New-Object System.Collections.ArrayList
 
@@ -75,13 +76,15 @@ $pre | Out-File (Join-Path $out "01_preflight.txt") -Encoding utf8
 $pre | ForEach-Object { Write-Host "preflight: $_" -ForegroundColor Yellow }
 
 # ---- 2. backend gates
-Run-Step "10_backend_pytest" { pytest tests -m "not postgres" -rs -q }
-if ($env:TWINGRID_TEST_PG_URL) { Run-Step "11_backend_pytest_postgres" { pytest tests -m postgres -rs -q } }
+if (-not $SkipGates) {
+Run-Step "10_backend_pytest" { pytest tests -m "not postgres" -rs -q --timeout=300 --timeout-method=thread --show-capture=no -p no:cacheprovider }
+if ($env:TWINGRID_TEST_PG_URL) { Run-Step "11_backend_pytest_postgres" { pytest tests -m postgres -rs -q --timeout=300 --timeout-method=thread } }
 else { "TWINGRID_TEST_PG_URL not set: the Postgres suite was NOT run." | Out-File (Join-Path $out "11_backend_pytest_postgres.NOT_RUN.txt") -Encoding utf8 }
 Run-Step "12_ruff_check" { ruff check . }
 Run-Step "13_ruff_format" { ruff format --check . }
 Run-Step "14_alembic_heads" { alembic heads }
 Run-Step "15_pip_audit" { pip-audit --requirement requirements.lock --require-hashes --disable-pip --strict }
+}
 
 # ---- 3. frontend gates
 Push-Location (Join-Path $repo "twin-stream-insight-main")
@@ -90,8 +93,8 @@ if (-not $env:VITE_ERROR_REPORT_URL) { $env:VITE_ERROR_REPORT_URL = "$ApiUrl/api
 Remove-Item Env:VITE_DEMO_USERNAME -ErrorAction SilentlyContinue
 Remove-Item Env:VITE_DEMO_PASSWORD -ErrorAction SilentlyContinue
 Run-Step "20_npm_ci" { npm ci }
-Run-Step "21_frontend_verify" { npm run verify }
-Run-Step "22_npm_audit" { npm audit --audit-level=high }
+if (-not $SkipGates) { Run-Step "21_frontend_verify" { npm run verify } }
+if (-not $SkipGates) { Run-Step "22_npm_audit" { npm audit --audit-level=high } }
 
 # ---- 4. Playwright against the real stack, one spec per run, paused so the 10/min sign-in limiter is not what fails
 if (-not $SkipPlaywright) {
@@ -111,7 +114,7 @@ if ($IncludeDrills) {
     foreach ($d in "drill_db_down", "drill_redis_down", "drill_mail_failure") {
       Run-Step ("40_" + $d) { & $bash ("scripts/" + $d + ".sh") }
     }
-  } else { "Git Bash not found at $bash: drills NOT run (run them in WSL: sh scripts/drill_db_down.sh etc.)." | Out-File (Join-Path $out "40_drills.NOT_RUN.txt") -Encoding utf8 }
+  } else { "Git Bash not found at ${bash}: drills NOT run (run them in WSL: sh scripts/drill_db_down.sh etc.)." | Out-File (Join-Path $out "40_drills.NOT_RUN.txt") -Encoding utf8 }
 }
 
 # ---- 6. optional: performance (restarts the stack with request limits OFF, so it goes last)

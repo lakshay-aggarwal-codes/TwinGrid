@@ -273,9 +273,12 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
           columns={MODE_COLUMNS}
           rows={modeRows}
         >
+          {/* Decorative for assistive tech: Recharts gives each slice role="img" with no text alternative. The frame's
+              title, summary and data table carry the same information. */}
+          <div aria-hidden="true">
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
+              <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value" rootTabIndex={-1}>
                 {pieData.map((d, i) => (
                   <Cell key={i} fill={d.color} stroke={CHART_CHROME.outline} strokeWidth={1} />
                 ))}
@@ -284,6 +287,7 @@ export function SimulationTab({ data, inputs, failed = false }: Props) {
               <Legend wrapperStyle={{ fontSize: 11, color: CHART_CHROME.tooltipLabel }} />
             </PieChart>
           </ResponsiveContainer>
+          </div>
         </ChartFrame>
       </div>
     </div>

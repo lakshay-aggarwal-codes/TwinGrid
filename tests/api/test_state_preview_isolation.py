@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from api.services import live_broadcast_service, twin_service
+from api.services import live_broadcast_service, telemetry_window, twin_service
 from models.db_models import SensorReading
 from src.digital_twin import DigitalTwin
 
@@ -99,6 +99,10 @@ async def _next_tick_payload(monkeypatch, session_maker, before_tick=None):
     monkeypatch.setattr(live_broadcast_service, "utc_now", lambda: datetime(2025, 6, 1, 15, 30, tzinfo=timezone.utc))
     twin_service._twin = DigitalTwin(start_time=FIXED_START)
     live_broadcast_service._water_stress_state = 0.2
+    # A tick's payload carries its sequence number and the anomaly window's contents; both are process-global and
+    # advance with every tick, so start each run from the same point (the comparison is about /api/state, not those).
+    monkeypatch.setattr(live_broadcast_service, "_tick_seq", 0)
+    monkeypatch.setattr(telemetry_window, "_provider", telemetry_window.InMemoryTelemetryWindow())
     random.seed(1234)
     if before_tick is not None:
         await before_tick()
@@ -118,4 +122,6 @@ async def test_next_live_tick_is_identical_with_or_without_state_calls(
 
     with_calls = await _next_tick_payload(monkeypatch, session_maker, before_tick=hammer)
 
+    for payload in (control, with_calls):  # wall-clock time of the anomaly scoring call: differs by design
+        payload["anomaly_status"].pop("scored_at", None)
     assert with_calls == control

@@ -7,6 +7,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useReturnFocus } from "@/lib/returnFocus";
 import { MapPin, Boxes, AlertTriangle } from "lucide-react";
 import { listRacksByZone } from "@/three/facilityLayout.ts";
 import { useTopology } from "@/three/facilityTopology.ts";
@@ -56,6 +57,7 @@ export function CommandPalette({
   events,
 }: CommandPaletteProps) {
   const { layout } = useTopology();
+  const returnFocus = useReturnFocus();
   const rackGroups = listRacksByZone(layout);
   const run = (action: () => void) => {
     onOpenChange(false);
@@ -63,7 +65,7 @@ export function CommandPalette({
   };
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog open={open} onOpenChange={onOpenChange} contentProps={returnFocus}>
       {/* Radix requires a title/description for screen readers; visually hidden. */}
       <DialogTitle className="sr-only">Search</DialogTitle>
       <DialogDescription className="sr-only">Search racks, zones and alerts, then press Enter to go to one.</DialogDescription>
