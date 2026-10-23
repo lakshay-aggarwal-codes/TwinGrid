@@ -82,8 +82,10 @@ class RegistryError(RuntimeError):
 # ----------------------------------------------------------------------------- registry file
 def load_registry(path: Path = REGISTRY_PATH) -> list[dict[str, Any]]:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if isinstance(data, dict):  # v2 document ``{"registry_version": 2, "artifacts": [...]}`` (src/model_registry.py)
+        data = data.get("artifacts")
     if not isinstance(data, list) or not all(isinstance(e, dict) for e in data):
-        raise RegistryError(f"{path} is not a JSON list of objects")
+        raise RegistryError(f"{path} is not a JSON list of objects (or a v2 document with an 'artifacts' list)")
     return data
 
 
@@ -91,10 +93,18 @@ def write_registry_atomic(path: Path, entries: list[dict[str, Any]]) -> None:
     """Temp file in the same directory, fsync, copy of the old file to ``.bak``, then ``os.replace``."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload: Any = entries  # a bare list (v1) stays a list; a v2 document keeps its wrapper and other keys
+    if path.exists():
+        try:
+            current = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            current = None
+        if isinstance(current, dict) and isinstance(current.get("artifacts"), list):
+            payload = {**current, "artifacts": entries}
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
-            json.dump(entries, fh, indent=2)
+            json.dump(payload, fh, indent=2)
             fh.write("\n")
             fh.flush()
             os.fsync(fh.fileno())

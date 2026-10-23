@@ -445,7 +445,7 @@ def test_a_crlf_checkout_of_the_run_directory_still_verifies(world):
     full_run(world)
     for f in (world / "reports/runs/r1").rglob("*"):
         if f.is_file() and f.suffix in (".json", ".md", ".csv", ".svg"):
-            f.write_bytes(f.read_bytes().replace(b"\n", b"\r\n"))
+            f.write_bytes(f.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))  # idempotent on Windows
     assert verify_run(world, "r1").failures == []
     assert promotion_eligibility(world, "r1") == (True, [])
 

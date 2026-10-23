@@ -15,7 +15,7 @@ SECRET_CASES = [
     ("handshake /ws/live?ticket=TICKETVALUE123 accepted", "TICKETVALUE123"),
     ("POST /x?access_token=ACCESSVALUE1&refresh_token=REFRESHVALUE1", "ACCESSVALUE1"),
     ("POST /x?refresh_token=REFRESHVALUE1", "REFRESHVALUE1"),
-    ("POST /api/client-errors?key=INGESTKEY0123456789", "INGESTKEY0123456789"),
+    ("POST /api/client-errors?key=test-INGESTKEY0123456789", "test-INGESTKEY0123456789"),
     ('{"username": "a", "password": "hunter2-hunter2"}', "hunter2-hunter2"),
     ("login body password=hunter2-hunter2 rejected", "hunter2-hunter2"),
     ("Authorization: Bearer opaque.credential-123", "opaque.credential-123"),
@@ -129,11 +129,11 @@ def test_secrets_in_every_text_field_are_redacted():
             message="failed ws://h/ws/live?token=SECRETONE12 Bearer abc.def.ghi",
             stack="at x ?ticket=SECRETTWO12\n at y",
             page="/p?token=SECRETTHREE",
-            source="src?key=SECRETFOUR1234",
+            source="src?key=test-SECRETFOUR1234",
         )
     )
     blob = json.dumps(out)
-    for secret in ("SECRETONE12", "abc.def.ghi", "SECRETTWO12", "SECRETTHREE", "SECRETFOUR1234"):
+    for secret in ("SECRETONE12", "abc.def.ghi", "SECRETTWO12", "SECRETTHREE", "test-SECRETFOUR1234"):
         assert secret not in blob
 
 

@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-PREV, M3 = "20250223000000", "20261002000000"
+PREV, M3 = "20261001000001", "20261002000000"  # PREV: the revision M3 follows (the stand-in tables skip M1)
 NEW_TABLES = {"facility", "asset", "asset_edge", "asset_pose", "sensor"}
 OWNED = ("sensor_readings", "alerts", "simulation_runs")
 

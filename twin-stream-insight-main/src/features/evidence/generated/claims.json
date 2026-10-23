@@ -53,12 +53,14 @@
   {
     "evidence_paths": [
       "docs/model_cards/forecaster.md",
-      "models/registry.json"
+      "models/registry.json",
+      "src/forecast_eval.py",
+      "reports/forecast_eval/PROTOCOL.md"
     ],
     "id": "C-06",
     "kind": "result",
-    "limit": "One run, no seed on file, no baseline, no evaluation record; says nothing about real hardware.",
-    "text": "The thermal forecaster scored an RMSE of 0.523 °C and MAE of 0.421 °C, 30 minutes ahead, on held-out simulator data."
+    "limit": "One run, no seed on file, no baseline, no evaluation record; the comparison needs TensorFlow and the training CSV; says nothing about real hardware.",
+    "text": "The thermal forecaster's earlier figure (RMSE 0.523 °C, MAE 0.421 °C, 30 minutes ahead, held-out simulator data) comes from one unbaselined run and is not evidence that it beats a simple forecast; a baseline-and-seeds comparison is implemented but its learned-model result has not been produced."
   },
   {
     "evidence_paths": [

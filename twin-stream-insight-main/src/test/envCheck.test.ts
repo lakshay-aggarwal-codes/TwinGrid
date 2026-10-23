@@ -60,7 +60,7 @@ describe("checkProductionEnv", () => {
   });
 
   it("never echoes a demo password value in any message", () => {
-    const r = checkProductionEnv({ VITE_API_BASE_URL: API, VITE_DEMO_PASSWORD: "hunter2-SECRET" });
-    expect(JSON.stringify(r)).not.toContain("hunter2-SECRET");
+    const r = checkProductionEnv({ VITE_API_BASE_URL: API, VITE_DEMO_PASSWORD: "test-hunter2-SECRET" });
+    expect(JSON.stringify(r)).not.toContain("test-hunter2-SECRET");
   });
 });

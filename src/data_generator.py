@@ -544,6 +544,13 @@ def generate_sensor_data(
     df = df.drop(columns=["event_id"])
     df.attrs["synthetic_inputs"] = synthetic
     df.attrs["physics_version"] = physics_version
+    # water_stress here is a synthetic SCENARIO (seasonal cycle + noise + drought episodes), not a measurement; the
+    # Aqueduct country score, when present, only sets its mean level.
+    df.attrs["water_stress_provenance"] = {
+        "water_stress_kind": "scenario",
+        "water_stress": "synthetic scenario (seasonal cycle, noise, drought episodes); not a measurement",
+        "baseline_used_as": "mean level of the synthetic scenario" if baseline is not None else "unused",
+    }
     return (df, events) if return_events else df
 
 

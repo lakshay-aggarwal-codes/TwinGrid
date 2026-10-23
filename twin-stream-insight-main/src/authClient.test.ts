@@ -336,7 +336,7 @@ describe('authClient', () => {
 
     it('never puts a token or password into an error message', async () => {
       const a = await load(vi.fn().mockResolvedValue(ok({ access_token: 'SECRET-ACCESS-TOKEN', role: 'viewer' })));
-      const err = await a.login('alice', 'hunter2-SECRET').catch((e: Error) => e);
+      const err = await a.login('alice', 'test-hunter2-SECRET').catch((e: Error) => e);
       expect(String((err as Error).message)).not.toMatch(/SECRET/);
     });
   });

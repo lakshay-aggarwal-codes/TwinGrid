@@ -29,7 +29,7 @@ IP_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
-    monkeypatch.setenv("ACCESS_TOKEN_PEPPER", "probe-pepper-0123456789abcdef-0123456789abcdef")
+    monkeypatch.setenv("ACCESS_TOKEN_PEPPER", "test-probe-pepper-0123456789abcdef-0123456789abcdef")
     monkeypatch.setenv("ACCESS_NOTIFY_OWNER_EMAIL", "owner@example.com")
     monkeypatch.setenv("ACCESS_PUBLIC_BASE_URL", "https://twingrid.example")
     monkeypatch.setenv("DEMO_PUBLIC_ENABLED", "true")
