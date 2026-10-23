@@ -1,41 +1,41 @@
 # R_TASK_5_REPORT: Backend red-test triage
 
-Status: PARTIAL. Update 2026-10-23: owner confirmed `include_context.dependencies` is a list of `Depends` (printed from the real app); the helper now carries those down. First pass from the owner's 2026-10-22/23 run (55 failed, 486 passed, 1 skipped on the 15 failing files; torch and TensorFlow 2.21.0 import fine in the venv).
-One fix delivered. The rest is classified from the log only and NOT fixed, because the uploaded zip is not the owner's current tree (see "Tree mismatch").
+Status: PARTIAL. 33 of the 55 originally failing ids are verified fixed by owner runs; 18 more are fixed in code and need one owner run; 1 needs `git rm`; 2 need an owner run of the baselines tooling (ML-002).
+Owner runs used: (1) 2026-10-22: 15 files, 55 failed / 486 passed / 1 skipped (+ a locust import hang); (2) 2026-10-23: `tests/api`, `tests/characterization` + 6 files, 22 failed / 1186 passed / 1 skipped; (3) `tests/api/test_error_contract.py` after the route-helper fix: 45 passed, 1 skipped. Python 3.12.10, Windows; torch and TensorFlow 2.21.0 import fine, so no failure is NEEDS-TF. NEEDS-PG tests were deselected (81) and not triaged here.
 
-## Tree mismatch (blocks further fixes)
-Evidence that the zip used for this task differs from the owner's repo (HEAD 2c4639c, branch wip/bc10-run-contract):
-- Owner's `test_provenance_writers.py` has `test_state_reading_is_stamped` and expects `legacy-0`; the zip's file has `test_state_is_a_stateless_preview_and_no_longer_a_writer` and uses `active_physics_version()`.
-- Owner's `git check-ignore` ignores `docs/env/Task1.md`; the zip's `.gitignore` anchors the rule (`/env*/`) and does not.
-- Owner's tests read `reports/runs/baselines-v5/manifest.json`; the zip has baselines-v2..v4 only.
-Line numbers in `test_error_contract.py` do match (367, 392, 399), so that file is identical.
-
-## Classification (55 failures + 1 hang)
-| Group | n | Class | Basis |
+## What the 22 remaining failures of run (2) were, and what happened to each
+| Ids | Class | Cause (evidence) | State |
 |---|---|---|---|
-| `api/test_error_contract` (route table, heavy-route scopes, operator routes) | 14 | TEST BUG (harness) | PROVEN by reading: `reports/postT9/T14_route_controls.py::_walk` only descends `.routes`; FastAPI 0.141.1 keeps included routers opaque, so the table is empty ("no routes found"; StopIteration; KeyError). FIXED in two steps (walker; then include-level dependencies, because `main.py` and `load_plugins` attach the general limit via `include_router(dependencies=...)`, which FastAPI 0.141.1 keeps in `include_context.dependencies`, not on the route). Step 1 took the group from 14 failures to 2 (owner run). Step 2 not yet run. |
-| `characterization/test_route_contracts_and_targets` | 4 | TEST BUG (obsolete) | Log: `[XPASS(strict)] T2` and `T0b`: the "target" tests now pass, so the task is done; the two `legacy_behavior` tests assert the old behaviour. Remove the xfail markers and delete/rewrite the legacy tests. Needs the owner's file. |
-| `characterization/test_ws_payload_provenance` | 1 | TEST BUG (obsolete) | Legacy test asserts provenance fields are NOT persisted; they now are. Needs the owner's file. |
-| `characterization/test_ws_and_manager_contract` (3), `test_t3_anomaly_pipeline` (1) | 4 | UNDETERMINED | `broadcast()` returns `[]` / pipeline-once assertion. Need the owner's source + test. |
-| `api/test_provenance_writers` | 5 | TEST BUG (stale vs code) | Code returns physics `1`; tests expect `legacy-0`. The zip's version of this file already uses `active_physics_version()`. |
-| `test_gitignore_source_dirs` | 1 | REAL BUG (owner's `.gitignore`) | `docs/env/Task1.md` is ignored in the owner's repo; the zip's anchored rule fixes it. |
-| `test_baselines` | 2 | REAL (missing committed data) | `reports/runs/baselines-v5/manifest.json` not found. Either not committed or ignored (see previous row). |
-| `test_artifact_gate` | 12 | UNDETERMINED | `scripts/registry_cli.py` lacks `_audit_backend` / `AUDIT_TIMEOUT_S` (11); one scaler-equality assertion. Source vs test drift. Needs the owner's files. |
-| `test_facility_migration` | 4 | UNDETERMINED | alembic upgrade/downgrade assertions fail (output starts at `Context impl SQLiteImpl`); likely a migration-chain change. Need the full assertion text. |
-| `test_routes_health_metrics`, `test_state_preview_isolation`, `test_task15_whatif_sensitivity`, `test_task27_carbon_schedule_route`, `test_task29_admin_console`, `test_physics_v1_api`, `test_build_evidence`, `test_datasets_v2` | 8 | UNDETERMINED | One failure each; messages in the log are truncated. |
-| `test_load_harness` | 1+hang | FLAKY / ENV | `importorskip("locust")` blocked on an import lock for 180 s (gevent import on Windows). Needs a documented marker or a subprocess import; not changed yet. |
-No failure is NEEDS-TF (TensorFlow and torch import in the venv). NEEDS-PG tests were deselected (81) by `-m "not postgres"`.
+| `test_physics_v1_api` shapes (1) | TEST BUG | `/api/whatif` returns `{**result, "scenario_id": ...}`; the legacy golden key set lacks the additive key (read from `digital_twin_routes.py` and the golden JSON) | Fixed in the newer tree (test expects `scenario_id`); NOT RUN |
+| `test_state_preview_isolation` (1) | TEST BUG | each tick carries `seq` (module counter), window contents and a wall-clock `scored_at`, so two ticks never compare equal (`live_broadcast_service.py`) | Fixed in the newer tree; NOT RUN |
+| `test_artifact_gate` registry_cli (11) | TEST/SOURCE DRIFT | tests drove an older CLI (`--audit`, `_audit_backend`, exit 3); `scripts/registry_cli.py` is the T30 CLI | Tests rewritten to the current CLI in the newer tree; NOT RUN |
+| `test_artifact_gate` scalers (1) | REAL (stray file) | `models/scaler.joblib` is a third, top-level copy, byte-identical to `models/_legacy/scaler.joblib` (sha256 checked), read by nothing | `git rm models/scaler.joblib` (command below) |
+| `test_baselines` (2) | NEEDS OWNER RUN | `reports/runs/baselines-v5` is produced by the owner's machine run (`docs/roadmap/ML-002_RUNBOOK.md`) and is not in the repo | OPEN |
+| `test_build_evidence` (1) | REAL (stale generated file) | `docs/CLAIMS.md` C-06 was reworded after `claims.json` was generated; `build_evidence.py --check` exited 1 | REGENERATED here (`--check` exits 0); only `claims.json` changed |
+| `test_facility_migration` (4) | TEST BUG | database stamped at `20250223000000`, but M3's `down_revision` is `20261001000001` (M2 -> M1 -> 20250223000000), so `upgrade M3` also ran M1 and M2 on stand-in tables | Fixed: `PREV` read from M3's own `down_revision`; NOT RUN |
+| `test_gitignore_source_dirs` (1) | ENV | the repo's `.gitignore` files do not ignore `docs/env/Task1.md` (checked with git); the owner's machine matched a rule outside the repo | Fixed: test now uses a throw-away repo with copies of the repo's `.gitignore` files and no global/XDG/`info/exclude` rules; verified here with real git (both assertions hold) |
+Earlier (run 1) groups already verified fixed in run 2: `test_error_contract` 14 (route-helper fix: `_walk` carries `include_context.dependencies`), `test_provenance_writers` 5, `test_routes_health_metrics`, `test_task15`/`test_task27` retry-after (2), `test_task29_admin_console`, `characterization/*` (9), `test_datasets_v2`.
+Flaky: `test_compute_exception_releases_the_slot` failed once and passed on re-run (order-dependent; no change). `test_load_harness`: `importorskip("locust")` deadlocked in an import lock (gevent) on Windows; the newer tree no longer imports `locustfile.py` in that test; NOT RUN.
 
-## Changed files
-- MODIFY `reports/postT9/T14_route_controls.py` (`_walk` descends included routers and carries their dependencies; `_all_calls`/`_limit`/`_auth` take them)
-- CREATE `docs/roadmap/task-reports/R_TASK_5_REPORT.md`
-`docs/roadmap/failure-ledger.csv` NOT updated yet: rows would be guesses until the tree matches.
+## Changed files in this delivery
+- MODIFY `tests/test_facility_migration.py`, `tests/test_gitignore_source_dirs.py`
+- MODIFY `twin-stream-insight-main/src/features/evidence/generated/claims.json` (regenerated)
+- MODIFY `docs/roadmap/failure-ledger.csv` (every Task 5 row now has a state and cause)
+- MODIFY `docs/roadmap/task-reports/R_TASK_5_REPORT.md`
+- DELETE (command, not in the zip) `models/scaler.joblib`
+Earlier, already committed: `reports/postT9/T14_route_controls.py`.
 
 ## Commands run / Not run
-`py_compile` and `ruff check` on the helper. Owner run after step 1: `test_error_contract.py` 2 failed, 43 passed, 1 skipped. Still failing then: `test_every_http_route_has_an_http_limit_except_the_probes` (35 routes shown as NONE; cause above, fixed in step 2, not yet run) and `test_compute_exception_releases_the_slot` (not in the first 55; traceback not yet seen; run alone printed nothing). NOT RUN: step 2.
+Run here: `py_compile`, `ruff check` and `ruff format --check` on the two test files (ruff 0.16.9, not the pinned 0.6.9); the `.gitignore` logic against real git; `scripts/build_evidence.py` and `--check`. Owner runs as listed above.
+NOT RUN: `tests/test_facility_migration.py`, `tests/test_gitignore_source_dirs.py` under pytest; the newer-tree test rewrites; `tests/test_load_harness.py`; the baselines-v5 run; the full suite; the Postgres set.
 
 ## Acceptance checklist
-Every failing id has a ledger row and cause: NOT MET (classified above; ledger pending). Zero unexplained failures: NOT MET.
+- Every failing id has a ledger row and a cause: MET (40 rows; each Task 5 row has state and cause).
+- Zero unexplained failures: NOT MET until the owner run below passes; the 2 baselines tests stay OPEN until the ML-002 run is committed.
+- Env-only failures marked with a documented marker: none needed; the one environment case (`.gitignore`) was made hermetic instead of skipped.
+
+## Decisions used
+The newer tree's rewrites of the registry tests were kept (not reverted). The `.gitignore` test checks the repo's rules only. Nothing was skipped or loosened.
 
 ## Requested cross-task changes
-None.
+Task 8: `tests/test_baselines.py` still depends on a run that is not committed (ML-002).

@@ -310,6 +310,8 @@ wheels/
 venv*/
 /env*/
 ENV*/
+# Case-insensitive checkouts (Windows) match the ENV patterns above against docs/env/; that folder is documentation.
+!docs/env/
 
 # PyCharm
 .idea/

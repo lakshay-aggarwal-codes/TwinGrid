@@ -526,9 +526,12 @@ def t9_db(tmp_path):
         for t in ("sensor_readings", "alerts", "simulation_runs"):
             c.execute(f"CREATE TABLE {t} (id INTEGER PRIMARY KEY AUTOINCREMENT, marker TEXT)")
             c.execute(f"INSERT INTO {t} (marker) VALUES ('pre-existing')")
-    assert _alembic(db, "stamp", "20250223000000").returncode == 0
+    assert _alembic(db, "stamp", "20261001000001").returncode == 0  # the revision T9 follows
     r = _alembic(db, "upgrade", T9_REV)
     assert r.returncode == 0, r.stderr[-2000:]
+    # T15 (20261003000000) only completes audit_logs, which these stand-in tables do not have; the T16 steps under
+    # test start from it, so mark it applied instead of running it.
+    assert _alembic(db, "stamp", "20261003000000").returncode == 0
     return db
 
 
@@ -633,6 +636,8 @@ def test_ingest_samples_is_the_only_writer_of_telemetry_sample():
             rel = f.relative_to(ROOT).as_posix()
             if rel == "src/telemetry/ingest.py":
                 continue
+            # src/telemetry/retention.py is the retention purge (IG-04): it may DELETE expired rows, never insert/update.
+            deletes_allowed = rel == "src/telemetry/retention.py"
             src = f.read_text(encoding="utf-8")
             # api/services/telemetry_window.py has its own unrelated in-memory dataclass of the same name;
             # only references to the ORM model / the table are writers-in-waiting.
@@ -649,8 +654,9 @@ def test_ingest_samples_is_the_only_writer_of_telemetry_sample():
                     fn = node.func
                     name = fn.id if isinstance(fn, ast.Name) else fn.attr if isinstance(fn, ast.Attribute) else ""
                     arg_names = {getattr(a, "id", getattr(a, "attr", "")) for a in node.args}
+                    writes = {"insert", "update"} if deletes_allowed else {"insert", "delete", "update"}
                     if (name == "TelemetrySample" and name not in local_classes) or (
-                        name in {"insert", "delete", "update"} and "TelemetrySample" in arg_names
+                        name in writes and "TelemetrySample" in arg_names
                     ):
                         offenders.append(f"{rel}:{node.lineno}")
     assert not offenders, f"only src/telemetry/ingest.py may write telemetry_sample: {offenders}"

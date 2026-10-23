@@ -309,7 +309,7 @@ async def test_with_a_key_a_missing_or_wrong_key_is_401_and_the_right_key_or_a_b
     monkeypatch.setenv("CLIENT_ERRORS_REPORT_KEY", KEY)
     before = _count("unauthorised")
     assert (await _post(client)).status_code == 401
-    assert (await _post(client, params={"key": "wrong-key-0123456789"})).status_code == 401
+    assert (await _post(client, params={"key": "test-wrong-key-0123456789"})).status_code == 401
     assert (await _post(client, headers={"Authorization": "Bearer not.a.token"})).status_code == 401
     assert _count("unauthorised") == before + 3
     assert json_log.getvalue() == ""  # a refused report writes nothing to the log
@@ -408,7 +408,11 @@ METRIC_WORD = re.compile(r"\b(?:http|ws|telemetry|background|anomaly|audit|clien
 
 
 def _exported_names() -> set[str]:
-    return {s.name for metric in registry.collect() for s in metric.samples} | {"up"}
+    names = {s.name for metric in registry.collect() for s in metric.samples} | {"up"}
+    # A labelled metric exports no sample until its first child exists, so whether it shows up would depend on which
+    # tests ran before this one; a registered family is exported by definition.
+    names |= {m.name + "_total" if m.type == "counter" else m.name for m in registry.collect()}
+    return names
 
 
 def _read(path: Path) -> str:

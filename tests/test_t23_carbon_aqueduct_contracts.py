@@ -224,6 +224,10 @@ def _tick_payload(monkeypatch, tmp_path, carbon_path=None):
 
     monkeypatch.setattr(lbs, "_label_cache", None)
     monkeypatch.setattr(cp, "CLEANED_CARBON_PATH", carbon_path or tmp_path / "absent.csv")
+    real_loader = lbs.load_country_baseline  # the machine may have a real Aqueduct file; these tests mean "none here"
+    monkeypatch.setattr(
+        lbs, "load_country_baseline", lambda country, **kw: real_loader(country, path=tmp_path / "absent_aq.csv", **kw)
+    )
 
     async def go():
         with gs.live_tick_environment():

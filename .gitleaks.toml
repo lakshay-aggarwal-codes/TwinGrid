@@ -32,9 +32,9 @@ regexes = [
   # None is a credential for anything: the pepper strings are test-only (src/access/tokens.py refuses no value, the
   # tests set them through monkeypatch), the others are strings the redaction tests expect NOT to appear in output.
   '''test-pepper-0123456789abcdef-0123456789abcdef''',
-  '''probe-pepper-0123456789abcdef-0123456789abcdef''',
-  '''wrong-key-0123456789''',
-  '''INGESTKEY0123456789''',
-  '''SECRETFOUR1234''',
-  '''hunter2-SECRET''',
+  '''test-probe-pepper-0123456789abcdef-0123456789abcdef''',
+  '''test-wrong-key-0123456789''',
+  '''test-INGESTKEY0123456789''',
+  '''test-SECRETFOUR1234''',
+  '''test-hunter2-SECRET''',
 ]
