@@ -137,7 +137,7 @@ describe('committed fixtures (once captured): every one is covered by the drift 
     }
   });
 
-  it.skipIf(files.length > 0)('NO committed fixtures yet: the contract job fails until a real capture is committed', () => {
-    /* skipped on purpose so the report shows the gap */
+  it('fixtures are committed for the drift gate to cover (an empty set fails; it is never skipped)', () => {
+    expect(files.length).toBeGreaterThan(0);
   });
 });

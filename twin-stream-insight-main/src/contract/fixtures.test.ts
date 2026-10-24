@@ -94,7 +94,7 @@ describe.skipIf(entries.length === 0)('captured fixtures', () => {
 });
 
 describe('fixture capture status', () => {
-  it.skipIf(entries.length > 0)('NO real fixtures captured yet: run scripts/capture-contract.mjs against a live backend (docs/frontend/contracts/README.md)', () => {
-    /* intentionally skipped, so the report shows the gap instead of a false pass */
+  it('real fixtures are committed (an empty set fails; it is never skipped)', () => {
+    expect(entries.length, 'run scripts/capture-contract.mjs against a live backend and commit src/contract/fixtures').toBeGreaterThan(0);
   });
 });
