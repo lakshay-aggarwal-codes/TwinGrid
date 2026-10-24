@@ -22,12 +22,12 @@ permissions:
 env:
   LOAD_DB_ENGINE: postgresql
   LOAD_COMMIT: ${{ github.sha }}
-  LOAD_SERVER_HOST_NOTE: github-hosted ubuntu-latest, backend+db+redis+load generator on one VM
+  LOAD_SERVER_HOST_NOTE: github-hosted ubuntu-24.04, backend+db+redis+load generator on one VM
   ENVIRONMENT: development
 
 jobs:
   load:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4

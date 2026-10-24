@@ -32,7 +32,7 @@ env:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
         run: python scripts/check_register.py
 
   types:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -119,7 +119,7 @@ jobs:
           if-no-files-found: ignore
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -228,7 +228,7 @@ jobs:
           path: junit.xml
 
   test-postgres:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     services:
       postgres:
@@ -301,7 +301,7 @@ jobs:
           PY
 
   audit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -323,7 +323,7 @@ jobs:
           pip-audit --requirement requirements.lock --require-hashes --disable-pip --strict
 
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -378,7 +378,7 @@ jobs:
     # document the blocker, and do NOT substitute stubbed data.
     # ADVISORY OWNER: Lakshay. EXPIRY: 2026-11-30 (Task 21 default). By then either record one green run in
     # reports/postT9/T11_ci_run.md and delete `continue-on-error`, or write the blocker there and renew this date.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     continue-on-error: true
     env:
@@ -469,7 +469,7 @@ jobs:
     # frontend-e2e); it also fails while no real fixtures are committed: capture them from the uploaded artifact.
     # ADVISORY OWNER: Lakshay. EXPIRY: 2026-11-30 (Task 21 default). Same exit rule as frontend-e2e, plus: commit the
     # real fixtures (twin-stream-insight-main/src/contract/fixtures/) first; without them this job cannot go green.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     continue-on-error: true
     env:
@@ -575,7 +575,7 @@ jobs:
         run: docker compose down -v || true
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -637,7 +637,7 @@ jobs:
     # required check reads as green on GitHub).
     if: always()
     needs: [lint, types, test, test-postgres, audit, frontend, docker]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Every blocking job succeeded
@@ -651,7 +651,7 @@ jobs:
     # Manual (Run workflow). Produces what could not be generated offline: the hash-pinned lock, the base-image
     # digest, and the first pyrefly count (printed by the `types` job). Commit the artifact; nothing is auto-committed.
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
