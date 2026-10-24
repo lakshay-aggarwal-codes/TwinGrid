@@ -41,3 +41,14 @@ tests/test_artifact_gate.py 31, tests/test_physics_v2.py 28.
 - Skip-gate defects found by reading the tests (hypotheses until the jobs run): PostgreSQL opt-in tests not marked `postgres` (skip in the main job);
   PG env vars `TEST_POSTGRES_URL` / `TWINGRID_TEST_PG_ASYNC_URL` unset in `test-postgres`; `locust` missing from requirements-dev.txt;
   `test_a_baseline_config_tuned_under_the_old_feasibility_rule...` skips once the configs are re-tuned.
+
+## First Linux CI measurement (2026-10-24)
+
+| Item | Value |
+|---|---|
+| Environment | GitHub `ubuntu-24.04`, Python 3.12.10, `requirements.lock` only (no dev/test packages), pyrefly 0.64.1 |
+| Result | **1120 errors** (56 suppressed, 276 warnings not shown) |
+| Run | https://github.com/lakshay-aggarwal-codes/TwinGrid/actions/runs/40090896905 (commit af77dd4) |
+| Ceiling | raised from 881 to 1120: the one permitted upward edit (first Linux run, different installed packages) |
+
+From here the ceiling may only go down. If the `types` job later installs the dev tools, the count falls and must be re-recorded.
