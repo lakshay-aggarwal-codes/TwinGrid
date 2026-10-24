@@ -156,11 +156,37 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.postgres)
 
 
-@pytest.fixture(autouse=True)
-def _restore_logging_disable():
-    """scripts/bench_suite.py calls logging.disable(CRITICAL) and never undoes it, which would silence every later test's logs."""
+def _own_root_handlers() -> list:
+    """The root logger's handlers except pytest's own capture handlers (pytest swaps those in and out per phase)."""
     import logging
 
-    previous = logging.root.manager.disable
+    return [h for h in logging.root.handlers if not type(h).__module__.startswith("_pytest")]
+
+
+@pytest.fixture(autouse=True)
+def _logging_state_must_not_leak():
+    """A test must leave ``logging.disable`` and the root logger's handlers as it found them.
+
+    bench_suite.py once called ``logging.disable(CRITICAL)`` and never undid it, silencing 100+ later tests. The state is
+    restored either way (so one leak cannot cascade), and the offending test FAILS so the next leak is named at its source.
+    """
+    import logging
+
+    disable_before = logging.root.manager.disable
+    handlers_before = _own_root_handlers()
     yield
-    logging.disable(previous)
+    disable_after = logging.root.manager.disable
+    handlers_after = _own_root_handlers()
+    logging.disable(disable_before)
+    for handler in handlers_after:
+        if handler not in handlers_before:
+            logging.root.removeHandler(handler)
+    for handler in handlers_before:
+        if handler not in logging.root.handlers:
+            logging.root.addHandler(handler)
+    problems = []
+    if disable_after != disable_before:
+        problems.append(f"logging.disable changed from {disable_before} to {disable_after}")
+    if handlers_after != handlers_before:
+        problems.append(f"root logger handlers changed: {handlers_before!r} -> {handlers_after!r}")
+    assert not problems, "this test leaked logging state (restored here): " + "; ".join(problems)

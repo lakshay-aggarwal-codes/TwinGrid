@@ -10,8 +10,6 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 from api.main import app
 from api.services import anomaly_service, twin_service
 from database import get_db
@@ -21,10 +19,6 @@ from tests.characterization import golden_support as gs
 STATE_PARAMS = {"utilisation": 0.8, "outside_temp": 30, "water_stress": 0.0, "mode": "evaporative"}
 WINDOW = json.dumps([[30.0, 3.0, 35.0, 300.0, 50.0]] * 12)
 LEAK_MARKER = "SECRET-DB-DETAIL-9f3a"
-
-
-def target(task_id: str):
-    return pytest.mark.xfail(strict=True, raises=AssertionError, reason=task_id)
 
 
 # ----------------------------------------------------------------------------- /api/state (T2)

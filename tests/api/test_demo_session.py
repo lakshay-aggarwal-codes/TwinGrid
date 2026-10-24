@@ -147,6 +147,27 @@ async def test_a_demo_token_cannot_start_a_run_a_normal_viewer_is_not_blocked(cl
     assert allowed.status_code != 403 or allowed.json()["type"] != "urn:twingrid:error:demo_read_only"
 
 
+PUBLIC_ACCESS_WRITES = (
+    "/api/access-requests",
+    "/api/access-requests/resend-activation",
+    "/api/access-requests/activate",
+)
+
+
+def test_only_the_three_public_access_request_posts_are_open_and_no_admin_path_is():
+    assert set(PUBLIC_ACCESS_WRITES) <= ALLOWED_DEMO_WRITES
+    assert not [p for p in ALLOWED_DEMO_WRITES if p.startswith("/api/admin")]
+
+
+@pytest.mark.parametrize("path", PUBLIC_ACCESS_WRITES)
+async def test_a_demo_visitor_can_reach_the_public_access_request_routes(client, enabled, demo_viewer, path):
+    token = (await _issue(client))["access_token"]
+    r = await client.post(
+        path, json={}, headers=_bearer(token)
+    )  # invalid body: validation (422) or a limit, never the demo guard
+    assert not (r.status_code == 403 and r.json().get("type") == "urn:twingrid:error:demo_read_only"), (path, r.text)
+
+
 def _write_routes() -> list[tuple[str, str]]:
     found: list[tuple[str, str]] = []
     for path, item in app.openapi()["paths"].items():
@@ -279,7 +300,8 @@ def test_the_ask_route_is_the_only_assistant_path_open_to_demo_and_has_no_write_
 
 def _guarded_in_matrix() -> set[tuple[str, str]]:
     """Write routes the matrix says a demo token is denied: ``demo: 403`` in T13, plus write rows of other fragments
-    that carry no ``demo`` column at all (the guard denies those by default; T9's public access-request routes)."""
+    that carry no ``demo`` column at all (the guard denies those by default; the public access-request routes are in
+    ``ALLOWED_DEMO_WRITES`` since L3/D3 and so are not in this set)."""
     found: set[tuple[str, str]] = set()
     for fragment in sorted(T13_FRAGMENT.parent.glob("*.yaml")):
         for row in yaml.safe_load(fragment.read_text(encoding="utf-8")).get("routes") or []:
