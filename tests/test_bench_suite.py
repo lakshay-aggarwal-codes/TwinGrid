@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import logging
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -124,3 +125,10 @@ def test_credentials_never_appear_in_the_output(monkeypatch):
 def test_peak_memory_probe_returns_a_positive_number_or_none():
     v = bs.peak_rss_mb()
     assert v is None or v > 0
+
+
+def test_main_puts_the_logging_switch_back(tmp_path):
+    """bench_suite.main silences logging for its timing loops; it leaked that into every later test in the same process."""
+    before = logging.root.manager.disable
+    assert bs.main(["--sections", "twin", "--repeats", "20", "--warmup", "0", "--out", str(tmp_path / "x.json")]) == 0
+    assert logging.root.manager.disable == before

@@ -362,8 +362,12 @@ def test_the_shipped_registry_holds_five_baseline_candidates_with_lineage():
         e = entries[model_id]
         assert e["kind"] == "ppo" and e["status"] in {"candidate", "rejected", "retired"}  # never promoted by T29
         assert e["history"][0]["action"] == "logged" and e["history"][0]["to"] == "candidate"
+        # The manifest hashes the canonical JSON of the training config (sorted keys, no whitespace), not the file bytes:
+        # a trailing newline or CRLF added by an editor/pre-commit hook must not change the identity of the config.
         raw = (ROOT / "artifacts_training" / model_id / "train_config.json").read_bytes()
-        assert e["training_config"]["sha256"] == hashlib.sha256(raw).hexdigest()
+        assert (
+            e["training_config"]["sha256"] == hashlib.sha256(tp.canonical(json.loads(raw)).encode("utf-8")).hexdigest()
+        )
         for rel, info in e["files"].items():
             assert info["sha256"] == mr.sha256_file(ROOT / rel), rel
         assert e["metrics"]["export"]["equivalence"]["max_abs_diff"] <= 1e-5

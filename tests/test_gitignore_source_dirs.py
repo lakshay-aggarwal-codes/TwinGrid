@@ -57,6 +57,9 @@ def is_ignored(tmp_path_factory):
     }
     subprocess.run(["git", "init", "-q"], cwd=repo, env=env, check=True, capture_output=True)
     (repo / ".git" / "info" / "exclude").write_text("", encoding="utf-8")
+    # Windows and macOS checkouts are case-insensitive: an unanchored ``ENV/`` there also ignores ``docs/env``. Force that
+    # mode so the test fails on every platform for a rule that would only bite on some.
+    subprocess.run(["git", "config", "core.ignorecase", "true"], cwd=repo, env=env, check=True, capture_output=True)
 
     def check(path: str) -> bool:
         r = subprocess.run(["git", "check-ignore", "-q", "--no-index", path], cwd=repo, env=env, capture_output=True)

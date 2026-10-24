@@ -1,7 +1,7 @@
 # R_TASK_5_REPORT: Backend red-test triage
 
-Status: PARTIAL. 33 of the 55 originally failing ids are verified fixed by owner runs; 18 more are fixed in code and need one owner run; 1 needs `git rm`; 2 need an owner run of the baselines tooling (ML-002).
-Owner runs used: (1) 2026-10-22: 15 files, 55 failed / 486 passed / 1 skipped (+ a locust import hang); (2) 2026-10-23: `tests/api`, `tests/characterization` + 6 files, 22 failed / 1186 passed / 1 skipped; (3) `tests/api/test_error_contract.py` after the route-helper fix: 45 passed, 1 skipped. Python 3.12.10, Windows; torch and TensorFlow 2.21.0 import fine, so no failure is NEEDS-TF. NEEDS-PG tests were deselected (81) and not triaged here.
+Status: PARTIAL (see 'Run (4)'). 33 of the 55 originally failing ids are verified fixed by owner runs; 18 more are fixed in code and need one owner run; 1 needs `git rm`; 2 need an owner run of the baselines tooling (ML-002).
+Owner runs used: (0) 2026-10-23 after v4 + `git rm models/scaler.joblib`: 8 failed / 1251 passed / 1 skipped (causes in the second table below); (1) 2026-10-22: 15 files, 55 failed / 486 passed / 1 skipped (+ a locust import hang); (2) 2026-10-23: `tests/api`, `tests/characterization` + 6 files, 22 failed / 1186 passed / 1 skipped; (3) `tests/api/test_error_contract.py` after the route-helper fix: 45 passed, 1 skipped. Python 3.12.10, Windows; torch and TensorFlow 2.21.0 import fine, so no failure is NEEDS-TF. NEEDS-PG tests were deselected (81) and not triaged here.
 
 ## What the 22 remaining failures of run (2) were, and what happened to each
 | Ids | Class | Cause (evidence) | State |
@@ -17,8 +17,24 @@ Owner runs used: (1) 2026-10-22: 15 files, 55 failed / 486 passed / 1 skipped (+
 Earlier (run 1) groups already verified fixed in run 2: `test_error_contract` 14 (route-helper fix: `_walk` carries `include_context.dependencies`), `test_provenance_writers` 5, `test_routes_health_metrics`, `test_task15`/`test_task27` retry-after (2), `test_task29_admin_console`, `characterization/*` (9), `test_datasets_v2`.
 Flaky: `test_compute_exception_releases_the_slot` failed once and passed on re-run (order-dependent; no change). `test_load_harness`: `importorskip("locust")` deadlocked in an import lock (gevent) on Windows; the newer tree no longer imports `locustfile.py` in that test; NOT RUN.
 
+## Run (0): the 8 failures left after v4, and the v5 fixes
+| Ids | Class | Cause (evidence) | State |
+|---|---|---|---|
+| `test_artifact_gate` (3), `test_train_ppo` rollback (1) | REAL BUG | `models/registry.json` is the v2 document `{"registry_version": 2, "artifacts": [...]}`; `scripts/registry_cli.py::load_registry` accepted only a bare list and `write_registry_atomic` wrote one | Fixed in source: the CLI reads both formats and keeps a v2 wrapper (other keys preserved) on write; bare-list files stay lists. Load/write round trip on the shipped registry checked here (equal JSON); NOT RUN under pytest |
+| `test_gitignore_source_dirs` (1) | REAL BUG (platform) | unanchored `ENV/` and `ENV*/` in `.gitignore` match `docs/env` when `core.ignorecase=true` (Windows, macOS). Reproduced with real git: old rules ignore `docs/env/Task1.md`, new rules do not | Fixed: `/ENV/`, `/ENV*/` (3 lines); the test now sets `core.ignorecase=true` in its throw-away repo so it fails on every platform for such a rule. Verified with real git, old and new rules; NOT RUN under pytest |
+| `test_train_ppo` sha256 (1) | TEST BUG | the registry records the sha256 of the canonical JSON (`canonical(training_params)`), and the five registry values equal that hash; the test hashed the file bytes, and the files on disk end with `\n` (added by a pre-commit end-of-file hook), so bytes differ. Checked here: canonical hash equals the registry for all 5 | Fixed: the test hashes `canonical(json.loads(file))`; it still fails if the config content changes. NOT RUN under pytest |
+| `test_baselines` (2) | NEEDS OWNER RUN | unchanged: `reports/runs/baselines-v5` | OPEN |
+
+## Run (4): first whole-suite run (2026-10-24, `-m "not postgres"`, load harness excluded): 6 failed / 5655 passed / 3 skipped / 10 xfailed
+The four files from the previous round (242 tests) passed, including both `test_baselines` ids, so those are closed.
+| Ids | Class | Cause (evidence) | State |
+|---|---|---|---|
+| `test_task6_security::test_server_loggers_never_print_a_ticket_or_token`, `test_task7_observability` (5) | REAL BUG (test pollution) | each captured an empty log. `tests/test_bench_suite.py` runs before them and calls `bench_suite.main`, which does `logging.disable(logging.CRITICAL)` and never undoes it, so every later logger in the process is off. Both files passed in the earlier partial runs, which did not include `test_bench_suite` | Fixed in source: `bench_suite.main` and `benchmark_performance.main` restore the previous switch in a `finally`; new regression test `test_main_puts_the_logging_switch_back`. NOT RUN under pytest |
+Skips in this run (all 3 documented, none new): `test_error_contract.py:226` (client refuses the header), `test_artifact_integrity.py:205` (symlinks unavailable on Windows), `test_notify_mail.py:153` (Windows localhost reset timing).
+
 ## Changed files in this delivery
-- MODIFY `tests/test_facility_migration.py`, `tests/test_gitignore_source_dirs.py`
+- MODIFY `tests/test_facility_migration.py`, `tests/test_gitignore_source_dirs.py`, `tests/test_train_ppo.py`
+- MODIFY `scripts/registry_cli.py`, `.gitignore`, `scripts/bench_suite.py`, `benchmark_performance.py`, `tests/test_bench_suite.py`
 - MODIFY `twin-stream-insight-main/src/features/evidence/generated/claims.json` (regenerated)
 - MODIFY `docs/roadmap/failure-ledger.csv` (every Task 5 row now has a state and cause)
 - MODIFY `docs/roadmap/task-reports/R_TASK_5_REPORT.md`
@@ -26,13 +42,13 @@ Flaky: `test_compute_exception_releases_the_slot` failed once and passed on re-r
 Earlier, already committed: `reports/postT9/T14_route_controls.py`.
 
 ## Commands run / Not run
-Run here: `py_compile`, `ruff check` and `ruff format --check` on the two test files (ruff 0.16.9, not the pinned 0.6.9); the `.gitignore` logic against real git; `scripts/build_evidence.py` and `--check`. Owner runs as listed above.
-NOT RUN: `tests/test_facility_migration.py`, `tests/test_gitignore_source_dirs.py` under pytest; the newer-tree test rewrites; `tests/test_load_harness.py`; the baselines-v5 run; the full suite; the Postgres set.
+Run here: `ruff check` and `ruff format --check` on the changed Python files (ruff 0.16.9, not the pinned 0.6.9); the `.gitignore` logic against real git; `scripts/build_evidence.py` and `--check`. Owner runs as listed above.
+NOT RUN: `tests/test_facility_migration.py`, `tests/test_gitignore_source_dirs.py`, `tests/test_artifact_gate.py`, `tests/test_train_ppo.py` under pytest (no pytest in this sandbox); the newer-tree test rewrites; `tests/test_load_harness.py`; the baselines-v5 run; the full suite; the Postgres set.
 
 ## Acceptance checklist
 - Every failing id has a ledger row and a cause: MET (40 rows; each Task 5 row has state and cause).
 - Zero unexplained failures: NOT MET until the owner run below passes; the 2 baselines tests stay OPEN until the ML-002 run is committed.
-- Env-only failures marked with a documented marker: none needed; the one environment case (`.gitignore`) was made hermetic instead of skipped.
+- Env-only failures marked with a documented marker: none needed; the `.gitignore` case was fixed in the rules (and made hermetic), not skipped.
 
 ## Decisions used
 The newer tree's rewrites of the registry tests were kept (not reverted). The `.gitignore` test checks the repo's rules only. Nothing was skipped or loosened.

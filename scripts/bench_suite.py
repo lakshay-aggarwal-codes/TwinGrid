@@ -364,6 +364,16 @@ def parse_sections(text: str) -> list[str]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run the benchmark. It silences logging while it times things and puts the previous level back afterwards, so
+    calling it from a process that keeps running (a test run, say) does not leave every logger off."""
+    previous = logging.root.manager.disable
+    try:
+        return _run(argv)
+    finally:
+        logging.disable(previous)
+
+
+def _run(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--sections", type=parse_sections, default=list(LOCAL_SECTIONS))
     ap.add_argument(

@@ -80,31 +80,40 @@ class RegistryError(RuntimeError):
 
 
 # ----------------------------------------------------------------------------- registry file
+def _read_document(path: Path) -> Any:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
 def load_registry(path: Path = REGISTRY_PATH) -> list[dict[str, Any]]:
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
-    if isinstance(data, dict):  # v2 document ``{"registry_version": 2, "artifacts": [...]}`` (src/model_registry.py)
-        data = data.get("artifacts")
+    """The entries of a registry file: a bare JSON list (the T30 CLI's own format) or the v2 document
+    ``{"registry_version": 2, "artifacts": [...]}`` that ``src/model_registry.py`` and the shipped file use."""
+    data = _read_document(path)
+    if isinstance(data, dict) and isinstance(data.get("artifacts"), list):
+        data = data["artifacts"]
     if not isinstance(data, list) or not all(isinstance(e, dict) for e in data):
-        raise RegistryError(f"{path} is not a JSON list of objects (or a v2 document with an 'artifacts' list)")
+        raise RegistryError(f"{path} is not a JSON list of objects or a registry document with an 'artifacts' list")
     return data
+
+
+def _with_existing_wrapper(path: Path, entries: list[dict[str, Any]]) -> Any:
+    """Keep the file's format: a v2 document keeps its other keys (``registry_version`` ...); a bare list stays a list."""
+    try:
+        current = _read_document(path)
+    except (OSError, ValueError):
+        return entries
+    if isinstance(current, dict) and isinstance(current.get("artifacts"), list):
+        return {**current, "artifacts": entries}
+    return entries
 
 
 def write_registry_atomic(path: Path, entries: list[dict[str, Any]]) -> None:
     """Temp file in the same directory, fsync, copy of the old file to ``.bak``, then ``os.replace``."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload: Any = entries  # a bare list (v1) stays a list; a v2 document keeps its wrapper and other keys
-    if path.exists():
-        try:
-            current = json.loads(path.read_text(encoding="utf-8"))
-        except ValueError:
-            current = None
-        if isinstance(current, dict) and isinstance(current.get("artifacts"), list):
-            payload = {**current, "artifacts": entries}
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
-            json.dump(payload, fh, indent=2)
+            json.dump(_with_existing_wrapper(path, entries), fh, indent=2)
             fh.write("\n")
             fh.flush()
             os.fsync(fh.fileno())
