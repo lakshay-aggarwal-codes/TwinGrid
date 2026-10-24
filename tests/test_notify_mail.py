@@ -150,6 +150,10 @@ def test_auth_failure(server, smtp_env):
     assert run(mail.send_access_mail("rejected", "ada@example.com", {"name": "Ada"})).code == "auth_failed"
 
 
+@pytest.mark.skipif(
+    __import__("sys").platform == "win32",
+    reason="Windows does not reset a closed localhost port at once, so the short SMTP timeout fires first",
+)
 def test_connection_refused(smtp_env):
     s = socket.socket()
     s.bind(("127.0.0.1", 0))

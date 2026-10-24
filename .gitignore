@@ -427,3 +427,13 @@ backups/
 /twin-stream-insight-main/fails.txt
 /twin-stream-insight-main/playwright_*.txt
 /twin-stream-insight-main/unit_after.txt
+
+# scratch output from test-debugging sessions
+api_pair.txt
+halfA.txt
+halfA1.txt
+halfA2.txt
+halfB.txt
+halfB1.txt
+halfB2.txt
+final.txt

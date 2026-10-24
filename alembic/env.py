@@ -21,7 +21,9 @@ load_dotenv()
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Keep the loggers that already exist (api.*, src.*): the default would silence them for the rest of the process
+    # whenever a migration runs in-process (tests, a CLI that migrates and then serves).
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Same normalisation as database.py: postgres:// and postgresql:// become
 # postgresql+asyncpg:// so `alembic upgrade head` works against the URL a

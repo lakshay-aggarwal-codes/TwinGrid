@@ -1,0 +1,143 @@
+{
+  "_meta": {
+    "endpoint": "/openapi.json",
+    "method": "GET",
+    "http_status": 200,
+    "captured_at": "2026-10-24T05:01:44.793Z",
+    "base_url_host": "127.0.0.1:8765",
+    "backend_hash": "0495c34b3f270e103c2713a2a450a67c97195276"
+  },
+  "schemas": {
+    "TokenResponse": {
+      "properties": [
+        "access_token",
+        "refresh_token",
+        "role",
+        "token_type"
+      ],
+      "required": [
+        "access_token",
+        "refresh_token",
+        "role"
+      ]
+    },
+    "FacilityOut": {
+      "properties": [
+        "created_at",
+        "frame_note",
+        "frame_unit",
+        "id",
+        "name"
+      ],
+      "required": [
+        "created_at",
+        "frame_note",
+        "frame_unit",
+        "id",
+        "name"
+      ]
+    },
+    "PoseOut": {
+      "properties": [
+        "rotation_deg",
+        "valid_from",
+        "valid_to",
+        "x",
+        "y",
+        "z"
+      ],
+      "required": [
+        "rotation_deg",
+        "valid_from",
+        "valid_to",
+        "x",
+        "y",
+        "z"
+      ]
+    },
+    "LocatedInOut": {
+      "properties": [
+        "edge_id",
+        "parent_asset_id",
+        "parent_external_id",
+        "valid_from",
+        "valid_to"
+      ],
+      "required": [
+        "edge_id",
+        "parent_asset_id",
+        "parent_external_id",
+        "valid_from",
+        "valid_to"
+      ]
+    },
+    "AssetOut": {
+      "properties": [
+        "asset_type",
+        "external_id",
+        "id",
+        "located_in",
+        "name",
+        "pose",
+        "retired_at"
+      ],
+      "required": [
+        "asset_type",
+        "external_id",
+        "id",
+        "located_in",
+        "name",
+        "pose",
+        "retired_at"
+      ]
+    },
+    "AssetsResponse": {
+      "properties": [
+        "as_of",
+        "assets",
+        "count",
+        "facility_id",
+        "frame_unit"
+      ],
+      "required": [
+        "as_of",
+        "assets",
+        "count",
+        "facility_id",
+        "frame_unit"
+      ]
+    },
+    "EdgeOut": {
+      "properties": [
+        "child",
+        "id",
+        "parent",
+        "relation",
+        "valid_from",
+        "valid_to"
+      ],
+      "required": [
+        "child",
+        "id",
+        "parent",
+        "relation",
+        "valid_from",
+        "valid_to"
+      ]
+    },
+    "EdgesResponse": {
+      "properties": [
+        "as_of",
+        "asset_id",
+        "edges",
+        "include_history"
+      ],
+      "required": [
+        "as_of",
+        "asset_id",
+        "edges",
+        "include_history"
+      ]
+    }
+  }
+}

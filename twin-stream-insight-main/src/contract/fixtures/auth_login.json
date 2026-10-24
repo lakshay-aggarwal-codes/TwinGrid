@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "endpoint": "/auth/login",
+    "method": "POST",
+    "http_status": 200,
+    "captured_at": "2026-10-24T05:01:36.771Z",
+    "base_url_host": "127.0.0.1:8765",
+    "backend_hash": "0495c34b3f270e103c2713a2a450a67c97195276",
+    "redactions": [
+      "access_token",
+      "refresh_token"
+    ]
+  },
+  "body": {
+    "access_token": "<redacted>",
+    "refresh_token": "<redacted>",
+    "token_type": "bearer",
+    "role": "operator"
+  }
+}

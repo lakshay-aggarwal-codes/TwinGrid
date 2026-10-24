@@ -1,0 +1,57 @@
+{
+  "_meta": {
+    "endpoint": "/api/simulate/2",
+    "method": "GET",
+    "http_status": 200,
+    "captured_at": "2026-10-24T05:01:36.855Z",
+    "base_url_host": "127.0.0.1:8765",
+    "backend_hash": "0495c34b3f270e103c2713a2a450a67c97195276",
+    "redactions": []
+  },
+  "body": [
+    {
+      "timestamp": "2026-10-24T05:06:36.842590+00:00",
+      "server_utilisation": 0.6618097077691708,
+      "outside_temp_C": 22.15925849750686,
+      "server_inlet_temp_C": 18,
+      "server_outlet_temp_C": 33.26093721812218,
+      "it_power_kw": 398.5429123307513,
+      "cooling_power_kw": 115.66368262079565,
+      "total_power_kw": 514.2065949515469,
+      "pue": 1.2902163833359208,
+      "water_flow_lpm": 6.24247809174335,
+      "water_consumed_L": 31.21239045871675,
+      "wue": 0.9397951234765972,
+      "humidity_pct": 50,
+      "water_pressure_bar": 3,
+      "cooling_mode": "hybrid",
+      "anomaly": 0,
+      "water_stress": 0,
+      "carbon_intensity_gco2_per_kwh": 475,
+      "carbon_gco2": 20354.011050165398,
+      "drought_override_active": false
+    },
+    {
+      "timestamp": "2026-10-24T06:06:36.842590+00:00",
+      "server_utilisation": 0.7006544963927119,
+      "outside_temp_C": 21.52720474204343,
+      "server_inlet_temp_C": 18,
+      "server_outlet_temp_C": 37.020158067515496,
+      "it_power_kw": 410.19634891781357,
+      "cooling_power_kw": 118.75314240783418,
+      "total_power_kw": 528.9494913256477,
+      "pue": 1.2895031677418158,
+      "water_flow_lpm": 6.350450165174786,
+      "water_consumed_L": 409.1239732941161,
+      "wue": 0.9288893256015531,
+      "humidity_pct": 50,
+      "water_pressure_bar": 3,
+      "cooling_mode": "hybrid",
+      "anomaly": 0,
+      "water_stress": 0,
+      "carbon_intensity_gco2_per_kwh": 475,
+      "carbon_gco2": 20937.58403164022,
+      "drought_override_active": false
+    }
+  ]
+}

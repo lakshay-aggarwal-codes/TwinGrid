@@ -1,0 +1,12 @@
+{
+  "_meta": {
+    "endpoint": "/api/alerts",
+    "method": "GET",
+    "http_status": 200,
+    "captured_at": "2026-10-24T05:01:36.923Z",
+    "base_url_host": "127.0.0.1:8765",
+    "backend_hash": "0495c34b3f270e103c2713a2a450a67c97195276",
+    "redactions": []
+  },
+  "body": []
+}

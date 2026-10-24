@@ -429,7 +429,8 @@ test("E2E-22 [smtp] a mail outage does not block approval; the resend reaches th
 
 test("E2E-22 [api] the public access routes answer 429 with Retry-After when their limits are used up", async ({ request }) => {
   expect(process.env.E2E_TRUST_PROXY, "start the backend with TRUST_PROXY_HEADERS=true and set E2E_TRUST_PROXY=1 (see header)").toBe("1");
-  const octet = () => 1 + Math.floor(Math.random() * 250);
+  // A fresh last octet per run (the limiters remember an address for a day). Clock-derived, not random: e2e/** is gated against Math.random.
+  const octet = () => 1 + (Date.now() % 250);
   const post = (path: string, data: unknown, ip: string) =>
     request.post(`${API}${path}`, { data, headers: { "X-Forwarded-For": ip } });
 

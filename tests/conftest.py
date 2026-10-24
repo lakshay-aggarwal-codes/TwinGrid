@@ -154,3 +154,13 @@ def pytest_collection_modifyitems(config, items):
             continue
         if "postgres" in item.name or _skips_without_a_postgres_url(item):
             item.add_marker(pytest.mark.postgres)
+
+
+@pytest.fixture(autouse=True)
+def _restore_logging_disable():
+    """scripts/bench_suite.py calls logging.disable(CRITICAL) and never undoes it, which would silence every later test's logs."""
+    import logging
+
+    previous = logging.root.manager.disable
+    yield
+    logging.disable(previous)

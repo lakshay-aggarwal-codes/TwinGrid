@@ -32,3 +32,25 @@ def test_only_the_two_docker_stack_jobs_are_advisory():
     jobs = re.split(r"^  (?=[a-z][\w-]*:\s*$)", CI.split("\njobs:\n", 1)[1], flags=re.M)
     advisory = {j.split(":", 1)[0] for j in jobs if re.search(r"^    continue-on-error: true", j, re.M)}
     assert advisory == {"frontend-e2e", "frontend-contract"}
+
+
+def _jobs() -> dict[str, str]:
+    parts = re.split(r"^  (?=[a-z][\w-]*:\s*$)", CI.split("\njobs:\n", 1)[1], flags=re.M)
+    return {part.split(":", 1)[0]: part for part in parts[1:]}
+
+
+def test_the_gate_job_waits_for_exactly_the_blocking_jobs():
+    """`gate` is the one required status check. A blocking job missing from its `needs` is a job whose failure cannot
+    block a merge; an advisory job in `needs` would make it block anyway."""
+    jobs = _jobs()
+    blocking = {
+        name
+        for name, text in jobs.items()
+        if name not in {"gate", "bootstrap"} and not re.search(r"^    continue-on-error: true", text, re.M)
+    }
+    needs = re.search(r"^    needs:\s*\[([^\]]*)\]", jobs["gate"], re.M)
+    assert needs, "the gate job has no `needs: [...]` list"
+    listed = {name.strip() for name in needs.group(1).split(",") if name.strip()}
+    assert (
+        listed == blocking
+    ), f"missing from gate.needs: {sorted(blocking - listed)}; extra: {sorted(listed - blocking)}"

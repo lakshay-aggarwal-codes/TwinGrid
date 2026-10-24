@@ -98,7 +98,6 @@ def _slowapi_limit_text(endpoint: Any) -> str | None:
 def route_facts(app: Any) -> dict[tuple[str, str], dict[str, str]]:
     """``(path, METHOD)`` -> ``{"role": ..., "rate": ...}`` read from the live route dependencies."""
     from api import config  # noqa: PLC0415
-    from api.auth import require_operator  # noqa: PLC0415
 
     facts: dict[tuple[str, str], dict[str, str]] = {}
     for path, route in _iter_api_routes(app.routes):
@@ -117,7 +116,16 @@ def route_facts(app: Any) -> dict[tuple[str, str], dict[str, str]]:
             slow = _slowapi_limit_text(getattr(route, "endpoint", None))
             if slow:
                 rate += f" + per-IP {slow}"
-        role = "operator" if require_operator in calls else ""
+        # By module and name, not object identity: importlib.reload(api.auth) (several security tests do it) makes a new
+        # function object that the already-built routes do not hold, and identity then reads every route as "any user".
+        role = (
+            "operator"
+            if any(
+                getattr(c, "__module__", None) == "api.auth" and getattr(c, "__name__", None) == "require_operator"
+                for c in calls
+            )
+            else ""
+        )
         for method in sorted(methods):
             facts[(path, method)] = {"role": role, "rate": rate}
     return facts
