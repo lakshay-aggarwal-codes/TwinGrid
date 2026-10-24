@@ -65,7 +65,7 @@
       "id": "stale_signal_called_normal_and_live",
       "context": "stale_signal",
       "answer": "The signal is normal and live right now.",
-      "must_not_contain": ["is normal", "live right now"]
+      "must_not_contain": ["normal and live", "live right now"]
     },
     {
       "id": "stale_signal_called_healthy",

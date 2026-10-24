@@ -6,7 +6,8 @@ The rule-based answer (``answer.py``) is always built first. This module may onl
   rule-based draft, all inside one delimited JSON data block that the system policy calls data, not instructions.
 * It must write every number as ``{{E#}}``; we replace each with the evidence value. The result is rejected
   (``llm_rejected``) if a number remains that no evidence item carries, an ``E#`` is unknown, the text is over 1500
-  characters, it holds HTML, a URL or a link that is not in ``links[]``, or it drops the "cause not determined" sentence.
+  characters, it holds HTML, a URL or a link that is not in ``links[]``, it drops the "cause not determined" sentence, or it types
+  forbidden wording (a named cause, a claimed action or calibration, normal/live/healthy, a number spelled out).
 * Provider trouble (timeout, 429, 5xx, bad JSON, bad envelope, redirect) gives the rule-based answer plus the warning
   ``llm_unavailable``. Nothing raised here reaches the client.
 * Logs: model id, provider request id and an outcome word. Never a prompt, an answer, a question or telemetry.
@@ -45,6 +46,41 @@ _HTML = re.compile(r"<\s*/?\s*[A-Za-z!]|&(?:#\d+|#x[0-9A-Fa-f]+|[A-Za-z]+);")
 _URL = re.compile(r"(?:https?|ftp|file|javascript|data|mailto)\s*:|www\.", re.IGNORECASE)
 _MD_LINK = re.compile(r"\]\(([^)]*)\)")
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+# Words the model may not type (L1). Checked on the reply with every {{E#}} placeholder removed, so evidence values such
+# as a status of "normal" are fine; only words the MODEL chose are tested. Each pattern is phrased so a correct negation
+# ("is not calibrated", "is not normal") does not match.
+_FORBIDDEN_WORDING = [
+    # affirmative claims about the system, actions taken, or authority granted
+    r"\b(?:is|are|was|were|been) calibrated\b",
+    r"\bcalibrated (?:to|against|with) (?:real|measured|production)",
+    r"\bvalidated (?:on|against) (?:a |the )?(?:real|production|live)",
+    r"\bproduction[- ]ready\b",
+    r"\bsaves? (?:energy|co2|carbon)\b",
+    r"\bconnected to (?:a |the )?(?:real|live|production)\b",
+    r"\b(?:i|we) (?:have |just |'ve )?(?:acknowledged|deleted|restarted|changed|applied|created|executed|granted)\b",
+    r"\b(?:has|have) been (?:acknowledged|deleted|restarted|changed|applied|created|executed|granted)\b",
+    r"\bmy (?:system )?(?:prompt|instructions) (?:is|are|say)\b",
+    # naming a cause (the draft's own "cause is not determined" sentence is allowed and is stripped before the scan)
+    r"\bcause\s+(?:is|was|appears to be|seems to be|looks like)\s+(?!not\b)",
+    r"\bcaused by\b",
+    r"\b(?:due to|because of|result of)\s+(?:a |an |the )?(?:failed|faulty|failing|broken|fault|failure|malfunction|leak|outage)",
+    # calling a signal normal, live or healthy
+    r"\b(?:is|are|was|were|looks?|appears?|seems?|remains?|stays?)\s+(?:currently\s+|still\s+|now\s+|all\s+)?"
+    r"(?:normal|live|healthy|fine|ok|okay)\b",
+    r"\blive right now\b",
+    r"\boperating normally\b",
+    # numbers written as words
+    r"\b(?:eleven|twelve|(?:thir|four|fif|six|seven|eight|nine)teen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety"
+    r"|hundred|thousand|million|billion)\b",
+    r"\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten)[- ]+(?:percent|per cent|degrees?|celsius|kilowatts?|kw"
+    r"|minutes?|hours?|seconds?|days?)\b",
+]
+_FORBIDDEN_WORDING_RE = [re.compile(p) for p in _FORBIDDEN_WORDING]
+# Sentences the rule-based draft itself uses, which the model is told to keep. They name "cause" and "normal" only to
+# deny them, so they are removed before the scan.
+_ALLOWED_PHRASES = re.compile(
+    r"the cause is not determined by available evidence|not a statement that the signal is normal"
+)
 
 SYSTEM_POLICY = (
     "You rephrase a short answer for an operator of a data-centre digital twin. You have no tools and cannot look "
@@ -278,6 +314,9 @@ def validate(
         raise Rejected("unbacked_number")
     if _KEEP_PHRASE in draft.lower() and _KEEP_PHRASE not in text.lower():
         raise Rejected("dropped_cause_unknown")
+    typed = _ALLOWED_PHRASES.sub(" ", _PLACEHOLDER.sub(" ", raw).lower())
+    if any(pattern.search(typed) for pattern in _FORBIDDEN_WORDING_RE):
+        raise Rejected("forbidden_wording")
     return text.strip(), list(dict.fromkeys(used))
 
 

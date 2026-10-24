@@ -234,6 +234,13 @@ def test_nothing_to_phrase_means_no_call(provider):
         pytest.param("Alert 42 scored {{E1", id="malformed_placeholder"),
         pytest.param("Everything is normal. Nothing to worry about.", id="drops_cause_unknown_sentence"),
         pytest.param("", id="empty"),
+        pytest.param(GOOD + " The cause is a failed chiller.", id="names_a_cause"),
+        pytest.param(GOOD + " The alert was caused by a sensor fault.", id="caused_by"),
+        pytest.param(GOOD + " I have acknowledged the alert.", id="claims_an_action"),
+        pytest.param(GOOD + " The detector is calibrated to a real facility.", id="claims_calibration"),
+        pytest.param(GOOD + " The signal is normal.", id="calls_signal_normal"),
+        pytest.param(GOOD + " Everything is healthy and live right now.", id="calls_signal_healthy_and_live"),
+        pytest.param(GOOD + " That is ninety-nine percent likely.", id="number_spelled_out"),
     ],
 )
 def test_validation_failures_fall_back_with_llm_rejected(provider, text):
@@ -242,6 +249,24 @@ def test_validation_failures_fall_back_with_llm_rejected(provider, text):
     assert_fell_back(r, "llm_rejected")
     assert "llm_unavailable" not in r.warnings
     assert len(provider.requests) == 1
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param(GOOD + " The detector is not calibrated to a real facility.", id="negated_calibration"),
+        pytest.param(GOOD + " That is not a statement that the signal is normal.", id="negated_normal"),
+        pytest.param(
+            "Alert 42 scored {{E1}}. One alert is open. The cause is not determined by available evidence.",
+            id="plain_one",
+        ),
+    ],
+)
+def test_forbidden_wording_check_does_not_reject_honest_wording(provider, text):
+    """Positive control: the wording rule rejects claims, not the draft's own denials or everyday words."""
+    provider.content = text
+    r = ask(provider.settings())
+    assert r.mode == "llm" and "llm_rejected" not in r.warnings
 
 
 def test_unknown_used_evidence_id_is_rejected(provider):
