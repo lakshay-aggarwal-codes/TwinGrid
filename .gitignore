@@ -111,10 +111,10 @@ celerybeat.pid
 .venv*/
 /env/
 venv/
-ENV/
+/ENV/
 /env*/
 venv*/
-ENV*/
+/ENV*/
 digital_twin/venv/
 env.bak/
 venv.bak/
@@ -309,9 +309,7 @@ wheels/
 # Virtual environments
 venv*/
 /env*/
-ENV*/
-# Case-insensitive checkouts (Windows) match the ENV patterns above against docs/env/; that folder is documentation.
-!docs/env/
+/ENV*/
 
 # PyCharm
 .idea/
