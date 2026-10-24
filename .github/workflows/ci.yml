@@ -135,7 +135,7 @@ jobs:
       - name: Install runtime lock (hash-checked), then dev tools
         run: |
           pip install --require-hashes --extra-index-url "$TORCH_CPU_INDEX" -r requirements.lock
-          pip install -r requirements-dev.txt
+          pip install --extra-index-url "$TORCH_CPU_INDEX" -r requirements-dev.txt
 
       - name: Install locust (tests/test_load_harness.py skips without it, and this job allows no skips)
         # TEMPORARY: belongs in requirements-dev.txt (Task 21 "Requested cross-task change"). Delete this step when it is there.
@@ -267,7 +267,7 @@ jobs:
       - name: Install runtime lock (hash-checked), then dev tools
         run: |
           pip install --require-hashes --extra-index-url "$TORCH_CPU_INDEX" -r requirements.lock
-          pip install -r requirements-dev.txt
+          pip install --extra-index-url "$TORCH_CPU_INDEX" -r requirements-dev.txt
 
       - name: alembic upgrade head / check (ORM == migrations)
         run: |
