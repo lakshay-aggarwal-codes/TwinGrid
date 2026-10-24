@@ -123,11 +123,17 @@ describe('committed fixtures (once captured): every one is covered by the drift 
       const copy = tmp();
       cpSync(fixtureDir, copy, { recursive: true });
       const parsed = JSON.parse(readFileSync(join(copy, file), 'utf8')) as { body: unknown };
-      const target = Array.isArray(parsed.body) ? parsed.body[0] : parsed.body;
-      if (typeof target !== 'object' || target === null) continue; // an empty list has no shape to mutate
-      delete (target as Record<string, unknown>)[Object.keys(target)[0]];
+      // The shape of a list is the UNION of its elements' keys, so a mutation that changes the shape has to remove the
+      // key from every element; removing it from one element of a longer list is correctly not drift.
+      const items = Array.isArray(parsed.body) ? parsed.body : [parsed.body];
+      const isRecord = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
+      const first = items.find(isRecord);
+      if (first === undefined || Object.keys(first).length === 0) continue; // an empty list has no shape to mutate
+      const key = Object.keys(first)[0];
+      for (const item of items) if (isRecord(item)) delete item[key];
       writeFileSync(join(copy, file), JSON.stringify(parsed));
-      expect(compareFixtureDirs(fixtureDir, copy).some((x: string) => x.startsWith(file.replace(/\.json$/, '')))).toBe(true);
+      const detected = compareFixtureDirs(fixtureDir, copy).some((x: string) => x.startsWith(file.replace(/\.json$/, '')));
+      expect(detected, `removing "${key}" from ${file} was not reported as drift`).toBe(true);
     }
   });
 
