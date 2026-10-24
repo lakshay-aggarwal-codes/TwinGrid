@@ -177,7 +177,10 @@ async def test_pg_user_deletion_still_nulls_actor_but_nothing_else_changes(pg_en
 
     async with pg_engine.begin() as conn:
         await conn.execute(
-            text("INSERT INTO users (id, username, hashed_password, role) VALUES (1, 'u', 'x', 'viewer')")
+            text(
+                "INSERT INTO users (id, created_at, username, hashed_password, role) "
+                "VALUES (1, now(), 'u', 'x', 'viewer')"
+            )
         )
         await conn.execute(
             text("INSERT INTO audit_logs (user_id, username, action, outcome) VALUES (1, 'u', 'logout', 'success')")
@@ -196,7 +199,10 @@ async def test_pg_rejects_other_updates_even_to_user_id(pg_engine):
 
     async with pg_engine.begin() as conn:
         await conn.execute(
-            text("INSERT INTO users (id, username, hashed_password, role) VALUES (1, 'u', 'x', 'viewer')")
+            text(
+                "INSERT INTO users (id, created_at, username, hashed_password, role) "
+                "VALUES (1, now(), 'u', 'x', 'viewer')"
+            )
         )
         await conn.execute(text("INSERT INTO audit_logs (user_id, action, outcome) VALUES (1, 'a', 'success')"))
     with pytest.raises(DBAPIError, match="append-only"):  # NULLing user_id AND changing another column

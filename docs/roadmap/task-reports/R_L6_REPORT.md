@@ -14,11 +14,10 @@ Verdict: **PARTIAL**. Evidence is only what the user pasted on 2026-10-24.
 
 ## Frontend skips (vitest 2387 passed, 3 skipped, 2390)
 The 3 skipped tests (user-pasted JSON reporter output): `src/contract/driftGate.test.ts`, `fixtures.test.ts`, `openapiSnapshot.test.ts`, each a "NO ... yet" placeholder written as `it.skipIf(<data exists>)`. They skip BECAUSE the data is committed (`src/contract/fixtures/*.json` captured 2026-10-24 against 127.0.0.1:8765, `fixtures/openapi/typed.json`). So no capture is needed; the premise "fixtures still open" was wrong.
-Change: each placeholder is now a normal test that FAILS when the fixture set / snapshot is empty or missing (never skips). Expected next vitest run: 2390 passed, 0 skipped. NOT RUN by Claude (no node_modules here); user must run `npx vitest run src/contract`.
+Change: each placeholder is now a normal test that FAILS when the fixture set / snapshot is empty or missing (never skips). Verified by the owner 2026-10-24: vitest 184 files, 2390 passed, 0 skipped; `pytest tests/test_ci_gates.py` 6 passed.
 
 ## `gate.needs` test
 Already exists: `tests/test_ci_gates.py::test_the_gate_job_waits_for_exactly_the_blocking_jobs` (gate.needs == every job without `continue-on-error`, excluding gate/bootstrap). No change.
 
 ## Still open
-- User: run `npx vitest run src/contract` and paste the summary.
 - User: push to GitHub (D4) and paste the Actions run URL; then lower `PYREFLY_ERROR_CEILING` (currently 881) to the measured number and record it in `reports/postT9/T11_ci_run.md`.

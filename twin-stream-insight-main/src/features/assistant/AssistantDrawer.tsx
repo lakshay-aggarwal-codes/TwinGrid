@@ -94,7 +94,7 @@ function Conversation({ context, ask, knownRoutes, onClose }: { context: Context
   const busy = turns.some((t) => t.outcome.type === "pending");
 
   return (
-    <div className="flex h-full flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div role="status" aria-live="polite" className="sr-only" data-testid="assistant-live">
         {announce}
       </div>
