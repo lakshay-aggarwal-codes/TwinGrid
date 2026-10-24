@@ -1,6 +1,6 @@
 # R_TASK_6_REPORT: Authorization matrix actually enforced
 
-Status: PARTIAL. Tests written and syntax-checked; NOT RUN (the cloud workspace cannot reach PyPI or npm).
+Status: **DONE** (2026-10-24). `tests\test_authz_matrix.py` collects and passes (183 tests in the owner's runs: 247 collected in the L3 verify, minus 7 and 57 from the other two files); it also passes in the full run (5676 passed, 3 skipped, 81 deselected (postgres), 9 xfailed, 0 failed).
 
 ## Summary
 Read `tests/authz_matrix.py`, `tests/test_authz_matrix.py` and the four fragments (`core`, `T9`, `T13`, `T14`).
@@ -42,3 +42,6 @@ Demo expectation on a read route defaults to the viewer cell (a demo token is a 
 
 ## Requested cross-task changes
 None.
+
+## L4 update (2026-10-24): run evidence
+The "NOT RUN" and "NOT VERIFIED" lines above are superseded. `tests\test_authz_matrix.py` shows only passes in `C:\twlogs\pytest_full_final.txt`, so the four fragments load, the demo overlay is merged and every `app.openapi()` route has a matrix row. Caveat: L3 changed the matrix inputs (the three public access-request POSTs are allowed to a demo token, decision D3) and the file still passes afterwards. Not covered here: the two CI jobs that run it (`ci.yml`), see L6.

@@ -8,8 +8,8 @@ Modes. The suite is written against invariants, not against one implementation. 
 (``rule_based``) assistant. Section 10 (Task 10) runs invariants 1 to 4, 8 and 9 again with the optional model switched
 on, against a TEST-ONLY fake provider (``tests/copilot_conftest_plugin.py::FakeLlm``) that replaces the one function
 that talks to a provider; the real validator, answer builder and route still run. ``assert_grounded`` and
-``assert_no_claims`` are mode-independent and are reused as they are. Section 10 also pins, as strict xfails, the
-replies the validator accepts today although they break an invariant.
+``assert_no_claims`` are mode-independent and are reused as they are. Section 10 checks that replies whose only fault is
+forbidden wording are rejected (closed by L1).
 
 Invariants (card steps 1 to 9):
  1. every number in ``answer`` maps to an evidence item; every ``[E#]`` marker names a real evidence id
@@ -1103,15 +1103,6 @@ async def test_a_fake_model_that_obeys_alert_text_still_cannot_add_evidence_link
         assert "evil.example" not in lowered and "<" not in lowered and "http" not in lowered
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="OPEN DEFECT (Task 10 finding; fix belongs to src/copilot/llm.py, not owned by Task 10): validate() checks "
-    "numbers, markup, links, placeholders and the kept cause sentence, but not WORDS. A reply that names a cause, claims "
-    "an action or a calibration, calls a stale signal normal, or spells a number out ('ninety-nine percent') is accepted "
-    "as mode 'llm'. Verified by running validate() on each reply in tests/fixtures/copilot_adversarial/llm_replies.json "
-    "(known_gaps). Request: reject typed claim words (the _FORBIDDEN_CLAIMS patterns, affirmative normal/live/healthy, "
-    "number words) outside {{E#}} placeholders. Remove this marker when fixed (strict: an unexpected pass fails the run).",
-)
 @pytest.mark.parametrize("case", REPLIES["known_gaps"], ids=lambda c: c["id"])
 async def test_a_fake_reply_whose_only_fault_is_forbidden_wording_is_rejected(fake_llm, case):
     fake_llm.say(reply(case["answer"] + SUFFIX, ()))

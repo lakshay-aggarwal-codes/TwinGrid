@@ -1,7 +1,6 @@
 # R_TASK_8_REPORT: No skipped tests
 
-Status: PARTIAL. Static inventory complete; 3 masking skips removed; NOT RUN. The final "0 unexplained skips" count needs
-your `pytest -rs` output (the same run Task 5 asks for) and the vitest skipped list.
+Status: **PARTIAL** (2026-10-24). Backend is done: the owner's `pytest -rsx` run shows 3 skips, each with a printed environment reason, and 0 unexplained. Still not shown: the vitest skipped list (frontend).
 
 ## Basis
 Read of the uploaded tree (`TwinGrid-main.zip`, 2026-10-21), by grep. It predates your Task 1-3 commits, so the copilot xfails below may already be gone in your repo.
@@ -50,3 +49,6 @@ Skips that mask failures of locked runtime dependencies are removed; environment
 ## Requested cross-task changes
 - Tasks 1-3: remove the four `test_copilot_adversarial` xfails (in your repo they may already be removed).
 - Task 7: commit fixtures and OpenAPI snapshot so the frontend contract skips clear.
+
+## L4 update (2026-10-24): backend skip count
+`pytest tests -m "not postgres" -rsx -q` (`C:\twlogs\pytest_full_final.txt`): 5676 passed, 3 skipped, 81 deselected (postgres), 9 xfailed, 0 failed. The 3 skips: `tests\api\test_error_contract.py:226` (client refuses to send that header), `tests\test_artifact_integrity.py:205` (symlinks not available), `tests\test_notify_mail.py:153` (Windows does not reset a closed localhost port at once). All three are environment limits with a stated reason. The 9 xfails are strict and share one reason (the open validator defect, L1). The 81 deselected tests are `-m postgres` and are covered by L6, not by this count. Frontend: no vitest output was pasted, so the frontend half of "0 unexplained skips" stays NOT VERIFIED.

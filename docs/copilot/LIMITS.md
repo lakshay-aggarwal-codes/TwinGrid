@@ -32,6 +32,10 @@ is not part of the code this document describes. Until it exists and this file i
 - **It cannot vouch for the models.** All model figures describe the **simulated** facility the twin runs on
   (`data_origin: synthetic`). They are not calibrated against, or validated on, a real facility, and the assistant does
   not say otherwise. The claims ledger (`docs/CLAIMS.md`) is the reference for what is and is not claimed.
+- **A model reply may not type claim words.** When the optional model rephrases an answer, the reply is rejected (and the
+  rule-based answer is served, with the warning `llm_rejected`) if it names a cause, says it took an action, says a model
+  is calibrated or production-ready, calls a signal normal, live or healthy, or writes a number as a word. Only words the
+  model typed are checked; evidence values placed with `{{E#}}` are not.
 - **It cannot compare with the past.** "What changed since yesterday?" is answered with a statement that stored-history
   comparison is not available in this version.
 - **It cannot name a real facility.** The data shown is simulated or replayed; the assistant has no knowledge of any

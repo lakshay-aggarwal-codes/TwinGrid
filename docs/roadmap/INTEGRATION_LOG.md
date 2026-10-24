@@ -1,5 +1,7 @@
 # Integration log
 
+> **Superseded in part (2026-10-24, L4).** This log records the 2026-10-21 integration wave. Since then the owner ran the full backend suite: 5676 passed, 3 skipped, 81 deselected (postgres), 9 xfailed, 0 failed (`C:\twlogs\pytest_full_final.txt`). In particular: `tests/test_authz_matrix.py` no longer fails at collection (183 tests pass); the four "open issues found by this wave" are fixed and their xfails removed (the 9 remaining xfails are a different defect, L1); and the "Pre-existing failures, unchanged" file list passes (see `failure-ledger.csv`, column `last_verified`). Still not run: the Postgres suite, Alembic against a database, Playwright, `pip-audit`, `npm audit`, TensorFlow-dependent tests.
+
 ## Wave: Tasks 24, 11, 25 on the uploaded `TwinGrid-main.zip` (Tasks 1-10, 12-18 already present)          Date: 2026-10-21
 
 Patches were task ZIPs, applied by overlay in the card's order (backend core, then frontend, then QA): **24 -> 11 -> 25**.
