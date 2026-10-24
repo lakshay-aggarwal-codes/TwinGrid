@@ -1,5 +1,7 @@
 # R Task 2 report: future-dated samples must not read as normal
 
+Status (L4, 2026-10-24): **DONE**. Verified by the owner's full run (5676 passed, 3 skipped, 81 deselected (postgres), 9 xfailed, 0 failed).
+
 ## Summary
 `src/signal_state.evaluate` returned `normal` / `within_bounds` for a sample timestamped in the future. A timestamp more than `FUTURE_TOLERANCE_S` (5 s, clock skew) ahead of `now` is now `unknown` / `future` with no number and `age_s = None`. Up to 5 s ahead is still age 0 and judged normally. The TypeScript mirror and the shared fixture were changed to match.
 
@@ -22,3 +24,6 @@ Reason code `future`; tolerance 5 s, strict (exactly 5 s ahead is inside); value
 
 ## Requested cross-task changes
 None beyond the TypeScript mirror above.
+
+## L4 update (2026-10-24): run evidence
+The "Not run" list above is superseded. In `C:\twlogs\pytest_full_final.txt` `tests\test_signal_state.py` shows only passes (the file the future-dated cases live in), and `tests\test_copilot_adversarial.py` has no future-dated xfail left (its 9 xfails are the validator wording defect). Not covered by any pasted output: the TypeScript mirror (`npm run test` / `typecheck` were not pasted).

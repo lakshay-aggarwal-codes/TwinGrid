@@ -1,5 +1,5 @@
 # R-Task 10: Assistant fake-LLM suite
-Status: **PARTIAL** (tests written and logic-checked offline; real `pytest`, the 5 HTTP cases and `ruff` NOT run)
+Status: **DONE for the suite; one open product defect** (2026-10-24). `test_copilot_llm.py` passes and `test_copilot_adversarial.py` has 9 strict xfails that are all the same open defect, `validate()` does not check wording (fix: L1)
 Base: uploaded `TwinGrid-main.zip` (2026-10-21), Python 3.12.3 here, **no pytest, fastapi, pydantic, ruff or network**.
 
 ## Summary
@@ -56,4 +56,7 @@ Changed existing test: `test_a_configured_but_unreachable_provider_never_breaks.
 3. Optional: `pytest.ini` marker line for `live_llm` (Task 24 note), unchanged.
 4. Observation: when the provider call raises something unexpected, `limits.provider_configured` stays `False` even though a provider is configured (warning is still `llm_unavailable`). Minor, not asserted.
 
-Verdict: **PARTIAL**. Counts seen: 60 passed / 9 xfailed / 0 failed under the stand-in runner only; real pytest 0 runs.
+Verdict: **DONE for the suite; defect open**. Real pytest (2026-10-24, `C:\twlogs\pytest_full_final.txt`): 5676 passed, 3 skipped, 81 deselected (postgres), 9 xfailed, 0 failed; `tests\test_copilot_llm.py` and `tests\test_copilot_adversarial.py` ran under it. Earlier stand-in counts are history.
+
+## L4 update (2026-10-24): run evidence
+The "Not run" list above is superseded for `pytest`: real pytest ran the suite, with 9 xfailed and 0 failed. `ruff check .` and `ruff format --check .` were run on the whole repo during the L3 verify (all passed; 442 files formatted). The 5 HTTP cases are inside the files that passed (`test_copilot_api.py`, `test_copilot_adversarial.py`); no per-test ids were pasted, so this is per-file evidence. The open item stays the `validate()` word check; the patch note in this report still applies and the xfail markers come off with L1.

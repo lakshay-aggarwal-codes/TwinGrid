@@ -1,5 +1,7 @@
 # R_TASK_3_REPORT: Demo session vs assistant
 
+Status (L4, 2026-10-24): **DONE**. `tests\api\test_demo_session.py` passes in the owner's full run (5676 passed, 3 skipped, 81 deselected (postgres), 9 xfailed, 0 failed).
+
 ## Summary
 Static audit of `TwinGrid-main.zip`. `api/demo_guard.py` already lists `/api/copilot/ask` in `ALLOWED_DEMO_WRITES`, so the guard is not broken and is unchanged. The strict xfail `test_the_demo_session_may_ask_and_gets_what_a_viewer_gets` was stale: it would XPASS and fail the run under `strict=True`. It is removed. New tests lock "demo can ask, demo cannot write".
 
@@ -30,3 +32,7 @@ Guard unchanged, since it is correct. Tightened the 200/403 assertion, because a
 
 ## Requested cross-task changes
 Task 6 (owns `tests/authz_matrix.d/*.yaml`): add `demo: 403` to the three T9 rows `POST /api/access-requests`, `/activate`, `/resend-activation`. The test already treats them as denied.
+
+## L4 update (2026-10-24): run evidence and one change of direction
+- `tests\api\test_demo_session.py` shows only passes in `C:\twlogs\pytest_full_final.txt` (57 tests, which includes the L3 additions). The strict xfail for demo assistant access is gone and `tests\test_copilot_adversarial.py` has only the 9 validator xfails.
+- The cross-task request above ("add `demo: 403` to the three T9 access-request rows") is **superseded by L3 decision D3 (allow)**: those three public POSTs are now in `ALLOWED_DEMO_WRITES` (`api/demo_guard.py`), and `tests\test_authz_matrix.py` passes with that.

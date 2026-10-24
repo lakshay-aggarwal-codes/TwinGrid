@@ -5,7 +5,7 @@ Every acceptance item of the programme, mapped to code, test, run output, or an 
 created: it must be filled from Task 31's real results, and there are none.
 
 Columns: *Code* = exists in this tree. *Run output* = a recorded run of its tests or of the feature on a real stack. A dash means none.
-Task reports are in `docs/roadmap/task-reports/` (every one of them is PARTIAL or BLOCKED unless stated; the gates they list as not run were not run).
+Task reports are in `docs/roadmap/task-reports/` (each carries an "L4 update" section dated 2026-10-24; a report is PARTIAL or BLOCKED only where its status line still says so). Backend pytest evidence: one full owner run, 5676 passed, 3 skipped, 81 deselected (postgres), 9 xfailed, 0 failed (`C:\twlogs\pytest_full_final.txt`, 2026-10-24).
 
 ## Journeys (playbook §9)
 
@@ -25,8 +25,8 @@ Task reports are in `docs/roadmap/task-reports/` (every one of them is PARTIAL o
 |---|---|---|
 | Required CI jobs green and blocking | `.github/workflows/ci.yml`: `frontend-e2e` and `frontend-contract` carry `continue-on-error: true`; no recorded green run | **Not met** |
 | One Alembic head | 15 revisions, one head `20261101000000` (computed from the files on 2026-10-21; `alembic check` not run) | **Met in source; check not run** |
-| No skipped tests | 66 `skip`/`skipif`/`xfail` occurrences in `tests/` (not individually reviewed) | **Not shown** |
-| Authorization matrix covers every route and token type | `tests/authz_matrix.py`, `tests/test_authz_matrix.py` (Task 3, written; not run) | **Open** |
+| No skipped tests | Backend: 3 skips (each with a printed environment reason) and 9 strict xfails (one open defect, L1) in the full run 2026-10-24. Frontend vitest skip list: not pasted | **Partial** (backend met; frontend not shown) |
+| Authorization matrix covers every route and token type | `tests/authz_matrix.py`, `tests/test_authz_matrix.py`: 183 tests passed, also in the full run 2026-10-24 | **Met in a local run** (CI job not shown, L6) |
 | Every ML number links to a reproducible artefact | `reports/runs/*` manifests with `scripts/repro.py verify`; stored comparison is `baselines-v4`, which predates the `baselines-tuner/3` re-tune; `baselines-v5` is created on the owner's machine (Task 17) and is not here | **Partial** |
 | PPO reported per its registered result | README, JUDGES Q6, CLAIMS C-08: outcome C, claim allowed: none | **Met in text** |
 | Carbon labelled assumed | `src/carbon_provider.py`, `src/carbon_label.py`, `tests/test_carbon_label_guard.py` (27 cases ran under a stand-in runner); legacy API flag still means "a file is loaded" | **Partial** |

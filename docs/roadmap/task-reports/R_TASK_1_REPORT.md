@@ -48,3 +48,6 @@ Postgres suite, TensorFlow tests, frontend gates (not touched), full `pytest tes
 
 ## New limitations or risks
 None known. Behaviour change: ids with signs, spaces or underscores that `int()` used to accept now return 404 instead of looking up an alert.
+
+## L4 update (2026-10-24): full run
+Owner ran `pytest tests -m "not postgres" -rsx -q` (`C:\twlogs\pytest_full_final.txt`): 5676 passed, 3 skipped, 81 deselected (postgres), 9 xfailed, 0 failed. The `test_signal_state`, `test_copilot_*` and `api/test_*` files this task touched show no failure. The 5 collection errors listed above are gone (all of those files ran). The 9 xfails are all the open validator defect (`test_a_fake_reply_whose_only_fault_is_forbidden_wording_is_rejected`, fix tracked as L1); none belongs to this task.

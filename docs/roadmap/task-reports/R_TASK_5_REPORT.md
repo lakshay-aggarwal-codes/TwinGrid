@@ -1,6 +1,6 @@
 # R_TASK_5_REPORT: Backend red-test triage
 
-Status: PARTIAL (see 'Run (4)'). 33 of the 55 originally failing ids are verified fixed by owner runs; 18 more are fixed in code and need one owner run; 1 needs `git rm`; 2 need an owner run of the baselines tooling (ML-002).
+Status: **DONE** (2026-10-24). All 55 originally failing ids pass: the owner's full run is 5676 passed, 3 skipped, 81 deselected (postgres), 9 xfailed, 0 failed (`C:\twlogs\pytest_full_final.txt`); every file named in this report shows only passes except one documented environment skip in `test_error_contract` (line 226). Earlier PARTIAL text below is history.
 Owner runs used: (0) 2026-10-23 after v4 + `git rm models/scaler.joblib`: 8 failed / 1251 passed / 1 skipped (causes in the second table below); (1) 2026-10-22: 15 files, 55 failed / 486 passed / 1 skipped (+ a locust import hang); (2) 2026-10-23: `tests/api`, `tests/characterization` + 6 files, 22 failed / 1186 passed / 1 skipped; (3) `tests/api/test_error_contract.py` after the route-helper fix: 45 passed, 1 skipped. Python 3.12.10, Windows; torch and TensorFlow 2.21.0 import fine, so no failure is NEEDS-TF. NEEDS-PG tests were deselected (81) and not triaged here.
 
 ## What the 22 remaining failures of run (2) were, and what happened to each
@@ -55,3 +55,6 @@ The newer tree's rewrites of the registry tests were kept (not reverted). The `.
 
 ## Requested cross-task changes
 Task 8: `tests/test_baselines.py` still depends on a run that is not committed (ML-002).
+
+## L4 update (2026-10-24): run evidence
+Files that carried this task's ids and show only passes in `C:\twlogs\pytest_full_final.txt`: `test_pue_hard_constraint`, `test_recommendation_ranges`, `test_repro_framework`, `test_t23_carbon_aqueduct_contracts`, `test_task19_optimizer_rules`, `test_task9_api_reference`, `test_artifact_gate`, `test_baselines`, `test_build_evidence`, `test_datasets_v2`, `test_facility_migration`, `test_gitignore_source_dirs`, `test_load_harness`, `test_train_ppo`, `test_task6_security`, `test_task7_observability`, `api/test_error_contract` (1 skip), `api/test_provenance_writers`, `api/test_physics_v1_api`, `api/test_routes_health_metrics`, `api/test_state_preview_isolation`, `api/test_task29_admin_console`, and the four `characterization` files. The `models/scaler.joblib` test passes, so the `git rm` it needed is in effect. The "NOT RUN under pytest" lines in the Commands section are superseded by this run. Per-test ids were not in the pasted output (dots only), so the proof is per file.
