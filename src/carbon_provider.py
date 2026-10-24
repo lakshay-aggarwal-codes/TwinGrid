@@ -161,6 +161,14 @@ def signal_for_curve(curve: Any) -> CarbonSignal:
     )
 
 
+FLAT_CURVE_TOLERANCE = 1e-9  # gCO2/kWh; the same tolerance the carbon scheduler uses to call a curve "flat"
+
+
+def _curve_is_flat(sig: CarbonSignal) -> bool:
+    """True when every site-local hour has the same value, so the signal carries no time-of-day shape."""
+    return bool(np.ptp(_diurnal_curve(sig)[0]) <= FLAT_CURVE_TOLERANCE)
+
+
 def carbon_basis(sig: CarbonSignal) -> dict[str, Any]:
     """JSON-safe label for payloads, optimizer results and reports."""
     return {
@@ -172,7 +180,9 @@ def carbon_basis(sig: CarbonSignal) -> dict[str, Any]:
         "license_ref": sig.license_ref,
         "retrieved_at": sig.retrieved_at.isoformat() if sig.retrieved_at else None,
         "site_timezone": sig.site_timezone,
-        "time_varying_signal": bool(sig.timestamps_utc) and not sig.is_fallback,
+        # A real series whose hour-of-day curve is flat (for example monthly values repeated for every hour) is data,
+        # but it does not vary through the day, so it must not be labelled time-varying.
+        "time_varying_signal": bool(sig.timestamps_utc) and not sig.is_fallback and not _curve_is_flat(sig),
         "statement": carbon_statement(sig),
     }
 
@@ -191,9 +201,14 @@ def carbon_statement(sig: CarbonSignal) -> str:
         )
         return f"Carbon term present; the signal is an assumption ({what}), not measured grid data."
     if sig.aggregation == AGG_DIURNAL_MEAN:
+        flat = (
+            " Every hour of the day has the same value, so it carries no time-of-day shape."
+            if _curve_is_flat(sig)
+            else ""
+        )
         return (
             f"Carbon term uses a diurnal (hour-of-day) mean of {_a(sig.semantic)}-intensity series; "
-            "it is not time-varying data for any specific date."
+            f"it is not time-varying data for any specific date.{flat}"
         )
     return f"Carbon term uses {_a(sig.semantic)}-intensity series."
 

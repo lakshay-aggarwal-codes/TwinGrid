@@ -20,7 +20,7 @@ env:
 jobs:
   verify:
     # The tag must be a SemVer release, sit on main, have a CHANGELOG section, and its commit must have passed CI.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       actions: read
@@ -61,7 +61,7 @@ jobs:
 
   image:
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write # push to GHCR
@@ -118,7 +118,7 @@ jobs:
 
   frontend:
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: twin-stream-insight-main
@@ -160,7 +160,7 @@ jobs:
 
   github-release:
     needs: [verify, image, frontend]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write # create the release and attach the frontend bundle
     steps:
