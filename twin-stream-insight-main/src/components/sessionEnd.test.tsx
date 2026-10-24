@@ -25,6 +25,9 @@ function Protected() {
 async function setup(fetchMock: ReturnType<typeof vi.fn>) {
   vi.resetModules();
   vi.stubEnv("VITE_API_BASE_URL", "https://api.example.com");
+  // Isolate from the ambient environment: CI sets VITE_DEMO_* job-wide, which would turn on the dev auto-login.
+  vi.stubEnv("VITE_DEMO_USERNAME", "");
+  vi.stubEnv("VITE_DEMO_PASSWORD", "");
   vi.stubGlobal("fetch", fetchMock);
   const { AuthGate } = await import("./AuthGate");
   const auth = await import("@/authClient");
