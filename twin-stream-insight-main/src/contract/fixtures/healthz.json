@@ -3,14 +3,14 @@
     "endpoint": "/healthz",
     "method": "GET",
     "http_status": 200,
-    "captured_at": "2026-10-24T05:01:36.795Z",
+    "captured_at": "2026-10-24T10:23:31.650Z",
     "base_url_host": "127.0.0.1:8765",
-    "backend_hash": "0495c34b3f270e103c2713a2a450a67c97195276",
+    "backend_hash": "8b96cb1cd82e22ff04639ade221c486968ff4149",
     "redactions": []
   },
   "body": {
     "status": "ok",
     "database": "ok",
-    "timestamp": "2026-10-24T05:01:36.793744+00:00"
+    "timestamp": "2026-10-24T10:23:31.648355+00:00"
   }
 }

@@ -41,7 +41,7 @@ describe.skipIf(snapshot === undefined)('OpenAPI typed-model snapshot vs zod sch
 });
 
 describe('OpenAPI snapshot status', () => {
-  it.skipIf(snapshot !== undefined)('NO OpenAPI snapshot committed yet: run scripts/capture-contract.mjs against a live backend', () => {
-    /* skipped on purpose so the report shows the gap instead of a false pass */
+  it('an OpenAPI snapshot is committed (a missing one fails; it is never skipped)', () => {
+    expect(snapshot, 'run scripts/capture-contract.mjs against a live backend and commit fixtures/openapi/typed.json').toBeDefined();
   });
 });
