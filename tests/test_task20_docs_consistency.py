@@ -1,7 +1,7 @@
 """Task 20 (roadmap): the documents agree with the code and with the results actually obtained.
 
 No network, no training. The physics-1 decision run is read from the committed ``results.json``; if the run directory is
-absent the result-dependent tests skip with a clear message (they never pass on a missing file).
+absent the result-dependent tests FAIL with a clear message (a missing file must never hide behind a skip).
 """
 
 from __future__ import annotations
@@ -21,7 +21,9 @@ SCAN_DIRS = ("src", "api")
 def _results() -> dict:
     p = RUN / "results.json"
     if not p.exists():
-        pytest.skip(f"{p} not present: commit the Task 9 run before relying on this test")
+        pytest.fail(
+            f"{p} is missing: commit the Task 9 run (git add -f if reports/ is ignored) so these tests can read it"
+        )
     return json.loads(p.read_text(encoding="utf-8"))
 
 

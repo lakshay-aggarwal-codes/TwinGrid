@@ -34,6 +34,11 @@ ALLOWED_DEMO_WRITES = frozenset(
         "/client-errors",
         "/api/client-errors",
         "/api/copilot/ask",  # Task 27: POST but read-only (no write tool, src/copilot/tools.py); demo viewers are meant to use it
+        # L3/D3: the three PUBLIC access-request writes (no token involved; rate limited). A demo visitor asking for real access is journey J2.
+        # The admin routes under /api/admin/access-requests stay denied to a demo token.
+        "/api/access-requests",
+        "/api/access-requests/resend-activation",
+        "/api/access-requests/activate",
     }
 )
 

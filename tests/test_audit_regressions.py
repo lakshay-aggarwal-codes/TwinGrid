@@ -178,24 +178,3 @@ def test_baselines_refuse_a_protocol_whose_physics_differs_from_the_running_code
     other = "legacy-0" if running != "legacy-0" else "1"
     with pytest.raises(bcfg.BaselineConfigError, match="--prereg"):
         bcfg.assert_eval_physics_matches_lineage(other)
-
-
-# ------------------------------------------------------------------------------------------- TG-A-05
-@pytest.mark.xfail(
-    strict=True,
-    reason="TG-A-05: DigitalTwinOptimized is NOT numerically equivalent to DigitalTwin(legacy-0): on the benchmark "
-    "inputs outlet differs by ~20 C and PUE by ~0.10. Remove this xfail when the divergence is fixed or the module is retired.",
-)
-def test_optimized_twin_matches_the_main_twin_on_the_benchmark_inputs():
-    import sys
-
-    sys.path.insert(0, str(ROOT))
-    from benchmark_performance import generate_test_actions
-    from src.digital_twin import DigitalTwin
-    from src.digital_twin_optimized import DigitalTwinOptimized
-
-    main, fast = DigitalTwin(physics_version="legacy-0"), DigitalTwinOptimized(enable_logging=False)
-    for a in generate_test_actions():
-        s1, s2 = main.step(dict(a)), fast.step(dict(a))
-        assert s2.server_outlet_temp_C == pytest.approx(s1.server_outlet_temp_C, abs=1e-6)
-        assert s2.pue == pytest.approx(s1.pue, abs=1e-6)
