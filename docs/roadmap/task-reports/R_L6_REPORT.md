@@ -21,3 +21,18 @@ Already exists: `tests/test_ci_gates.py::test_the_gate_job_waits_for_exactly_the
 
 ## Still open
 - User: push to GitHub (D4) and paste the Actions run URL; then lower `PYREFLY_ERROR_CEILING` (currently 881) to the measured number and record it in `reports/postT9/T11_ci_run.md`.
+
+
+## CI on the pull request (R3 Task 11, owner's run 2026-10-25)
+PR #86, `wip/bc10-run-contract` -> `main`, first run. 7 passed, 11 failed, 1 skipped (`bootstrap`, manual only).
+
+| Job | Result | Cause (from the pasted log) |
+|---|---|---|
+| lint, test-postgres (2m41s), docker, CodeQL, gitleaks | passed | The Postgres suite passes in CI. |
+| test | failed: 8 failed, 5730 passed, 1 skipped, 81 deselected | 5 x `No module named 'jsonschema'` (test_load_harness; fixed: added to `requirements-dev.txt`). 3 more: `assert 'ok' == 'degraded'`, a `code_revision` mismatch (recorded `c2dd59f`, now `551f4cc`), and `MissingInputError` for `data/cleaned/weather_open_meteo.csv`. Test ids not yet seen. |
+| frontend-contract, frontend-e2e | failed in 10-16 s | `docker compose up` stops: `MQTT_BROKER` is required by the opt-in `mqtt-ingest` service and compose interpolates every service. Fixed in `ci.yml` (dummy value on the two steps). |
+| types, audit, frontend, gate | failed | `gate` fails because types, test, audit and frontend did. Logs for types, audit and frontend not yet seen. |
+| Netlify (4 checks) | failed | Not part of CI; log not yet seen. |
+
+Status: **PARTIAL**. The Postgres evidence this report wanted is now in CI; the branch is not green.
+Note: `PYREFLY_ERROR_CEILING` is 1120 in `ci.yml`, not 881.

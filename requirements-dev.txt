@@ -17,6 +17,9 @@ PyYAML>=6.0,<7
 # test-postgres job: tests/test_provenance_m1.py opens a sync engine on TWINGRID_TEST_PG_URL
 psycopg2-binary>=2.9,<3
 
+# tests/test_load_harness.py validates load-run results against the profile schema (scripts/ws_load.py imports jsonschema)
+jsonschema>=4.20,<5
+
 # Lint / format (version must match what developers run locally)
 ruff==0.6.9
 
