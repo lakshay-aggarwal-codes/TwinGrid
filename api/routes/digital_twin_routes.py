@@ -15,6 +15,7 @@ from api.services import twin_service
 from database import get_db
 from models.db_models import User
 from src.facility_benchmarking import benchmark_pue
+from src.versions import active_physics_version
 
 router = APIRouter(tags=["digital-twin"])
 
@@ -119,9 +120,9 @@ async def whatif(
     mode: Literal["auto", "free_air", "closed_loop", "evaporative", "hybrid"] | None = Query(None),
     chilled_water_temp: float | None = Query(
         None,
-        ge=SR.CHILLED_WATER_TEMP_BOUNDS[0],
-        le=SR.CHILLED_WATER_TEMP_BOUNDS[1],
-        description="Chilled-water setpoint (°C)",
+        ge=SR.CHILLED_WATER_TEMP_QUERY_BOUNDS[0],
+        le=SR.CHILLED_WATER_TEMP_QUERY_BOUNDS[1],
+        description=SR.CHILLED_WATER_TEMP_DESCRIPTION,
     ),
 ) -> dict[str, Any]:
     """Run an isolated 24 h digital-twin scenario at constant inputs and return its
@@ -129,8 +130,10 @@ async def whatif(
     shared live twin is not touched.
 
     Parameter precedence: explicit query value > ``scenario_id`` preset > built-in default
-    (utilisation 0.65, outside_temp 22, water_stress 0, mode auto, chilled_water_temp 7). The response
-    echoes ``scenario_id`` (null for a raw what-if) and the resolved ``inputs``. An unknown
+    (utilisation 0.65, outside_temp 22, water_stress 0, mode auto, chilled_water_temp 7). ``chilled_water_temp`` must lie in
+    the running physics' range (``SR.accepted_chilled_water_range``: 5-15 C under legacy-0, 5-25 C under physics 1). The response
+    echoes ``scenario_id`` (null for a raw what-if) and the resolved ``inputs``, and names the ``physics_version`` and the
+    ``provenance`` (simulated origin, constant-input weather, registry and API versions) it came from. An unknown
     ``scenario_id`` is a 404, never silently ignored.
     """
     if scenario_id is not None and SR.get_scenario(scenario_id) is None:
@@ -144,6 +147,9 @@ async def whatif(
         "chilled_water_temp": chilled_water_temp,
     }
     p = {k: (given[k] if given[k] is not None else base[k]) for k in base}
+    chw_error = SR.chilled_water_range_error(float(p["chilled_water_temp"]))
+    if chw_error is not None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=chw_error)
     result = await run_compute(
         twin_service.compute_whatif,
         p["utilisation"],
@@ -152,4 +158,9 @@ async def whatif(
         p["mode"],
         p["chilled_water_temp"],
     )
-    return {**to_jsonable(result), "scenario_id": scenario_id}
+    return {
+        **to_jsonable(result),
+        "scenario_id": scenario_id,
+        "physics_version": active_physics_version(),
+        "provenance": SR.whatif_provenance(scenario_id, config.settings.APP_VERSION),
+    }

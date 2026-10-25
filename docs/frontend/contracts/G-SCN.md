@@ -38,7 +38,7 @@ Unknown values of `kind` / `weather_source` / `plant` / `control` must render as
 | `whatif-drought` | drought | water_stress 0.85 (twin drought threshold is 0.7) |
 
 Defaults: utilisation 0.65, outside_temp 22.0, water_stress 0.0, mode `auto`, chilled_water_temp 7.0.
-Bounds: utilisation 0 to 1, outside_temp -10 to 50 (°C), water_stress 0 to 1, chilled_water_temp 5 to 15 (°C).
+Bounds: utilisation 0 to 1, outside_temp -10 to 50 (°C), water_stress 0 to 1, chilled_water_temp 5 to 15 (°C) under legacy-0 and 5 to 25 (°C) under physics 1 (the running physics decides; `422` outside it). `/api/scenarios` lists the outer range, 5 to 25, and its description says the running physics narrows it.
 Modes: `auto`, `free_air`, `closed_loop`, `evaporative`, `hybrid`.
 
 ### Running one
@@ -84,7 +84,10 @@ and `scenario_id = "whatif-heat-wave"`. Not observed here: 401/403 without a tok
 `test_scenarios_requires_auth`, which I could not run).
 
 What-if response keys: `hours, basis, inputs, mean_pue, wue, total_water_L, total_energy_kwh, total_co2_kg,
-max_outlet_temp_C, final_cooling_mode, drought_override_active, carbon_data_is_real, scenario_id`.
+max_outlet_temp_C, final_cooling_mode, drought_override_active, carbon_data_is_real, scenario_id, physics_version, provenance`
+(the last two added by R3 Task 2; `provenance` = `origin, scenario_kind, weather_source, plant, control, model_version, registry_version, api_version`,
+the vocabulary of a run result's `provenance`; `scenario_kind` is `null` for a raw what-if; `physics_version` is reported once, at the top level).
+The committed capture fixtures predate these two keys: re-capture them on the compose backend.
 In the sandbox `carbon_data_is_real` is `false` (no carbon CSV present); the numeric values will differ on your backend.
 
 **To capture on the real backend (PowerShell), then diff against the two files:**

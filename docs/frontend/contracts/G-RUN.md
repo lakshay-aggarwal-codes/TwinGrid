@@ -50,7 +50,7 @@ path) is ever returned.
   `physics_version`, `model_version` (`null`: a what-if applies no learned model), `carbon_data_is_real`.
   There is no dataset id and no weather-series id; weather is one held outside temperature. Show "not reported", do not infer.
 - `outputs`: `hours, basis, mean_pue, wue, total_water_L, total_energy_kwh, total_co2_kg, max_outlet_temp_C, final_cooling_mode,
-  drought_override_active, carbon_data_is_real`. Equal to the `/api/whatif` body minus `inputs` and `scenario_id` (test
+  drought_override_active, carbon_data_is_real`. Equal to the `/api/whatif` body minus `inputs`, `scenario_id`, `physics_version` and `provenance` (the last two are reported beside `outputs`: see `provenance` above; test
   `test_result_equals_the_synchronous_whatif`). **Naming trap:** inputs are returned once, as `parameters` with descriptor names; there is no
   `inputs.outside_temp_C` in a run result.
 

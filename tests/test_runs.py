@@ -185,6 +185,10 @@ async def test_result_equals_the_synchronous_whatif(client, viewer, queue):  # n
     direct = (await client.get("/api/whatif", headers=viewer, params={"scenario_id": "whatif-peak-workload"})).json()
     direct.pop("scenario_id")
     direct.pop("inputs")
+    # R3 Task 2: the synchronous answer also names its physics and provenance. A run result carries both beside
+    # ``outputs`` (``provenance`` and its own ``physics_version``), so they are not part of ``outputs``.
+    assert direct.pop("physics_version") == res["provenance"]["physics_version"]
+    direct.pop("provenance")
     assert res["outputs"] == direct
 
 

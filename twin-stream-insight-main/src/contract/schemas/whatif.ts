@@ -27,8 +27,22 @@ export const WhatIfResponse = z
       })
       .passthrough()
       .optional(),
-    /** BC-02 [MR]: not in payloads today. */
+    /** The physics version the answer came from (R3 Task 2; absent on older backends). */
     physics_version: z.string().optional(),
+    /** R3 Task 2: what the answer is made of. Same vocabulary as a run result's `provenance`; absent on older backends. */
+    provenance: z
+      .object({
+        origin: z.string(),
+        scenario_kind: z.string().nullable(),
+        weather_source: z.string(),
+        plant: z.string(),
+        control: z.string(),
+        model_version: z.string().nullable(),
+        registry_version: z.string(),
+        api_version: z.string(),
+      })
+      .passthrough()
+      .optional(),
   })
   .passthrough();
 export type WhatIfResponse = z.output<typeof WhatIfResponse>;

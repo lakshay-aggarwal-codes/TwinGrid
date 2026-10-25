@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 
 from api.auth import get_current_user
 from api.rate_limit import limiter, run_compute
@@ -26,12 +26,16 @@ router = APIRouter(tags=["digital-twin"])
 
 DEFAULT_LIMIT = "6/minute"
 
-BOUNDS = {
-    "utilisation": SR.UTILISATION_BOUNDS,
-    "outside_temp": SR.OUTSIDE_TEMP_BOUNDS,
-    "water_stress": SR.WATER_STRESS_BOUNDS,
-    "chilled_water_temp": SR.CHILLED_WATER_TEMP_BOUNDS,
-}
+
+def bounds() -> dict[str, tuple[float, float]]:
+    """The sweep's limits per input. The chilled-water limit follows the running physics (read per request), so a
+    set-point the what-if accepts (e.g. 20 C under physics 1) is also a valid base for the sweep."""
+    return {
+        "utilisation": SR.UTILISATION_BOUNDS,
+        "outside_temp": SR.OUTSIDE_TEMP_BOUNDS,
+        "water_stress": SR.WATER_STRESS_BOUNDS,
+        "chilled_water_temp": SR.accepted_chilled_water_range(),
+    }
 
 
 def _limit() -> str:
@@ -50,7 +54,7 @@ def compute_sweep(
         "mode": mode,
         "chilled_water_temp": chilled_water_temp,
     }
-    return whatif_sweep.run_sweep(base, twin_service.compute_whatif, BOUNDS, OUTLET_TEMP_MAX)
+    return whatif_sweep.run_sweep(base, twin_service.compute_whatif, bounds(), OUTLET_TEMP_MAX)
 
 
 @router.get("/api/whatif/sensitivity")
@@ -70,10 +74,16 @@ async def whatif_sensitivity(
     ),
     mode: Literal["auto", "free_air", "closed_loop", "evaporative", "hybrid"] = Query(SR.WHATIF_DEFAULTS["mode"]),
     chilled_water_temp: float = Query(
-        SR.WHATIF_DEFAULTS["chilled_water_temp"], ge=SR.CHILLED_WATER_TEMP_BOUNDS[0], le=SR.CHILLED_WATER_TEMP_BOUNDS[1]
+        SR.WHATIF_DEFAULTS["chilled_water_temp"],
+        ge=SR.CHILLED_WATER_TEMP_QUERY_BOUNDS[0],
+        le=SR.CHILLED_WATER_TEMP_QUERY_BOUNDS[1],
+        description=SR.CHILLED_WATER_TEMP_DESCRIPTION,
     ),
 ) -> dict[str, Any]:
     """One-at-a-time sensitivity of PUE, energy, CO2 and thermal margin around the given inputs (model estimate on
     simulated data). Same inputs, same answer; at most ``max_runs`` twin runs per call."""
+    chw_error = SR.chilled_water_range_error(chilled_water_temp)
+    if chw_error is not None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=chw_error)
     result = await run_compute(compute_sweep, utilisation, outside_temp, water_stress, mode, chilled_water_temp)
     return to_jsonable(result)

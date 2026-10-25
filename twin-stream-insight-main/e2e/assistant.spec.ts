@@ -29,6 +29,12 @@ type Ask = { mode: "rule_based" | "llm"; answer: string; evidence: Evidence[]; u
 const isAsk = (r: Response) => r.url().includes("/api/copilot/ask") && r.request().method() === "POST";
 
 async function openDetectorPassportAndExplain(page: Page): Promise<{ drawer: Locator; response: Response }> {
+  // The detector gauge (and its passport) lives on /analytics since the Live Twin redesign. The session is in memory (a full page.goto drops it), so move client-side, as a11y.spec.ts does.
+  await page.evaluate(() => {
+    window.history.pushState({}, "", "/analytics");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await expect(page).toHaveURL((url) => url.pathname === "/analytics");
   await page.getByRole("button", { name: "Detector passport" }).first().click();
   await expect(page.getByRole("heading", { name: "Model passport" })).toBeVisible({ timeout: 30_000 });
   const asked = page.waitForResponse(isAsk, { timeout: 60_000 });

@@ -80,9 +80,8 @@ async def test_state_and_whatif_response_shapes_are_unchanged(client, viewer_hea
     state = (await client.get("/api/state", headers=viewer_headers)).json()
     whatif = (await client.get("/api/whatif", headers=viewer_headers)).json()
     assert set(state) == legacy_state_keys
-    assert set(whatif) == legacy_whatif_keys | {
-        "scenario_id"
-    }  # additive: the route echoes the preset id (null for raw)
+    # additive: the route echoes the preset id (null for raw), the physics version (R3 Task 2) and the provenance
+    assert set(whatif) == legacy_whatif_keys | {"scenario_id", "physics_version", "provenance"}
     assert whatif["scenario_id"] is None
     assert state["pue"] >= 1.0 and whatif["total_water_L"] >= 0
 

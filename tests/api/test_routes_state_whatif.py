@@ -74,7 +74,7 @@ async def test_whatif_drought_override_flag(client, viewer_headers):
 
 @pytest.mark.parametrize(
     "params",
-    [{"mode": "banana"}, {"chilled_water_temp": 3}, {"chilled_water_temp": 20}, {"utilisation": 2}],
+    [{"mode": "banana"}, {"chilled_water_temp": 3}, {"chilled_water_temp": 25.1}, {"utilisation": 2}],
 )
 async def test_whatif_validation(client, viewer_headers, params):
     assert (await client.get("/api/whatif", params=params, headers=viewer_headers)).status_code == 422
