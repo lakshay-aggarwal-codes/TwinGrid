@@ -10,6 +10,7 @@ import { forgetActivationToken } from './activationToken';
 import { TICKET_KEY } from './ticket';
 
 const PW = 'correct horse battery';
+const TOKEN = `abc123${'x'.repeat(37)}`; // 43 URL-safe characters, the shape of a real activation token
 const fields = () => [screen.getByLabelText('New password'), screen.getByLabelText('Confirm password')] as const;
 function fillBoth(a: string, b = a) {
   const [p, c] = fields();
@@ -22,14 +23,14 @@ beforeEach(() => {
   activateAccount.mockReset();
   forgetActivationToken();
   sessionStorage.clear();
-  window.history.replaceState(null, '', '/activate#token=abc123');
+  window.history.replaceState(null, '', `/activate#token=${TOKEN}`);
 });
 
 describe('ActivatePage', () => {
   it('removes the token from the address bar immediately', () => {
     render(<ActivatePage />);
     expect(window.location.hash).toBe('');
-    expect(window.location.href).not.toContain('abc123');
+    expect(window.location.href).not.toContain(TOKEN);
   });
 
   it('still has the token under StrictMode double rendering', async () => {
@@ -41,7 +42,7 @@ describe('ActivatePage', () => {
     );
     fillBoth(PW);
     fireEvent.submit(form());
-    await waitFor(() => expect(activateAccount).toHaveBeenCalledWith('abc123', PW));
+    await waitFor(() => expect(activateAccount).toHaveBeenCalledWith(TOKEN, PW));
   });
 
   it('activates, then offers sign-in and sends the visitor to /', async () => {
@@ -140,6 +141,15 @@ describe('ActivatePage', () => {
     fireEvent.submit(form());
     expect(await screen.findByRole('alert')).toHaveTextContent(text);
     expect(screen.getByLabelText('New password')).toHaveValue('');
+  });
+
+  it('a malformed token gets the same dead-link page as an unknown one, never the password form', () => {
+    forgetActivationToken();
+    window.history.replaceState(null, '', '/activate#token=short');
+    render(<ActivatePage />);
+    expect(screen.getByRole('heading', { name: 'Activation link problem' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('New password')).toBeNull();
+    expect(activateAccount).not.toHaveBeenCalled();
   });
 
   it('a link without a token says it is incomplete', () => {

@@ -4,9 +4,24 @@
 # as delivered. Needs ADMIN_USER / ADMIN_PASS (an admin account on the stack) and ACCESS_TOKEN_PEPPER in the stack env.
 . "$(dirname "$0")/drill_common.sh"
 : "${ADMIN_USER:?set ADMIN_USER}"; : "${ADMIN_PASS:?set ADMIN_PASS}"
-export ACCESS_NOTIFY_BACKEND=smtp ACCESS_NOTIFY_SMTP_HOST=127.0.0.1 ACCESS_NOTIFY_SMTP_PORT=1 ACCESS_NOTIFY_SMTP_USER=drill ACCESS_NOTIFY_SMTP_PASSWORD=drill \
-  ACCESS_NOTIFY_FROM=drill@example.com ACCESS_NOTIFY_OWNER_EMAIL=owner@example.com ACCESS_PUBLIC_BASE_URL=http://localhost:8080
-compose up -d --force-recreate backend >/dev/null 2>&1
+# The compose files do not forward ACCESS_NOTIFY_* from the shell, so the failing SMTP settings go in a throw-away override file.
+OVR="$ROOT/.drill-mail-failure.override.yml"
+cat > "$OVR" <<'YML'
+services:
+  backend:
+    environment:
+      ACCESS_NOTIFY_BACKEND: smtp
+      ACCESS_NOTIFY_SMTP_HOST: 127.0.0.1
+      ACCESS_NOTIFY_SMTP_PORT: "1"
+      ACCESS_NOTIFY_SMTP_USER: drill
+      ACCESS_NOTIFY_SMTP_PASSWORD: drill
+      ACCESS_NOTIFY_FROM: drill@example.com
+      ACCESS_NOTIFY_OWNER_EMAIL: owner@example.com
+      ACCESS_PUBLIC_BASE_URL: http://localhost:8080
+YML
+# Always put the stack back (without the failing settings) and wait for it, so the next drill finds a running backend.
+trap 'rm -f "$OVR"; compose up -d --force-recreate --wait backend >/dev/null 2>&1' EXIT
+compose -f "$OVR" up -d --force-recreate backend >/dev/null 2>&1
 wait_for 120 sh -c "[ \$(curl -s -o /dev/null -w '%{http_code}' $API/readyz) = 200 ]" || { check mail_failure backend_up yes no; finish; exit 1; }
 EMAIL="drill-$(date +%s)@example.com"
 resp=$(curl -s -m 15 -X POST "$API/api/access-requests" -H 'Content-Type: application/json' -d "{\"name\":\"Drill\",\"email\":\"$EMAIL\",\"purpose\":\"mail failure drill\"}")
@@ -18,5 +33,5 @@ check mail_failure approve_returns_200 200 "$(code -X POST "$API/api/admin/acces
 sleep 5
 state=$(curl -s -m 15 "$API/api/admin/access-requests/$id" -H "Authorization: Bearer $tok" | sed -n 's/.*"notify_state":"\([^"]*\)".*/\1/p')
 check mail_failure notify_state_is_failed failed "$state"
-echo "NOTE restore the stack afterwards: sh scripts/demo.sh (recreates the backend without the failing SMTP settings)"
+echo "NOTE the stack is restored on exit (backend recreated without the failing SMTP settings)"
 finish

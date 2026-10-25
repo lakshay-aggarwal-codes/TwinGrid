@@ -24,6 +24,9 @@ function passwordProblem(password: string): string | null {
   return null;
 }
 
+/** The backend issues secrets.token_urlsafe(32): always 43 URL-safe characters. Anything else can never be valid, so it gets the dead-link page, not a form. */
+const TOKEN_FORMAT = /^[A-Za-z0-9_-]{43}$/;
+
 /** /activate#token=...: set a password for an approved request. Public route. Creates no session: the visitor signs in afterwards. */
 export function ActivatePage() {
   usePageTitle('Activate access – TwinGrid');
@@ -93,7 +96,7 @@ export function ActivatePage() {
     );
   }
 
-  const linkDead = !token || failure === 'invalid_or_expired';
+  const linkDead = !token || !TOKEN_FORMAT.test(token) || failure === 'invalid_or_expired';
   if (linkDead) {
     return (
       <AccessShell labelledBy="activate-heading">
