@@ -23,6 +23,22 @@ def _isolated_webhook_delivery_log(tmp_path, monkeypatch):
     monkeypatch.setattr(webhook_deliveries, "LOG_PATH", tmp_path / "webhook_deliveries.json")
 
 
+@pytest.fixture(autouse=True)
+def _suite_ignores_locally_installed_carbon_file(tmp_path, monkeypatch):
+    """The suite must give the same answers on every machine, so it never reads ``data/cleaned/carbon_intensity.csv``.
+
+    That file is untracked and is installed by hand (``python -m src.carbon_ingest install``). CI does not have it, so
+    without this a developer who installed real carbon data saw baseline hashes and the 475 fallback test fail. A test
+    that wants a specific carbon file still sets ``CLEANED_CARBON_PATH`` itself, which overrides this.
+    """
+    from src import carbon_provider
+
+    monkeypatch.setattr(carbon_provider, "CLEANED_CARBON_PATH", tmp_path / "no_local_carbon_file.csv")
+    carbon_provider.clear_carbon_cache()
+    yield
+    carbon_provider.clear_carbon_cache()
+
+
 @pytest.fixture
 def sample_sensor_data():
     """Create sample sensor data for testing."""

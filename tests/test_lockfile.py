@@ -34,7 +34,12 @@ def test_lockfile_has_hash_lines():
 
 def test_every_pinned_requirement_has_a_hash():
     text = _text().replace("\\\n", " ")  # join pip-compile continuation lines
-    requirements = [line for line in text.splitlines() if line.strip() and not line.lstrip().startswith("#")]
+    # ``--extra-index-url`` / ``--index-url`` are pip OPTIONS (the CPU torch index), not requirements, so they carry no hash.
+    requirements = [
+        line
+        for line in text.splitlines()
+        if line.strip() and not line.lstrip().startswith(("#", "--extra-index-url", "--index-url"))
+    ]
     assert requirements, "requirements.lock contains no requirements"
     unhashed = [line.split()[0] for line in requirements if "--hash=sha256:" not in line]
     assert not unhashed, f"requirements without a hash: {unhashed[:5]}"
