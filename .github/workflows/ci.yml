@@ -370,8 +370,9 @@ jobs:
       - name: Production build
         run: npm run build
 
-      - name: Dependency audit (fails on high/critical)
-        run: npm audit --audit-level=high
+      - name: Dependency audit (fails on any high/critical advisory not waived in docs/frontend/waivers/npm_audit.md)
+        # npm audit has no ignore list; the gate script holds the waived GHSA ids and their expiry dates.
+        run: node scripts/npm-audit-gate.mjs
 
   frontend-e2e:
     # FE-11: browser E2E against the REAL backend (compose: Postgres + Redis + API) with seeded viewer/operator accounts,
