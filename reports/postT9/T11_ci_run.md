@@ -52,3 +52,12 @@ tests/test_artifact_gate.py 31, tests/test_physics_v2.py 28.
 | Ceiling | raised from 881 to 1120: the one permitted upward edit (first Linux run, different installed packages) |
 
 From here the ceiling may only go down. If the `types` job later installs the dev tools, the count falls and must be re-recorded.
+
+## pip-audit waivers on PR #86 (R3 Task 11)
+
+The `audit` job runs `pip-audit --strict` and failed on two advisories with no fixed release. Both are waived in `docs/security/waivers.md` (owner Lakshay, expiry 2027-01-21) and passed with `--ignore-vuln`:
+
+- PYSEC-2026-1325 (`ecdsa`): timing side channel when signing with P-256. Nothing here signs with ECDSA.
+- PYSEC-2026-4298 (`python-jose`): HS256 forgery with a public key. `api/auth.py` restricts `algorithms=[ALGORITHM]` and uses a symmetric secret.
+
+Any other advisory still fails the job.

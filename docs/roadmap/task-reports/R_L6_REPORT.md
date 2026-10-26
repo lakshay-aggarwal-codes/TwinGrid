@@ -36,3 +36,12 @@ PR #86, `wip/bc10-run-contract` -> `main`, first run. 7 passed, 11 failed, 1 ski
 
 Status: **PARTIAL**. The Postgres evidence this report wanted is now in CI; the branch is not green.
 Note: `PYREFLY_ERROR_CEILING` is 1120 in `ci.yml`, not 881.
+
+### Second CI round (PR #86)
+
+- `frontend`: `WhatIfResponse.provenance` typed with all-optional fields (zod output makes them optional).
+- `audit`: two recorded waivers (see `reports/postT9/T11_ci_run.md`).
+- `test`: fanout test waits for the 1013 close code; anomaly-throttle reset; synthetic-data flags; `fetch-depth: 0` for the ancestor check.
+- `frontend-contract`: drift against committed fixtures. Fix is to commit the CI-captured fixtures (artifact `contract-fixtures`), not a code change.
+- `frontend-e2e`: advisory; 15 failures, mostly missing `E2E_ADMIN_*` env vars in the job. Not fixed in this round.
+- Netlify checks: not diagnosed (log not seen).
