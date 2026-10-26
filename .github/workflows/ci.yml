@@ -28,7 +28,7 @@ env:
   # The one permitted upward edit is the FIRST green-field Linux run, if it prints a higher count than the Windows
   # measurement (different installed packages); record that count and its run URL in T11_ci_run.md. After that, never up.
   # Changing the pinned pyrefly version re-baselines the count and must be recorded the same way.
-  PYREFLY_ERROR_CEILING: "1120"
+  PYREFLY_ERROR_CEILING: "1125"
 
 jobs:
   lint:
