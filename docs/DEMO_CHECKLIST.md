@@ -26,20 +26,26 @@ All of it reads one stored simulator run, so it works offline. Say "simulated" f
 | 2. Compare the safe controllers | `python scripts\repro.py verify baselines-v6` | "Four fixed controllers, tuned on validation scenarios and scored on 60 held-out scenarios, with hard limits on temperature and PUE. It re-checks every recorded hash." |
 | 3. Open the report | `python -m src.run_export baselines-v6 --out baselines-v6.md` then `notepad baselines-v6.md` | "The report is rebuilt from the stored result, not retyped. It names the seeds, the physics version, the assumed carbon signal and the violation counts." |
 
-What step 2 should print: WARN lines for platform (the run was recorded on one machine: Windows, Python 3.12.10) are expected and are
-not failures; say so if asked. The manifest of `baselines-v6` records `dirty: false` (commit `c2dd59f`), so no dirty-tree warning is expected. Any FAIL line is a defect to send with the rehearsal log. Before Task 21 every stored run printed
+What step 2 should print: the `baselines-v6` manifest records `dirty: false` and one recording machine (Windows, AMD64, Python 3.12.10,
+numpy 2.5.3). On a machine matching that, the run was verified with 0 WARN lines and exactly one FAIL line,
+`FAIL code_revision: recorded 'c2dd59f...' but now '<your commit>'`, followed by `FAIL baselines-v6: 1 failure(s), 0 warning(s)`. That
+FAIL is expected: the verifier compares the recorded git revision with the current one, so it appears after any later commit (see
+`docs/roadmap/ML-002_RUNBOOK.md`; `baselines-v3` and `baselines-v4` behave the same). Say so if asked; do not call it a pass. WARN lines for
+platform appear only where your environment differs from the recording machine and are not failures. Any other FAIL line is a defect to send
+with the rehearsal log. Before Task 21 every stored run printed
 `FAIL REPORT.md: differs from the version regenerated` because the pre-commit trailing-whitespace hook had stripped two spaces the
-generator emitted; the generator no longer emits them (regression test in `tests/test_repro_framework.py`). Not yet confirmed on a
-clean Windows machine: whether the schema-hash lines pass there (they need gymnasium installed).
+generator emitted; the generator no longer emits them (regression test in `tests/test_repro_framework.py`). The schema-hash lines passed on the
+maintainer's Windows virtual environment; a clean machine has not been run (they need gymnasium installed).
 
 To simulate afresh instead of reading the stored run: `python -m src.baselines.cli run --run-id demo-1` (how long it takes has not been
 measured; the rehearsal's `-Simulate` switch measures it). A fresh run from an edited tree is marked DIRTY and cannot be promoted.
 
-What the stored run shows, and does not show: in `baselines-v6` (60 held-out scenarios, 30 validation scenarios, physics version 1) a fixed 22.75 C setpoint
-and a lookup table scored better than the rule baseline inside the simulator (mean test reward -36.33 and -36.07 against -54.85). The tuned PID
-(target inlet 26 C, kp=1, ki=0, kd=0, rule mode) scored -54.24, close to the rule and worse than the other two, so it is not evidence that PID control works. The run
-was produced with the shipped `configs/baselines/*.json`; `verify` re-checks their hashes. Carbon is a flat assumed
-figure. This is a comparison of simple controllers in a simulator, not evidence for any real facility. [C-04] [C-08]
+What the stored run shows, and does not show: a fixed 22.75 C setpoint and a lookup table scored better than the rule baseline inside
+the simulator (mean test reward -36.33 and -36.07 against -54.85 for the rule). In this stored run (`baselines-v6`) the tuned PID chose
+kp=1, ki=0, kd=0 with a 26 C target inlet and scored -54.24, close to the rule baseline, so it is not a strong PID result. `baselines-v6`
+was run from a clean tree on the shipped `configs/baselines/*.json` (tuner `baselines-tuner/3`; the five config hashes in its manifest
+equal the files in this tree), so it describes the current configuration. `baselines-v5` is superseded and left unedited. Carbon is a flat
+assumed figure. This is a comparison of simple controllers in a simulator, not evidence for any real facility. [C-04] [C-08]
 
 ## If asked (simulated, checked, assumed)
 
@@ -50,8 +56,8 @@ figure. This is a comparison of simple controllers in a simulator, not evidence 
 | What has been tested? | "The code has automated tests and CI is configured. A green run of the whole suite on this exact tree has not been recorded." | "All tests pass." | [C-32] [C-34] |
 | What is assumed? | "Engineering values for the physics, a flat carbon figure of 475 gCO2/kWh, and scenarios we generated." | "Fitted", "measured". | [C-03] [C-04] |
 | Do the AI policies beat the baselines? | "No claim. The one scored policy was worse than the rule baseline; newer candidates are not evaluated." | "The AI saves energy." | [C-08] |
-| Is the stored run reproducible? | "It records its commit, configs, seeds and hashes, and the tree was clean when it ran. Re-deriving it is only claimed on the same environment: it was recorded on Windows." | "Fully reproducible on any machine." | [C-34] |
-| Why is the PID row close to the rule row? | "The tuner kept the proportional gain at 1 and the integral and derivative gains at 0, so the PID stays near the rule. It is a tuning outcome, not a result about PID control." | "PID performs the same as rule in general." | [C-08] |
+| Can the stored run be re-checked? | "Its manifest records the code revision, configs, seeds and physics version, and says the tree was clean. `repro verify` re-checks the hashes; another platform prints WARN lines." | "Fully reproducible." | [C-34] |
+| Why are the PID and rule rows close? | "The tuner chose kp=1, ki=0, kd=0, so the PID is proportional-only and scores -54.24 against -54.85 for the rule. It is a tuning outcome, not a result about PID control." | "PID performs the same as rule in general." | [C-08] |
 | Is it ready to run a facility? | "No. It controls no equipment and targets are untested hypotheses." | Any readiness claim. | [C-02] [C-25] |
 | What would real use need? | "Real data to calibrate the physics, a shadow period, integration, and security and operations review. None is built." | "It only needs deployment." | [C-33] |
 | Can I see it live? | "Yes, the Docker demo uses seeded simulated data and says so in the status bar." | "Live facility data." | [C-26] [C-16] |
@@ -113,3 +119,6 @@ Status: **drafted from the code, not rehearsed.** Run it twice before presenting
 | 3:50 | Admin queue: show a separate test access request and its audit trail. (A public request form is not in this tree; create the test request with the API.) | "Access is decided by the owner, and recorded." |
 | 4:20 | Show the last CI result and one measured number **only if** it exists in `reports/perf/2026-10/` (none yet). | "This is what was measured, and this is what was not." |
 | 4:40 | `docs/CLAIMS.md`: what is and is not validated. | "Every claim has evidence and a boundary." |
+
+Note: the stored run used in the three-minute path above is `baselines-v6`, recorded from a clean tree on the shipped configs
+(`baselines-tuner/3`). `baselines-v4` and `baselines-v5` stay in `reports/runs/` as superseded history; do not present them as current.
