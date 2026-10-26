@@ -3,9 +3,9 @@
     "endpoint": "/api/whatif",
     "method": "GET",
     "http_status": 200,
-    "captured_at": "2026-10-24T10:23:31.738Z",
-    "base_url_host": "127.0.0.1:8765",
-    "backend_hash": "8b96cb1cd82e22ff04639ade221c486968ff4149",
+    "captured_at": "2026-10-25T18:10:30.585Z",
+    "base_url_host": "localhost:8000",
+    "backend_hash": "dd31f1255012bbec57ea4991bda2c2d2ad57b030",
     "redactions": []
   },
   "body": {
@@ -27,6 +27,17 @@
     "final_cooling_mode": "hybrid",
     "drought_override_active": false,
     "carbon_data_is_real": false,
-    "scenario_id": null
+    "scenario_id": null,
+    "physics_version": "1",
+    "provenance": {
+      "origin": "simulated",
+      "scenario_kind": null,
+      "weather_source": "constant_input",
+      "plant": "simulated",
+      "control": "none",
+      "model_version": null,
+      "registry_version": "1",
+      "api_version": "1.0.0"
+    }
   }
 }

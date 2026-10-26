@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "endpoint": "/api/facility",
+    "method": "GET",
+    "http_status": 200,
+    "captured_at": "2026-10-25T18:10:30.651Z",
+    "base_url_host": "localhost:8000",
+    "backend_hash": "dd31f1255012bbec57ea4991bda2c2d2ad57b030",
+    "redactions": []
+  },
+  "body": {
+    "id": 1,
+    "name": "Default Facility",
+    "frame_unit": "m",
+    "frame_note": "Unit: metre. Right-handed frame, Y up. +X runs along rack rows, +Z runs across rows. Origin: floor level; x=0 at the -X edge of the first rack of zone-1; z=0 on the centreline between row-1 (z<0) and row-2 (z>0). Pose (x,y,z) is the centre of the asset's bounding box (zones: plan-view centre at floor level, y=0). rotation_deg is about +Y, right-hand rule, 0 = default orientation. No geographic (compass) orientation is asserted. Scene-unit -> metre factor: PENDING OWNER SIGN-OFF (written by scripts/seed_facility.py --apply).",
+    "created_at": "2026-10-25T18:10:12.403146Z"
+  }
+}

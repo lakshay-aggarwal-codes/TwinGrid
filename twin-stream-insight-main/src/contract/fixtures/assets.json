@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "endpoint": "/api/assets",
+    "method": "GET",
+    "http_status": 200,
+    "captured_at": "2026-10-25T18:10:30.663Z",
+    "base_url_host": "localhost:8000",
+    "backend_hash": "dd31f1255012bbec57ea4991bda2c2d2ad57b030",
+    "redactions": []
+  },
+  "body": {
+    "facility_id": 1,
+    "frame_unit": "m",
+    "as_of": "2026-10-25T18:10:30.657732Z",
+    "count": 0,
+    "assets": []
+  }
+}
