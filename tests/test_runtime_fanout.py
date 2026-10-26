@@ -102,7 +102,9 @@ async def test_two_hundred_clients_one_stalled_everyone_else_gets_every_frame_in
         await manager.broadcast({"seq": seq})
         await _until(lambda: all(len(ws.received) == seq + 1 for ws in healthy))
     assert all([f["seq"] for f in ws.received] == [0, 1, 2, 3, 4] for ws in healthy)
-    await _until(lambda: stalled not in manager._connections)  # evicted by the send timeout alone
+    await _until(
+        lambda: stalled not in manager._connections and stalled.close_codes == [1013]
+    )  # evicted by the send timeout alone
     assert stalled.close_codes == [1013] and len(manager._connections) == 199
 
 

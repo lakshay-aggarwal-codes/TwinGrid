@@ -21,6 +21,8 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import Any, Final
 
+from src.rl.env import CHILLED_WATER_ACTION_RANGE_C
+
 REGISTRY_VERSION: Final[str] = "1"
 WHATIF_ENDPOINT: Final[str] = "/api/whatif"
 
@@ -33,6 +35,44 @@ UTILISATION_BOUNDS: Final = (0.0, 1.0)
 OUTSIDE_TEMP_BOUNDS: Final = (-10.0, 50.0)
 WATER_STRESS_BOUNDS: Final = (0.0, 1.0)
 CHILLED_WATER_TEMP_BOUNDS: Final = (5.0, 15.0)
+
+# The widest chilled-water set-point any supported physics can command (legacy-0 5..15 C, physics 1 16..25 C, read from
+# the environment's own table). It is only the OUTER limit written into the query schema; the limit a request is held
+# to is ``accepted_chilled_water_range()``, which follows the physics the server is running (Task 3 rule).
+CHILLED_WATER_TEMP_QUERY_BOUNDS: Final = (
+    min(CHILLED_WATER_TEMP_BOUNDS[0], *(lo for lo, _ in CHILLED_WATER_ACTION_RANGE_C.values())),
+    max(CHILLED_WATER_TEMP_BOUNDS[1], *(hi for _, hi in CHILLED_WATER_ACTION_RANGE_C.values())),
+)
+
+CHILLED_WATER_TEMP_DESCRIPTION: Final = (
+    "Chilled-water setpoint (°C). Held to the running physics' range: 5-15 under legacy-0, 5-25 under physics 1."
+)
+
+
+def accepted_chilled_water_range(physics_version: str | None = None) -> tuple[float, float]:
+    """The chilled-water set-points ``/api/whatif`` and ``/api/whatif/sensitivity`` accept for the running physics.
+
+    The union of the registry bounds and the physics' actuator range (the same rule as the optimizer proposals:
+    ``src.optimizer_proposals.accepted_chilled_range_C``): legacy-0 stays exactly 5..15 C, physics 1 is 5..25 C, so the
+    What-if Lab can send any value of the range it reads from the server. Read per request, because the physics is not
+    fixed at import. A physics the RL environment cannot run (``2``) has no actuator range: the registry bounds apply.
+    """
+    from src.optimizer_proposals import accepted_chilled_range_C
+    from src.rl.env import UnsupportedPhysicsVersionForRL
+
+    try:
+        return accepted_chilled_range_C(CHILLED_WATER_TEMP_BOUNDS, physics_version)
+    except UnsupportedPhysicsVersionForRL:
+        return CHILLED_WATER_TEMP_BOUNDS
+
+
+def chilled_water_range_error(value: float, physics_version: str | None = None) -> str | None:
+    """None when ``value`` is accepted for the running physics, else the message a 422 carries."""
+    lo, hi = accepted_chilled_water_range(physics_version)
+    if lo <= value <= hi:
+        return None
+    return f"chilled_water_temp must be between {lo:g} and {hi:g} C for the running physics, got {value:g}"
+
 
 # Defaults used by /api/whatif when neither the caller nor a scenario supplies a value.
 WHATIF_DEFAULTS: Final = MappingProxyType(
@@ -70,7 +110,7 @@ def _parameter_schema(defaults: dict[str, Any]) -> list[dict[str, Any]]:
             "default": defaults["mode"],
             "description": "Cooling mode; 'auto' lets the twin's rule-based selector choose.",
         },
-        num("chilled_water_temp", "°C", CHILLED_WATER_TEMP_BOUNDS, "Chilled-water setpoint."),
+        num("chilled_water_temp", "°C", CHILLED_WATER_TEMP_QUERY_BOUNDS, CHILLED_WATER_TEMP_DESCRIPTION),
     ]
 
 
@@ -134,6 +174,27 @@ def list_scenarios() -> dict[str, Any]:
 
 def get_scenario(scenario_id: str) -> dict[str, Any] | None:
     return _BY_ID.get(scenario_id)
+
+
+def whatif_provenance(scenario_id: str | None, api_version: str) -> dict[str, Any]:
+    """What a ``/api/whatif`` answer is made of, using the vocabulary of a run result's ``provenance``.
+
+    ``scenario_kind`` is null for a raw what-if. ``weather_source`` ``constant_input`` means ONE outside temperature held
+    for the whole 24 h run, not a recorded series; ``model_version`` is null because a what-if applies no learned model.
+    ``registry_version`` identifies the preset registry (the config) and ``api_version`` the code that served the answer.
+    The physics version is reported once, at the top level of the response.
+    """
+    descriptor = _BY_ID.get(scenario_id) if scenario_id is not None else None
+    return {
+        "origin": "simulated",
+        "scenario_kind": descriptor["kind"] if descriptor is not None else None,
+        "weather_source": descriptor["weather_source"] if descriptor is not None else "constant_input",
+        "plant": descriptor["plant"] if descriptor is not None else "simulated",
+        "control": descriptor["control"] if descriptor is not None else "none",
+        "model_version": None,
+        "registry_version": REGISTRY_VERSION,
+        "api_version": api_version,
+    }
 
 
 def scenario_defaults(scenario_id: str) -> dict[str, Any]:

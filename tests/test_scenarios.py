@@ -99,6 +99,13 @@ async def test_scenario_matches_equivalent_raw_whatif(client, viewer):  # noqa: 
     b = (await client.get("/api/whatif", headers=viewer, params={"utilisation": 0.95})).json()
     a.pop("scenario_id")
     b.pop("scenario_id")
+    # R3 Task 2: the answer names where it came from. Only the scenario kind differs between a preset and the raw
+    # request; every number, the physics version and the other provenance fields are the same.
+    pa, pb = a.pop("provenance"), b.pop("provenance")
+    assert (
+        pa["scenario_kind"] == (SR.get_scenario("whatif-peak-workload") or {})["kind"] and pb["scenario_kind"] is None
+    )
+    assert {**pa, "scenario_kind": None} == pb
     assert a == b
 
 

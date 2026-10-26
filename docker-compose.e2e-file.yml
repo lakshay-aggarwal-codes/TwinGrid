@@ -1,0 +1,20 @@
+# E2E overlay (R3 Task 10 / L7). Use it AFTER the demo overlay, never for a real deployment:
+#   $env:E2E_OUTBOX_DIR = "C:\twlogs\outbox"
+#   docker compose --env-file .env.demo -f docker-compose.yml -f docker-compose.demo.yml -f docker-compose.e2e-file.yml up -d --wait backend
+#
+# It only changes environment variables on the backend and mounts the mail outbox. The database volume is not touched.
+# What it enables is exactly what e2e/viewer-workflow.spec.ts ([file] and [demo] passes) and e2e/drills.spec.ts document:
+#   * ACCESS_NOTIFY_BACKEND=file    activation mails are written as .eml files into the mounted outbox
+#   * DEMO_PUBLIC_ENABLED=true      the anonymous read-only demo session route exists (J1)
+#   * DEMO_SESSION_MINUTES          30 by default; set E2E_DEMO_SESSION_MINUTES=1 for the token-expiry drill
+# The access limiter is in memory: recreating the backend with `up -d` resets its windows.
+services:
+  backend:
+    environment:
+      ACCESS_NOTIFY_BACKEND: file
+      ACCESS_NOTIFY_FILE_DIR: /outbox
+      ACCESS_PUBLIC_BASE_URL: http://localhost:8080
+      DEMO_PUBLIC_ENABLED: "true"
+      DEMO_SESSION_MINUTES: ${E2E_DEMO_SESSION_MINUTES:-30}
+    volumes:
+      - ${E2E_OUTBOX_DIR:?set E2E_OUTBOX_DIR to a host folder for the mail outbox}:/outbox

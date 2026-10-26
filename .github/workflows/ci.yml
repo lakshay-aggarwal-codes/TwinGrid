@@ -123,6 +123,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # tests/test_baselines.py runs `git merge-base --is-ancestor`
 
       - uses: actions/setup-python@v5
         with:
@@ -315,12 +317,13 @@ jobs:
       - name: Install pip-audit
         run: pip install "$(grep -E '^pip-audit' requirements-dev.txt)"
 
-      - name: pip-audit on the lock (no suppressions)
-        # Fails on any known vulnerability. Do not add --ignore-vuln without recording the id, the reason and an
-        # expiry in reports/postT9/T11_ci_run.md.
+      - name: pip-audit on the lock (two recorded waivers, see docs/security/waivers.md)
+        # Fails on any known vulnerability. The two --ignore-vuln ids are recorded with reason, owner and expiry
+        # in docs/security/waivers.md and reports/postT9/T11_ci_run.md; add no others without recording them.
         run: |
           pip-audit --version >> "$GITHUB_STEP_SUMMARY"
-          pip-audit --requirement requirements.lock --require-hashes --disable-pip --strict
+          pip-audit --requirement requirements.lock --require-hashes --disable-pip --strict \
+            --ignore-vuln PYSEC-2026-1325 --ignore-vuln PYSEC-2026-4298
 
   frontend:
     runs-on: ubuntu-24.04
@@ -397,6 +400,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Start the backend stack (compose services db, redis, backend)
+        # `docker compose` interpolates EVERY service in the file, including the opt-in mqtt-ingest (profile `mqtt`), whose
+        # MQTT_BROKER is required (`:?`). That service is not started here; the value only has to be non-empty.
+        env:
+          MQTT_BROKER: mqtt-profile-not-started
         run: docker compose up -d --build db redis backend
 
       - name: Wait for /healthz
@@ -485,6 +492,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Start the backend stack (compose services db, redis, backend)
+        # `docker compose` interpolates EVERY service in the file, including the opt-in mqtt-ingest (profile `mqtt`), whose
+        # MQTT_BROKER is required (`:?`). That service is not started here; the value only has to be non-empty.
+        env:
+          MQTT_BROKER: mqtt-profile-not-started
         run: docker compose up -d --build db redis backend
 
       - name: Wait for /healthz

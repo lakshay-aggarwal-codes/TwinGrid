@@ -647,7 +647,7 @@ async def test_what_a_viewer_and_a_demo_session_cannot_read_stays_unreachable_th
                 assert r.status_code in (
                     200,
                     403,
-                )  # 403 for the demo token today (see the xfail below); 200 once allowed
+                )  # 403 or 200: a demo token is allowed since Task 27
                 assert ADMIN_CANARY not in r.text and HASH_CANARY not in r.text and "hashed_password" not in r.text
 
 

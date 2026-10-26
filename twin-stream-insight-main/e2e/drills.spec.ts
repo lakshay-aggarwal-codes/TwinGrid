@@ -69,6 +69,8 @@ test("DRILL refresh mid-approval: the visitor reloads while pending, the owner a
   await expect(card).toBeVisible({ timeout: 20_000 });
   await card.getByRole("button", { name: "Approve" }).click();
   await admin.getByRole("button", { name: "Approve", exact: true }).last().click();
+  // The default filter ("pending") hides a request once it is decided: show every status, as viewer-workflow.spec.ts does.
+  await admin.getByTestId("access-filter").selectOption("all");
   await expect(card.getByText(/Approved, awaiting activation/).first()).toBeVisible({ timeout: 20_000 });
 
   await page.reload(); // reload again AFTER the decision: the page must show the decision, not a stale or invented state

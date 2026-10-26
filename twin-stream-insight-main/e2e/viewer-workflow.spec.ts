@@ -347,7 +347,10 @@ test("E2E-22 [smtp] J2-J4: owner approves on a 375 px phone, the mail arrives ov
     expect(box, "confirm dialog is not on screen").not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(-1);
     expect(box!.x + box!.width).toBeLessThanOrEqual(PHONE.width + 1);
-    await expectTouchTarget(phone.getByTestId("access-confirm"), "Confirm button");
+    // The dialog zooms in (scale 0.95 -> 1 over 200 ms): measure the resting size, retrying until the animation is done.
+    await expect(async () => {
+      await expectTouchTarget(phone.getByTestId("access-confirm"), "Confirm button");
+    }).toPass({ timeout: 5_000 });
     await phone.getByTestId("access-confirm").tap();
     await expect(card.getByText(/Approved, awaiting activation/).first()).toBeVisible({ timeout: 20_000 });
     await expectNoSideScroll(phone, "after approval");

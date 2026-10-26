@@ -3,9 +3,9 @@
     "endpoint": "/api/equipment/health",
     "method": "GET",
     "http_status": 200,
-    "captured_at": "2026-10-24T10:23:31.811Z",
-    "base_url_host": "127.0.0.1:8765",
-    "backend_hash": "8b96cb1cd82e22ff04639ade221c486968ff4149",
+    "captured_at": "2026-10-25T18:10:30.613Z",
+    "base_url_host": "localhost:8000",
+    "backend_hash": "dd31f1255012bbec57ea4991bda2c2d2ad57b030",
     "redactions": []
   },
   "body": {

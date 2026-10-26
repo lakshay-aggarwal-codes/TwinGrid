@@ -6477,7 +6477,7 @@
     },
     "/api/whatif": {
       "get": {
-        "description": "Run an isolated 24 h digital-twin scenario at constant inputs and return its\naggregate PUE / WUE / water / energy / CO2. Nothing is persisted and the\nshared live twin is not touched.\n\nParameter precedence: explicit query value > ``scenario_id`` preset > built-in default\n(utilisation 0.65, outside_temp 22, water_stress 0, mode auto, chilled_water_temp 7). The response\nechoes ``scenario_id`` (null for a raw what-if) and the resolved ``inputs``. An unknown\n``scenario_id`` is a 404, never silently ignored.",
+        "description": "Run an isolated 24 h digital-twin scenario at constant inputs and return its\naggregate PUE / WUE / water / energy / CO2. Nothing is persisted and the\nshared live twin is not touched.\n\nParameter precedence: explicit query value > ``scenario_id`` preset > built-in default\n(utilisation 0.65, outside_temp 22, water_stress 0, mode auto, chilled_water_temp 7). ``chilled_water_temp`` must lie in\nthe running physics' range (``SR.accepted_chilled_water_range``: 5-15 C under legacy-0, 5-25 C under physics 1). The response\nechoes ``scenario_id`` (null for a raw what-if) and the resolved ``inputs``, and names the ``physics_version`` and the\n``provenance`` (simulated origin, constant-input weather, registry and API versions) it came from. An unknown\n``scenario_id`` is a 404, never silently ignored.",
         "operationId": "whatif_api_whatif_get",
         "parameters": [
           {
@@ -6582,14 +6582,14 @@
             }
           },
           {
-            "description": "Chilled-water setpoint (°C)",
+            "description": "Chilled-water setpoint (°C). Held to the running physics' range: 5-15 under legacy-0, 5-25 under physics 1.",
             "in": "query",
             "name": "chilled_water_temp",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "maximum": 15.0,
+                  "maximum": 25.0,
                   "minimum": 5.0,
                   "type": "number"
                 },
@@ -6597,7 +6597,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Chilled-water setpoint (°C)",
+              "description": "Chilled-water setpoint (°C). Held to the running physics' range: 5-15 under legacy-0, 5-25 under physics 1.",
               "title": "Chilled Water Temp"
             }
           }
@@ -6696,12 +6696,14 @@
             }
           },
           {
+            "description": "Chilled-water setpoint (°C). Held to the running physics' range: 5-15 under legacy-0, 5-25 under physics 1.",
             "in": "query",
             "name": "chilled_water_temp",
             "required": false,
             "schema": {
               "default": 7.0,
-              "maximum": 15.0,
+              "description": "Chilled-water setpoint (°C). Held to the running physics' range: 5-15 under legacy-0, 5-25 under physics 1.",
+              "maximum": 25.0,
               "minimum": 5.0,
               "title": "Chilled Water Temp",
               "type": "number"
