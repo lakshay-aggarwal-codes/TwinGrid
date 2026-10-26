@@ -330,6 +330,7 @@ def test_warn_mode_loads_a_modified_scaler_after_logging(world, monkeypatch, cap
 
 def test_anomaly_endpoint_reports_unavailable_when_the_artifact_is_tampered(world, monkeypatch):
     anomaly_service = pytest.importorskip("api.services.anomaly_service")
+    monkeypatch.setattr(anomaly_service, "_last_load_attempt", None, raising=False)  # clear the load throttle
     flip_byte(world / "models/anomaly/model.keras")
     monkeypatch.setattr(anomaly_service, "ANOMALY_DETECTOR_PATH", world / "models/anomaly")
     monkeypatch.setattr(anomaly_service, "_anomaly_detector", None)

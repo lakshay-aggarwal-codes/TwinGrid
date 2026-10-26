@@ -147,14 +147,14 @@ export interface WhatIfResponse {
   physics_version?: string;
   /** What the answer is made of (same vocabulary as a run result's provenance); absent on older backends. */
   provenance?: {
-    origin: string;
-    scenario_kind: string | null;
-    weather_source: string;
-    plant: string;
-    control: string;
-    model_version: string | null;
-    registry_version: string;
-    api_version: string;
+    origin?: string;
+    scenario_kind?: string | null;
+    weather_source?: string;
+    plant?: string;
+    control?: string;
+    model_version?: string | null;
+    registry_version?: string;
+    api_version?: string;
   };
   /** Echo of the request; absent on older backends. */
   inputs?: {

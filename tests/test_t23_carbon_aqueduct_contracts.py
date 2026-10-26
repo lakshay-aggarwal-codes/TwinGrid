@@ -385,7 +385,7 @@ def test_env_var_selects_temporal_and_rejects_unknown_values(tmp_path, monkeypat
 def test_generated_data_records_that_water_stress_is_the_scenario():
     from src.data_generator import generate_sensor_data
 
-    df = generate_sensor_data(days=2, seed=3)
+    df = generate_sensor_data(days=2, seed=3, allow_synthetic_weather=True, allow_synthetic_water_stress=True)
     prov = df.attrs["water_stress_provenance"]
     assert prov["water_stress_kind"] == "scenario" and "scenario" in prov["water_stress"]
     assert prov["baseline_used_as"] in ("unused", "mean level of the synthetic scenario")
