@@ -147,7 +147,9 @@ async def whatif(
         "chilled_water_temp": chilled_water_temp,
     }
     p = {k: (given[k] if given[k] is not None else base[k]) for k in base}
-    chw_error = SR.chilled_water_range_error(float(p["chilled_water_temp"]))
+    chw_error = SR.chilled_water_range_error(
+        chilled_water_temp if chilled_water_temp is not None else float(base["chilled_water_temp"])
+    )
     if chw_error is not None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=chw_error)
     result = await run_compute(

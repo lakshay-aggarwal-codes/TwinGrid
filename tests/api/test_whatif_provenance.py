@@ -58,7 +58,7 @@ async def test_whatif_names_its_physics_and_provenance(client, viewer_headers):
 
 async def test_a_preset_run_reports_the_presets_kind(client, viewer_headers):
     body = (await client.get(WHATIF, params={"scenario_id": "whatif-heat-wave"}, headers=viewer_headers)).json()
-    assert body["provenance"]["scenario_kind"] == SR.get_scenario("whatif-heat-wave")["kind"]
+    assert body["provenance"]["scenario_kind"] == (SR.get_scenario("whatif-heat-wave") or {})["kind"]
 
 
 @pytest.mark.parametrize("version", [LEGACY_PHYSICS_VERSION, PHYSICS_V1])
