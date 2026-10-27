@@ -166,8 +166,8 @@ Details: [`docs/model_cards/LIMITATIONS.md`](docs/model_cards/LIMITATIONS.md), [
 
 ## Status
 
-- No release-candidate gate has been recorded (playbook Task 31), so there is **no overall readiness verdict**. Per-item evidence or blocker: [`docs/roadmap/EVIDENCE_MATRIX.md`](docs/roadmap/EVIDENCE_MATRIX.md). [C-34]
-- No release-candidate gate has been recorded (no clean-clone install, failure drills or demo run), so there is **no readiness verdict**. [C-34] Every
+- No release-candidate gate has been recorded (playbook Task 31), so there is no release verdict. The readiness assessment from existing evidence is **PARTIALLY READY** ([`docs/roadmap/task-reports/R_L9_REPORT.md`](docs/roadmap/task-reports/R_L9_REPORT.md)). Per-item evidence or blocker: [`docs/roadmap/EVIDENCE_MATRIX.md`](docs/roadmap/EVIDENCE_MATRIX.md). [C-34]
+- No release-candidate gate has been recorded (no clean-clone install, failure drills or demo run), so no release verdict is claimed. [C-34] Every
   acceptance item and what backs it is in [`docs/roadmap/EVIDENCE_MATRIX.md`](docs/roadmap/EVIDENCE_MATRIX.md).
 - Not confirmed by a recorded run: the PDF report render, an asynchronous optimize job through the worker, migrations on a managed PostgreSQL, and any real deployment. [C-34]
 

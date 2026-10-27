@@ -1,7 +1,7 @@
 # Evidence matrix (Task 32, 2026-10-21)
 
 Every acceptance item of the programme, mapped to code, test, run output, or an explicit blocker. **No release-candidate gate
-(playbook Task 31) has been recorded, so there is no `RC_REPORT.md` and no overall verdict.** `evidence/status.json` is not
+(playbook Task 31) has been recorded, so there is no `RC_REPORT.md` and no release verdict.** The readiness assessment from existing evidence is **PARTIALLY READY** (`docs/roadmap/task-reports/R_L9_REPORT.md`, R3 Task 15). `evidence/status.json` is not
 created: it must be filled from Task 31's real results, and there are none.
 
 Columns: *Code* = exists in this tree. *Run output* = a recorded run of its tests or of the feature on a real stack. A dash means none.
