@@ -35,10 +35,19 @@ The first-ever Docker build is not measured. The script says it "can take severa
 
 ## Not done, so no claim is made
 
-1. **Demo script timing.** The 9-step script in `docs/DEMO_CHECKLIST.md` has not been run against a stopwatch. The page still says "not yet rehearsed".
+1. **Demo script timing.** A stopwatch run exists (`reports/task13/demo_timing_20261027-1337.csv`, two runs of the nine steps, made with `scripts/time_demo.ps1`), but it is **not a valid timing of the demo** (see "Recorded but not usable" below). The checklist's "4 to 6 minutes" is still unmeasured.
 2. **Rehearsal timing.** `scripts/rehearsal.ps1` is not in the tree, so the rehearsal log the checklist describes cannot be produced.
 3. **Manual pass from `twin-stream-insight-main/docs/frontend/a11y/FE-19.md`:** a screen reader, true browser 200% zoom, and a keyboard-only run of the demo path. FE-19 stays NOT SIGNED.
 4. **Not covered by the automated run:** `/runs/:id` for a real run (needs `E2E_RUN_ID`), `ScenarioLibrary` (not reachable from any route), the 3D scene's contrast, and the 5 Playwright runs that failed earlier for environment reasons (see below), which are superseded by this run, not edited.
+
+## Recorded but not usable: `demo_timing_20261027-1337.csv`
+
+| Run | Total | Longest step | Shortest step |
+| --- | --- | --- | --- |
+| 1 | 12.0 s | Start, 5.0 s | What-if, Evidence, Boundaries, 0.4 s each |
+| 2 | 8.1 s | Start, 1.4 s | Boundaries, 0.5 s |
+
+The script times your Enter presses, not the demo. These values cannot be demo durations: step 4 is "open a seeded alert, click Explain this, click a citation chip and show its row" (1.6 s in run 1, 0.8 s in run 2) and step 6 is "run one what-if comparison" (0.4 s and 0.9 s), and the "Say" column alone is longer than that. The notes column is empty, so nothing is recorded as skipped or broken. The most likely reading is that the Enter key was pressed through the steps without performing them (for example, to test the script), but I have no evidence of what was done. The file is kept unedited; a valid run supersedes it, it does not replace it.
 
 ## Findings for Task 14 (doc and tooling mismatches seen while measuring)
 
@@ -49,6 +58,6 @@ The first-ever Docker build is not measured. The script says it "can take severa
 
 ## To close Task 13
 
-1. Run the 9-step demo script twice with a stopwatch. Record the elapsed time at the end of each step and what broke.
+1. Run `.\scripts\time_demo.ps1 -Runs 2` and, at each step, actually do it and say the "Say" line before pressing Enter. Note anything that broke or was skipped.
 2. Do the four manual checks in Chrome (320 px, 200% zoom, keyboard only, screen reader) and write one line for each.
 3. Decide whether to write `rehearsal.ps1` (a separate task) or drop the claim from the checklist.
