@@ -67,3 +67,8 @@ Any other advisory still fails the job.
 The 1120 ceiling did not reproduce: main's CI run for PR #83 already counted 1123, and PR #86 (merge on main) counted 1125. The ceiling is set to the measured value, 1125, and may only shrink from here. About +2 of the 5 over 1120 cannot be attributed from the CI log (it prints only the count); finding them needs a CI step that prints the error list. Decision owner: Lakshay.
 
 Recorded pyrefly ceiling: 1125 errors (measured by the types job on main after PR #86 and again on the follow-up branch).
+
+## Linux ratchet: ceiling lowered to 944 errors (2026-10-27)
+
+- Measured by the `types` job on Linux (ubuntu-24.04, Python 3.12.10, pyrefly pinned in requirements-dev.txt) after it began installing requirements-dev.txt, so the imports used by tests and scripts resolve: **944 errors** (run https://github.com/lakshay-aggarwal-codes/TwinGrid/actions/runs/40456418959, commit cda7c2f).
+- Previous ceiling 1125 (runtime lock only, so unresolved dev imports counted as errors). The ceiling only goes down from here.
