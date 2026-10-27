@@ -1,5 +1,10 @@
 # ML-002 runbook: finish Task 17 on your own machine
 
+> **Superseded (R3 Task 14, 2026-10-28).** The run this page asks for was made as `baselines-v6`, not `baselines-v5`, after the
+> lock changed; `baselines-v5` is left unedited as superseded history. Do not follow the `baselines-v5` commands below. Use
+> `python scripts\repro.py verify baselines-v6`; after any later commit it prints one expected `FAIL code_revision`
+> (see `docs/DEMO_CHECKLIST.md` and `docs/roadmap/task-reports/R3_TASK_4_REPORT.md`). The rest of this page is kept as history.
+
 Why this exists: a run must carry the real git revision and be made on the machine that will verify it. The configs,
 tests and docs in the Task 17 zip were produced and checked in a sandbox without git; the run directory `baselines-v5`
 that two existing tests expect has to be created here. Apply Tasks 5 and 7 first.

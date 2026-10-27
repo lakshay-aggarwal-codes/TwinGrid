@@ -8,13 +8,15 @@ Do this on a fresh clone, at least a day before. Its purpose is to find what bre
 a clean machine by the maintainers yet; the first log decides what gets fixed. [C-34]
 
 - [ ] `git clone <your repository URL> TwinGrid-clean`, then `cd TwinGrid-clean`.
-- [ ] `.\scripts\rehearsal.ps1 -FreshVenv -TryLock` (Python 3.12, no Docker needed). It writes `rehearsal_logs\rehearsal_<time>.txt`.
-- [ ] Open the SUMMARY at the end of that log. Every FAIL line is a defect to report, with the log attached.
-- [ ] Docker path: `.\scripts\demo.ps1 -Fresh`, then run `.\scripts\demo.ps1` a second time with no switch. The second run must reuse
+- [ ] `scripts\rehearsal.ps1` is **not in the tree** (R3 Task 13), so no rehearsal log can be produced. Skip this step and the log it
+      describes, or write the script first. Do the lines below by hand and note anything that breaks.
+- [ ] `docker ps` shows one TwinGrid stack only. Two stacks fight for port 8000 (the second backend stays in `Created`) and
+      sign-in fails; stop the other one first.
+- [ ] Docker path: start from a clean state with the `docker compose ... down -v` command in the header of `scripts\demo.ps1` (the script has no `-Fresh` switch; its only switch is `-WithFrontend`), then `.\scripts\demo.ps1`, then run it a second time. The second run must reuse
       the database without an error and print "no new accounts" (migrations on an existing database).
 - [ ] `python scripts\check_lock_drift.py` prints "no drift". It checks the files only; it does not prove the lock installs on Windows
       (`-TryLock` does that, and may fail because the lock was generated for Linux).
-- [ ] Record the wall-clock times the script prints. No time on this page is a measurement until you have these.
+- [ ] Record the wall-clock times the script prints. The only measurement so far is one `demo.ps1` run after a reset with the image layers cached: 28.7 s (R3 Task 13); the first build and the nine-step script have not been timed.
 
 ## The three-minute path (no Docker, no browser needed)
 
@@ -31,14 +33,13 @@ numpy 2.5.3). On a machine matching that, the run was verified with 0 WARN lines
 `FAIL code_revision: recorded 'c2dd59f...' but now '<your commit>'`, followed by `FAIL baselines-v6: 1 failure(s), 0 warning(s)`. That
 FAIL is expected: the verifier compares the recorded git revision with the current one, so it appears after any later commit (see
 `docs/roadmap/ML-002_RUNBOOK.md`; `baselines-v3` and `baselines-v4` behave the same). Say so if asked; do not call it a pass. WARN lines for
-platform appear only where your environment differs from the recording machine and are not failures. Any other FAIL line is a defect to send
-with the rehearsal log. Before Task 21 every stored run printed
+platform appear only where your environment differs from the recording machine and are not failures. Any other FAIL line is a defect to report. Before Task 21 every stored run printed
 `FAIL REPORT.md: differs from the version regenerated` because the pre-commit trailing-whitespace hook had stripped two spaces the
 generator emitted; the generator no longer emits them (regression test in `tests/test_repro_framework.py`). The schema-hash lines passed on the
 maintainer's Windows virtual environment; a clean machine has not been run (they need gymnasium installed).
 
 To simulate afresh instead of reading the stored run: `python -m src.baselines.cli run --run-id demo-1` (how long it takes has not been
-measured; the rehearsal's `-Simulate` switch measures it). A fresh run from an edited tree is marked DIRTY and cannot be promoted.
+measured). A fresh run from an edited tree is marked DIRTY and cannot be promoted.
 
 What the stored run shows, and does not show: a fixed 22.75 C setpoint and a lookup table scored better than the rule baseline inside
 the simulator (mean test reward -36.33 and -36.07 against -54.85 for the rule). In this stored run (`baselines-v6`) the tuned PID chose

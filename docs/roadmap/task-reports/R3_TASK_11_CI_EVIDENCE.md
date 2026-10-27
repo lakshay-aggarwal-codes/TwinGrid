@@ -30,3 +30,18 @@ PR: https://github.com/lakshay-aggarwal-codes/TwinGrid/pull/87 (`wip/bc10-run-co
 ## Not verified
 
 The tracebacks of the two failing tests; the Netlify deploy log; whether `main` carries commits the branch lacks.
+
+## Update 2026-10-28 (R3 Task 14): this report was written before the follow-up PR; read this section first
+
+PR #86 was merged to `main` while its checks were red. The fixes are in follow-up PR #87 (same branch).
+
+- The two failing `test` tests have now been read. Both were caused by edits made during this task, not by Tasks 1 to 10:
+  `test_ceiling_is_recorded_in_the_evidence_file` needed the exact text `<ceiling> errors` in `reports/postT9/T11_ci_run.md`;
+  `test_gitleaks_config_parses_and_allowlist_is_only_documented_placeholders` rejected an allowlist entry
+  (`e2e-pepper-...`) that did not read as a placeholder. Both were fixed in `cee2af9` (the pepper is now `e2e-test-pepper-...`).
+- Other fixes: the npm audit step now uses `scripts/npm-audit-gate.mjs` with a recorded `zod` waiver; the two pip-audit
+  advisories are waived with an owner and expiry; a non-ASCII request-id test no longer skips; the contract fixtures were
+  re-captured; the gitleaks allowlist names the e2e placeholder; the pyrefly ceiling is 944 on Linux.
+- `gh pr checks 87` at `cee2af9`: `lint`, `types`, `test`, `test-postgres`, `audit`, `frontend`, `frontend-contract`, `docker`,
+  `gate`, gitleaks and CodeQL green. Red: `frontend-e2e` (advisory) and the four Netlify checks (cause not read).
+- Still not read: the Netlify deploy log; whether the one e2e failure group beyond the missing `E2E_*` settings has another cause.
