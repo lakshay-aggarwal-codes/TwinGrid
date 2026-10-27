@@ -156,3 +156,42 @@ historical and kept as written.
 | N-04 | UNVERIFIED | registry text for PPO not re-read in this task |
 | N-05 | OPEN | no complete test log for this tree exists |
 | N-06 | OPEN | `docs/api/` absent (playbook Task 21 not applied) |
+
+## Reconciliation 2026-10-28 (R3 Task 14): one status per ID
+
+Method: each row was checked against the R3 task reports and the pasted run output named in it. Earlier sections and the 2026-10-21
+table above are historical and kept as written; where they disagree with a row below, the row below is current. Evidence reports are
+in `docs/roadmap/task-reports/` (`R3_TASK_*`, `R3_TASKS_5_TO_10_EVIDENCE.md`, `R_CARBON_REPORT.md`, `R_L7_REPORT.md`).
+
+| ID | Status | Evidence |
+|---|---|---|
+| TG-A-07 | FIXED (stored run) | `baselines-v6` recorded on the current lock and shipped configs; `baselines-v5` superseded and unedited; `repro.py verify baselines-v6` prints one expected `code_revision` FAIL after later commits (`R3_TASK_4_REPORT.md`); `tests/test_baselines.py` ran in the full run of 2026-10-26 with 0 failures (`R3_TASK_12_REPORT.md`) |
+| TG-A-08 | PARTIAL | The type gate is green: `types` passed on PR #87 with ceiling 944 (the earlier 1120 and 881 did not reproduce; `reports/postT9/T11_ci_run.md`). `frontend-contract` is green but still `continue-on-error`; `frontend-e2e` is advisory and red (`R3_TASK_11_CI_EVIDENCE.md`) |
+| TG-A-11 | PARTIAL | An Ember India importer exists; the level is real and flat across the day, labelled average and without a time-of-day shape; the file is not committed and the demo container did not see it (`R_CARBON_REPORT.md`). Time-of-day carbon is still not available |
+| TG-A-19 | FIXED | What-if lab range comes from the server (R3 Tasks 1 and 3); `src/features/what-if-lab`: 68 tests passed (`R3_TASK_3_REPORT.md`) |
+| TG-A-20 | FIXED (verified in CI) | The CI `frontend` job (typecheck, tests, build) was green on PR #87; the full frontend suite passed, 185 files and 2401 tests (`R3_TASK_3_REPORT.md`). The 16 type errors and 10 failing tests recorded in 2026-10-18 no longer occur |
+| N-05 | CLOSED | A complete backend log exists: 5741 passed, 78 skipped, 0 failed, 2026-10-26 (`R3_TASK_12_REPORT.md`) |
+| N-06 | CLOSED | `docs/api/` exists and `tests/test_task9_api_reference.py` checks it is not stale (R3 Tasks 1 and 2 refreshed `openapi.json`) |
+| N-03 | OPEN | unchanged |
+| N-04 | UNVERIFIED | unchanged |
+
+### Found and closed during R3
+
+| ID | Finding | Status | Evidence |
+|---|---|---|---|
+| R3-01 | `/api/whatif` and the sensitivity route rejected 16 to 25 C (physics 1) while the What-if Lab offered it; two bounds in two places (Medium) | FIXED | One source for the bounds; 22 new cases in `tests/api/test_whatif_chilled_range.py` (`R3_TASK_1_REPORT.md`) |
+| R3-02 | `/api/whatif` gave no physics version or provenance (Medium) | FIXED | `physics_version` and `provenance` in the response, schema and contract (`R3_TASK_2_REPORT.md`) |
+| R3-03 | The pyrefly ceiling (1120) did not reproduce on `main` (1123, then 1125) (Low) | FIXED | Ceiling 944 after the `types` job installed dev requirements; recorded in `reports/postT9/T11_ci_run.md` |
+| R3-04 | `pip-audit` and `npm audit` failed on advisories with no patched release (Medium) | WAIVED | `ecdsa`, `python-jose` (`docs/security/waivers.md`); `zod` (`docs/frontend/waivers/npm_audit.md`, gate `scripts/npm-audit-gate.mjs`); each has an owner and expiry |
+| R3-05 | A test skipped on Linux (non-ASCII request id), which the CI skip gate rejects (Low) | FIXED | The header is sent as bytes; 9 passed, 0 skipped (`tests/api/test_error_contract.py`) |
+| R3-06 | `DEMO_CHECKLIST.md` named a missing `rehearsal.ps1`, a `-Fresh` switch that does not exist, and said nothing about two stacks on port 8000 (Low) | FIXED in docs | `R3_TASK_13_REPORT.md`; this task |
+
+### Open after R3
+
+| ID | Finding | Evidence |
+|---|---|---|
+| R3-07 | `frontend-e2e` in CI does not set `E2E_ADMIN_*`, `E2E_SMTP_PORT`, `TRUST_PROXY_HEADERS`/`E2E_TRUST_PROXY`, so the job is red; the same specs pass on the owner's machine (`R_L7_REPORT.md`) | `R3_TASK_11_CI_EVIDENCE.md` |
+| R3-08 | The Netlify deploy preview and three Netlify checks fail; the deploy log was not read | `R3_TASK_11_CI_EVIDENCE.md` |
+| R3-09 | R3 Tasks 5 to 7 are closed on code reading and 47 passed tests, but three of the test names were not displayed in the pasted output | `R3_TASKS_5_TO_10_EVIDENCE.md` |
+| R3-10 | The 75 Postgres-gated backend tests have not run on the owner's machine; they ran only in CI's `test-postgres` | `R3_TASK_12_REPORT.md` |
+| R3-11 | PR #86 was merged to `main` while its checks were red; `main`'s own CI runs for #83 and #86 were red | `R3_TASK_11_CI_EVIDENCE.md` |

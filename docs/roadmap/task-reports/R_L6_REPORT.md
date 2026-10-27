@@ -45,3 +45,30 @@ Note: `PYREFLY_ERROR_CEILING` is 1120 in `ci.yml`, not 881.
 - `frontend-contract`: drift against committed fixtures. Fix is to commit the CI-captured fixtures (artifact `contract-fixtures`), not a code change.
 - `frontend-e2e`: advisory; 15 failures, mostly missing `E2E_ADMIN_*` env vars in the job. Not fixed in this round.
 - Netlify checks: not diagnosed (log not seen).
+
+### Third CI round (PR #86, head 440098c, recorded 2026-10-27)
+10 failing, 8 successful, 1 skipped (`bootstrap`, manual only), 0 pending. Status: **PARTIAL**, not green.
+| Result | Checks |
+|---|---|
+| failed | CI/frontend, CI/frontend-e2e (12m49s), CI/test (13m42s), CI/types (1m13s), Secret scan/gitleaks (7s), CI/gate (follows its needed jobs), Netlify: Header rules, Pages changed, Redirect rules, deploy-preview |
+| passed | CI/frontend-contract, CI/lint, CI/audit, CI/docker, CI/test-postgres, CodeQL (javascript-typescript, python) |
+Causes are recorded only where a log was read; none are recorded for these failures yet.
+
+### Final CI state (PR #87, commit cee2af9, 2026-10-27)
+
+Green on the pull request: lint, types (ceiling 1125 errors), test, test-postgres, audit (two recorded pip-audit waivers), frontend (npm audit gate with one recorded zod waiver), frontend-contract (fixtures re-captured), docker, gitleaks, CodeQL (python, javascript-typescript), gate.
+
+Not green:
+- frontend-e2e: advisory (`continue-on-error`), so the `continue-on-error` line stays. In the earlier run, 15 tests failed, 12 were skipped and 52 passed; the admin-console accessibility tests fail because E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD are not set in the job. The remaining failures (E2E-22 file/demo/smtp) have not been diagnosed.
+- Netlify (header rules, pages changed, redirect rules, deploy preview): failing, cause not yet read from the Netlify deploy log. Not part of the CI gate.
+
+History: PR #86 was merged to main while its checks were red; PR #87 carries the fixes. main's own CI runs for #83 and #86 were also red.
+
+Verdict for L6: the Postgres suite and contract fixtures are recorded green in CI; the Docker e2e stack is NOT recorded green, so L6 stays PARTIAL on that point.
+
+## Final CI state (2026-10-27)
+- Linux run https://github.com/lakshay-aggarwal-codes/TwinGrid/actions/runs/40456418959 (commit cda7c2f): `test` 5739 passed, 0 failed; `test-postgres`, `types` (944 errors), `frontend` (185 files, 2401 tests), `frontend-contract`, `audit`, `lint`, `docker` all green.
+- Linux run https://github.com/lakshay-aggarwal-codes/TwinGrid/actions/runs/40499776651 (commit 459c919): `gate` success; `frontend-e2e` failure (advisory, not part of the gate).
+- Pyrefly ceiling lowered 1125 -> 944 (recorded in reports/postT9/T11_ci_run.md).
+- Fixes needed to get here: runner pinned to ubuntu-24.04 (ubuntu-latest is 26.04 and has no Python 3.12.10); lock regenerated on Linux with pip-compile; PyYAML added to requirements-dev.txt; auth tests isolated from VITE_DEMO_*; the `types` job installs requirements-dev.txt; three tests made deterministic; `WhatIfResponse.provenance` fields made optional.
+- Verdict: **DONE** for the blocking gate. Open: `frontend-e2e` (advisory).

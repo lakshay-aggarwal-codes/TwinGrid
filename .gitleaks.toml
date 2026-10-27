@@ -19,6 +19,7 @@ regexes = [
   '''ci-operator-registration-key-not-secret''',
   '''ci-e2e-viewer-password-1''',
   '''ci-e2e-operator-password-1''',
+  '''e2e-test-pepper-0123456789abcdef-0123456789abcdef''',
   '''test-secret-for-suite-only''',
   '''gen-api-reference-placeholder-not-a-secret''',
   '''your-secret-key-here-change-in-production''',

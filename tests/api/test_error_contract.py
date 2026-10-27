@@ -220,10 +220,8 @@ async def test_valid_request_id_is_echoed(client, rid):
     "rid", ["short", "has space in it", "x" * 65, "bad;chars!!!!", "semi;colon;12345", "unicode-é-12345"]
 )
 async def test_invalid_request_id_is_replaced_by_a_uuid(client, rid):
-    try:
-        r = await client.get("/healthz", headers={"X-Request-ID": rid})
-    except (UnicodeEncodeError, httpx.InvalidURL):
-        pytest.skip("client refuses to send that header")  # pragma: no cover
+    # Send raw bytes: httpx encodes str header values as ASCII and refuses the non-ASCII case, which used to skip.
+    r = await client.get("/healthz", headers={"X-Request-ID": rid.encode("utf-8")})
     got = r.headers["X-Request-ID"]
     assert got != rid
     assert re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", got)

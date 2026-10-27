@@ -64,7 +64,7 @@ From `docs/roadmap/task-reports/`; each is PARTIAL (frontend gates not run) unle
 4. `index.css` keyframes `.pulse-dot` / `.scan-line` have no reduced-motion guard (unused; add a guard or delete).
 5. Analytics bar chart encodes cooling mode by colour; the summary and data table carry it in text. A pattern/legend is a design decision.
 6. `src/contract/fixtures/` held only a README in the snapshot: commit a real capture set before making `frontend-contract` blocking.
-7. CI `frontend-e2e` and `frontend-contract` are advisory until one recorded green run each.
+7. CI `frontend-contract` was green on PR #87 (fixtures re-captured, R3 Task 11) but still carries `continue-on-error`; by its own rule the line can now be removed and the job added to `gate`. CI `frontend-e2e` is advisory and was red there (the job does not set `E2E_ADMIN_*`, `E2E_SMTP_PORT` or `TRUST_PROXY_HEADERS`).
 8. Roadmap open questions: UQ-1 to UQ-4 are settled by [ADR 004 to 007](../../../docs/adr/); the owner decision on two-halves rack rendering in thermal mode is still not recorded (the code renders two halves, both facility-wide values; see [RT-001](../../../docs/roadmap/RT-001.md)).
 
 ## MR §25 status (paste-ready)
@@ -74,7 +74,7 @@ The MR itself is not in this repository; copy this block into §25.
 | Item | Status |
 |---|---|
 | Truthfulness fixes D-1…D-7 (FE-01…FE-13) | Implemented in code; per-defect sign-off lives with the owner's MR |
-| Real-backend E2E and drift CI (FE-11) | Present; advisory in CI until one recorded green run |
+| Real-backend E2E and drift CI (FE-11) | Present. Drift CI (`frontend-contract`): one green run recorded on PR #87, still advisory. E2E CI (`frontend-e2e`): advisory, red on PR #87. On the owner's machine the a11y spec passed 48 of 48 and `viewer-workflow.spec.ts` passed 6 of 6 (R3 Task 13, `R_L7_REPORT.md`) |
 | G-SCN / FE-15 | Closed (real-backend run recorded) |
 | G-RUN / FE-16 | Closed (real-backend run recorded) |
 | G-EVAL / FE-17 | Built and applied at `0c5b98a` (IG-00); real-backend capture not recorded |

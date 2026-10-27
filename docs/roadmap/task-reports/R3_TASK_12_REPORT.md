@@ -1,6 +1,6 @@
 # R3 Task 12 report: failure triage
 
-Status: **Done on pasted evidence** (no code change, so no patch zip).
+Status: **Done on pasted evidence** (no code change, so no patch zip). Updated with the CI result below.
 
 ## Evidence
 
@@ -37,6 +37,13 @@ No skip is caused by TensorFlow. All 78 are reported by the tests themselves as 
 - **Not verified:** the 75 Postgres-gated tests have never run in the evidence I hold. Their behaviour against a real Postgres is unknown, so I make no claim that they pass. This matters for the Task 15 verdict.
 - **Assumed:** the 1 deselected test is the `live_llm` one (the marker is defined in `pytest.ini`, and an earlier Task 10 run also showed 1 deselected). Not confirmed by this run.
 
-## Optional follow-up (not required to close Task 12)
+## CI evidence added later (PR #87, branch head `440098c`, `gh pr checks`)
 
-Run the 75 Postgres-gated tests once against a throwaway Postgres by setting the three variables above, and record the result, or write an explicit waiver that they are CI-only.
+- `CI/test` (Linux, 14 min): **passed**. `CI/test-postgres` (2 min 23 s): **passed**. The workflow gives that job a real Postgres and sets all three variables the skipped tests wait for (`TWINGRID_TEST_PG_URL`, `TEST_POSTGRES_URL`, `TWINGRID_TEST_PG_ASYNC_URL`).
+- This probably covers the 75 Postgres-gated skips above. I read the job's environment from the workflow file, not its log, so I have not confirmed it ran exactly those tests.
+- The first CI run (`c04d895`) had two real failures, `test_ci_gates.py::test_ceiling_is_recorded_in_the_evidence_file` and `test_task10_governance.py::test_gitleaks_config_parses_and_allowlist_is_only_documented_placeholders`. They were introduced after the full local run above and fixed by `cee2af9` and `440098c`. They are not pre-existing failures, so they do not change the zero-failure triage result; they are recorded in `R3_TASK_11_CI_EVIDENCE.md`.
+- The 5741 count is a snapshot from the earlier commit. It is not the current total. A current local count needs a new full run.
+
+## Remaining skips (3, platform limits, unchanged)
+
+Symlinks not available, SMTP closed-port timing on Windows, and a header the test client refuses to send. These are Windows or client limits, not defects.

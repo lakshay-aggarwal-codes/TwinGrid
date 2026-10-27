@@ -92,7 +92,7 @@ Mail for access requests is read from the environment at call time: `ACCESS_NOTI
 `ACCESS_NOTIFY_SMTP_PORT`, `ACCESS_NOTIFY_SMTP_TLS`, `ACCESS_NOTIFY_OWNER_EMAIL`, `ACCESS_NOTIFY_FROM`, `ACCESS_PUBLIC_BASE_URL`
 (`src/notify/settings.py`; `docs/env/` has the full lists). Sending through a real mailbox has not been run.
 
-All checks (PowerShell, repository root; none of these has a recorded green run on this exact tree):
+All checks (PowerShell, repository root; the backend and frontend suites each have a recorded green run on the owner's machine, see [C-32]; the Playwright specs need the demo stack):
 
 ```powershell
 pip install -r requirements.txt -r tests/test_requirements.txt
@@ -121,8 +121,8 @@ not in the claims ledger. Per-task detail: [`docs/roadmap/task-reports/`](docs/r
   then `ACCESS_NOTIFY_SMTP_USER`, `ACCESS_NOTIFY_SMTP_HOST`/`PORT`/`TLS`, `ACCESS_NOTIFY_OWNER_EMAIL`, `ACCESS_NOTIFY_FROM` and
   `ACCESS_PUBLIC_BASE_URL`. Real delivery to a mailbox has not been tried by the maintainers.
 - **Checks** (PowerShell, repository root): `ruff check .; ruff format --check .; pytest -q`, then in `twin-stream-insight-main`:
-  `npm ci; npm run verify`. The Playwright specs need the demo stack running. CI runs the same jobs; a green run of all of them on one commit
-  is not recorded (see Status).
+  `npm ci; npm run verify`. The Playwright specs need the demo stack running. CI runs the same jobs. On PR #87 every blocking job was green; `frontend-e2e` is advisory and was red, so a green run of all of
+  them on one commit is not recorded (see Status).
 
 ## What the machine-learning results show
 
@@ -149,7 +149,7 @@ Details: [`docs/model_cards/LIMITATIONS.md`](docs/model_cards/LIMITATIONS.md), [
 - Security headers, single-use WebSocket tickets and login lockout, unit-tested, not audited. [C-22]
 - Structured logs with secret redaction. [C-23]
 - Migrations with a single head. [C-28]
-- Automated tests and CI configured; a green run of the whole suite on this tree was not seen. [C-32]
+- Automated tests and CI configured; the backend suite (5741 passed) and frontend suite (2401 passed) were recorded green on the owner's machine, and CI's blocking jobs were green on PR #87. The browser end-to-end CI job is advisory and was red. [C-32]
 - Release pipeline and scanning configured, never run on a real tag. [C-27]
 - Accessibility fixes applied; not claimed WCAG-compliant. [C-30]
 - Seven runbooks cover common failures; none has been used in a real incident. [C-24]
@@ -166,10 +166,10 @@ Details: [`docs/model_cards/LIMITATIONS.md`](docs/model_cards/LIMITATIONS.md), [
 
 ## Status
 
-- No release-candidate gate has been recorded (playbook Task 31), so there is **no overall readiness verdict**. Per-item evidence or blocker: [`docs/roadmap/EVIDENCE_MATRIX.md`](docs/roadmap/EVIDENCE_MATRIX.md). [C-34]
-- No release-candidate gate has been recorded (no clean-clone install, failure drills or demo run), so there is **no readiness verdict**. [C-34] Every
+- No release-candidate gate has been recorded (playbook Task 31), so there is no release verdict. The readiness assessment from existing evidence is **PARTIALLY READY** ([`docs/roadmap/task-reports/R_L9_REPORT.md`](docs/roadmap/task-reports/R_L9_REPORT.md)). Per-item evidence or blocker: [`docs/roadmap/EVIDENCE_MATRIX.md`](docs/roadmap/EVIDENCE_MATRIX.md). [C-34]
+- No release-candidate gate has been recorded (no clean-clone install, failure drills or demo run), so no release verdict is claimed. [C-34] Every
   acceptance item and what backs it is in [`docs/roadmap/EVIDENCE_MATRIX.md`](docs/roadmap/EVIDENCE_MATRIX.md).
-- Not confirmed by a recorded run: the full test suite on this tree, the PDF report render, an asynchronous optimize job through the worker, migrations on a managed PostgreSQL, and any real deployment. [C-34]
+- Not confirmed by a recorded run: the PDF report render, an asynchronous optimize job through the worker, migrations on a managed PostgreSQL, and any real deployment. [C-34]
 
 What has and has not been run is recorded in [`twin-stream-insight-main/docs/frontend/STATUS.md`](twin-stream-insight-main/docs/frontend/STATUS.md)
 and the per-task reports in [`docs/tasks/`](docs/tasks/).
