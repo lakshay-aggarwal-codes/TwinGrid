@@ -83,8 +83,8 @@ jobs:
       - name: Install runtime lock (hash-checked) so imports resolve
         run: pip install --require-hashes --extra-index-url "$TORCH_CPU_INDEX" -r requirements.lock
 
-      - name: Install pyrefly
-        run: pip install "$(grep -E '^pyrefly' requirements-dev.txt)"
+      - name: Install dev tools (resolves the imports in tests and scripts; pyrefly is pinned in requirements-dev.txt)
+        run: pip install --extra-index-url "$TORCH_CPU_INDEX" -r requirements-dev.txt
 
       - name: pyrefly check (error count ratchet)
         run: |
