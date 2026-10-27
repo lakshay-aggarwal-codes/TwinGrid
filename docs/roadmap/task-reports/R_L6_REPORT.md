@@ -53,3 +53,15 @@ Note: `PYREFLY_ERROR_CEILING` is 1120 in `ci.yml`, not 881.
 | failed | CI/frontend, CI/frontend-e2e (12m49s), CI/test (13m42s), CI/types (1m13s), Secret scan/gitleaks (7s), CI/gate (follows its needed jobs), Netlify: Header rules, Pages changed, Redirect rules, deploy-preview |
 | passed | CI/frontend-contract, CI/lint, CI/audit, CI/docker, CI/test-postgres, CodeQL (javascript-typescript, python) |
 Causes are recorded only where a log was read; none are recorded for these failures yet.
+
+### Final CI state (PR #87, commit cee2af9, 2026-10-27)
+
+Green on the pull request: lint, types (ceiling 1125 errors), test, test-postgres, audit (two recorded pip-audit waivers), frontend (npm audit gate with one recorded zod waiver), frontend-contract (fixtures re-captured), docker, gitleaks, CodeQL (python, javascript-typescript), gate.
+
+Not green:
+- frontend-e2e: advisory (`continue-on-error`), so the `continue-on-error` line stays. In the earlier run, 15 tests failed, 12 were skipped and 52 passed; the admin-console accessibility tests fail because E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD are not set in the job. The remaining failures (E2E-22 file/demo/smtp) have not been diagnosed.
+- Netlify (header rules, pages changed, redirect rules, deploy preview): failing, cause not yet read from the Netlify deploy log. Not part of the CI gate.
+
+History: PR #86 was merged to main while its checks were red; PR #87 carries the fixes. main's own CI runs for #83 and #86 were also red.
+
+Verdict for L6: the Postgres suite and contract fixtures are recorded green in CI; the Docker e2e stack is NOT recorded green, so L6 stays PARTIAL on that point.
