@@ -65,3 +65,5 @@ Any other advisory still fails the job.
 ## pyrefly ceiling raised 1120 -> 1125 (R3 Task 11, 2026-10-27)
 
 The 1120 ceiling did not reproduce: main's CI run for PR #83 already counted 1123, and PR #86 (merge on main) counted 1125. The ceiling is set to the measured value, 1125, and may only shrink from here. About +2 of the 5 over 1120 cannot be attributed from the CI log (it prints only the count); finding them needs a CI step that prints the error list. Decision owner: Lakshay.
+
+Recorded pyrefly ceiling: 1125 errors (measured by the types job on main after PR #86 and again on the follow-up branch).
