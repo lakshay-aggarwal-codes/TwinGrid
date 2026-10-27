@@ -65,3 +65,10 @@ Not green:
 History: PR #86 was merged to main while its checks were red; PR #87 carries the fixes. main's own CI runs for #83 and #86 were also red.
 
 Verdict for L6: the Postgres suite and contract fixtures are recorded green in CI; the Docker e2e stack is NOT recorded green, so L6 stays PARTIAL on that point.
+
+## Final CI state (2026-10-27)
+- Linux run https://github.com/lakshay-aggarwal-codes/TwinGrid/actions/runs/40456418959 (commit cda7c2f): `test` 5739 passed, 0 failed; `test-postgres`, `types` (944 errors), `frontend` (185 files, 2401 tests), `frontend-contract`, `audit`, `lint`, `docker` all green.
+- Linux run https://github.com/lakshay-aggarwal-codes/TwinGrid/actions/runs/40499776651 (commit 459c919): `gate` success; `frontend-e2e` failure (advisory, not part of the gate).
+- Pyrefly ceiling lowered 1125 -> 944 (recorded in reports/postT9/T11_ci_run.md).
+- Fixes needed to get here: runner pinned to ubuntu-24.04 (ubuntu-latest is 26.04 and has no Python 3.12.10); lock regenerated on Linux with pip-compile; PyYAML added to requirements-dev.txt; auth tests isolated from VITE_DEMO_*; the `types` job installs requirements-dev.txt; three tests made deterministic; `WhatIfResponse.provenance` fields made optional.
+- Verdict: **DONE** for the blocking gate. Open: `frontend-e2e` (advisory).
