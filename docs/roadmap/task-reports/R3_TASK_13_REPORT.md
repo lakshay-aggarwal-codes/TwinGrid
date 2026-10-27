@@ -89,3 +89,9 @@ Notes were left blank for every step, which the script reads as "nothing broke o
 **Manual accessibility checks (320 px, 200% zoom, keyboard only, screen reader):** none were reported, so they are **not done**. FE-19 stays NOT SIGNED. Waived by the owner under option B until results are supplied.
 
 **Not changed:** the 48-test automated run and the command timings above stay as measured. `scripts/rehearsal.ps1` is still absent.
+
+### Addendum: screenshot of the assistant (2026-10-28, 00:46 on the owner's clock, one minute after the run)
+
+On the Live Twin page (`localhost:8080`) the assistant drawer for Alert 3 opened and answered. It showed "Why is this alert red?", the badge "Rule-based explanation, no language model is configured", five evidence rows (E1 score 0.91, E2 threshold 0.0122, E3 over_threshold true, E4 severity CRITICAL, E5 message "Demo: IT power spike far outside its recent range (simulated)"), a warning that the threshold is the currently configured detector's, and a "Not known from the available evidence" list that includes "Root cause is not determined by available evidence". The header showed the "Fallback carbon (flat constant)" and "Simulated" badges.
+
+So "Explain this" works from the Live Twin page. This is **not** the `/alerts` route where AI-D-3 failed, so AI-D-3 is not closed. The screenshot is not tied to the step 4 timing above, and the question of whether steps 1, 7, 8 and 9 were performed was not answered.

@@ -62,3 +62,5 @@ Rule used: a line is in the "evidenced" table only if a named report or pasted o
 ## Update 2026-10-28: Task 13 closed with named gaps
 
 One stopwatch run exists (`R3_TASK_13_REPORT.md`, update section; `reports/task13/demo_timing_20261028-0045.csv`). It does not change the verdict. G4 narrows but is not closed: no demo duration is claimed, because four of the nine steps took under 1.5 s and were most likely pressed through; the manual accessibility checks were not reported, so they stay not done and FE-19 stays NOT SIGNED. G3 (AI-D-3) is unchanged: the run did not say whether "Explain this" worked.
+
+Addendum: G3 narrows. A screenshot taken after the stopwatch run shows the assistant answering for Alert 3 from the Live Twin page (`R3_TASK_13_REPORT.md`, addendum). The `/alerts` route, where AI-D-3 failed, was not tried, so G3 stays open for that route.
