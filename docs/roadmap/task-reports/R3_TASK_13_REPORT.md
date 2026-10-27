@@ -61,3 +61,31 @@ The script times your Enter presses, not the demo. These values cannot be demo d
 1. Run `.\scripts\time_demo.ps1 -Runs 2` and, at each step, actually do it and say the "Say" line before pressing Enter. Note anything that broke or was skipped.
 2. Do the four manual checks in Chrome (320 px, 200% zoom, keyboard only, screen reader) and write one line for each.
 3. Decide whether to write `rehearsal.ps1` (a separate task) or drop the claim from the checklist.
+
+## Update 2026-10-28: demo stopwatch run (owner's choice B)
+
+Status: **Done, with the gaps named below.** One run, one machine, timed by the owner's Enter presses (good to about a second), nine steps of the "Demo script" in `docs/DEMO_CHECKLIST.md`. Data: `reports/task13/demo_timing_20261028-0045.csv`.
+
+| Step | Name | Seconds | Cumulative |
+| --- | --- | --- | --- |
+| 1 | Start | 1.1 | 1.1 |
+| 2 | Data origin | 5.7 | 6.8 |
+| 3 | Facility | 20.3 | 27.1 |
+| 4 | Alert | 49.0 | 76.1 |
+| 5 | Model limits | 2.6 | 78.7 |
+| 6 | What-if | 27.8 | 106.5 |
+| 7 | Access | 1.3 | 107.8 |
+| 8 | Evidence | 0.5 | 108.3 |
+| 9 | Boundaries | 0.5 | 108.8 |
+
+Notes were left blank for every step, which the script reads as "nothing broke or was skipped".
+
+**What this does and does not show**
+
+- Steps 2 to 6 took 2.6 to 49 s each. Step 4 (alert and "Explain this") was the longest at 49 s. Whether "Explain this" worked was not stated separately, so the open AI-D-3 question in `R_L9_REPORT.md` (G3) is not closed by this run.
+- Steps 1, 7, 8 and 9 took 0.5 to 1.3 s, which is shorter than doing the action (sign-in, opening the admin queue, showing a CI result, opening `docs/CLAIMS.md`). They are most likely pressed through, not performed. **The 108.8 s total is therefore not a demo duration, and no demo length is claimed.** `DEMO_CHECKLIST.md` keeps "not yet rehearsed; step lengths are targets".
+- A real run would perform steps 1, 7, 8 and 9 and include the narration ("Say" column); this run timed neither.
+
+**Manual accessibility checks (320 px, 200% zoom, keyboard only, screen reader):** none were reported, so they are **not done**. FE-19 stays NOT SIGNED. Waived by the owner under option B until results are supplied.
+
+**Not changed:** the 48-test automated run and the command timings above stay as measured. `scripts/rehearsal.ps1` is still absent.

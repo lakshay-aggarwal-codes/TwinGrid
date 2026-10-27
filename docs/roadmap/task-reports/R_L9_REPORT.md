@@ -58,3 +58,7 @@ Rule used: a line is in the "evidenced" table only if a named report or pasted o
 - CI after commit `cee2af9`.
 - Whether any R_L4, R_L5 or R_L8 report exists beyond the ones cited; none were supplied for this verdict.
 - The L7 waiver file itself.
+
+## Update 2026-10-28: Task 13 closed with named gaps
+
+One stopwatch run exists (`R3_TASK_13_REPORT.md`, update section; `reports/task13/demo_timing_20261028-0045.csv`). It does not change the verdict. G4 narrows but is not closed: no demo duration is claimed, because four of the nine steps took under 1.5 s and were most likely pressed through; the manual accessibility checks were not reported, so they stay not done and FE-19 stays NOT SIGNED. G3 (AI-D-3) is unchanged: the run did not say whether "Explain this" worked.
