@@ -95,3 +95,7 @@ Notes were left blank for every step, which the script reads as "nothing broke o
 On the Live Twin page (`localhost:8080`) the assistant drawer for Alert 3 opened and answered. It showed "Why is this alert red?", the badge "Rule-based explanation, no language model is configured", five evidence rows (E1 score 0.91, E2 threshold 0.0122, E3 over_threshold true, E4 severity CRITICAL, E5 message "Demo: IT power spike far outside its recent range (simulated)"), a warning that the threshold is the currently configured detector's, and a "Not known from the available evidence" list that includes "Root cause is not determined by available evidence". The header showed the "Fallback carbon (flat constant)" and "Simulated" badges.
 
 So "Explain this" works from the Live Twin page. This is **not** the `/alerts` route where AI-D-3 failed, so AI-D-3 is not closed. The screenshot is not tied to the step 4 timing above, and the question of whether steps 1, 7, 8 and 9 were performed was not answered.
+
+### Addendum: "Explain this" on /alerts (2026-10-28, owner's observation)
+
+The owner opened `/alerts`, opened an alert and clicked "Explain this": the assistant drawer opens. This is a manual check by the owner, once, with no screenshot or log. The automated drill AI-D-3 (`e2e`, assistant spec) was **not** re-run, so its pass is not claimed.
