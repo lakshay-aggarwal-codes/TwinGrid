@@ -45,3 +45,11 @@ Note: `PYREFLY_ERROR_CEILING` is 1120 in `ci.yml`, not 881.
 - `frontend-contract`: drift against committed fixtures. Fix is to commit the CI-captured fixtures (artifact `contract-fixtures`), not a code change.
 - `frontend-e2e`: advisory; 15 failures, mostly missing `E2E_ADMIN_*` env vars in the job. Not fixed in this round.
 - Netlify checks: not diagnosed (log not seen).
+
+### Third CI round (PR #86, head 440098c, recorded 2026-10-27)
+10 failing, 8 successful, 1 skipped (`bootstrap`, manual only), 0 pending. Status: **PARTIAL**, not green.
+| Result | Checks |
+|---|---|
+| failed | CI/frontend, CI/frontend-e2e (12m49s), CI/test (13m42s), CI/types (1m13s), Secret scan/gitleaks (7s), CI/gate (follows its needed jobs), Netlify: Header rules, Pages changed, Redirect rules, deploy-preview |
+| passed | CI/frontend-contract, CI/lint, CI/audit, CI/docker, CI/test-postgres, CodeQL (javascript-typescript, python) |
+Causes are recorded only where a log was read; none are recorded for these failures yet.
