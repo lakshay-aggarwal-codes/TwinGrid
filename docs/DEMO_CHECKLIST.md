@@ -89,19 +89,27 @@ See the list in [`CLAIMS.md`](CLAIMS.md). Say "simulated", "uncalibrated", "not 
 
 ## Demo script, 4 to 6 minutes (not yet rehearsed; step lengths are targets)
 
-Open a fresh private window. Say "simulated" in the first sentence. Steps marked **(not in this tree)** need a feature that is missing
-or has not been run; skip them and say so rather than improvising.
+Open a fresh private window. Say "simulated" in the first sentence. If a step's feature is missing or fails on the day, skip it and
+say so rather than improvising.
+
+Before you start, every time:
+
+- [ ] `docker ps` shows one TwinGrid stack only (a second one holds port 8000 and sign-in fails).
+- [ ] The demo stack is up and `http://localhost:8080` loads. Present from `localhost`, not from the Netlify preview link (its deploy was failing when last checked).
+- [ ] You are signed in as `demo_viewer` in the private window, and a second window is signed in as the admin for step 7.
+- [ ] Tabs open on the Live Twin page, an alert, the what-if lab, and the admin access-request queue.
+- [ ] `docs/CLAIMS.md` and `docs/roadmap/task-reports/R_L9_REPORT.md` are open in an editor for steps 8 and 9.
 
 | Step | Do | Say |
 |---|---|---|
-| 1. Start | Open the dashboard, sign in (`demo_viewer`). A one-click read-only demo button is **(not in this tree)**. | "Everything you will see is simulated." |
+| 1. Start | Open the dashboard, sign in (`demo_viewer`). Whether a one-click read-only demo button exists was not re-checked, so use the login. | "Everything you will see is simulated." |
 | 2. Data origin | Point at the status bar and an origin badge. | "Each figure says where it comes from. Carbon is a flat assumed figure." |
 | 3. Facility | Hover and click a rack in the 3D facility. | "A simulated layout; per-rack values are not measurements." |
-| 4. Alert | Open a seeded alert, then **Explain this**; click a citation chip and show its row in the evidence table. | "The answer is a template filled from evidence the server fetched; it lists what it does not know." |
+| 4. Alert | Open a seeded alert, then **Explain this**; click a citation chip and show its row in the evidence table. The drawer opened from both the Live Twin page and `/alerts` when checked on 2026-10-28. | "The answer is a template filled from evidence the server fetched; it lists what it does not know." |
 | 5. Model limits | Open the Model Passport. | "Each model shows its status and its limits, including the weak ones." |
 | 6. What-if | Run one what-if comparison. | "Two simulated runs; no claim about a real site." |
-| 7. Access | Admin window: open the access-request queue and the audit trail for a separate test request. The public request form is **(not in this tree)**. | "Access is a recorded owner decision." |
-| 8. Evidence | Show the latest recorded test or CI result, and one measured performance number **only if** `reports/perf/2026-10/` has one. Today it has none. | "Nothing is quoted that we did not measure." |
+| 7. Access | Admin window: open the access-request queue and the audit trail for a separate test request. The sign-in screen also has a request form and there is an activation page; both passed the automated accessibility run and the `viewer-workflow` runs on the owner's machine. | "Access is a recorded owner decision." |
+| 8. Evidence | Show the latest recorded result: the readiness report `docs/roadmap/task-reports/R_L9_REPORT.md` (PARTIALLY READY) and the test counts in the README. Quote a performance number **only if** `reports/perf/2026-10/` has one; it had none when this page was written. | "Nothing is quoted that we did not measure." |
 | 9. Boundaries | Show `docs/CLAIMS.md`. | "What is and is not checked, and why." |
 
 ## Five-minute script for a viewer (Playbook v3.1, Task 32 draft)
