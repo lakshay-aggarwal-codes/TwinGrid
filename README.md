@@ -25,6 +25,10 @@
   <a href="#links">Docs</a>
 </p>
 
+
+https://github.com/user-attachments/assets/247c9b9a-8ca0-4013-b496-3f19a7c22edd
+
+
 ---
 
 **A simulation-based data-centre digital-twin platform.** [C-01] Every number it shows comes from its own simulator. See the
