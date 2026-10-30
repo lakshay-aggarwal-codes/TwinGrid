@@ -295,15 +295,15 @@ async def test_there_is_no_tool_or_route_that_could_execute_anything(client):
     spec = (await client.get("/openapi.json")).json()
     copilot_paths = {p: sorted(ops) for p, ops in spec["paths"].items() if "copilot" in p}
     assert copilot_paths == {URL: ["post"]}
-    # (c) the pure-Python package imports nothing that can write, spawn, or call out (llm.py, Task 24, is the one
-    #     sanctioned network client and is excluded by name; every other module must stay inert)
+    # (c) the pure-Python package imports nothing that can write, spawn, or call out (llm.py (Task 24) and local.py (CP-3 health check) are the sanctioned
+    #     network clients and are excluded by name; every other module must stay inert)
     banned = re.compile(
         r"\b(?:import|from)\s+(?:subprocess|socket|httpx|requests|urllib|http\.client|asyncio\.subprocess|shutil|sqlalchemy|database)\b"
         r"|\bos\.(?:system|popen|remove|unlink)\b|\b(?:session|db|conn|s)\.(?:add|add_all|execute|commit|delete|merge|flush)\(|\bopen\([^)]*['\"][wa]"
     )
     package = Path(copilot_answer.__file__).parent
     for path in sorted(package.glob("*.py")):
-        if path.name == "llm.py":
+        if path.name in ("llm.py", "local.py"):
             continue
         hits = [
             ln for ln in path.read_text("utf-8").splitlines() if banned.search(ln) and not ln.lstrip().startswith("#")
