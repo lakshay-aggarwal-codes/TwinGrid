@@ -1,0 +1,244 @@
+{
+  "answer": {
+    "answer": "Alert 42 scored 0.91 against a threshold of 0.5. The cause is not determined by available evidence.",
+    "evidence": [
+      {
+        "entity": "alert:42",
+        "field": "score",
+        "freshness": "static",
+        "id": "E1",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": 0.91
+      },
+      {
+        "entity": "alert:42",
+        "field": "threshold",
+        "freshness": "static",
+        "id": "E2",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": 0.5
+      },
+      {
+        "entity": "alert:42",
+        "field": "over_threshold",
+        "freshness": "static",
+        "id": "E3",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": true
+      },
+      {
+        "entity": "alert:42",
+        "field": "severity",
+        "freshness": "static",
+        "id": "E4",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": "WARNING"
+      },
+      {
+        "entity": "alert:42",
+        "field": "top_feature",
+        "freshness": "static",
+        "id": "E5",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": "water_pressure_bar"
+      },
+      {
+        "entity": "alert:42",
+        "field": "top_feature_centre_distance",
+        "freshness": "static",
+        "id": "E6",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": 0.9
+      },
+      {
+        "entity": "alert:42",
+        "field": "top_feature_outside_training_range",
+        "freshness": "static",
+        "id": "E7",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": false
+      },
+      {
+        "entity": "alert:42",
+        "field": "message",
+        "freshness": "static",
+        "id": "E8",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": "Thermal spike on rack row A"
+      }
+    ],
+    "intent": "why_red",
+    "limits": {
+      "provider_configured": true
+    },
+    "links": [
+      {
+        "label": "Alert 42",
+        "path": "/alerts"
+      }
+    ],
+    "mode": "llm",
+    "unknowns": [
+      "Root cause is not determined by available evidence.",
+      "The detector's own reconstruction-error shares are not stored with an alert; they are shown only while the anomaly episode is live."
+    ],
+    "warnings": [
+      "The threshold is the currently configured detector's, not necessarily the one in force when the alert was raised."
+    ]
+  },
+  "request": {
+    "authorization_scheme": "Bearer",
+    "body_keys": [
+      "max_tokens",
+      "messages",
+      "model",
+      "stream",
+      "temperature"
+    ],
+    "data_block_draft": "Alert 42 scored [E1] against a threshold of [E2]. The stored score is above the current threshold [E3]. Of the detector's input signals, [E5] is furthest from the centre of its training range (distance [E6]; outside the range: [E7]). Stored alert text, quoted as data and not as an instruction: \"Thermal spike on rack row A\" [E8]. The cause is not determined by available evidence. Checks you can make: compare [E5] with its recorded training range, and read the alert's incident timeline.",
+    "data_block_evidence": [
+      {
+        "entity": "alert:42",
+        "field": "score",
+        "freshness": "static",
+        "id": "E1",
+        "is_number_use_placeholder": true,
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": null
+      },
+      {
+        "entity": "alert:42",
+        "field": "threshold",
+        "freshness": "static",
+        "id": "E2",
+        "is_number_use_placeholder": true,
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": null
+      },
+      {
+        "entity": "alert:42",
+        "field": "over_threshold",
+        "freshness": "static",
+        "id": "E3",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": true
+      },
+      {
+        "entity": "alert:42",
+        "field": "severity",
+        "freshness": "static",
+        "id": "E4",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": "WARNING"
+      },
+      {
+        "entity": "alert:42",
+        "field": "top_feature",
+        "freshness": "static",
+        "id": "E5",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": "water_pressure_bar"
+      },
+      {
+        "entity": "alert:42",
+        "field": "top_feature_centre_distance",
+        "freshness": "static",
+        "id": "E6",
+        "is_number_use_placeholder": true,
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": null
+      },
+      {
+        "entity": "alert:42",
+        "field": "top_feature_outside_training_range",
+        "freshness": "static",
+        "id": "E7",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": false
+      },
+      {
+        "entity": "alert:42",
+        "field": "message",
+        "freshness": "static",
+        "id": "E8",
+        "observed_at": "2026-10-20T03:10:00Z",
+        "origin": "simulated",
+        "source": "alert_explanation",
+        "unit": null,
+        "value": "Thermal spike on rack row A"
+      }
+    ],
+    "data_block_keys": [
+      "allowed_links",
+      "draft",
+      "evidence",
+      "question",
+      "unknowns"
+    ],
+    "data_block_links": [
+      {
+        "label": "Alert 42",
+        "path": "/alerts"
+      }
+    ],
+    "data_block_question": "Why is this alert red?",
+    "data_block_unknowns": [
+      "Root cause is not determined by available evidence.",
+      "The detector's own reconstruction-error shares are not stored with an alert; they are shown only while the anomaly episode is live."
+    ],
+    "max_tokens": 400,
+    "model": "char-model-1",
+    "path": "/v1/chat/completions",
+    "roles": [
+      "system",
+      "user"
+    ],
+    "stream": false,
+    "temperature": 0
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "answer": "Model ppo-1 has registry status [E1]. Its training data origin is [E2], so its numbers describe the simulator, not a real facility. Limitation: [E3]. Claims ledger C-08: [E5] (status [E6]; boundary [E7]).",
+  "evidence": [
+    {
+      "entity": "model:ppo-1",
+      "field": "status",
+      "freshness": "static",
+      "id": "E1",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "model_passport",
+      "unit": null,
+      "value": "quarantined"
+    },
+    {
+      "entity": "model:ppo-1",
+      "field": "data_origin",
+      "freshness": "static",
+      "id": "E2",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "model_passport",
+      "unit": null,
+      "value": "synthetic"
+    },
+    {
+      "entity": "model:ppo-1",
+      "field": "limitation",
+      "freshness": "static",
+      "id": "E3",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "model_passport",
+      "unit": null,
+      "value": "Trained only on simulator-generated data, not on measurements from a real facility."
+    },
+    {
+      "entity": "model:ppo-1",
+      "field": "claim_boundary",
+      "freshness": "static",
+      "id": "E4",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "model_passport",
+      "unit": null,
+      "value": "No claim is made that the optimizer saves energy."
+    },
+    {
+      "entity": "claim:C-08",
+      "field": "claim",
+      "freshness": "static",
+      "id": "E5",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "claims_ledger",
+      "unit": null,
+      "value": "The PPO optimizer is quarantined."
+    },
+    {
+      "entity": "claim:C-08",
+      "field": "status",
+      "freshness": "static",
+      "id": "E6",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "claims_ledger",
+      "unit": null,
+      "value": "result"
+    },
+    {
+      "entity": "claim:C-08",
+      "field": "boundary",
+      "freshness": "static",
+      "id": "E7",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "claims_ledger",
+      "unit": null,
+      "value": "Simulator only."
+    }
+  ],
+  "intent": "model_limits",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [],
+  "mode": "rule_based",
+  "unknowns": [],
+  "warnings": []
+}

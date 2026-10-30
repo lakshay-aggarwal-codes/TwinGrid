@@ -1,0 +1,19 @@
+{
+  "answer": "Stored history comparison is not available in this version. Stored telemetry can be browsed on the history page.",
+  "evidence": [],
+  "intent": "what_changed",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Telemetry history",
+      "path": "/telemetry"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [
+    "Stored history comparison is not available in this version."
+  ],
+  "warnings": []
+}

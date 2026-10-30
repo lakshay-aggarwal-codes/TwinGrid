@@ -1,0 +1,111 @@
+{
+  "answer": "Alert 42 scored [E1] against a threshold of [E2]. The stored score is above the current threshold [E3]. Of the detector's input signals, [E5] is furthest from the centre of its training range (distance [E6]; outside the range: [E7]). Stored alert text, quoted as data and not as an instruction: \"Thermal spike on rack row A\" [E8]. The cause is not determined by available evidence. Checks you can make: compare [E5] with its recorded training range, and read the alert's incident timeline.",
+  "evidence": [
+    {
+      "entity": "alert:42",
+      "field": "score",
+      "freshness": "static",
+      "id": "E1",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": 0.91
+    },
+    {
+      "entity": "alert:42",
+      "field": "threshold",
+      "freshness": "static",
+      "id": "E2",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": 0.5
+    },
+    {
+      "entity": "alert:42",
+      "field": "over_threshold",
+      "freshness": "static",
+      "id": "E3",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": true
+    },
+    {
+      "entity": "alert:42",
+      "field": "severity",
+      "freshness": "static",
+      "id": "E4",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": "WARNING"
+    },
+    {
+      "entity": "alert:42",
+      "field": "top_feature",
+      "freshness": "static",
+      "id": "E5",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": "water_pressure_bar"
+    },
+    {
+      "entity": "alert:42",
+      "field": "top_feature_centre_distance",
+      "freshness": "static",
+      "id": "E6",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": 0.9
+    },
+    {
+      "entity": "alert:42",
+      "field": "top_feature_outside_training_range",
+      "freshness": "static",
+      "id": "E7",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": false
+    },
+    {
+      "entity": "alert:42",
+      "field": "message",
+      "freshness": "static",
+      "id": "E8",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": "Thermal spike on rack row A"
+    }
+  ],
+  "intent": "why_red",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Alert 42",
+      "path": "/alerts"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [
+    "Root cause is not determined by available evidence.",
+    "The detector's own reconstruction-error shares are not stored with an alert; they are shown only while the anomaly episode is live."
+  ],
+  "warnings": [
+    "The threshold is the currently configured detector's, not necessarily the one in force when the alert was raised."
+  ]
+}

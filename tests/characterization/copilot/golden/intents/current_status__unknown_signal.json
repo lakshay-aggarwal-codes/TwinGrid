@@ -1,0 +1,19 @@
+{
+  "answer": "No usable stored value was found for nope, so its status is not known.",
+  "evidence": [],
+  "intent": "current_status",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Telemetry history",
+      "path": "/telemetry"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [
+    "No stored sample was found for signal nope."
+  ],
+  "warnings": []
+}

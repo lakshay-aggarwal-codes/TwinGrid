@@ -1,0 +1,75 @@
+{
+  "answer": "The latest stored value of this signal is [E3]. Its status is [E4] (reason [E5]). That is not a statement that the signal is normal.",
+  "evidence": [
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "crit_low",
+      "freshness": "static",
+      "id": "E1",
+      "observed_at": null,
+      "origin": "assumed",
+      "source": "threshold_rule",
+      "unit": "degC",
+      "value": 18.0
+    },
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "crit_high",
+      "freshness": "static",
+      "id": "E2",
+      "observed_at": null,
+      "origin": "assumed",
+      "source": "threshold_rule",
+      "unit": "degC",
+      "value": 27.0
+    },
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "value",
+      "freshness": "stale",
+      "id": "E3",
+      "observed_at": "2026-10-20T01:00:00Z",
+      "origin": "simulated",
+      "source": "twin_state",
+      "unit": "degC",
+      "value": 22.5
+    },
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "status",
+      "freshness": "stale",
+      "id": "E4",
+      "observed_at": "2026-10-20T01:00:00Z",
+      "origin": "simulated",
+      "source": "twin_state",
+      "unit": null,
+      "value": "stale"
+    },
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "reason_code",
+      "freshness": "stale",
+      "id": "E5",
+      "observed_at": "2026-10-20T01:00:00Z",
+      "origin": "simulated",
+      "source": "twin_state",
+      "unit": null,
+      "value": "too_old"
+    }
+  ],
+  "intent": "current_status",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Telemetry history",
+      "path": "/telemetry"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [
+    "The latest value of rack-01.inlet is stale, so its current state is not known."
+  ],
+  "warnings": []
+}

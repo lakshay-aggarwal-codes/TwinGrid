@@ -1,0 +1,40 @@
+{
+  "answer": "[E1]: [E2] You can open it from the link below.",
+  "evidence": [
+    {
+      "entity": "feature:alerts_centre",
+      "field": "title",
+      "freshness": "static",
+      "id": "E1",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "capability_catalogue",
+      "unit": null,
+      "value": "Alerts centre"
+    },
+    {
+      "entity": "feature:alerts_centre",
+      "field": "description",
+      "freshness": "static",
+      "id": "E2",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "capability_catalogue",
+      "unit": null,
+      "value": "Anomaly alerts with an incident workflow and an explanation of why each alert fired."
+    }
+  ],
+  "intent": "what_is_this",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Alerts centre",
+      "path": "/alerts"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [],
+  "warnings": []
+}

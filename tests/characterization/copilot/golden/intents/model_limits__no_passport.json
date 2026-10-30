@@ -1,0 +1,48 @@
+{
+  "answer": "Claims ledger C-07: [E1] (status [E2]; boundary [E3]).",
+  "evidence": [
+    {
+      "entity": "claim:C-07",
+      "field": "claim",
+      "freshness": "static",
+      "id": "E1",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "claims_ledger",
+      "unit": null,
+      "value": "The anomaly detector scored F1 0.96 on held-out simulator rows."
+    },
+    {
+      "entity": "claim:C-07",
+      "field": "status",
+      "freshness": "static",
+      "id": "E2",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "claims_ledger",
+      "unit": null,
+      "value": "result"
+    },
+    {
+      "entity": "claim:C-07",
+      "field": "boundary",
+      "freshness": "static",
+      "id": "E3",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "claims_ledger",
+      "unit": null,
+      "value": "The threshold was tuned on the same rows."
+    }
+  ],
+  "intent": "model_limits",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [],
+  "mode": "rule_based",
+  "unknowns": [
+    "The model passport is not available."
+  ],
+  "warnings": []
+}

@@ -1,0 +1,19 @@
+{
+  "answer": "Why-red explanations are available for an alert. Open an alert and ask again from there.",
+  "evidence": [],
+  "intent": "why_red",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Alerts",
+      "path": "/alerts"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [
+    "No alert was selected, so no explanation could be built."
+  ],
+  "warnings": []
+}
