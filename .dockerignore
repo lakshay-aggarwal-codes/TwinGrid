@@ -15,6 +15,10 @@ __pycache__/
 venv/
 .env
 .env.local
+# Per-machine env files (.env.demo, .env.mail, ...) and local secret files must never be COPY'd into an image layer.
+.env.*
+!.env.example
+secrets/
 
 # Abandoned frontend prototypes (see Phase 1 audit) -- not part of the
 # backend image at all
