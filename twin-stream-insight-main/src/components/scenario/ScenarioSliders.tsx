@@ -18,6 +18,8 @@ interface SlidersProps {
   idPrefix?: string;
   /** A control the current view's request does not use shows this note instead of implying an effect. */
   notes?: Partial<Record<ScenarioControl, string>>;
+  /** Read-only viewer: every control is locked (values stay visible). */
+  disabled?: boolean;
 }
 
 /**
@@ -47,10 +49,13 @@ function LabelledSlider({
 }
 
 /** The one set of scenario controls, shared by the Simulation Lab, the What-If tab and the Analytics sidebar. */
-export function ScenarioSliders({ config, onChange, idPrefix, notes = {} }: SlidersProps) {
+export function ScenarioSliders({ config, onChange, idPrefix, notes = {}, disabled = false }: SlidersProps) {
   const auto = useId();
   const id = idPrefix ?? auto;
-  const set = (p: Partial<SimConfig>) => onChange({ ...config, ...p });
+  const set = (p: Partial<SimConfig>) => {
+    if (disabled) return;
+    onChange({ ...config, ...p });
+  };
   const note = (key: ScenarioControl) =>
     notes[key] ? (
       <p id={`${id}-${key}-note`} className="text-[10px] text-muted-foreground italic">
@@ -87,6 +92,7 @@ export function ScenarioSliders({ config, onChange, idPrefix, notes = {} }: Slid
             max={s.max}
             step={s.step}
             value={[s.value]}
+            disabled={disabled}
             onValueChange={([v]) => set(s.apply(v))}
           />
           {note(s.key)}
@@ -96,7 +102,7 @@ export function ScenarioSliders({ config, onChange, idPrefix, notes = {} }: Slid
         <Label htmlFor={`${id}-mode`} className="text-xs text-muted-foreground">
           Cooling mode
         </Label>
-        <Select value={config.coolingMode} onValueChange={(v) => set({ coolingMode: v as CoolingMode })}>
+        <Select value={config.coolingMode} disabled={disabled} onValueChange={(v) => set({ coolingMode: v as CoolingMode })}>
           <SelectTrigger id={`${id}-mode`} aria-describedby={noteId('coolingMode')} className="bg-muted border-border text-sm h-8">
             <SelectValue />
           </SelectTrigger>

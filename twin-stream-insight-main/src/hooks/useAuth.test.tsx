@@ -19,7 +19,7 @@ vi.mock("@/authClient", () => ({
   logout: vi.fn(),
 }));
 
-import { OPERATOR_REQUIRED_TEXT, roleView, useRole } from "./useAuth.ts";
+import { OPERATOR_REQUIRED_TEXT, canOperate, roleView, useRole } from "./useAuth.ts";
 
 beforeEach(() => {
   listeners.clear();
@@ -40,7 +40,7 @@ describe("roleView (UX gating, not authorisation)", () => {
     expect(OPERATOR_REQUIRED_TEXT).toBe("Requires operator role");
   });
 
-  it.each([["Operator"], ["OPERATOR"], ["admin"], ["operator "], [""]])("unrecognised or differently-cased role %j is not operator", (r) => {
+  it.each([["Operator"], ["OPERATOR"], ["Admin"], ["admin "], ["operator "], [""]])("unrecognised or differently-cased role %j is not operator", (r) => {
     const v = roleView(r);
     expect(v.isOperator).toBe(false);
     expect(v.known).toBe(false);
@@ -50,6 +50,41 @@ describe("roleView (UX gating, not authorisation)", () => {
 
   it("signed out (no role): not operator, role null, disabled with the same text", () => {
     expect(roleView(null)).toMatchObject({ role: null, known: false, isOperator: false, operatorOnly: { disabled: true, reason: OPERATOR_REQUIRED_TEXT } });
+  });
+});
+
+describe("canOperate / admin (viewer is read-only; operator and admin may operate)", () => {
+  it.each([
+    ["viewer", false],
+    ["operator", true],
+    ["admin", true],
+    [null, false],
+    [undefined, false],
+    ["auditor", false],
+    ["", false],
+  ])("canOperate(%j) is %s", (r, expected) => {
+    expect(canOperate(r)).toBe(expected);
+  });
+
+  it("roleView: viewer is known but locked, with the visible reason", () => {
+    expect(roleView("viewer")).toMatchObject({ known: true, canOperate: false, isOperator: false, operatorOnly: { disabled: true, reason: OPERATOR_REQUIRED_TEXT } });
+  });
+
+  it("roleView: operator and admin are known and unlocked", () => {
+    for (const r of ["operator", "admin"]) {
+      expect(roleView(r)).toMatchObject({ role: r, known: true, canOperate: true, isOperator: true, operatorOnly: { disabled: false, reason: null } });
+    }
+  });
+
+  it("roleView: signed out (null) cannot operate and is not known", () => {
+    expect(roleView(null)).toMatchObject({ role: null, known: false, canOperate: false, operatorOnly: { disabled: true } });
+  });
+
+  it("useRole follows an admin session", () => {
+    const { result } = renderHook(() => useRole());
+    act(() => setSnap({ status: "signed-in", username: "root", role: "admin", notice: null }));
+    expect(result.current.canOperate).toBe(true);
+    expect(result.current.known).toBe(true);
   });
 });
 

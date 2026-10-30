@@ -23,9 +23,8 @@ Notes
     wall-clock tick instants, so the two never collide, and the newest live rows win the anomaly window.
   * The facility layout scale (1 scene unit = 1.0 m) is a PROPOSED value that has not been signed off by the
     owner; the seeded ``facility.frame_note`` says so.
-  * ``admin`` gates the admin console (``/api/admin/*``), optimizer-proposal decisions and role changes. It is not
-    an operator: routes guarded by ``require_operator`` check the exact role ``operator``, so the admin demo
-    account cannot use them.
+  * ``admin`` gates the admin console (``/api/admin/*``), optimizer-proposal decisions and role changes. Admin also
+    passes every operator check (``User.can_operate``: operator or admin), so the admin demo account can use all controls.
 """
 
 from __future__ import annotations

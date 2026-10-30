@@ -7,6 +7,8 @@ interface Props {
   onChange: (next: LabInputs) => void;
   /** True while a newer setting is waiting out the debounce. */
   pending: boolean;
+  /** Read-only viewer: every control is locked; the values stay visible. */
+  disabled?: boolean;
 }
 
 type NumKey = FixedKey | "setpointC";
@@ -17,9 +19,10 @@ const FIELDS: { key: NumKey; label: string; hint: string }[] = [
 ];
 
 /** Three sliders (each with a number box) and the cooling-mode radio group. Native inputs: keyboard and screen-reader behaviour come for free. */
-export function Controls({ inputs, range, onChange, pending }: Props) {
+export function Controls({ inputs, range, onChange, pending, disabled = false }: Props) {
   const boundsOf = (key: NumKey) => (key === "setpointC" ? range : LAB_BOUNDS[key]);
   const set = (key: NumKey, raw: number) =>
+    !disabled &&
     onChange({ ...inputs, [key]: key === "setpointC" ? snapSetpoint(raw, range, inputs.setpointC) : snap(key, raw, inputs[key]) });
   return (
     <fieldset className="space-y-4 rounded-md border border-border bg-card p-3" data-testid="lab-controls">
@@ -35,6 +38,7 @@ export function Controls({ inputs, range, onChange, pending }: Props) {
                 <input
                   type="number"
                   aria-label={`${f.label} value`}
+                  disabled={disabled}
                   value={inputs[f.key]}
                   min={b.min}
                   max={b.max}
@@ -48,6 +52,7 @@ export function Controls({ inputs, range, onChange, pending }: Props) {
             <input
               id={id}
               type="range"
+              disabled={disabled}
               min={b.min}
               max={b.max}
               step={b.step}
@@ -74,7 +79,8 @@ export function Controls({ inputs, range, onChange, pending }: Props) {
                 type="button"
                 role="radio"
                 aria-checked={on}
-                onClick={() => onChange({ ...inputs, mode: m.id })}
+                disabled={disabled}
+                onClick={() => !disabled && onChange({ ...inputs, mode: m.id })}
                 className={`rounded border px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${on ? "border-primary bg-primary/15 font-semibold underline" : "border-border bg-background hover:bg-muted"}`}
               >
                 {on ? "✓ " : ""}{m.label}

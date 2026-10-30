@@ -18,6 +18,7 @@ describe("AccountMenu", () => {
   it.each([
     ["viewer", "Role: Viewer", "true"],
     ["operator", "Role: Operator", "true"],
+    ["admin", "Role: Admin", "true"],
     ["auditor", "Role: unrecognised", "false"],
     [null, "Role: not reported", "false"],
   ])("shows the role as text (%j)", (r, text, known) => {

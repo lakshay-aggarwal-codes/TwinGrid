@@ -427,8 +427,8 @@ def require_operator(
     user: Annotated[User, Depends(get_current_user)],
     request: Request = None,  # type: ignore[assignment]  # injected by FastAPI; None on direct calls
 ) -> User:
-    """Require role 'operator'. Use on POST /api/optimize. A 403 is audited (best-effort)."""
-    if not user.is_operator():
+    """Require an operating role: operator or admin (``User.can_operate``). A viewer gets 403, audited (best-effort)."""
+    if not user.can_operate():
         _audit_permission_denied(user, request)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

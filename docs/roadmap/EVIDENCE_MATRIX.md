@@ -1,8 +1,10 @@
 # Evidence matrix (Task 32, 2026-10-21)
 
-Every acceptance item of the programme, mapped to code, test, run output, or an explicit blocker. **No release-candidate gate
-(playbook Task 31) has been recorded, so there is no `RC_REPORT.md` and no release verdict.** The readiness assessment from existing evidence is **PARTIALLY READY** (`docs/roadmap/task-reports/R_L9_REPORT.md`, R3 Task 15). `evidence/status.json` is not
-created: it must be filled from Task 31's real results, and there are none.
+Every acceptance item of the programme, mapped to code, test, run output, or an explicit blocker. A release-candidate report
+exists at `docs/roadmap/RC_REPORT.md`, but its verdict is **BLOCKED**: prerequisites were unmet and the failure drills were NOT RUN.
+No release clearance is claimed. The readiness assessment from existing evidence is **PARTIALLY READY**
+(`docs/roadmap/task-reports/R_L9_REPORT.md`, R3 Task 15). `evidence/status.json` is not created because the release-gate
+results needed to populate it have not been captured.
 
 Columns: *Code* = exists in this tree. *Run output* = a recorded run of its tests or of the feature on a real stack. A dash means none.
 Task reports are in `docs/roadmap/task-reports/` (each carries an "L4 update" section dated 2026-10-24; a report is PARTIAL or BLOCKED only where its status line still says so). Backend pytest evidence: the latest full owner run (R3 Task 12, 2026-10-26, Windows) is 5741 passed, 78 skipped (75 need Postgres, 3 are platform or client limits), 1 deselected, 0 failed; one of those three skips (the non-ASCII request id) now runs. It supersedes the run of 2026-10-24 (5676 passed, 3 skipped, 81 deselected, 9 xfailed, 0 failed). CI evidence: PR #87 at `cee2af9` (R3 Task 11, `R3_TASK_11_CI_EVIDENCE.md`). **Updated 2026-10-28 (R3 Task 14)**; rows not named below were not re-checked.
@@ -31,7 +33,7 @@ Task reports are in `docs/roadmap/task-reports/` (each carries an "L4 update" se
 | PPO reported per its registered result | README, JUDGES Q6, CLAIMS C-08: outcome C, claim allowed: none | **Met in text** |
 | Carbon labelled assumed | `src/carbon_provider.py`, `src/carbon_label.py`, `tests/test_carbon_label_guard.py` (27 cases ran under a stand-in runner); legacy API flag still means "a file is loaded"; an Ember India importer exists and labels its flat curve as having no time-of-day shape (`R_CARBON_REPORT.md`: verdict PARTIAL, owner's install and demo mount open) | **Partial** |
 | No forbidden claim anywhere | `tests/test_task33_claims.py` (8 tests passed under a stand-in runner); `grep -rniE "production-ready|calibrated|saves? energy" README.md docs/*.md` read line by line: every hit is a negation, a "not calibrated/uncalibrated" statement, a "we do not claim" answer, or the forbidden-word list itself | **Met for README and docs/*.md; UI strings checked only by the same test** |
-| Final verdict by Task 31 | none recorded | **Blocked** |
+| Final verdict by Task 31 | `docs/roadmap/RC_REPORT.md`: BLOCKED; prerequisites unmet and drills NOT RUN | **Blocked** |
 
 ## Not run, and why this matrix cannot be better
 No Docker, Postgres, browser, node_modules or network were available while Tasks 1 to 32 in this series were produced; since then the

@@ -6,6 +6,7 @@ import { buildIncidentReport, type Report } from "@/reports/reports";
 import { fetchAlerts, type AlertRecord } from "@/api/apiClient";
 import { alertsQueryKey } from "@/api/alerts";
 import { useAuth } from "@/hooks/useAuth";
+import { canOperate } from "@/roleAccess";
 import { AlertList } from "@/components/alerts/AlertList";
 import type { Role } from "@/components/alerts/AlertRowItem";
 import { usePageVisible } from "@/components/alerts/usePageVisible";
@@ -39,8 +40,8 @@ export const REFRESH_INTERVAL_MS = 15000;
  */
 export function IncidentsPanel({ open, onClose, onFocusFacility, latestAnomaly, onGenerateReport }: IncidentsPanelProps) {
   const { role: authRole } = useAuth();
-  // Only the exact backend value "operator" enables operator controls; any other (or unknown) role is view-only here.
-  const role: Role = authRole === "operator" ? "operator" : "viewer";
+  // Only the exact backend values "operator" and "admin" enable operator controls; any other (or unknown) role is view-only here.
+  const role: Role = canOperate(authRole) ? "operator" : "viewer";
   const visible = usePageVisible();
   const queryKey = alertsQueryKey(ALERTS_LIMIT);
 

@@ -1,6 +1,12 @@
 # Task 23 (roadmap): facility-data calibration workflow
 
-**Status: BLOCKED. Design only; no code, no data, no calibrated parameters.**
+**Status: pipeline built; NO real calibration done. Still BLOCKED on measured facility data.**
+
+What exists now: `src/calibration/` (schema and unit checks, time split with a hashed pre-registration, bounded fit, identifiability check, one-shot test scoring, null comparison, optional day-block bootstrap), `scripts/calibrate.py`, and `tests/test_calibration.py`. The tests use SYNTHETIC data only and prove the machinery (parameter recovery, no leakage, one-shot test block, tamper-evident pre-registration). They say nothing about agreement with any facility. No parameter in `src/physics/params.py` has changed, and a synthetic run can never produce the label "calibrated to dataset ...".
+
+Run it on your own data: `python scripts/calibrate.py --tidy-csv facility.csv --dataset-id <id> --cadence-s 300 --out calibration_report.json`. Self-check without data: `python scripts/calibrate.py --selftest`.
+
+Deviations from the design below: identifiability uses a Jacobian check (sensitivity, correlation, bounds), not a profile likelihood; short gaps are never interpolated (a gap ends a run); `tau_chw_min` and the rate limit are not fitted because the channel list has no measured supply temperature; the validation block only picks the ridge strength toward the published values.
 
 ## Why blocked
 The roadmap requires a licensed or user-owned facility dataset. None is in the tree: `data/external/REGISTER.json` lists 15 public sources (weather, grid carbon, water risk, ASHRAE papers, building-energy competition data, aircraft-engine run-to-failure, NAB, cluster traces, solar). None is measured telemetry from a data-centre cooling plant with IT power, room or inlet temperatures, and cooling power. `data/cleaned/` holds only a README. Nothing in this design is a result.

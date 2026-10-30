@@ -1,7 +1,7 @@
 import { useAuth, useRole } from "@/hooks/useAuth.ts";
 import { Slot } from "@/features/Slot";
 
-const ROLE_LABEL: Record<string, string> = { viewer: "Viewer", operator: "Operator" };
+const ROLE_LABEL: Record<string, string> = { viewer: "Viewer", operator: "Operator", admin: "Admin" };
 
 /** Who is signed in, their role, and the sign-out control. Small and fixed so it needs no header changes. */
 export function AccountMenu() {

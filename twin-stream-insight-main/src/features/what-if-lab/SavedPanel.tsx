@@ -15,11 +15,13 @@ interface Props {
   onExport: () => void;
   onCopyLink: () => void;
   notice: string;
+  /** Read-only viewer: saving, deleting and loading into the controls are locked; export and copy link stay. */
+  readOnly?: boolean;
 }
 
 const btn = "rounded border border-border bg-background px-2 py-1 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-export function SavedPanel({ baseline, current, saved, storageOk, onSave, onRemove, onLoad, onUseAsBaseline, onExport, onCopyLink, notice }: Props) {
+export function SavedPanel({ baseline, current, saved, storageOk, onSave, onRemove, onLoad, onUseAsBaseline, onExport, onCopyLink, notice, readOnly = false }: Props) {
   const [name, setName] = useState("");
   const full = saved.length >= MAX_SAVED;
   const columns: { key: string; title: string; snap: Snapshot | null; saved?: SavedScenario }[] = [
@@ -36,7 +38,7 @@ export function SavedPanel({ baseline, current, saved, storageOk, onSave, onRemo
           Name
           <input value={name} maxLength={MAX_NAME} placeholder={current ? defaultSaveName(current.inputs) : "Scenario name"} onChange={(e) => setName(e.target.value)} className="w-56 rounded border border-border bg-background px-2 py-1 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
         </label>
-        <button type="button" className={btn} disabled={!current || full} onClick={() => { onSave(name.trim() === "" && current ? defaultSaveName(current.inputs) : name); setName(""); }}>
+        <button type="button" className={btn} disabled={!current || full || readOnly} onClick={() => { onSave(name.trim() === "" && current ? defaultSaveName(current.inputs) : name); setName(""); }}>
           Save current scenario
         </button>
         <button type="button" className={btn} onClick={onExport} disabled={!baseline && !current && saved.length === 0}>Export CSV</button>
@@ -53,9 +55,9 @@ export function SavedPanel({ baseline, current, saved, storageOk, onSave, onRemo
             <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-border px-2 py-1 text-xs">
               <span className="min-w-0 truncate"><strong>{s.name}</strong> — {describeInputs(s.inputs)}</span>
               <span className="flex gap-1">
-                <button type="button" className={btn} onClick={() => onLoad(s.inputs)} aria-label={`Load ${s.name} into the controls`}>Load</button>
-                <button type="button" className={btn} onClick={() => onUseAsBaseline(s.inputs)} aria-label={`Use ${s.name} as the baseline`}>Use as baseline</button>
-                <button type="button" className={btn} onClick={() => onRemove(s.id)} aria-label={`Delete ${s.name}`}>Delete</button>
+                <button type="button" className={btn} disabled={readOnly} onClick={() => onLoad(s.inputs)} aria-label={`Load ${s.name} into the controls`}>Load</button>
+                <button type="button" className={btn} disabled={readOnly} onClick={() => onUseAsBaseline(s.inputs)} aria-label={`Use ${s.name} as the baseline`}>Use as baseline</button>
+                <button type="button" className={btn} disabled={readOnly} onClick={() => onRemove(s.id)} aria-label={`Delete ${s.name}`}>Delete</button>
               </span>
             </li>
           ))}

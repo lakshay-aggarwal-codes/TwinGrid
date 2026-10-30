@@ -1,4 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
+import { OPERATOR_REQUIRED_TEXT, canOperate } from "@/roleAccess";
 import {
   getAuthSnapshot,
   login as authLogin,
@@ -25,15 +26,18 @@ export function useAuth(): UseAuth {
   return { ...snapshot, login, logout, startDemo };
 }
 
-/** Exact text for a control only an operator may use (optimise, acknowledge). */
-export const OPERATOR_REQUIRED_TEXT = "Requires operator role";
+/** Exact text for a control only an operating role (operator or admin) may use (optimise, acknowledge, run). */
+export { OPERATOR_REQUIRED_TEXT, canOperate };
 
 export interface RoleView {
   /** The role exactly as the backend stated it; null when signed out. */
   role: AuthRole | null;
-  /** The role is one this client recognises (viewer / operator). An unrecognised role stays visible as unrecognised. */
+  /** The role is one this client recognises (viewer / operator / admin). An unrecognised role stays visible as unrecognised. */
   known: boolean;
+  /** May operate: role operator or admin (see canOperate). Same value as `canOperate`; kept under its original name. */
   isOperator: boolean;
+  /** May operate: role operator or admin. Admin sees exactly the controls an operator sees. */
+  canOperate: boolean;
   /**
    * For an operator-only control: spread `disabled` onto it and show `reason` as text beside it (never colour alone).
    * `reason` is null when the control is enabled.
@@ -41,14 +45,15 @@ export interface RoleView {
   operatorOnly: { disabled: boolean; reason: string | null };
 }
 
-/** Pure; exported for tests. Only the exact backend value "operator" enables operator controls in the UI. */
+/** Pure; exported for tests. Only the exact backend values "operator" and "admin" enable operator controls in the UI. */
 export function roleView(role: AuthRole | null): RoleView {
-  const isOperator = role === "operator";
+  const operate = canOperate(role);
   return {
     role,
-    known: role === "viewer" || role === "operator",
-    isOperator,
-    operatorOnly: { disabled: !isOperator, reason: isOperator ? null : OPERATOR_REQUIRED_TEXT },
+    known: role === "viewer" || role === "operator" || role === "admin",
+    isOperator: operate,
+    canOperate: operate,
+    operatorOnly: { disabled: !operate, reason: operate ? null : OPERATOR_REQUIRED_TEXT },
   };
 }
 

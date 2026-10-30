@@ -23,7 +23,7 @@ import { TokenResponse, isUnknown, isFailure, parseApi } from './contract';
 import { DemoSessionResponse } from './features/access/schemas';
 
 /** Roles this client knows. The backend's vocabulary is authoritative: any other value is kept as-is (see AuthRole). */
-export type Role = 'viewer' | 'operator';
+export type Role = 'viewer' | 'operator' | 'admin';
 /**
  * The role as the backend stated it. A value this client does not recognise stays that string and is treated as
  * "not operator" for UX purposes. A role is a display/gating HINT only: the server decides what a request may do (403 is final).

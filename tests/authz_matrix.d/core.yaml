@@ -56,18 +56,18 @@ routes:
   - {method: GET, path_template: "/api/runs/{run_id}", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
   - {method: GET, path_template: "/api/runs/{run_id}/result", anonymous: "401", viewer: 2xx, operator: 2xx, admin: 2xx}
 
-  # --- Operator only: require_operator checks the exact role 'operator', so admin is refused (pinned current behaviour)
-  - {method: POST, path_template: "/api/optimize", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: POST, path_template: "/api/optimize/train_async", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: GET, path_template: "/api/optimize/jobs/{job_id}", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: POST, path_template: "/api/shadow_mode/sample", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: POST, path_template: "/api/webhooks", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: DELETE, path_template: "/api/webhooks", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: POST, path_template: "/api/alerts/{alert_id}/acknowledge", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: PATCH, path_template: "/api/alerts/{alert_id}", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: POST, path_template: "/api/assets/{asset_id}/move", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: POST, path_template: "/api/assets/{asset_id}/edges", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
-  - {method: POST, path_template: "/api/edges/{edge_id}/close", anonymous: "401", viewer: "403", operator: 2xx, admin: "403"}
+  # --- Operator or admin: require_operator allows role operator and admin (User.can_operate); a viewer is refused
+  - {method: POST, path_template: "/api/optimize", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/optimize/train_async", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: GET, path_template: "/api/optimize/jobs/{job_id}", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/shadow_mode/sample", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/webhooks", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: DELETE, path_template: "/api/webhooks", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/alerts/{alert_id}/acknowledge", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: PATCH, path_template: "/api/alerts/{alert_id}", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/assets/{asset_id}/move", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/assets/{asset_id}/edges", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
+  - {method: POST, path_template: "/api/edges/{edge_id}/close", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}
 
   # --- Operator or admin: require_writer / require_proposer
   - {method: POST, path_template: "/api/maintenance/work-orders", anonymous: "401", viewer: "403", operator: 2xx, admin: 2xx}

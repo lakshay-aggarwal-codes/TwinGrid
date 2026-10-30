@@ -9,10 +9,12 @@ interface Props {
   errors: Readonly<Record<string, string>>;
   onChange: (name: string, value: string) => void;
   idPrefix?: string;
+  /** Read-only viewer: every field is locked (values stay visible). */
+  disabled?: boolean;
 }
 
 /** Form generated from the backend parameter schema. Bounds and options shown are the backend's; none are invented. */
-export function ScenarioParamForm({ fields, unrecognised, values, errors, onChange, idPrefix = 'scenario-param' }: Props) {
+export function ScenarioParamForm({ fields, unrecognised, values, errors, onChange, idPrefix = 'scenario-param', disabled = false }: Props) {
   return (
     <div className="space-y-3" data-testid="scenario-param-form">
       {fields.map((f) => {
@@ -30,6 +32,7 @@ export function ScenarioParamForm({ fields, unrecognised, values, errors, onChan
               <select
                 id={id}
                 value={values[f.name] ?? ''}
+                disabled={disabled}
                 onChange={(e) => onChange(f.name, e.target.value)}
                 aria-invalid={err ? true : undefined}
                 aria-describedby={describedBy}
@@ -44,6 +47,7 @@ export function ScenarioParamForm({ fields, unrecognised, values, errors, onChan
             ) : (
               <Input
                 id={id}
+                disabled={disabled}
                 type="number"
                 inputMode="decimal"
                 step="any"

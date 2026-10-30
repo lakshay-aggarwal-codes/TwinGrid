@@ -13,6 +13,9 @@ services:
     environment:
       ENVIRONMENT: development
       DEMO_MODE: "true"
+      # Anonymous read-only POST /auth/demo-session. Local demo only: the base docker-compose.yml and .env.example
+      # leave it off. Expiry (DEMO_SESSION_MINUTES) and rate limit (DEMO_SESSION_RATE_LIMIT) keep their defaults.
+      DEMO_PUBLIC_ENABLED: "true"
 
   demo-seed:
     profiles: ["demo-seed"]

@@ -1,0 +1,41 @@
+# Real-email overlay (Gmail SMTP) for the LOCAL DEMO. Opt-in: nothing starts it unless you ask for it.
+#   .\scripts\mail-setup.ps1        # once: writes .env.mail and secrets\smtp_password.txt (both git- and docker-ignored)
+#   .\scripts\demo.ps1 -WithMail    # starts the demo with this overlay
+# or, to recreate only the backend by hand:
+#   docker compose --env-file .env.demo -f docker-compose.yml -f docker-compose.demo.yml -f docker-compose.mail.yml up -d --force-recreate --no-deps backend
+#
+# Use it WITH docker-compose.yml and docker-compose.demo.yml; never on its own and never for a real deployment.
+#
+# Why this file exists: `--env-file .env.demo` only feeds ${...} interpolation inside the compose files. It does NOT put
+# variables into a container. docker-compose.yml lists the backend's variables explicitly and reads `.env` (if present),
+# so ACCESS_NOTIFY_* placed in .env.demo never reach the backend. Here the values reach it in two ways instead:
+#   * non-secret settings are written below, literally;
+#   * the Gmail address(es) come from .env.mail via env_file (passed straight to the container, no interpolation);
+#   * the app password is mounted as a file and read through ACCESS_NOTIFY_SMTP_PASSWORD_FILE (api/secrets.py), so it
+#     is never in the environment, `docker inspect`, a compose file or a log.
+#
+# .env.mail holds exactly three lines (scripts/mail-setup.ps1 writes them):
+#   ACCESS_NOTIFY_SMTP_USER=you@gmail.com
+#   ACCESS_NOTIFY_OWNER_EMAIL=you@gmail.com
+#   ACCESS_NOTIFY_FROM=you@gmail.com
+#
+# Safety: ENVIRONMENT is not touched here (the demo overlay keeps it at development). In production the app only builds
+# mail links from an https:// ACCESS_PUBLIC_BASE_URL, so this http://localhost value cannot send link mail there.
+services:
+  backend:
+    env_file:
+      - path: .env.mail
+        required: true
+    environment:
+      ACCESS_NOTIFY_BACKEND: smtp
+      ACCESS_NOTIFY_SMTP_HOST: smtp.gmail.com
+      ACCESS_NOTIFY_SMTP_PORT: "587"
+      ACCESS_NOTIFY_SMTP_TLS: starttls
+      ACCESS_PUBLIC_BASE_URL: http://localhost:8080
+      ACCESS_NOTIFY_SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+    secrets:
+      - smtp_password
+
+secrets:
+  smtp_password:
+    file: ./secrets/smtp_password.txt
