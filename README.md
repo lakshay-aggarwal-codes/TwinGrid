@@ -121,12 +121,13 @@ These parts are in the code and have tests. They were exercised in browser runs 
 [the L7 report](docs/roadmap/task-reports/R_L7_REPORT.md)), not in CI, so none of them is in the claims ledger. Per-task detail:
 [`docs/roadmap/task-reports/`](docs/roadmap/task-reports/).
 
-- **Viewer access.** The API takes access requests (`POST /api/access-requests`), lets the requester poll a status with a one-time
-  token, and emails the owner approve/deny links; the dashboard has a request form, an activation page and an admin queue. Mail
-  has been exercised over a local SMTP path and a file outbox, not through a real mailbox.
-- **Read-only demo.** `POST /auth/demo-session` issues a short read-only session when `DEMO_PUBLIC_ENABLED` is true (length and rate
-  limit: `DEMO_SESSION_MINUTES`, `DEMO_SESSION_RATE_LIMIT`). The demo session may ask the assistant. Whether a one-click demo
-  button exists in the dashboard was not re-checked.
+- **Viewer access.** The public sign-in screen includes a request form; the API accepts `POST /api/access-requests`, lets the
+  requester poll a status with a one-time token, and emails the owner approve/deny links. The flow also has an activation page
+  and an admin queue. Mail has been exercised over a local SMTP path and a file outbox, not through a real mailbox.
+- **Read-only demo.** The sign-in screen includes an **Explore read-only demo** button, which calls `POST /auth/demo-session`.
+  The backend issues a short read-only session only when `DEMO_PUBLIC_ENABLED` is true (length and rate limit:
+  `DEMO_SESSION_MINUTES`, `DEMO_SESSION_RATE_LIMIT`); otherwise the UI shows that the demo is unavailable. The demo session may
+  ask the assistant. The button and its error/duplicate-click states are covered by `LoginScreen.access.test.tsx`.
 - **Assistant ("Explain this").** `POST /api/copilot/ask` answers from templates filled with evidence the server fetched itself
   (alert, signal, model, feature, cited `E1`, `E2`...). The drawer shows the evidence table and what is not known. **No language
   model is connected**, so there is nothing to configure for one, and it cannot write numbers: every figure in an answer is copied
