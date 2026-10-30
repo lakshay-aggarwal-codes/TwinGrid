@@ -13,7 +13,8 @@ The rule-based answer (``answer.py``) is always built first. This module may onl
 * Logs: model id, provider request id and an outcome word. Never a prompt, an answer, a question or telemetry.
 
 OpenAI-compatible ``POST {base_url}/chat/completions`` over ``requests`` (already a runtime dependency).
-Pure Python: no FastAPI, no database. The API key is read with ``api.secrets.read_secret``.
+Pure Python: no FastAPI, no database. Provider settings come from ``providers.py`` (CP-1); the API key is read with
+``api.secrets.read_secret``. Until the CP-2 router exists only the first usable provider is called.
 """
 
 from __future__ import annotations
@@ -28,16 +29,16 @@ from dataclasses import dataclass, field, replace
 from typing import Any
 
 from . import MODE_LLM
+from . import providers as _providers
 
 logger = logging.getLogger(__name__)
 
 WARN_UNAVAILABLE = "llm_unavailable"
 WARN_REJECTED = "llm_rejected"
 MAX_ANSWER = 1500
-DEFAULT_TIMEOUT_S = 10.0
-DEFAULT_MAX_OUTPUT_TOKENS = 400
+DEFAULT_TIMEOUT_S = _providers.DEFAULT_TIMEOUT_S
+DEFAULT_MAX_OUTPUT_TOKENS = _providers.DEFAULT_MAX_OUTPUT_TOKENS
 MAX_RESPONSE_BYTES = 256 * 1024
-_TRUE = {"1", "true", "yes", "on"}
 _KEEP_PHRASE = "not determined by available evidence"  # the draft's honest root-cause sentence must survive
 
 _PLACEHOLDER = re.compile(r"\{\{\s*(E\d+)\s*\}\}")
@@ -104,45 +105,49 @@ SYSTEM_POLICY = (
 
 @dataclass(frozen=True)
 class LlmSettings:
+    """The one provider a single call uses. Built from a :class:`providers.ProviderConfig`; tests may build it directly."""
+
     enabled: bool = False
     base_url: str = ""
     model: str = ""
     api_key: str | None = field(default=None, repr=False)
     timeout_s: float = DEFAULT_TIMEOUT_S
     max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS
+    name: str = _providers.DEFAULT_PROVIDER
+    local: bool = False
 
     @property
     def configured(self) -> bool:
         return self.enabled and bool(self.base_url) and bool(self.model)
 
 
-def _number(raw: str | None, default: float, low: float, high: float) -> float:
-    try:
-        value = float(str(raw).strip())
-    except (TypeError, ValueError):
-        return default
-    return value if low <= value <= high else default
+def settings_from_provider(cfg: _providers.ProviderConfig) -> LlmSettings:
+    return LlmSettings(
+        enabled=cfg.enabled,
+        base_url=cfg.base_url,
+        model=cfg.model,
+        api_key=cfg.api_key,
+        timeout_s=cfg.timeout_s,
+        max_output_tokens=cfg.max_output_tokens,
+        name=cfg.name,
+        local=cfg.local,
+    )
 
 
 def load_settings(environ: Any = None) -> LlmSettings:
-    """Read the ``COPILOT_LLM_*`` variables now (no caching). Bad numbers fall back to their defaults."""
-    import os
+    """Read the ``COPILOT_LLM_*`` variables now (no caching). Bad numbers fall back to their defaults.
 
-    env = os.environ if environ is None else environ
-    enabled = str(env.get("COPILOT_LLM_ENABLED", "")).strip().lower() in _TRUE
-    if not enabled:
+    The first enabled, fully configured provider wins. If there is none, the first enabled one is returned unconfigured
+    (the caller then answers rule-based with ``llm_unavailable``). Feature off: ``LlmSettings()``.
+    """
+    if not _providers.llm_enabled(environ):
         return LlmSettings()
-    from api.secrets import read_secret  # lazy: api/ is not imported unless the feature is on
-
-    key = read_secret("COPILOT_LLM_API_KEY") if environ is None else env.get("COPILOT_LLM_API_KEY")
-    return LlmSettings(
-        enabled=True,
-        base_url=str(env.get("COPILOT_LLM_BASE_URL", "")).strip().rstrip("/"),
-        model=str(env.get("COPILOT_LLM_MODEL", "")).strip(),
-        api_key=(key or None),
-        timeout_s=_number(env.get("COPILOT_LLM_TIMEOUT_S"), DEFAULT_TIMEOUT_S, 0.1, 120.0),
-        max_output_tokens=int(_number(env.get("COPILOT_LLM_MAX_OUTPUT_TOKENS"), DEFAULT_MAX_OUTPUT_TOKENS, 16, 4000)),
-    )
+    configs = _providers.load_providers(environ)
+    usable = _providers.active_providers(configs)
+    chosen = usable[0] if usable else next((c for c in configs if c.enabled), None)
+    if chosen is None:
+        return LlmSettings(enabled=True)
+    return settings_from_provider(chosen)
 
 
 # ----------------------------------------------------------------------------- prompt
@@ -325,7 +330,11 @@ def validate(
 
 def _log(settings: LlmSettings, request_id: str | None, outcome: str) -> None:
     logger.info(
-        "copilot_llm model=%s provider_request_id=%s outcome=%s", _safe_id(settings.model), request_id or "-", outcome
+        "copilot_llm provider=%s model=%s provider_request_id=%s outcome=%s",
+        _safe_id(settings.name) or "-",
+        _safe_id(settings.model),
+        request_id or "-",
+        outcome,
     )
 
 
