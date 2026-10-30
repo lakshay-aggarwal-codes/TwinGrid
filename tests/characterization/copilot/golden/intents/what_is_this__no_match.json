@@ -1,0 +1,14 @@
+{
+  "answer": "I could not match that to a feature of this application.",
+  "evidence": [],
+  "intent": "what_is_this",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [],
+  "mode": "rule_based",
+  "unknowns": [
+    "No catalogue entry matches the question."
+  ],
+  "warnings": []
+}

@@ -1,0 +1,40 @@
+{
+  "answer": "[E1]: [E2] You can open it from the link below.",
+  "evidence": [
+    {
+      "entity": "feature:what_if_lab",
+      "field": "title",
+      "freshness": "static",
+      "id": "E1",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "capability_catalogue",
+      "unit": null,
+      "value": "What-if lab"
+    },
+    {
+      "entity": "feature:what_if_lab",
+      "field": "description",
+      "freshness": "static",
+      "id": "E2",
+      "observed_at": null,
+      "origin": "documentation",
+      "source": "capability_catalogue",
+      "unit": null,
+      "value": "Runs the simulator under changed load or ambient temperature and shows the differences."
+    }
+  ],
+  "intent": "what_is_this",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "What-if lab",
+      "path": "/whatif-lab"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [],
+  "warnings": []
+}

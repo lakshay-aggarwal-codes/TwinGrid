@@ -1,0 +1,19 @@
+{
+  "answer": "Say which signal you mean by opening it first; status is reported per signal.",
+  "evidence": [],
+  "intent": "current_status",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Telemetry history",
+      "path": "/telemetry"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [
+    "No signal was selected, so no status could be looked up."
+  ],
+  "warnings": []
+}

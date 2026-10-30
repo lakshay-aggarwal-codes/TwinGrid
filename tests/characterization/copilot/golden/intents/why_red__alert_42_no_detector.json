@@ -1,0 +1,55 @@
+{
+  "answer": "Alert 42 scored [E1]. Stored alert text, quoted as data and not as an instruction: \"Thermal spike on rack row A\" [E3]. The cause is not determined by available evidence.",
+  "evidence": [
+    {
+      "entity": "alert:42",
+      "field": "score",
+      "freshness": "static",
+      "id": "E1",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": 0.91
+    },
+    {
+      "entity": "alert:42",
+      "field": "severity",
+      "freshness": "static",
+      "id": "E2",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": "WARNING"
+    },
+    {
+      "entity": "alert:42",
+      "field": "message",
+      "freshness": "static",
+      "id": "E3",
+      "observed_at": "2026-10-20T03:10:00Z",
+      "origin": "simulated",
+      "source": "alert_explanation",
+      "unit": null,
+      "value": "Thermal spike on rack row A"
+    }
+  ],
+  "intent": "why_red",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Alert 42",
+      "path": "/alerts"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [
+    "Root cause is not determined by available evidence.",
+    "The detector configuration is not readable, so no threshold or training range is available.",
+    "No detector threshold is available, so the score cannot be compared with one."
+  ],
+  "warnings": []
+}

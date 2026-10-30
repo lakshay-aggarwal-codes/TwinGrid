@@ -1,0 +1,73 @@
+{
+  "answer": "The latest stored value of this signal is [E3]. Its status is [E4] (reason [E5]).",
+  "evidence": [
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "crit_low",
+      "freshness": "static",
+      "id": "E1",
+      "observed_at": null,
+      "origin": "assumed",
+      "source": "threshold_rule",
+      "unit": "degC",
+      "value": 18.0
+    },
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "crit_high",
+      "freshness": "static",
+      "id": "E2",
+      "observed_at": null,
+      "origin": "assumed",
+      "source": "threshold_rule",
+      "unit": "degC",
+      "value": 27.0
+    },
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "value",
+      "freshness": "fresh",
+      "id": "E3",
+      "observed_at": "2026-10-20T03:14:30Z",
+      "origin": "simulated",
+      "source": "twin_state",
+      "unit": "degC",
+      "value": 22.5
+    },
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "status",
+      "freshness": "fresh",
+      "id": "E4",
+      "observed_at": "2026-10-20T03:14:30Z",
+      "origin": "simulated",
+      "source": "twin_state",
+      "unit": null,
+      "value": "normal"
+    },
+    {
+      "entity": "signal:rack-01.inlet",
+      "field": "reason_code",
+      "freshness": "fresh",
+      "id": "E5",
+      "observed_at": "2026-10-20T03:14:30Z",
+      "origin": "simulated",
+      "source": "twin_state",
+      "unit": null,
+      "value": "within_bounds"
+    }
+  ],
+  "intent": "current_status",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Telemetry history",
+      "path": "/telemetry"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [],
+  "warnings": []
+}

@@ -1,0 +1,54 @@
+{
+  "answer": "The latest stored value of this signal is [E1]. Its status is [E2] (reason [E3]). That is not a statement that the signal is normal.",
+  "evidence": [
+    {
+      "entity": "signal:rack-01.fan",
+      "field": "value",
+      "freshness": "fresh",
+      "id": "E1",
+      "observed_at": "2026-10-20T03:14:30Z",
+      "origin": "simulated",
+      "source": "twin_state",
+      "unit": "rpm",
+      "value": 1200.0
+    },
+    {
+      "entity": "signal:rack-01.fan",
+      "field": "status",
+      "freshness": "fresh",
+      "id": "E2",
+      "observed_at": "2026-10-20T03:14:30Z",
+      "origin": "simulated",
+      "source": "twin_state",
+      "unit": null,
+      "value": "unknown"
+    },
+    {
+      "entity": "signal:rack-01.fan",
+      "field": "reason_code",
+      "freshness": "fresh",
+      "id": "E3",
+      "observed_at": "2026-10-20T03:14:30Z",
+      "origin": "simulated",
+      "source": "twin_state",
+      "unit": null,
+      "value": "rule_unavailable"
+    }
+  ],
+  "intent": "current_status",
+  "limits": {
+    "provider_configured": false
+  },
+  "links": [
+    {
+      "label": "Telemetry history",
+      "path": "/telemetry"
+    }
+  ],
+  "mode": "rule_based",
+  "unknowns": [
+    "No threshold rule is defined for signal rack-01.fan.",
+    "The status of rack-01.fan is unknown (reason: rule_unavailable)."
+  ],
+  "warnings": []
+}
