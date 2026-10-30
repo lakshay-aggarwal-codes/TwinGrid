@@ -31,6 +31,9 @@ from dataclasses import dataclass, field, replace
 from typing import Any
 
 from . import MODE_LLM
+from . import limiter as _limiter
+from . import local as _local
+from . import presets as _presets
 from . import providers as _providers
 from . import router as _router
 
@@ -143,6 +146,7 @@ def load_settings(environ: Any = None) -> LlmSettings:
     The first enabled, fully configured provider wins. If there is none, the first enabled one is returned unconfigured
     (the caller then answers rule-based with ``llm_unavailable``). Feature off: ``LlmSettings()``.
     """
+    environ = _presets.with_presets(_local.with_ollama_preset(environ))  # CP-3/CP-4: default base URLs
     if not _providers.llm_enabled(environ):
         return LlmSettings()
     configs = _providers.load_providers(environ)
@@ -159,6 +163,7 @@ def load_chain(environ: Any = None) -> list[LlmSettings]:
     Only enabled, fully configured providers are listed. If there are none but the feature is on, one unconfigured entry
     is returned so the caller answers rule-based with ``llm_unavailable`` (the Task 24 behaviour).
     """
+    environ = _presets.with_presets(_local.with_ollama_preset(environ))  # CP-3/CP-4
     if not _providers.llm_enabled(environ):
         return []
     configs = _providers.load_providers(environ)
@@ -390,7 +395,7 @@ async def enhance(result: Any, *, question: str, settings: LlmSettings | None = 
         chain = [settings] if settings is not None else load_chain()
         if not chain or not chain[0].enabled:
             return result
-        usable = [s for s in chain if s.configured]
+        usable = [_local.prepare(s, None, DEFAULT_TIMEOUT_S) for s in chain if s.configured]  # CP-3: local timeout
         limits = {**result.limits, "provider_configured": bool(usable)}
         if not usable:
             _log(chain[0], None, "not_configured")
@@ -401,6 +406,16 @@ async def enhance(result: Any, *, question: str, settings: LlmSettings | None = 
 
         def attempt(s: LlmSettings, timeout_s: float) -> str:
             request_id: str | None = None
+            if s.local:  # CP-3: a local server that is down or lacks the model is skipped in about a second
+                health = _local.check(s)
+                if not health.ok:
+                    _log(s, None, f"unavailable_{health.reason}")
+                    raise _router.Failure(_router.KIND_TRANSIENT, f"unavailable_{health.reason}")
+            rpm, rpd = _presets.limits_for(s.name)  # CP-4: stop before the provider rejects us
+            wait = _limiter.LIMITER.try_acquire(_provider_key(s), rpm, rpd)
+            if wait > 0:
+                _log(s, None, "unavailable_client_rate_limit")
+                raise _router.Failure(_router.KIND_QUOTA, "unavailable_client_rate_limit", retry_after=wait)
             try:
                 content, request_id = _call_provider(replace(s, timeout_s=timeout_s), messages)
                 text, _used = validate(content, result.evidence, result.links, result.answer)
@@ -429,10 +444,10 @@ async def enhance(result: Any, *, question: str, settings: LlmSettings | None = 
                 min(budget, sum(s.timeout_s for s in usable)) + 2,
             )
         except asyncio.TimeoutError:
-            logger.info("llm_chain outcome=unavailable_timeout attempts=- total_ms=%d", _ms(started))
+            logger.info("copilot_llm_chain outcome=unavailable_timeout attempts=- total_ms=%d", _ms(started))
             return replace(result, limits=limits, warnings=_add(result.warnings, WARN_UNAVAILABLE))
         logger.info(
-            "llm_chain outcome=%s attempts=%s total_ms=%d",
+            "copilot_llm_chain outcome=%s attempts=%s total_ms=%d",
             "ok" if outcome.ok else ("rejected" if outcome.rejected else "unavailable"),
             outcome.summary(),
             _ms(started),
