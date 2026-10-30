@@ -10,6 +10,8 @@ The rule-based answer (``answer.py``) is always built first. This module may onl
   forbidden wording (a named cause, a claimed action or calibration, normal/live/healthy, a number spelled out).
 * Provider trouble (timeout, 429, 5xx, bad JSON, bad envelope, redirect) gives the rule-based answer plus the warning
   ``llm_unavailable``. Nothing raised here reaches the client.
+* CP-2: with several providers configured, ``router.py`` tries them in order (cooldowns, auth disable, shared time
+  budget). A rejected answer counts as that provider's failure; one more provider is tried, then rule-based.
 * Logs: model id, provider request id and an outcome word. Never a prompt, an answer, a question or telemetry.
 
 OpenAI-compatible ``POST {base_url}/chat/completions`` over ``requests`` (already a runtime dependency).
@@ -30,6 +32,7 @@ from typing import Any
 
 from . import MODE_LLM
 from . import providers as _providers
+from . import router as _router
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +153,19 @@ def load_settings(environ: Any = None) -> LlmSettings:
     return settings_from_provider(chosen)
 
 
+def load_chain(environ: Any = None) -> list[LlmSettings]:
+    """The providers to try, in order (CP-2). Empty when the feature is off.
+
+    Only enabled, fully configured providers are listed. If there are none but the feature is on, one unconfigured entry
+    is returned so the caller answers rule-based with ``llm_unavailable`` (the Task 24 behaviour).
+    """
+    if not _providers.llm_enabled(environ):
+        return []
+    configs = _providers.load_providers(environ)
+    usable = [settings_from_provider(c) for c in _providers.active_providers(configs)]
+    return usable or [load_settings(environ)]
+
+
 # ----------------------------------------------------------------------------- prompt
 
 
@@ -197,10 +213,14 @@ def build_messages(
 class ProviderError(Exception):
     """A provider failure. ``code`` is one of our own words and is the only thing logged."""
 
-    def __init__(self, code: str, request_id: str | None = None):
+    def __init__(
+        self, code: str, request_id: str | None = None, *, status: int | None = None, retry_after: float | None = None
+    ):
         super().__init__(code)
         self.code = code
         self.request_id = request_id
+        self.status = status  # HTTP status when there was one (lets the router tell 401/403 from other 4xx)
+        self.retry_after = retry_after  # seconds, from a numeric Retry-After header only
 
 
 class Rejected(Exception):
@@ -212,6 +232,14 @@ class Rejected(Exception):
 def _safe_id(raw: Any) -> str | None:
     text = re.sub(r"[^A-Za-z0-9._:-]", "", str(raw or ""))[:64]
     return text or None
+
+
+def _retry_after_seconds(raw: Any) -> float | None:
+    try:
+        seconds = float(str(raw).strip())
+    except (TypeError, ValueError):
+        return None  # absent, or an HTTP-date (not parsed: the default cooldown applies)
+    return seconds if 0 <= seconds < 1e7 else None
 
 
 def _call_provider(settings: LlmSettings, messages: list[dict[str, str]]) -> tuple[str, str | None]:
@@ -240,12 +268,13 @@ def _call_provider(settings: LlmSettings, messages: list[dict[str, str]]) -> tup
     request_id = _safe_id(resp.headers.get("x-request-id") or resp.headers.get("request-id"))
     try:
         status = resp.status_code
+        retry_after = _retry_after_seconds(resp.headers.get("Retry-After"))
         if status == 429:
-            raise ProviderError("http_429", request_id)
+            raise ProviderError("http_429", request_id, status=status, retry_after=retry_after)
         if status >= 500:
-            raise ProviderError("http_5xx", request_id)
+            raise ProviderError("http_5xx", request_id, status=status, retry_after=retry_after)
         if status != 200:  # includes 3xx (never followed: the key must not leave the configured host) and 4xx
-            raise ProviderError(f"http_{status // 100}xx", request_id)
+            raise ProviderError(f"http_{status // 100}xx", request_id, status=status)
         raw = bytearray()
         try:
             for chunk in resp.iter_content(chunk_size=8192):
@@ -338,39 +367,87 @@ def _log(settings: LlmSettings, request_id: str | None, outcome: str) -> None:
     )
 
 
+def _provider_key(s: LlmSettings) -> str:
+    return f"{s.name}|{s.base_url}|{s.model}"  # no key material
+
+
+def _failure_from(exc: ProviderError) -> _router.Failure:
+    """Map a provider error to the router's classes. 401/403 disable the provider; 429 is quota; the rest is transient."""
+    code = f"unavailable_{exc.code}"
+    if exc.status in (401, 403):
+        return _router.Failure(_router.KIND_AUTH, code)
+    if exc.code == "http_429":
+        return _router.Failure(_router.KIND_QUOTA, code, retry_after=exc.retry_after)
+    return _router.Failure(_router.KIND_TRANSIENT, code, retry_after=exc.retry_after)
+
+
 async def enhance(result: Any, *, question: str, settings: LlmSettings | None = None) -> Any:
-    """Return ``result`` (an ``answer.Answer``) unchanged, or a copy phrased by the model after validation. Never raises."""
+    """Return ``result`` (an ``answer.Answer``) unchanged, or a copy phrased by the model after validation. Never raises.
+
+    An explicit ``settings`` is a chain of one. Otherwise the chain comes from the environment (``load_chain``).
+    """
     try:
-        s = settings if settings is not None else load_settings()
-        if not s.enabled:
+        chain = [settings] if settings is not None else load_chain()
+        if not chain or not chain[0].enabled:
             return result
-        limits = {**result.limits, "provider_configured": s.configured}
-        if not s.configured:
-            _log(s, None, "not_configured")
+        usable = [s for s in chain if s.configured]
+        limits = {**result.limits, "provider_configured": bool(usable)}
+        if not usable:
+            _log(chain[0], None, "not_configured")
             return replace(result, limits=limits, warnings=_add(result.warnings, WARN_UNAVAILABLE))
         if not result.evidence or "answer_numbers_unbacked" in result.warnings:
             return replace(result, limits=limits)  # nothing to phrase: fixed statements stay as they are
         messages = build_messages(question, result.answer, result.evidence, result.unknowns, result.links)
-        request_id: str | None = None
+
+        def attempt(s: LlmSettings, timeout_s: float) -> str:
+            request_id: str | None = None
+            try:
+                content, request_id = _call_provider(replace(s, timeout_s=timeout_s), messages)
+                text, _used = validate(content, result.evidence, result.links, result.answer)
+            except Rejected as exc:
+                _log(s, request_id, f"rejected_{exc.code}")
+                raise _router.Failure(_router.KIND_REJECTED, f"rejected_{exc.code}") from None
+            except ProviderError as exc:
+                _log(s, exc.request_id or request_id, f"unavailable_{exc.code}")
+                raise _failure_from(exc) from None
+            _log(s, request_id, "ok")
+            return text
+
+        budget = _router.budget_from_env()
+        started = time.monotonic()
         try:
-            content, request_id = await asyncio.wait_for(
-                asyncio.to_thread(_call_provider, s, messages), s.timeout_s + 2
+            outcome = await asyncio.wait_for(
+                asyncio.to_thread(
+                    _router.ROUTER.route,
+                    usable,
+                    attempt,
+                    name=lambda s: _safe_id(s.name) or "-",
+                    key=_provider_key,
+                    timeout=lambda s: s.timeout_s,
+                    budget_s=budget,
+                ),
+                min(budget, sum(s.timeout_s for s in usable)) + 2,
             )
-            text, _used = validate(content, result.evidence, result.links, result.answer)
-        except Rejected as exc:
-            _log(s, request_id, f"rejected_{exc.code}")
-            return replace(result, limits=limits, warnings=_add(result.warnings, WARN_REJECTED))
-        except ProviderError as exc:
-            _log(s, exc.request_id or request_id, f"unavailable_{exc.code}")
-            return replace(result, limits=limits, warnings=_add(result.warnings, WARN_UNAVAILABLE))
         except asyncio.TimeoutError:
-            _log(s, request_id, "unavailable_timeout")
+            logger.info("llm_chain outcome=unavailable_timeout attempts=- total_ms=%d", _ms(started))
             return replace(result, limits=limits, warnings=_add(result.warnings, WARN_UNAVAILABLE))
-        _log(s, request_id, "ok")
-        return replace(result, answer=text, mode=MODE_LLM, limits=limits)
+        logger.info(
+            "llm_chain outcome=%s attempts=%s total_ms=%d",
+            "ok" if outcome.ok else ("rejected" if outcome.rejected else "unavailable"),
+            outcome.summary(),
+            _ms(started),
+        )
+        if outcome.ok:
+            return replace(result, answer=outcome.value, mode=MODE_LLM, limits=limits)
+        code = WARN_REJECTED if outcome.rejected else WARN_UNAVAILABLE
+        return replace(result, limits=limits, warnings=_add(result.warnings, code))
     except Exception as exc:  # noqa: BLE001 - the client must always get an answer
         logger.warning("copilot_llm unexpected=%s", type(exc).__name__)
         return replace(result, warnings=_add(result.warnings, WARN_UNAVAILABLE))
+
+
+def _ms(started: float) -> int:
+    return int((time.monotonic() - started) * 1000)
 
 
 def _add(warnings: list[str], code: str) -> list[str]:

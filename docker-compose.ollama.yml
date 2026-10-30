@@ -1,0 +1,13 @@
+# Optional Ollama server (CP-3). Off by default: nothing starts unless the "ollama" profile is requested.
+#   docker compose -f docker-compose.yml -f docker-compose.ollama.yml --profile ollama up -d ollama
+services:
+  ollama:
+    image: ollama/ollama:latest # pin a version before relying on it
+    profiles: ["ollama"]
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+
+volumes:
+  ollama_models:
