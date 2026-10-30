@@ -5,6 +5,7 @@ import { StatusMessage } from '@/components/shell/StatusMessage';
 import { fetchOptimized, type OptimizeSummary } from '@/api/apiClient';
 import { safeMessageFor } from '@/api/apiError';
 import { useAuth } from '@/hooks/useAuth';
+import { canOperate } from '@/roleAccess';
 import { ModelPassportButton } from '@/features/explainability/ModelPassportButton';
 import { INITIAL_RUN, isModelUnavailable, optimizeReducer, optionalFlag, optionalText } from './optimizeRun';
 
@@ -31,7 +32,7 @@ export function OptimizationCard({ onSummaryChange }: Props) {
   const { role } = useAuth();
   const [run, dispatch] = useReducer(optimizeReducer, INITIAL_RUN);
   const controller = useRef<AbortController | null>(null);
-  const isOperator = role === 'operator';
+  const isOperator = canOperate(role); // operator or admin; a viewer sees the control locked
 
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => {

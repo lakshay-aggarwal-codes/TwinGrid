@@ -61,7 +61,7 @@ export const STORY_STEPS: readonly TourStep[] = [
     route: "/whatif-lab",
     targets: PAGE_HEADING,
     title: "What-if lab",
-    caption: "Change the inputs and see how the simulated outcome moves against the baseline. These are model estimates on simulated data.",
+    caption: "Here the simulated outcome is shown against the baseline, from model estimates on simulated data. Operators and admins can change the inputs; for a viewer they are locked, because the app is read-only for viewers.",
     durationMs: 16000,
   },
   {

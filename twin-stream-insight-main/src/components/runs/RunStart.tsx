@@ -20,6 +20,8 @@ import { submitBodyOf } from '@/runs/model';
 import { useSubmitRun } from '@/runs/useRun';
 import { ScenarioParamForm } from '@/components/scenario/ScenarioParamForm';
 import { ScenarioPicker } from '@/components/scenario/ScenarioPicker';
+import { useRole } from '@/hooks/useAuth';
+import { OPERATOR_REQUIRED_TEXT, isReadOnly } from '@/roleAccess';
 
 function Configurator({ registry }: { registry: ScenarioRegistry }) {
   const navigate = useNavigate();
@@ -30,6 +32,8 @@ function Configurator({ registry }: { registry: ScenarioRegistry }) {
   const [selectedId, setSelectedId] = useState<string | null>(restorable && initial.status === 'selected' ? initial.id : null);
   const [values, setValues] = useState<ParamValues>({});
   const submit = useSubmitRun();
+  // A viewer is read-only: starting a run is locked (UX only; the server decides).
+  const locked = isReadOnly(useRole().role);
   // Synchronous guard: two clicks in the same tick must not become two runs.
   const inFlight = useRef(false);
 
@@ -48,7 +52,7 @@ function Configurator({ registry }: { registry: ScenarioRegistry }) {
   };
 
   const onSubmit = () => {
-    if (request === null || inFlight.current) return;
+    if (locked || request === null || inFlight.current) return;
     inFlight.current = true;
     submit.mutate(submitBodyOf(request), {
       onSuccess: (record) => navigate(`/runs/${encodeURIComponent(record.run_id)}`),
@@ -76,6 +80,7 @@ function Configurator({ registry }: { registry: ScenarioRegistry }) {
             values={effective}
             errors={errors}
             idPrefix="run-param"
+            disabled={locked}
             onChange={(name, value) => {
               setValues((v) => ({ ...v, [name]: value }));
               submit.reset();
@@ -88,9 +93,14 @@ function Configurator({ registry }: { registry: ScenarioRegistry }) {
             <p>{controlText(descriptor)}</p>
             <p>{request ? `Overrides sent: ${Object.keys(request).filter((k) => k !== 'scenario_id').join(', ') || 'none (backend preset)'}` : 'Fix the highlighted values to submit.'}</p>
           </div>
-          <Button type="button" size="sm" disabled={request === null || submitting} onClick={onSubmit}>
+          <Button type="button" size="sm" disabled={request === null || submitting || locked} aria-describedby={locked ? 'run-locked-note' : undefined} onClick={onSubmit}>
             {submitting ? 'Submitting…' : 'Submit simulation run'}
           </Button>
+          {locked && (
+            <p id="run-locked-note" data-testid="run-locked-note" className="text-[11px] text-muted-foreground">
+              {OPERATOR_REQUIRED_TEXT}. Starting a run is locked because TwinGrid is read-only for viewers.
+            </p>
+          )}
           {submitting && (
             <p role="status" className="text-xs text-muted-foreground" data-testid="run-submitting">
               Submitting… the backend has not accepted this run yet.

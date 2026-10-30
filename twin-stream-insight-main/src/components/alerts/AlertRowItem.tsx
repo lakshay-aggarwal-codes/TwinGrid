@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, CircleDot, Help
 import { acknowledgeAlert } from '@/api/alerts';
 import { isApiError, type AlertRecord } from '@/api/apiClient';
 import { AuthRequiredError } from '@/authClient';
+import { canOperate } from '@/roleAccess';
 import { ERROR_COPY } from '@/state/errorCopy';
 import { ProvenanceBadge } from '@/provenance';
 import { AlertRuleFacts } from '@/components/signal/AlertRuleFacts';
@@ -18,7 +19,8 @@ const SEVERITY_CLASS: Record<SeverityIcon, string> = {
   unknown: 'bg-muted text-muted-foreground border-border border-dotted',
 };
 
-export type Role = 'viewer' | 'operator' | null;
+/** `admin` may do everything an `operator` can (see canOperate). */
+export type Role = 'viewer' | 'operator' | 'admin' | null;
 
 interface AlertRowItemProps {
   alert: AlertRecord;
@@ -99,7 +101,7 @@ export function AlertRowItem({ alert: a, role, queryKey, onSelect }: AlertRowIte
       <div className="px-2.5 pb-2 flex flex-wrap items-center gap-2">
         <ProvenanceBadge view={view} />
         {lifecycle === 'new' &&
-          (role === 'operator' ? (
+          (canOperate(role) ? (
             <button
               type="button"
               onClick={() => ack.mutate()}

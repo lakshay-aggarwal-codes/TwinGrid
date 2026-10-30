@@ -1,3 +1,4 @@
+import { canOperate } from "@/roleAccess";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface WelcomeDialogProps {
@@ -11,9 +12,9 @@ interface WelcomeDialogProps {
 }
 
 const roleLine = (role: string | null): string =>
-  role === "operator"
-    ? "You are signed in as an operator, so the tour also shows the alert and optimizer actions you can take."
-    : "You are signed in as a viewer: everything here is read-only, and the tour shows only what you can use.";
+  canOperate(role)
+    ? `You are signed in as ${role === "admin" ? "an admin" : "an operator"}, so the tour also shows the alert and optimizer actions you can take.`
+    : "You are signed in as a viewer. TwinGrid is read-only for you: you can look at every page and all the data, but the controls that run, simulate, save or change anything are locked because they need the operator role. The tour shows only what you can use.";
 
 const btn = "inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 

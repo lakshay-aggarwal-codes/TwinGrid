@@ -22,6 +22,8 @@ import type { ScenarioDescriptor, ScenarioRegistry } from '@/scenarios/schema';
 import { useScenarioPreview, useScenarios } from '@/scenarios/useScenarios';
 import { ScenarioPicker } from './ScenarioPicker';
 import { ScenarioParamForm } from './ScenarioParamForm';
+import { useRole } from '@/hooks/useAuth';
+import { OPERATOR_REQUIRED_TEXT, isReadOnly } from '@/roleAccess';
 
 const NA = (
   <span title="Not available">
@@ -66,6 +68,8 @@ function Result({ descriptor, data }: { descriptor: ScenarioDescriptor; data: Wh
 }
 
 function Library({ registry }: { registry: ScenarioRegistry }) {
+  // A viewer is read-only: running a preview is locked (UX only; the server decides).
+  const locked = isReadOnly(useRole().role);
   const ids = useMemo(() => registry.scenarios.map((s) => s.id), [registry]);
   const [saved] = useState(() => loadSelectedId());
   const initial = resolveSelection(saved, ids);
@@ -105,6 +109,7 @@ function Library({ registry }: { registry: ScenarioRegistry }) {
             unrecognised={unrecognised}
             values={effective}
             errors={errors}
+            disabled={locked}
             onChange={(name, value) => {
               setValues((v) => ({ ...v, [name]: value }));
               setSubmitted(null);
@@ -117,9 +122,14 @@ function Library({ registry }: { registry: ScenarioRegistry }) {
             <p>{controlText(descriptor)}</p>
             <p>{request ? `Overrides sent: ${Object.keys(request).filter((k) => k !== 'scenario_id').join(', ') || 'none (backend preset)'}` : 'Fix the highlighted values to preview.'}</p>
           </div>
-          <Button type="button" size="sm" disabled={request === null} onClick={() => setSubmitted(request)}>
+          <Button type="button" size="sm" disabled={request === null || locked} aria-describedby={locked ? 'scenario-locked-note' : undefined} onClick={() => setSubmitted(request)}>
             Preview scenario
           </Button>
+          {locked && (
+            <p id="scenario-locked-note" data-testid="scenario-locked-note" className="text-[11px] text-muted-foreground">
+              {OPERATOR_REQUIRED_TEXT}. Running a preview is locked because TwinGrid is read-only for viewers.
+            </p>
+          )}
           {submitted === null ? (
             <StateNotice kind="not_run" text="Nothing has been run yet. Choose “Preview scenario”." />
           ) : (

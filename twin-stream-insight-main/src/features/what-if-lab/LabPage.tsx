@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useRole } from "@/hooks/useAuth";
+import { OPERATOR_REQUIRED_TEXT, isReadOnly } from "@/roleAccess";
 import { StateBoundary } from "@/state/StateBoundary";
 import { Controls } from "./Controls";
 import { DeltaCards } from "./DeltaCards";
@@ -41,6 +43,8 @@ export default function LabPage() {
 }
 
 function LabBody({ range }: { range: SetpointRange }) {
+  // A viewer is read-only: the inputs, baseline changes, sensitivity run and saving are locked (UX only; values stay visible).
+  const locked = isReadOnly(useRole().role);
   const location = useLocation();
   const navigate = useNavigate();
   const defaults = useMemo(() => defaultInputs(range), [range]);
@@ -118,11 +122,16 @@ function LabBody({ range }: { range: SetpointRange }) {
 
       <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
         <div className="space-y-3">
-          <Controls inputs={inputs} range={range} onChange={setInputs} pending={pending} />
+          {locked && (
+            <p data-testid="lab-locked-note" className="text-xs text-muted-foreground">
+              {OPERATOR_REQUIRED_TEXT}. The inputs are locked because TwinGrid is read-only for viewers; the results stay visible.
+            </p>
+          )}
+          <Controls inputs={inputs} range={range} onChange={setInputs} pending={pending} disabled={locked} />
           <div className="flex flex-wrap gap-2">
-            <button type="button" className={btn} onClick={() => setInputs(defaults)} disabled={inputsEqual(inputs, defaults)}>Reset inputs</button>
-            <button type="button" className={btn} onClick={() => setBaseline(settled)} disabled={inputsEqual(baseline, settled)}>Use these inputs as baseline</button>
-            <button type="button" className={btn} onClick={() => setBaseline(defaults)} disabled={inputsEqual(baseline, defaults)}>Baseline = default inputs</button>
+            <button type="button" className={btn} onClick={() => setInputs(defaults)} disabled={locked || inputsEqual(inputs, defaults)}>Reset inputs</button>
+            <button type="button" className={btn} onClick={() => setBaseline(settled)} disabled={locked || inputsEqual(baseline, settled)}>Use these inputs as baseline</button>
+            <button type="button" className={btn} onClick={() => setBaseline(defaults)} disabled={locked || inputsEqual(baseline, defaults)}>Baseline = default inputs</button>
           </div>
           <p className="text-[11px] text-muted-foreground" data-testid="lab-baseline-desc">Baseline: {describeInputs(baseline)}{inputsEqual(baseline, defaults) ? " (the default what-if)" : ""}.</p>
         </div>
@@ -139,7 +148,7 @@ function LabBody({ range }: { range: SetpointRange }) {
               </StateBoundary>
             )}
           </StateBoundary>
-          <Tornado current={settled} requestedFor={sweep.for} result={sweep.result} onRun={() => sweep.request(settled)} />
+          <Tornado current={settled} requestedFor={sweep.for} result={sweep.result} onRun={() => sweep.request(settled)} disabled={locked} />
         </div>
       </div>
 
@@ -155,6 +164,7 @@ function LabBody({ range }: { range: SetpointRange }) {
         onExport={exportCsv}
         onCopyLink={copyLink}
         notice={notice}
+        readOnly={locked}
       />
     </div>
   );

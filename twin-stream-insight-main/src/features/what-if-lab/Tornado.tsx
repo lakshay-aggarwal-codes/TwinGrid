@@ -12,6 +12,8 @@ interface Props {
   requestedFor: LabInputs | null;
   result: UseApiQueryResult<Sweep>;
   onRun: () => void;
+  /** Read-only viewer: starting the sensitivity run is locked. */
+  disabled?: boolean;
 }
 
 const W = 320;
@@ -52,14 +54,14 @@ function Bars({ sweep, metric }: { sweep: Sweep; metric: MetricId }) {
 }
 
 /** One-at-a-time sensitivity (backend sweep, at most 12 runs). Run on request: the endpoint is rate-limited. */
-export function Tornado({ current, requestedFor, result, onRun }: Props) {
+export function Tornado({ current, requestedFor, result, onRun, disabled = false }: Props) {
   const [metric, setMetric] = useState<MetricId>("energy");
   const stale = requestedFor !== null && !inputsEqual(requestedFor, current);
   return (
     <section aria-label="Sensitivity" className="space-y-3 rounded-md border border-border bg-card p-3" data-testid="lab-sensitivity">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-foreground">Sensitivity (one input at a time)</h2>
-        <button type="button" onClick={onRun} className="rounded border border-border bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <button type="button" onClick={onRun} disabled={disabled} className="rounded border border-border bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           {requestedFor === null ? "Run sensitivity sweep" : stale ? "Re-run for current inputs" : "Re-run"}
         </button>
       </div>
