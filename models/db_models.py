@@ -34,6 +34,9 @@ class Base(DeclarativeBase):
 # Allowed role values for RBAC
 USER_ROLE_VIEWER = "viewer"
 USER_ROLE_OPERATOR = "operator"
+USER_ROLE_ADMIN = "admin"
+# Roles that may use every control (compute, save, acknowledge, edit). A viewer is read-only.
+OPERATING_ROLES = frozenset({USER_ROLE_OPERATOR, USER_ROLE_ADMIN})
 
 
 class User(Base):
@@ -50,8 +53,17 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(32), nullable=False, default=USER_ROLE_VIEWER)  # viewer | operator
 
+    def can_operate(self) -> bool:
+        """The ONE definition of "may operate": operator or admin. A viewer never may.
+
+        Every operator-level check (``api.auth.require_operator``, the persisted-simulation check, run visibility,
+        the alert-assignee check) goes through this, so admin can do everything an operator can.
+        """
+        return self.role in OPERATING_ROLES
+
     def is_operator(self) -> bool:
-        return self.role == USER_ROLE_OPERATOR
+        """Kept for existing callers; identical to :meth:`can_operate` (admin included)."""
+        return self.can_operate()
 
 
 class RefreshToken(Base):
