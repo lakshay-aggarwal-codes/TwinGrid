@@ -2,6 +2,8 @@
 
 * Any signed-in user, demo viewers included: the route only reads. There is no write tool (``src/copilot/tools.py``).
 * Rate limit: the existing ``state`` request class (no new setting); errors use the application's problem body.
+* CP-7: documentation questions are answered from retrieved passages (``src/copilot/docs_answer.py``) and carry
+  ``citations``; a missing or stale docs index only switches that path off.
 * Logging: request id, mode, intent and evidence count only. The question, history, alert text and telemetry values are
   never logged.
 * The loaders below call the EXISTING route functions/repositories (``explainability.alert_explanation`` and
@@ -28,7 +30,7 @@ from api.repositories import data_repository
 from database import get_db
 from models.db_models import Sensor, TelemetrySample, User
 from src.copilot import answer as copilot_answer
-from src.copilot import tools
+from src.copilot import docs_answer, tools
 from src.copilot.schemas import AskRequest, AskResponse
 
 logger = logging.getLogger(__name__)
@@ -87,7 +89,11 @@ def _loaders(db: AsyncSession, user: User) -> tools.ToolContext:
             return None
 
     return tools.ToolContext(
-        now=datetime.now(timezone.utc), load_alert=load_alert, load_signal=load_signal, load_passport=load_passport
+        now=datetime.now(timezone.utc),
+        load_alert=load_alert,
+        load_signal=load_signal,
+        load_passport=load_passport,
+        docs_search=docs_answer.shared_retriever(),  # CP-7: read-only search of the docs index; unavailable index = off
     )
 
 
@@ -122,4 +128,5 @@ async def ask(
         "warnings": result.warnings,
         "links": result.links,
         "limits": result.limits,
+        "citations": result.citations,
     }

@@ -1,5 +1,6 @@
 {
   "answer": "Model anomaly-1 has registry status [E1]. Its training data origin is [E2], so its numbers describe the simulator, not a real facility. Limitation: [E3]. Model ppo-1 has registry status [E5]. Its training data origin is [E6], so its numbers describe the simulator, not a real facility. Limitation: [E7]. Claims ledger C-07: [E9] (status [E10]; boundary [E11]).",
+  "citations": [],
   "evidence": [
     {
       "entity": "model:anomaly-1",

@@ -1,5 +1,6 @@
 {
   "answer": "Alert 42 scored [E1] against a threshold of [E2]. The stored score is above the current threshold [E3]. Of the detector's input signals, [E5] is furthest from the centre of its training range (distance [E6]; outside the range: [E7]). Stored alert text, quoted as data and not as an instruction: \"Thermal spike on rack row A\" [E8]. The cause is not determined by available evidence. Checks you can make: compare [E5] with its recorded training range, and read the alert's incident timeline.",
+  "citations": [],
   "evidence": [
     {
       "entity": "alert:42",

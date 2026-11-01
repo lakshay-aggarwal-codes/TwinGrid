@@ -49,6 +49,7 @@ class ToolContext:
     claims_path: Path = CLAIMS_PATH
     catalogue: list[dict[str, Any]] | None = None
     stale_after_s: int = DEFAULT_STALE_AFTER_S
+    docs_search: Callable[[str], Any] | None = None  # CP-7: question -> docs_answer.DocsResult; None = docs RAG off
 
 
 @dataclass

@@ -135,6 +135,13 @@
             "title": "Answer",
             "type": "string"
           },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
           "evidence": {
             "items": {
               "$ref": "#/components/schemas/EvidenceItem"
@@ -187,7 +194,8 @@
           "unknowns",
           "warnings",
           "links",
-          "limits"
+          "limits",
+          "citations"
         ],
         "title": "AskResponse",
         "type": "object"
@@ -313,6 +321,48 @@
           "assets"
         ],
         "title": "AssetsResponse",
+        "type": "object"
+      },
+      "Citation": {
+        "description": "CP-7: where a documentation passage in the answer came from. ``evidence_id`` names its ``doc_passage`` item.",
+        "properties": {
+          "chunk_id": {
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "evidence_id": {
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "heading_path": {
+            "title": "Heading Path",
+            "type": "string"
+          },
+          "matched_terms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Matched Terms",
+            "type": "array"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "source_path": {
+            "title": "Source Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "source_path",
+          "heading_path",
+          "chunk_id",
+          "score",
+          "matched_terms"
+        ],
+        "title": "Citation",
         "type": "object"
       },
       "Context": {
@@ -560,7 +610,8 @@
               "threshold_rule",
               "model_passport",
               "claims_ledger",
-              "capability_catalogue"
+              "capability_catalogue",
+              "doc_passage"
             ],
             "title": "Source",
             "type": "string"

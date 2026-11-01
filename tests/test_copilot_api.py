@@ -62,7 +62,18 @@ async def test_an_unknown_alert_is_404_and_a_known_one_is_answered(client, viewe
     r = await client.post(URL, json=body(cid=str(alert_id)), headers=viewer_headers)
     assert r.status_code == 200
     data = r.json()
-    assert set(data) == {"request_id", "mode", "answer", "evidence", "unknowns", "warnings", "links", "limits"}
+    assert set(data) == {
+        "request_id",
+        "mode",
+        "answer",
+        "evidence",
+        "unknowns",
+        "warnings",
+        "links",
+        "limits",
+        "citations",
+    }
+    assert data["citations"] == []
     assert data["mode"] == "rule_based" and data["limits"] == {"provider_configured": False}
     assert data["request_id"] == r.headers["x-request-id"]
     assert len(data["answer"]) <= 1500 and data["evidence"] and all(set(e) == EVIDENCE_KEYS for e in data["evidence"])
@@ -126,4 +137,5 @@ async def test_the_openapi_document_describes_the_contract(client):
         "warnings",
         "links",
         "limits",
+        "citations",
     }

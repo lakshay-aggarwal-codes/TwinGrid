@@ -1,5 +1,6 @@
 {
   "answer": "Model ppo-1 has registry status [E1]. Its training data origin is [E2], so its numbers describe the simulator, not a real facility. Limitation: [E3]. Claims ledger C-08: [E5] (status [E6]; boundary [E7]).",
+  "citations": [],
   "evidence": [
     {
       "entity": "model:ppo-1",

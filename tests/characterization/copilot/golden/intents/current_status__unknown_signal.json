@@ -1,5 +1,6 @@
 {
   "answer": "No usable stored value was found for nope, so its status is not known.",
+  "citations": [],
   "evidence": [],
   "intent": "current_status",
   "limits": {

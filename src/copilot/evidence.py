@@ -14,11 +14,14 @@ SOURCES = (
     "model_passport",
     "claims_ledger",
     "capability_catalogue",
+    "doc_passage",  # CP-7: a retrieved passage of the project's own documentation (data, never instructions)
 )
 ORIGINS = ("simulated", "measured", "replayed", "assumed", "documentation", "unknown")
 FRESHNESS = ("fresh", "stale", "unavailable", "static")
 MAX_ITEMS = 24
 MAX_TEXT = 200
+MAX_PASSAGE = 400  # CP-7: a doc_passage value may be longer than other text values
+MAX_PASSAGE_ENTITY = 120  # a repo-relative document path
 
 _ORIGIN_MAP = {
     "simulated": "simulated",
@@ -94,12 +97,13 @@ class EvidenceBook:
             raise ValueError("evidence values must be finite")
         if value is not None and not isinstance(value, (bool, int, float, str)):
             raise ValueError("evidence values are scalars")
+        passage = source == "doc_passage"
         if isinstance(value, str):
-            value = clean_text(value)
+            value = clean_text(value, MAX_PASSAGE if passage else MAX_TEXT)
         item = {
             "id": f"E{len(self._items) + 1}",
             "source": source,
-            "entity": clean_text(entity, 80),
+            "entity": clean_text(entity, MAX_PASSAGE_ENTITY if passage else 80),
             "field": clean_text(field, 80),
             "value": value,
             "unit": unit,
