@@ -69,6 +69,17 @@ class Limits(BaseModel):
     provider_configured: bool = False
 
 
+class Citation(BaseModel):
+    """CP-7: where a documentation passage in the answer came from. ``evidence_id`` names its ``doc_passage`` item."""
+
+    evidence_id: str
+    source_path: str
+    heading_path: str
+    chunk_id: str
+    score: float
+    matched_terms: list[str]
+
+
 class AskResponse(BaseModel):
     request_id: str
     mode: Literal["rule_based", "llm"]
@@ -78,3 +89,4 @@ class AskResponse(BaseModel):
     warnings: list[str]
     links: list[Link]
     limits: Limits
+    citations: list[Citation]

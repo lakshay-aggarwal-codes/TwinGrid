@@ -1,5 +1,6 @@
 {
   "answer": "I can explain an alert, report a signal's latest status, describe a model's limits, and point to a feature. This assistant is rule-based and has no language model.",
+  "citations": [],
   "evidence": [],
   "intent": "fallback",
   "limits": {

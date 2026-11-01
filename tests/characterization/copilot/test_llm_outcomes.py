@@ -148,7 +148,9 @@ def test_provider_request_id_is_logged_header_first_then_envelope(provider, conf
     ask()
     provider.headers = {}
     ask()
-    messages = [r.getMessage() for r in caplog.records if "copilot_llm" in r.getMessage()]
+    messages = [
+        r.getMessage() for r in caplog.records if r.getMessage().startswith("copilot_llm ")
+    ]  # per-attempt lines
     assert any("provider_request_id=hdr-id-7" in m for m in messages)
     assert any("provider_request_id=chatcmpl-char-1" in m for m in messages)
     assert all(f"model={MODEL}" in m for m in messages)

@@ -158,7 +158,12 @@ def outcomes(caplog):
     def _outcomes() -> list[str]:
         found = []
         for rec in caplog.records:
-            m = re.search(r"outcome=([A-Za-z0-9_]+)", rec.getMessage())
+            message = rec.getMessage()
+            if message.startswith(
+                "copilot_llm_chain"
+            ):  # CP-2's one-line chain summary; the per-attempt line is checked
+                continue
+            m = re.search(r"outcome=([A-Za-z0-9_]+)", message)
             if m:
                 found.append(m.group(1))
         return found

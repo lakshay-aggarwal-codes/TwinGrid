@@ -1,5 +1,6 @@
 {
   "answer": "Stored history comparison is not available in this version. Stored telemetry can be browsed on the history page.",
+  "citations": [],
   "evidence": [],
   "intent": "what_changed",
   "limits": {

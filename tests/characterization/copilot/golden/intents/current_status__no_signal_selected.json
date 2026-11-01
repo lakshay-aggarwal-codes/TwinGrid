@@ -1,5 +1,6 @@
 {
   "answer": "Say which signal you mean by opening it first; status is reported per signal.",
+  "citations": [],
   "evidence": [],
   "intent": "current_status",
   "limits": {

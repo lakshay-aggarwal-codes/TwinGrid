@@ -68,10 +68,11 @@ QUESTIONS: dict[str, list[str]] = {
 MESSAGES = json.loads((FIX / "alert_messages.json").read_text("utf-8"))
 ALL_QUESTIONS = [(cat, q) for cat, qs in QUESTIONS.items() for q in qs]
 EVIDENCE_KEYS = {"id", "source", "entity", "field", "value", "unit", "observed_at", "origin", "freshness"}
-RESPONSE_KEYS = {"request_id", "mode", "answer", "evidence", "unknowns", "warnings", "links", "limits"}
+RESPONSE_KEYS = {"request_id", "mode", "answer", "evidence", "unknowns", "warnings", "links", "limits", "citations"}
 
 ALLOWED_SOURCES = {
     "alert_explanation", "twin_state", "threshold_rule", "model_passport", "claims_ledger", "capability_catalogue",
+    "doc_passage",  # CP-7: a documentation question may quote the committed docs; nothing else is added
 }  # fmt: skip
 
 # Canaries: values that must never appear in any copilot response or log line.
@@ -235,7 +236,7 @@ async def test_the_grounding_checker_itself_catches_an_invented_number_and_a_gho
     """Guards the guard: ``assert_grounded`` must fail on exactly the faults it exists to find."""
     good = {
         "request_id": "r", "mode": "rule_based", "answer": "Alert 42 scored [E1].", "unknowns": [], "warnings": [],
-        "links": [], "limits": {"provider_configured": False},
+        "links": [], "limits": {"provider_configured": False}, "citations": [],
         "evidence": [{"id": "E1", "source": "alert_explanation", "entity": "alert:42", "field": "score", "value": 0.91,
                       "unit": None, "observed_at": None, "origin": "simulated", "freshness": "static"}],
     }  # fmt: skip
@@ -956,6 +957,7 @@ def _as_response(result) -> dict:
     return {
         "request_id": "unit", "mode": result.mode, "answer": result.answer, "evidence": result.evidence,
         "unknowns": result.unknowns, "warnings": result.warnings, "links": result.links, "limits": result.limits,
+        "citations": result.citations,
     }  # fmt: skip
 
 
@@ -1208,7 +1210,9 @@ async def test_logs_in_llm_mode_hold_model_and_outcome_but_not_prompts_answers_o
         r.json()["answer"][:40],
     ):  # fmt: skip
         assert forbidden not in text, f"log output contains {forbidden!r}"
-    model_lines = [rec.getMessage() for rec in caplog.records if "copilot_llm" in rec.getMessage()]
+    model_lines = [
+        rec.getMessage() for rec in caplog.records if rec.getMessage().startswith("copilot_llm ")
+    ]  # per-attempt lines
     assert len(model_lines) == 1 and f"model={FAKE_MODEL}" in model_lines[0] and "outcome=ok" in model_lines[0]
     ask_lines = [rec.getMessage() for rec in caplog.records if "copilot_ask" in rec.getMessage()]
     assert len(ask_lines) == 1 and f"request_id={r.json()['request_id']}" in ask_lines[0] and "mode=llm" in ask_lines[0]

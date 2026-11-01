@@ -85,10 +85,15 @@ def test_every_case_keeps_the_contract_invariants(case_id):
 
 
 def test_each_intent_in_answer_py_has_at_least_one_golden_case():
-    assert answer.INTENTS == ("why_red", "what_is_this", "model_limits", "current_status", "what_changed", "fallback")
+    assert answer.INTENTS == (
+        "why_red", "what_is_this", "model_limits", "current_status", "what_changed", "fallback", "docs_question",
+    )  # fmt: skip
+    classic = set(answer.INTENTS) - {
+        "docs_question"
+    }  # CP-7 added docs_question; tests/test_copilot_rag_answer.py covers it
     covered = {run(**a, **c).intent for a, c in CASES.values()}
-    assert covered == set(answer.INTENTS)
-    assert {cid.split("__")[0] for cid in CASES} == set(answer.INTENTS)
+    assert covered == classic
+    assert {cid.split("__")[0] for cid in CASES} == classic
 
 
 def test_history_and_question_text_never_change_the_answer():

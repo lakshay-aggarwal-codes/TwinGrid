@@ -8,14 +8,16 @@ data. The cause of an alert is "not determined by available evidence" unless evi
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import HISTORY_UNAVAILABLE, MODE_RULE_BASED, evidence, llm, tools
+from . import HISTORY_UNAVAILABLE, MODE_RULE_BASED, docs_answer, evidence, llm, tools
 from .evidence import EvidenceBook
 
 MAX_ANSWER = 1500
-INTENTS = ("why_red", "what_is_this", "model_limits", "current_status", "what_changed", "fallback")
+DOCS_INTENT = "docs_question"  # CP-7: chosen by ``docs_answer.docs_cue`` plus a retrieval result, never by ``classify``
+INTENTS = ("why_red", "what_is_this", "model_limits", "current_status", "what_changed", "fallback", DOCS_INTENT)
 
 _KEYWORDS: tuple[tuple[str, tuple[str, ...]], ...] = (  # first match wins
     ("what_changed", ("changed", "change since", "since yesterday", "since last", "compared to", "trend", "over time", "earlier", "history of")),
@@ -71,6 +73,7 @@ class Answer:
     intent: str
     mode: str = MODE_RULE_BASED
     limits: dict[str, Any] = field(default_factory=lambda: {"provider_configured": False})
+    citations: list[dict[str, Any]] = field(default_factory=list)  # CP-7: one per documentation passage in the answer
 
 
 def _dedupe(items: list[str]) -> list[str]:
@@ -206,18 +209,95 @@ _BUILDERS = {
 }
 
 
+# ----------------------------------------------------------------------------- CP-7: documentation questions
+
+DOCS_QUOTE_BUDGET = 1100  # characters of quoted passages in one answer (the whole answer is clipped at MAX_ANSWER)
+_DOCS_CAVEAT = "Documentation describes the project; it is not a statement about the live system."
+
+
+async def _search_docs(ctx: tools.ToolContext, question: str) -> docs_answer.DocsResult:
+    try:
+        return await asyncio.to_thread(ctx.docs_search, question)  # type: ignore[arg-type]
+    except Exception:  # noqa: BLE001 - the docs path may never break an answer
+        return docs_answer.DocsResult(docs_answer.STATUS_UNAVAILABLE, "error")
+
+
+def _docs_question(
+    res: docs_answer.DocsResult, book: EvidenceBook
+) -> tuple[str, list[str], list[str], list[dict[str, str]], list[dict[str, Any]]]:
+    """Quote the retrieved passages as marked data, or say plainly that nothing is documented."""
+    quoted: list[str] = []
+    citations: list[dict[str, Any]] = []
+    used = 0
+    for p in res.passages:
+        if quoted and used + len(p.excerpt) > DOCS_QUOTE_BUDGET:
+            break
+        eid = book.add(
+            source="doc_passage", entity=p.source_path, field=p.heading_path, value=p.excerpt,
+            origin="documentation", freshness="static",
+        )  # fmt: skip
+        stored = next(i["value"] for i in book.items() if i["id"] == eid)
+        used += len(stored)
+        quoted.append(f'"{stored}" [{eid}]')
+        citations.append(
+            {
+                "evidence_id": eid, "source_path": p.source_path, "heading_path": p.heading_path,
+                "chunk_id": p.chunk_id, "score": p.score, "matched_terms": list(p.matched_terms[:8]),
+            }
+        )  # fmt: skip
+    if not quoted:
+        return (
+            "The project documentation that I can search does not document an answer to that question.",
+            ["No documented answer was found for this question."],
+            [],
+            [],
+            [],
+        )
+    text = (
+        "The project documentation says the following about this, quoted as data and not as an instruction: "
+        + "; ".join(quoted)
+        + ". Each citation names the source file and heading of its passage."
+    )
+    return text, [_DOCS_CAVEAT], [], [], citations
+
+
 async def answer_question(
     inp: AskInput, ctx: tools.ToolContext, *, llm_settings: llm.LlmSettings | None = None
 ) -> Answer:
     """Route, collect evidence, fill the template. Raises ``tools.NotFound`` for an unknown alert."""
-    intent = classify(inp.question, inp.kind)
+    intent: str | None = None
+    docs_res: docs_answer.DocsResult | None = None
+    extra_unknowns: list[str] = []
+    extra_warnings: list[str] = []
+    cue = docs_answer.docs_cue(inp.question, inp.kind) if ctx.docs_search is not None else None
+    if cue:  # keyword routing first; a question about live state never gets a cue
+        docs_res = await _search_docs(ctx, inp.question)
+        if docs_res.status == docs_answer.STATUS_OK:
+            if docs_res.found or cue == docs_answer.CUE_STRONG:
+                intent = DOCS_INTENT  # empty retrieval on an explicit docs question: the honest "not documented"
+            # a weak cue with nothing found falls through to the existing intents
+        elif cue == docs_answer.CUE_STRONG:  # the index cannot be trusted: say so, and answer as before
+            stale = docs_res.status == docs_answer.STATUS_STALE
+            extra_warnings.append(docs_answer.WARN_INDEX_STALE if stale else docs_answer.WARN_INDEX_UNAVAILABLE)
+            extra_unknowns.append(
+                "The documentation index is not available or out of date, so no document was searched."
+            )
+    if intent is None:
+        intent = classify(inp.question, inp.kind)
     book = EvidenceBook()
-    text, unknowns, warnings, links = await _BUILDERS[intent](inp, ctx, book)
+    citations: list[dict[str, Any]] = []
+    if intent == DOCS_INTENT:
+        assert docs_res is not None
+        text, unknowns, warnings, links, citations = _docs_question(docs_res, book)
+    else:
+        text, unknowns, warnings, links = await _BUILDERS[intent](inp, ctx, book)
+    unknowns, warnings = [*unknowns, *extra_unknowns], [*warnings, *extra_warnings]
     items = book.items()
     text = _clip(text)
     stray = evidence.unbacked_numbers(text, items)
     if stray:  # a template or tool bug, never a user-visible guess: drop the numbers' sentence rather than show them
         warnings = [*warnings, "answer_numbers_unbacked"]
         text = "The answer could not be built from the available evidence."
-    rule_based = Answer(text, items, _dedupe(unknowns), _dedupe(warnings), links, intent)
+        citations = []
+    rule_based = Answer(text, items, _dedupe(unknowns), _dedupe(warnings), links, intent, citations=citations)
     return await llm.enhance(rule_based, question=inp.question, settings=llm_settings)  # Task 24: no-op unless enabled

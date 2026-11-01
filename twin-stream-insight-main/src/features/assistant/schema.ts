@@ -7,7 +7,7 @@ import { z } from "zod";
 export const CONTEXT_KINDS = ["alert", "signal", "model", "feature", "general"] as const;
 export type ContextKind = (typeof CONTEXT_KINDS)[number];
 
-export const EVIDENCE_SOURCES = ["alert_explanation", "twin_state", "threshold_rule", "model_passport", "claims_ledger", "capability_catalogue"] as const;
+export const EVIDENCE_SOURCES = ["alert_explanation", "twin_state", "threshold_rule", "model_passport", "claims_ledger", "capability_catalogue", "doc_passage"] as const;
 export const ORIGINS = ["simulated", "measured", "replayed", "assumed", "documentation", "unknown"] as const;
 export const FRESHNESS = ["fresh", "stale", "unavailable", "static"] as const;
 export const MODES = ["rule_based", "llm"] as const;
@@ -34,6 +34,19 @@ export type Evidence = z.output<typeof EvidenceSchema>;
 export const LinkSchema = z.object({ label: z.string().min(1).max(120), path: z.string().min(1).max(200) }).passthrough();
 export type AnswerLink = z.output<typeof LinkSchema>;
 
+/** CP-7: where a documentation passage in the answer came from; `evidence_id` names its `doc_passage` evidence item. */
+export const CitationSchema = z
+  .object({
+    evidence_id: z.string().regex(/^E\d{1,3}$/),
+    source_path: z.string().min(1).max(200),
+    heading_path: z.string().max(300),
+    chunk_id: z.string().min(1).max(200),
+    score: z.number(),
+    matched_terms: z.array(z.string().max(60)).max(20),
+  })
+  .passthrough();
+export type Citation = z.output<typeof CitationSchema>;
+
 export const CopilotResponseSchema = z
   .object({
     request_id: z.string().max(100),
@@ -44,6 +57,7 @@ export const CopilotResponseSchema = z
     warnings: z.array(z.string().max(200)).max(20),
     links: z.array(LinkSchema).max(10),
     limits: z.object({ provider_configured: z.boolean() }).passthrough(),
+    citations: z.array(CitationSchema).max(10).optional(), // CP-7; absent in responses from an older backend
   })
   .passthrough();
 export type CopilotResponse = z.output<typeof CopilotResponseSchema>;

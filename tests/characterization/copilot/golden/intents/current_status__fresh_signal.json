@@ -1,5 +1,6 @@
 {
   "answer": "The latest stored value of this signal is [E3]. Its status is [E4] (reason [E5]).",
+  "citations": [],
   "evidence": [
     {
       "entity": "signal:rack-01.inlet",

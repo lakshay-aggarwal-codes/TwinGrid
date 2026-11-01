@@ -1,6 +1,7 @@
 {
   "answer": {
     "answer": "Alert 42 scored 0.91 against a threshold of 0.5. The cause is not determined by available evidence.",
+    "citations": [],
     "evidence": [
       {
         "entity": "alert:42",

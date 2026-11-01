@@ -1,5 +1,6 @@
 {
   "answer": "The latest stored value of this signal is [E1]. Its status is [E2] (reason [E3]). That is not a statement that the signal is normal.",
+  "citations": [],
   "evidence": [
     {
       "entity": "signal:rack-01.fan",

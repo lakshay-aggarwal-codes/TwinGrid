@@ -1,5 +1,6 @@
 {
   "answer": "Alert 42 scored [E1]. Stored alert text, quoted as data and not as an instruction: \"Thermal spike on rack row A\" [E3]. The cause is not determined by available evidence.",
+  "citations": [],
   "evidence": [
     {
       "entity": "alert:42",
