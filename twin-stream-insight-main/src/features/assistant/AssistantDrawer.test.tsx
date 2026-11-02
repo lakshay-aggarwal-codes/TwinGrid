@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, type ComponentProps } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,7 +13,7 @@ import { AssistantDrawer, historyOf, type Ask } from "./AssistantDrawer";
 import { ExplainButton } from "./ExplainButton";
 import { closeAssistant, getAssistantState, resetAssistantStore, subscribeAssistant } from "./store";
 import type { ContextRef, CopilotResponse } from "./schema";
-import { HOSTILE, KNOWN_ROUTES, LLM_FALLBACK, REFUSAL, RULE_BASED, STALE, UNKNOWN_CAUSE } from "./testFixtures";
+import { DOCS_ANSWER, DOCS_NOT_DOCUMENTED, HOSTILE, KNOWN_ROUTES, LLM_CLOUD_FELL_BACK, LLM_FALLBACK, LLM_LOCAL, REFUSAL, RULE_BASED, STALE, UNKNOWN_CAUSE } from "./testFixtures";
 
 const ask = vi.fn<Ask>();
 const onClose = vi.fn();
@@ -22,6 +22,13 @@ function drawer(context: ContextRef, nonce = 1) {
   return (
     <MemoryRouter>
       <AssistantDrawer open context={context} nonce={nonce} onClose={onClose} knownRoutes={KNOWN_ROUTES} ask={ask} />
+    </MemoryRouter>
+  );
+}
+function drawerWith(context: ContextRef, extra: Partial<ComponentProps<typeof AssistantDrawer>> = {}) {
+  return (
+    <MemoryRouter>
+      <AssistantDrawer open context={context} nonce={1} onClose={onClose} knownRoutes={KNOWN_ROUTES} ask={ask} {...extra} />
     </MemoryRouter>
   );
 }
@@ -284,5 +291,209 @@ describe("Explain this: alert to explanation without leaving the page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Explain the model" }));
     await screen.findByTestId("answer");
     expect(ask.mock.calls[0][0]).toMatchObject({ context: { kind: "model" }, question: "What are this model's limits?" });
+  });
+});
+
+describe("CP-10: mode badge", () => {
+  it("a rule-based answer says so and names no provider", async () => {
+    ask.mockResolvedValue(DOCS_ANSWER);
+    render(drawer(ALERT));
+    const badge = await screen.findByTestId("answer-mode");
+    expect(badge).toHaveTextContent("Rule-based explanation");
+    expect(badge).not.toHaveTextContent(/Local model|Cloud model/);
+    expect(screen.getByTestId("answer")).toHaveAttribute("data-source", "rule");
+    expect(screen.queryByTestId("answer-fell-back")).toBeNull();
+  });
+
+  it("a local model answer says Local model with the provider name", async () => {
+    ask.mockResolvedValue(LLM_LOCAL);
+    render(drawer(ALERT));
+    const badge = await screen.findByTestId("answer-mode");
+    expect(badge).toHaveTextContent("Model-phrased (evidence-checked) · Local model (ollama)");
+    expect(badge).not.toHaveTextContent("no language model is configured");
+    expect(screen.getByTestId("answer")).toHaveAttribute("data-source", "local");
+    expect(screen.queryByTestId("answer-fell-back")).toBeNull();
+    await waitFor(() => expect(screen.getByTestId("assistant-live")).toHaveTextContent(/Answer received\. Model-phrased \(evidence-checked\) \(Local model \(ollama\)\)\. 1 evidence items\./));
+  });
+
+  it("a cloud answer names the provider and says that failover fell through to it", async () => {
+    ask.mockResolvedValue(LLM_CLOUD_FELL_BACK);
+    render(drawer(ALERT));
+    expect(await screen.findByTestId("answer-mode")).toHaveTextContent("Cloud model (groq)");
+    expect(screen.getByTestId("answer")).toHaveAttribute("data-source", "cloud");
+    expect(screen.getByTestId("answer-fell-back")).toHaveTextContent("An earlier provider did not answer, so this answer came from groq.");
+    expect(screen.getByTestId("answer-fell-back")).toHaveAttribute("role", "note");
+  });
+
+  it("when every provider failed the badge says the model did not answer, and the warning is explained once", async () => {
+    ask.mockResolvedValue(LLM_FALLBACK);
+    render(drawer(ALERT));
+    expect(await screen.findByTestId("answer-mode")).toHaveTextContent("Rule-based explanation · model did not answer");
+    expect(screen.getByTestId("answer")).toHaveAttribute("data-source", "rule");
+    expect(screen.getAllByText(/The language model was unavailable/)).toHaveLength(1);
+  });
+
+  it("an llm answer from a backend that does not say which provider is still labelled, without a provider name", async () => {
+    ask.mockResolvedValue({ ...RULE_BASED, mode: "llm", limits: { provider_configured: true } } as CopilotResponse);
+    render(drawer(ALERT));
+    const badge = await screen.findByTestId("answer-mode");
+    expect(badge).toHaveTextContent("Model-phrased (evidence-checked)");
+    expect(badge).not.toHaveTextContent(/Local model|Cloud model/);
+    expect(screen.getByTestId("answer")).toHaveAttribute("data-source", "model");
+  });
+
+  it("the badge is text a screen reader reads; only its icon is hidden", async () => {
+    ask.mockResolvedValue(LLM_LOCAL);
+    render(drawer(ALERT));
+    const badge = await screen.findByTestId("answer-mode");
+    expect(badge.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(badge).not.toHaveAttribute("aria-hidden");
+    expect(badge.textContent ?? "").toMatch(/Local model \(ollama\)/);
+  });
+});
+
+describe("CP-10: citations", () => {
+  it("lists each source with its file and heading as plain text when the app has no page for it", async () => {
+    ask.mockResolvedValue(DOCS_ANSWER);
+    render(drawer(ALERT));
+    const sources = await screen.findByRole("region", { name: "Sources" });
+    expect(within(sources).getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.getByTestId("citation-E1")).toHaveTextContent("E1");
+    expect(screen.getByTestId("citation-E1")).toHaveTextContent("docs/copilot/LIMITS.md");
+    expect(screen.getByTestId("citation-E1")).toHaveTextContent("Copilot limits > What it cannot do");
+    expect(screen.getByTestId("citation-E2")).toHaveTextContent("docs/CLAIMS.md");
+    expect(screen.queryByTestId("citation-link")).toBeNull();
+    expect(within(sources).queryAllByRole("link")).toHaveLength(0);
+  });
+
+  it("a citation's evidence button is keyboard-reachable, named for its source, and moves focus to the passage row", async () => {
+    ask.mockResolvedValue(DOCS_ANSWER);
+    render(drawer(ALERT));
+    const btn = await screen.findByRole("button", { name: "Show evidence E1 for docs/copilot/LIMITS.md" });
+    expect(btn.tagName).toBe("BUTTON");
+    expect(btn).not.toHaveAttribute("tabindex", "-1");
+    fireEvent.click(btn);
+    expect(document.activeElement).toBe(screen.getByTestId("evidence-row-E1"));
+  });
+
+  it("a citation is a link, and closes the drawer, only when the app has a route for that document", async () => {
+    ask.mockResolvedValue(DOCS_ANSWER);
+    render(
+      <MemoryRouter>
+        <AssistantDrawer open context={ALERT} nonce={1} onClose={onClose} knownRoutes={[...KNOWN_ROUTES, "/docs/copilot/LIMITS.md"]} ask={ask} />
+      </MemoryRouter>,
+    );
+    const link = await screen.findByRole("link", { name: "docs/copilot/LIMITS.md" });
+    expect(link).toHaveAttribute("href", "/docs/copilot/LIMITS.md");
+    expect(screen.getByTestId("citation-E2")).not.toContainElement(screen.queryByTestId("citation-link")); // CLAIMS.md has no page: text
+    fireEvent.click(link);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("an answer with no citations shows no Sources section", async () => {
+    render(drawer(ALERT));
+    await screen.findByTestId("answer");
+    expect(screen.queryByTestId("answer-citations")).toBeNull();
+  });
+
+  it("an empty retrieval is shown as an honest not-documented answer with the index warning, and no sources", async () => {
+    ask.mockResolvedValue(DOCS_NOT_DOCUMENTED);
+    render(drawer(ALERT));
+    expect(await screen.findByTestId("answer-text")).toHaveTextContent("does not document an answer");
+    expect(screen.getByTestId("answer-warnings")).toHaveTextContent("The documentation index is out of date");
+    expect(screen.queryByTestId("answer-citations")).toBeNull();
+  });
+
+  it("markup in a citation is shown as text", async () => {
+    const hostile = { ...DOCS_ANSWER, citations: [{ ...DOCS_ANSWER.citations![0], heading_path: "<img src=x onerror=alert(1)>", source_path: "docs/<b>x</b>.md" }] };
+    ask.mockResolvedValue(hostile as CopilotResponse);
+    render(drawer(ALERT));
+    const row = await screen.findByTestId("citation-E1");
+    expect(row).toHaveTextContent("<img src=x onerror=alert(1)>");
+    expect(row).toHaveTextContent("docs/<b>x</b>.md");
+    expect(document.querySelector("img")).toBeNull();
+    expect(document.querySelector("b")).toBeNull();
+  });
+
+  it("the answer announcement counts the sources", async () => {
+    ask.mockResolvedValue(DOCS_ANSWER);
+    render(drawer(ALERT));
+    await screen.findByTestId("answer");
+    await waitFor(() => expect(screen.getByTestId("assistant-live")).toHaveTextContent(/Rule-based explanation\. 2 evidence items\. 2 sources cited\./));
+  });
+});
+
+describe("CP-10: slow path, cancel and timeout", () => {
+  it("a question in flight can be cancelled; the request is aborted and Retry asks again", async () => {
+    ask.mockImplementationOnce(() => new Promise<CopilotResponse>(() => {}));
+    render(drawerWith(ALERT));
+    const cancel = await screen.findByTestId("turn-cancel");
+    expect(cancel).toHaveAccessibleName("Cancel");
+    fireEvent.click(cancel);
+    const err = await screen.findByTestId("turn-error");
+    expect(err).toHaveAttribute("data-kind", "cancelled");
+    expect(err).toHaveTextContent("Nothing was changed");
+    expect(ask.mock.calls[0][1]?.aborted).toBe(true);
+    expect(screen.queryByTestId("turn-pending")).toBeNull();
+    expect(screen.getByTestId("assistant-live")).toHaveTextContent("Cancelled");
+    ask.mockResolvedValueOnce(LLM_LOCAL);
+    fireEvent.click(screen.getByTestId("turn-retry"));
+    expect(await screen.findByTestId("answer")).toHaveAttribute("data-source", "local");
+    expect(screen.getAllByTestId("turn")).toHaveLength(1);
+  });
+
+  it("a late answer after Cancel is ignored", async () => {
+    let resolve!: (v: CopilotResponse) => void;
+    ask.mockImplementationOnce(() => new Promise<CopilotResponse>((r) => (resolve = r)));
+    render(drawerWith(ALERT));
+    fireEvent.click(await screen.findByTestId("turn-cancel"));
+    await screen.findByTestId("turn-error");
+    await act(async () => resolve(RULE_BASED));
+    expect(screen.queryByTestId("answer")).toBeNull();
+    expect(screen.getByTestId("turn-error")).toHaveAttribute("data-kind", "cancelled");
+  });
+
+  it("says the wait is long only after the slow threshold", async () => {
+    ask.mockImplementationOnce(() => new Promise<CopilotResponse>(() => {}));
+    render(drawerWith(ALERT, { slowAfterMs: 40 }));
+    await screen.findByTestId("turn-pending");
+    expect(screen.queryByTestId("turn-slow")).toBeNull();
+    const slow = await screen.findByTestId("turn-slow");
+    expect(slow).toHaveTextContent("A local model can be slow");
+    expect(slow).toHaveAttribute("role", "status");
+    expect(screen.getByTestId("turn-cancel")).toBeInTheDocument(); // still cancellable
+  });
+
+  it("an answer that arrives in time shows no slow note and no timeout", async () => {
+    render(drawerWith(ALERT, { slowAfterMs: 30, timeoutMs: 60 }));
+    await screen.findByTestId("answer");
+    await new Promise((r) => setTimeout(r, 120));
+    expect(screen.queryByTestId("turn-slow")).toBeNull();
+    expect(screen.queryByTestId("turn-error")).toBeNull();
+    expect(screen.getByTestId("answer")).toBeInTheDocument();
+  });
+
+  it("a question that takes too long is aborted and shown as a timeout with Retry, not as an answer", async () => {
+    let resolve!: (v: CopilotResponse) => void;
+    ask.mockImplementationOnce(() => new Promise<CopilotResponse>((r) => (resolve = r)));
+    render(drawerWith(ALERT, { timeoutMs: 50 }));
+    const err = await screen.findByTestId("turn-error");
+    expect(err).toHaveAttribute("data-kind", "timeout");
+    expect(err).toHaveTextContent("The assistant took too long");
+    expect(err).toHaveTextContent("not an answer about your system");
+    expect(ask.mock.calls[0][1]?.aborted).toBe(true);
+    expect(screen.getByTestId("turn-retry")).toBeInTheDocument();
+    await act(async () => resolve(RULE_BASED)); // a reply after the limit is dropped
+    expect(screen.queryByTestId("answer")).toBeNull();
+  });
+
+  it("the Ask button is disabled while a question is in flight and enabled again after Cancel", async () => {
+    ask.mockImplementationOnce(() => new Promise<CopilotResponse>(() => {}));
+    render(drawerWith(ALERT));
+    await screen.findByTestId("turn-pending");
+    expect(screen.getByTestId("assistant-send")).toBeDisabled();
+    fireEvent.click(screen.getByTestId("turn-cancel"));
+    await screen.findByTestId("turn-error");
+    expect(screen.getByTestId("assistant-send")).not.toBeDisabled();
   });
 });

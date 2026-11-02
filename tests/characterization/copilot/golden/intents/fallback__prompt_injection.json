@@ -8,6 +8,7 @@
   },
   "links": [],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [
     "The question did not match a supported topic."
   ],

@@ -47,6 +47,16 @@ export const CitationSchema = z
   .passthrough();
 export type Citation = z.output<typeof CitationSchema>;
 
+/** CP-10: which provider phrased an `llm` answer. Name and data policy only; `fell_back` = an earlier provider was tried or skipped first. */
+export const ProviderSchema = z
+  .object({
+    name: z.string().min(1).max(64),
+    local: z.boolean(),
+    fell_back: z.boolean().optional(),
+  })
+  .passthrough();
+export type ProviderInfo = z.output<typeof ProviderSchema>;
+
 export const CopilotResponseSchema = z
   .object({
     request_id: z.string().max(100),
@@ -58,6 +68,7 @@ export const CopilotResponseSchema = z
     links: z.array(LinkSchema).max(10),
     limits: z.object({ provider_configured: z.boolean() }).passthrough(),
     citations: z.array(CitationSchema).max(10).optional(), // CP-7; absent in responses from an older backend
+    provider: ProviderSchema.nullable().optional(), // CP-10; null or absent for a rule-based answer or an older backend
   })
   .passthrough();
 export type CopilotResponse = z.output<typeof CopilotResponseSchema>;

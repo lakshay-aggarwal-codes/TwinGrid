@@ -109,6 +109,7 @@ async def ask(
         kind=body.context.kind,
         context_id=body.context.id,
         history=[h.model_dump() for h in body.history],
+        private_terms=(user.username,),  # CP-8: never shown to a cloud provider
     )
     try:
         result = await copilot_answer.answer_question(inp, _loaders(db, user))
@@ -129,4 +130,5 @@ async def ask(
         "links": result.links,
         "limits": result.limits,
         "citations": result.citations,
+        "provider": result.provider,
     }

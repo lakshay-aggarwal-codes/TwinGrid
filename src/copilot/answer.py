@@ -12,7 +12,7 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import HISTORY_UNAVAILABLE, MODE_RULE_BASED, docs_answer, evidence, llm, tools
+from . import HISTORY_UNAVAILABLE, MODE_RULE_BASED, docs_answer, evidence, llm, sanitize, tools
 from .evidence import EvidenceBook
 
 MAX_ANSWER = 1500
@@ -41,6 +41,7 @@ class AskInput:
     kind: str = "general"
     context_id: str | None = None
     history: list[dict[str, str]] = field(default_factory=list)  # accepted for the contract; deliberately not used
+    private_terms: tuple[str, ...] = ()  # CP-8: the user's own names; removed from anything a cloud provider is shown
 
 
 def classify(question: str, kind: str) -> str:
@@ -74,6 +75,7 @@ class Answer:
     mode: str = MODE_RULE_BASED
     limits: dict[str, Any] = field(default_factory=lambda: {"provider_configured": False})
     citations: list[dict[str, Any]] = field(default_factory=list)  # CP-7: one per documentation passage in the answer
+    provider: dict[str, Any] | None = None  # CP-10: {name, local, fell_back} of the provider that phrased it
 
 
 def _dedupe(items: list[str]) -> list[str]:
@@ -228,8 +230,13 @@ def _docs_question(
     """Quote the retrieved passages as marked data, or say plainly that nothing is documented."""
     quoted: list[str] = []
     citations: list[dict[str, Any]] = []
+    clean = [
+        p for p in res.passages if not p.flags
+    ]  # CP-8: a passage with instruction-like text is held back if it can be
+    withheld = bool(clean) and len(clean) < len(res.passages)
+    flagged = not clean and bool(res.passages)  # ... and otherwise quoted as data only, with no model involved
     used = 0
-    for p in res.passages:
+    for p in clean or res.passages:
         if quoted and used + len(p.excerpt) > DOCS_QUOTE_BUDGET:
             break
         eid = book.add(
@@ -258,7 +265,8 @@ def _docs_question(
         + "; ".join(quoted)
         + ". Each citation names the source file and heading of its passage."
     )
-    return text, [_DOCS_CAVEAT], [], [], citations
+    warnings = [sanitize.WARN_PASSAGE_FLAGGED] if flagged else [sanitize.WARN_PASSAGE_WITHHELD] if withheld else []
+    return text, [_DOCS_CAVEAT], warnings, [], citations
 
 
 async def answer_question(
@@ -300,4 +308,6 @@ async def answer_question(
         text = "The answer could not be built from the available evidence."
         citations = []
     rule_based = Answer(text, items, _dedupe(unknowns), _dedupe(warnings), links, intent, citations=citations)
-    return await llm.enhance(rule_based, question=inp.question, settings=llm_settings)  # Task 24: no-op unless enabled
+    return await llm.enhance(
+        rule_based, question=inp.question, settings=llm_settings, private_terms=inp.private_terms
+    )  # Task 24: no-op unless enabled

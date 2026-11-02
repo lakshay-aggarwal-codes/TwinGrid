@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from . import sanitize
 from .rag import index as rag_index
 from .rag import search as rag_search
 from .rag.tokenize import tokenize
@@ -83,17 +84,18 @@ def docs_cue(question: str, kind: str) -> str | None:
 
 # ----------------------------------------------------------------------------- passages as inert data
 
-_URL = re.compile(r"(?i)\b(?:https?|ftp|file|javascript|data|mailto)\s*:\S*|\bwww\.\S+")
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
-_MARKUP = re.compile(r"[<>]|`{3,}")
 
 
 def defang(text: str) -> str:
-    """Make quoted documentation inert: no link, no angle brackets, no ``{{ }}`` placeholder, no ``[E#]`` lookalike."""
-    out = _URL.sub("(link removed)", text)
-    out = _MARKUP.sub(" ", out).replace("{{", " ").replace("}}", " ").replace("{", "(").replace("}", ")")
-    out = re.sub(r"\[(E\d+)\]", r"(\1)", out)
-    return re.sub(r"\s+", " ", out).strip()
+    """Make quoted documentation inert (CP-8: ``sanitize.neutralize``: Unicode normalised; no link, markup, placeholder,
+    ``[E#]`` lookalike, prompt delimiter, chat token or role label)."""
+    return sanitize.neutralize(text)
+
+
+def _heading(path: str) -> str:
+    """A heading path (``A > B``) with each part neutralised; the `` > `` separator is ours and stays."""
+    return " > ".join(sanitize.neutralize(part) for part in str(path).split(" > "))
 
 
 def excerpt(text: str, terms: tuple[str, ...], cap: int = EXCERPT_CHARS) -> str:
@@ -127,6 +129,7 @@ class DocsPassage:
     excerpt: str
     score: float
     matched_terms: tuple[str, ...]
+    flags: tuple[str, ...] = ()  # CP-8: instruction-like cues found in the whole chunk (sanitize.injection_cues)
 
 
 @dataclass(frozen=True)
@@ -195,8 +198,9 @@ class DocsRetriever:
             return DocsResult(STATUS_UNAVAILABLE, f"error: {exc.__class__.__name__}")
         passages = tuple(
             DocsPassage(
-                h.chunk.chunk_id, h.chunk.source_path, h.chunk.heading_path,
+                h.chunk.chunk_id, sanitize.neutralize(h.chunk.source_path), _heading(h.chunk.heading_path),
                 excerpt(h.chunk.text, h.matched_terms), h.score, h.matched_terms,
+                sanitize.injection_cues(f"{h.chunk.heading_path}\n{h.chunk.text}"),
             )
             for h in found.hits
         )  # fmt: skip

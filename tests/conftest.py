@@ -16,6 +16,15 @@ from src.lstm_model import DataPipeline
 
 
 @pytest.fixture(autouse=True)
+def _copilot_tests_allow_every_cloud_intent(monkeypatch):
+    """CP-8: by default a cloud provider may only serve ``docs_question`` (``src/copilot/policy.py``). Copilot tests written
+    before CP-8 drive the LLM path with a provider that is not flagged local and an alert or signal question, so the suite
+    runs with all configurable intents allowed. ``tests/test_copilot_policy.py`` sets the variable itself (and deletes it
+    to test the default); nothing else reads this variable."""
+    monkeypatch.setenv("COPILOT_LLM_CLOUD_INTENTS", "*")
+
+
+@pytest.fixture(autouse=True)
 def _isolated_webhook_delivery_log(tmp_path, monkeypatch):
     """Task 29: a real webhook delivery is logged to a file (src/webhook_deliveries.py). Keep it out of the repo's data/."""
     from src import webhook_deliveries

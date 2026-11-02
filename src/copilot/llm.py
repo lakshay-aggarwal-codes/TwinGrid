@@ -31,6 +31,7 @@ import json
 import logging
 import re
 import secrets
+import threading
 import time
 from dataclasses import dataclass, field, replace
 from typing import Any
@@ -38,14 +39,18 @@ from typing import Any
 from . import MODE_LLM
 from . import limiter as _limiter
 from . import local as _local
+from . import policy as _policy
 from . import presets as _presets
 from . import providers as _providers
 from . import router as _router
+from . import sanitize as _sanitize
 
 logger = logging.getLogger(__name__)
 
 WARN_UNAVAILABLE = "llm_unavailable"
 WARN_REJECTED = "llm_rejected"
+WARN_BLOCKED = "llm_blocked_by_policy"  # CP-8: local-only mode or the per-intent cloud rule left no provider
+WARN_BUSY = "llm_busy"  # CP-8: too many model calls already running in this process
 MAX_ANSWER = 1500
 DEFAULT_TIMEOUT_S = _providers.DEFAULT_TIMEOUT_S
 DEFAULT_MAX_OUTPUT_TOKENS = _providers.DEFAULT_MAX_OUTPUT_TOKENS
@@ -205,9 +210,9 @@ def format_evidence(item: dict[str, Any]) -> str:
     return f"{text} {unit}" if unit and isinstance(value, (int, float)) else text
 
 
-def build_messages(
+def _data_block(
     question: str, draft: str, evidence: list[dict[str, Any]], unknowns: list[str], links: list[dict[str, str]]
-) -> list[dict[str, str]]:
+) -> dict[str, Any]:
     shown = []
     for item in evidence:
         entry = {
@@ -220,10 +225,23 @@ def build_messages(
             entry["value"] = None
             entry["is_number_use_placeholder"] = value is not None
         shown.append(entry)
+    return {"question": question, "evidence": shown, "unknowns": unknowns, "allowed_links": links, "draft": draft}
+
+
+def request_text(
+    question: str, draft: str, evidence: list[dict[str, Any]], unknowns: list[str], links: list[dict[str, str]]
+) -> str:
+    """The data block as readable text (no unicode escapes): what ``policy.leaks`` searches before a send."""
+    return json.dumps(_data_block(question, draft, evidence, unknowns, links), ensure_ascii=False)
+
+
+def build_messages(
+    question: str, draft: str, evidence: list[dict[str, Any]], unknowns: list[str], links: list[dict[str, str]]
+) -> list[dict[str, str]]:
     token = secrets.token_hex(8)
     policy = SYSTEM_POLICY + ("\n" + DOCS_POLICY if any(e.get("source") == _SOURCE_DOC for e in evidence) else "")
     block = json.dumps(
-        {"question": question, "evidence": shown, "unknowns": unknowns, "allowed_links": links, "draft": draft},
+        _data_block(question, draft, evidence, unknowns, links),
         ensure_ascii=True,  # JSON encoding keeps data inside its string quotes; it cannot forge the END_DATA line
     )
     user = f"BEGIN_DATA {token}\n{block}\nEND_DATA {token}"
@@ -418,7 +436,9 @@ def _failure_from(exc: ProviderError) -> _router.Failure:
     return _router.Failure(_router.KIND_TRANSIENT, code, retry_after=exc.retry_after)
 
 
-async def enhance(result: Any, *, question: str, settings: LlmSettings | None = None) -> Any:
+async def enhance(
+    result: Any, *, question: str, settings: LlmSettings | None = None, private_terms: tuple[str, ...] = ()
+) -> Any:
     """Return ``result`` (an ``answer.Answer``) unchanged, or a copy phrased by the model after validation. Never raises.
 
     An explicit ``settings`` is a chain of one. Otherwise the chain comes from the environment (``load_chain``).
@@ -432,9 +452,30 @@ async def enhance(result: Any, *, question: str, settings: LlmSettings | None = 
         if not usable:
             _log(chain[0], None, "not_configured")
             return replace(result, limits=limits, warnings=_add(result.warnings, WARN_UNAVAILABLE))
-        if not result.evidence or "answer_numbers_unbacked" in result.warnings:
-            return replace(result, limits=limits)  # nothing to phrase: fixed statements stay as they are
-        messages = build_messages(question, result.answer, result.evidence, result.unknowns, result.links)
+        if (
+            not result.evidence
+            or "answer_numbers_unbacked" in result.warnings
+            or _sanitize.WARN_PASSAGE_FLAGGED in result.warnings
+        ):
+            return replace(result, limits=limits)  # nothing to phrase, or a passage that no model may rephrase
+        allowed = _policy.filter_chain(usable, getattr(result, "intent", ""))  # CP-8: local-only and per-intent rules
+        if allowed.blocked:
+            _log(usable[0], None, f"blocked_{allowed.reason}")
+            return replace(result, limits=limits, warnings=_add(result.warnings, WARN_BLOCKED))
+        usable = allowed.providers
+        local_messages = build_messages(question, result.answer, result.evidence, result.unknowns, result.links)
+        cloud_messages = local_messages
+        if any(not s.local for s in usable):  # CP-8: a remote provider is shown a reduced, leak-checked request
+            view = _policy.cloud_view(
+                question, result.answer, result.evidence, result.unknowns, private_terms, result.links
+            )
+            checked = request_text(view.question, view.draft, view.evidence, view.unknowns, view.links)
+            if _policy.leaks(checked, view.withheld, result.evidence, user_text=view.user_text, private=view.private):
+                _log(next(s for s in usable if not s.local), None, "blocked_payload_check")
+                usable = [s for s in usable if s.local]
+                if not usable:
+                    return replace(result, limits=limits, warnings=_add(result.warnings, WARN_BLOCKED))
+            cloud_messages = build_messages(view.question, view.draft, view.evidence, view.unknowns, view.links)
 
         def attempt(s: LlmSettings, timeout_s: float) -> str:
             request_id: str | None = None
@@ -449,7 +490,9 @@ async def enhance(result: Any, *, question: str, settings: LlmSettings | None = 
                 _log(s, None, "unavailable_client_rate_limit")
                 raise _router.Failure(_router.KIND_QUOTA, "unavailable_client_rate_limit", retry_after=wait)
             try:
-                content, request_id = _call_provider(replace(s, timeout_s=timeout_s), messages)
+                content, request_id = _call_provider(
+                    replace(s, timeout_s=timeout_s), local_messages if s.local else cloud_messages
+                )
                 text, _used = validate(content, result.evidence, result.links, result.answer)
             except Rejected as exc:
                 _log(s, request_id, f"rejected_{exc.code}")
@@ -462,22 +505,37 @@ async def enhance(result: Any, *, question: str, settings: LlmSettings | None = 
 
         budget = _router.budget_from_env()
         started = time.monotonic()
-        try:
-            outcome = await asyncio.wait_for(
-                asyncio.to_thread(
-                    _router.ROUTER.route,
+        if not _policy.GATE.try_acquire(_policy.max_concurrent()):  # CP-8: never queue slow calls behind each other
+            logger.info("copilot_llm_chain outcome=unavailable_busy attempts=- total_ms=0")
+            return replace(result, limits=limits, warnings=_add(result.warnings, WARN_BUSY))
+        ran = threading.Event()
+
+        def run_chain() -> Any:
+            ran.set()
+            try:  # the slot is held until the thread REALLY finishes, even if the client was already answered
+                return _router.ROUTER.route(
                     usable,
                     attempt,
                     name=lambda s: _safe_id(s.name) or "-",
                     key=_provider_key,
                     timeout=lambda s: s.timeout_s,
                     budget_s=budget,
-                ),
+                )
+            finally:
+                _policy.GATE.release()
+
+        try:
+            outcome = await asyncio.wait_for(
+                asyncio.to_thread(run_chain),
                 min(budget, sum(s.timeout_s for s in usable)) + 2,
             )
         except asyncio.TimeoutError:
             logger.info("copilot_llm_chain outcome=unavailable_timeout attempts=- total_ms=%d", _ms(started))
             return replace(result, limits=limits, warnings=_add(result.warnings, WARN_UNAVAILABLE))
+        except BaseException:
+            if not ran.is_set():  # cancelled before the thread started: nothing else will release the slot
+                _policy.GATE.release()
+            raise
         logger.info(
             "copilot_llm_chain outcome=%s attempts=%s total_ms=%d",
             "ok" if outcome.ok else ("rejected" if outcome.rejected else "unavailable"),
@@ -485,7 +543,13 @@ async def enhance(result: Any, *, question: str, settings: LlmSettings | None = 
             _ms(started),
         )
         if outcome.ok:
-            return replace(result, answer=outcome.value, mode=MODE_LLM, limits=limits)
+            who = outcome.provider
+            info = {  # CP-10: provider name and data policy only; never a URL, model id or key
+                "name": (_safe_id(who.name) or "-") if who is not None else "-",
+                "local": bool(who.local) if who is not None else False,
+                "fell_back": len(outcome.attempts) > 1,
+            }
+            return replace(result, answer=outcome.value, mode=MODE_LLM, limits=limits, provider=info)
         code = WARN_REJECTED if outcome.rejected else WARN_UNAVAILABLE
         return replace(result, limits=limits, warnings=_add(result.warnings, code))
     except Exception as exc:  # noqa: BLE001 - the client must always get an answer

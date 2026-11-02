@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "@/api/apiError";
-import { ERROR_COPY, LIMITS, buildRequest, errorKindOf, hasWeakEvidence, isSafeLink, modeLabel, observedText, segmentsOf, suggestionsFor, valueText, warningText } from "./model";
+import { ASK_TIMEOUT_MS, ERROR_COPY, LIMITS, SLOW_AFTER_MS, buildRequest, docHref, errorKindOf, fellBackText, hasWeakEvidence, isSafeLink, modeLabel, observedText, providerKind, providerText, segmentsOf, suggestionsFor, valueText, warningText } from "./model";
 import { CopilotResponseSchema, EvidenceSchema } from "./schema";
-import { RULE_BASED, STALE, KNOWN_ROUTES } from "./testFixtures";
+import { DOCS_ANSWER, DOCS_NOT_DOCUMENTED, KNOWN_ROUTES, LLM_CLOUD_FELL_BACK, LLM_FALLBACK, LLM_LOCAL, RULE_BASED, STALE } from "./testFixtures";
 import rateLimited from "../../contract/fixtures-copilot/rate_limited.json";
 import offline from "../../contract/fixtures-copilot/offline.json";
 
@@ -113,5 +113,59 @@ describe("display helpers", () => {
   });
   it("has starter questions for every kind", () => {
     for (const kind of ["alert", "signal", "model", "feature", "general"] as const) expect(suggestionsFor({ kind }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("CP-10: mode badge, provider and citations helpers", () => {
+  it("the provider block is optional in the schema, and null is accepted", () => {
+    expect(RULE_BASED.provider).toBeUndefined(); // an older backend / fixture without the field
+    expect(DOCS_ANSWER.provider).toBeNull();
+    expect(LLM_LOCAL.provider).toEqual({ name: "ollama", local: true, fell_back: false });
+    expect(CopilotResponseSchema.safeParse({ ...RULE_BASED, provider: { name: "", local: true } }).success).toBe(false); // a name is required
+    expect(CopilotResponseSchema.safeParse({ ...RULE_BASED, provider: { name: "x".repeat(65), local: false } }).success).toBe(false);
+    expect(CopilotResponseSchema.safeParse({ ...RULE_BASED, provider: { name: "groq" } }).success).toBe(false); // local is required
+  });
+
+  it("classifies where an answer came from", () => {
+    expect(providerKind(RULE_BASED)).toBe("rule");
+    expect(providerKind(LLM_LOCAL)).toBe("local");
+    expect(providerKind(LLM_CLOUD_FELL_BACK)).toBe("cloud");
+    expect(providerKind({ mode: "llm" })).toBe("model"); // llm answer from a backend that does not say which provider
+  });
+
+  it("words the badge: Local model, Cloud model with the provider name, or why no model answered", () => {
+    expect(providerText(LLM_LOCAL)).toBe("Local model (ollama)");
+    expect(providerText(LLM_CLOUD_FELL_BACK)).toBe("Cloud model (groq)");
+    expect(providerText({ mode: "llm", warnings: [] })).toBeNull();
+    expect(providerText(RULE_BASED)).toBeNull();
+    expect(providerText(LLM_FALLBACK)).toBe("model did not answer");
+    expect(providerText({ mode: "rule_based", warnings: ["llm_rejected"] })).toBe("model wording rejected");
+  });
+
+  it("says so when failover fell through to a later provider, and only then", () => {
+    expect(fellBackText(LLM_CLOUD_FELL_BACK)).toBe("An earlier provider did not answer, so this answer came from groq.");
+    expect(fellBackText(LLM_LOCAL)).toBeNull();
+    expect(fellBackText(RULE_BASED)).toBeNull();
+    expect(fellBackText({ mode: "rule_based", provider: { name: "groq", local: false, fell_back: true } })).toBeNull(); // not an llm answer
+  });
+
+  it("a citation links to a document page only when the app has a route for exactly that document", () => {
+    const c = DOCS_ANSWER.citations![0];
+    expect(docHref(c, KNOWN_ROUTES)).toBeNull(); // the app has no docs route today: plain text
+    expect(docHref(c, [...KNOWN_ROUTES, "/docs/copilot/LIMITS.md"])).toBe("/docs/copilot/LIMITS.md");
+    expect(docHref({ source_path: "docs/CLAIMS.md" }, [...KNOWN_ROUTES, "/docs/copilot/LIMITS.md"])).toBeNull(); // another document
+    expect(docHref({ source_path: "../../etc/passwd" }, ["/docs/../../etc/passwd"])).toBeNull(); // a path that climbs is never a link
+  });
+
+  it("the documentation warning codes get a sentence", () => {
+    expect(warningText("docs_index_unavailable")).toMatch(/not available/);
+    expect(warningText("docs_index_stale")).toMatch(/out of date/);
+    expect(DOCS_NOT_DOCUMENTED.warnings).toEqual(["docs_index_stale"]);
+  });
+
+  it("timeouts: slow note well before the client limit, client limit above the server's 12 s chain budget", () => {
+    expect(SLOW_AFTER_MS).toBeLessThan(ASK_TIMEOUT_MS);
+    expect(ASK_TIMEOUT_MS).toBeGreaterThan(12_000);
+    expect(ERROR_COPY.timeout.retry && ERROR_COPY.cancelled.retry).toBe(true);
   });
 });

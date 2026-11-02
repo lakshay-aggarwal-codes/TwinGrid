@@ -72,8 +72,9 @@ async def test_an_unknown_alert_is_404_and_a_known_one_is_answered(client, viewe
         "links",
         "limits",
         "citations",
+        "provider",
     }
-    assert data["citations"] == []
+    assert data["citations"] == [] and data["provider"] is None
     assert data["mode"] == "rule_based" and data["limits"] == {"provider_configured": False}
     assert data["request_id"] == r.headers["x-request-id"]
     assert len(data["answer"]) <= 1500 and data["evidence"] and all(set(e) == EVIDENCE_KEYS for e in data["evidence"])
@@ -138,4 +139,5 @@ async def test_the_openapi_document_describes_the_contract(client):
         "links",
         "limits",
         "citations",
+        "provider",
     }

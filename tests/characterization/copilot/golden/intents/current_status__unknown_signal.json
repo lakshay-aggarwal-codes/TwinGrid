@@ -13,6 +13,7 @@
     }
   ],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [
     "No stored sample was found for signal nope."
   ],

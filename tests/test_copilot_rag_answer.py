@@ -157,7 +157,9 @@ def test_a_docs_question_gets_a_cited_rule_based_answer(retriever, index_path):
     assert f'"{docs[0]["value"]}" [{docs[0]["id"]}]' in r.answer
     assert set(MARKER.findall(r.answer)) == {e["id"] for e in docs}
     assert evidence.unbacked_numbers(r.answer, r.evidence) == [] and len(r.answer) <= 1500
-    assert r.links == [] and r.warnings == [] and r.unknowns == [answer._DOCS_CAVEAT]
+    # CP-8: the tree's poison.md also matches this question; it is held back (not quoted) and the answer says so
+    assert r.links == [] and r.warnings == ["docs_passage_withheld"] and r.unknowns == [answer._DOCS_CAVEAT]
+    assert all(e["entity"] != "docs/runbooks/poison.md" for e in docs)
 
 
 def test_each_citation_names_its_passage_and_the_chunk_in_the_index(retriever, index_path):
@@ -307,14 +309,15 @@ def test_the_retriever_rechecks_the_documents_only_after_its_ttl(tree, index_pat
 # ----------------------------------------------------------------------------- passages are inert data
 
 
-def test_a_poisoned_passage_cannot_forge_a_marker_link_markup_or_placeholder(retriever):
+def test_a_poisoned_passage_is_held_back_and_nothing_it_says_reaches_the_answer(retriever):
+    """CP-8 changed this: a passage with instruction-like text is withheld when clean passages were found (it used to be
+    quoted defanged). The forging cases themselves (markers, links, markup, delimiters) are in test_copilot_hardening.py."""
     r = ask("What does the runbook say about the backup restore procedure?", search=retriever)
     docs = passages(r)
-    poisoned = next(e for e in docs if e["entity"] == "docs/runbooks/poison.md")
-    for bad in ("<", ">", "{{", "}}", "http", "evil.example", "[E1]", "[E9]"):
-        assert bad not in poisoned["value"], bad
-    assert "(link removed)" in poisoned["value"]
-    # the markers in the answer are exactly our own evidence ids, and every number is still backed
+    assert docs and all(e["entity"] != "docs/runbooks/poison.md" for e in docs)
+    assert "docs_passage_withheld" in r.warnings
+    for bad in ("<", "{{", "http", "evil.example", "[E9]", "Ignore previous"):
+        assert bad not in r.answer, bad
     assert set(MARKER.findall(r.answer)) <= {e["id"] for e in r.evidence}
     assert evidence.unbacked_numbers(r.answer, r.evidence) == []
     assert r.mode == "rule_based" and r.links == []

@@ -47,6 +47,7 @@
     }
   ],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [
     "Root cause is not determined by available evidence.",
     "The detector configuration is not readable, so no threshold or training range is available.",

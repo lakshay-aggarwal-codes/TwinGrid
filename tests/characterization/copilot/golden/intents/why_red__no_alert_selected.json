@@ -13,6 +13,7 @@
     }
   ],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [
     "No alert was selected, so no explanation could be built."
   ],

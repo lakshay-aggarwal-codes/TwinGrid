@@ -1,0 +1,159 @@
+﻿{
+    "dataset":  "Danish AAU Server-Room",
+    "version":  "v5",
+    "doi":  "10.5281/zenodo.21262042",
+    "source":  "https://zenodo.org/records/21262042",
+    "license":  "CC BY 4.0",
+    "retrieved_date":  "2026-10-30",
+    "raw_directory":  "realData/danish-server-room-v5/raw",
+    "total_files":  21,
+    "files":  [
+                  {
+                      "filename":  "AAU_air_speed_idle_period_1.csv",
+                      "size_bytes":  1874262,
+                      "zenodo_md5":  "md5:a5c1ecde02b2188161fce34400b8580d",
+                      "local_sha256":  "dd650938fbd8f3b54cbab1bf81c20444d8070cb4955ff71a927d692190f4ca77",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_air_speed_75_percent_load_period.csv",
+                      "size_bytes":  2843508,
+                      "zenodo_md5":  "md5:bc499b553d01c97c2b157df2645cb652",
+                      "local_sha256":  "03b0f21fce38207391a790c3c75ec7a3f3a9e27d95bd382b18c6d6591b511c06",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_air_speed_100_percent_load_period.csv",
+                      "size_bytes":  8312511,
+                      "zenodo_md5":  "md5:6706f44b78645cd31a13fdabd4119b62",
+                      "local_sha256":  "9511c53433b887766d2c3420db0e947fb66973ef6566a0d7ccb0bd0a021b90ce",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_temperature_and_power_use_idle_period_2.csv",
+                      "size_bytes":  406398635,
+                      "zenodo_md5":  "md5:39bc34627d1ba03e68d1a1812c154c45",
+                      "local_sha256":  "7b169a8dec908ef536dcb272d3f4c12bf616ab01d95a892c8ae21981b63edaf0",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_temperature_and_power_use_75_percent_load_period.csv",
+                      "size_bytes":  45514576,
+                      "zenodo_md5":  "md5:93866feca3824765b2714d56266d900f",
+                      "local_sha256":  "001a9620ef591db410907296a09df84c62896494ee4feb0afc88d68785afa0d6",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_air_speed_idle_period_2.csv",
+                      "size_bytes":  25420640,
+                      "zenodo_md5":  "md5:af30076af4b9fcb05452e82fc72d3564",
+                      "local_sha256":  "fff1c3759ce2ec728b858aa9f2b3371d327a3045c69d1d7fc8fb2310e71fde2e",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_air_speed_25_percent_load_period.csv",
+                      "size_bytes":  2926941,
+                      "zenodo_md5":  "md5:962a7b7e2d37a506285183477426d5dd",
+                      "local_sha256":  "e7803dcd66c3111a3c78bba61a6ef17411b0072c856f73c51aa82fa090958377",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_temperature_and_power_use_25_percent_load_period.csv",
+                      "size_bytes":  46786437,
+                      "zenodo_md5":  "md5:00231d004182d9bf1e9f7ee7d68e3dc5",
+                      "local_sha256":  "6a2a8345b15925a13db353a24574fd1eda43b1c5ea3c63134f6eff8e7f62e209",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_temperature_and_power_use_50_percent_load_period.csv",
+                      "size_bytes":  39681966,
+                      "zenodo_md5":  "md5:d2049ae47c781903f62e2e353f4904d1",
+                      "local_sha256":  "5499933b43ccaa668e3099b4d9dc12883656ff49dc44b58a2b0529aab69775f4",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_temperature_and_power_use_100_percent_load_period.csv",
+                      "size_bytes":  133109533,
+                      "zenodo_md5":  "md5:0526c4fd9d06c9937d7766417354f99c",
+                      "local_sha256":  "fadccf18859feae2a3892c54c1d15f5b1f314d6bf0c39946b065c956bb1b097f",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_air_speed.csv",
+                      "size_bytes":  44118473,
+                      "zenodo_md5":  "md5:bba56cf69543965ffe5d8c82e5eb96a9",
+                      "local_sha256":  "e305b2b491e9b3d39aafcb8dff7c05c0b4e8849d6661bd00bd6d88d118b2c116",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_temperature_and_power_use.csv",
+                      "size_bytes":  706160545,
+                      "zenodo_md5":  "md5:fdb84fef0733db5a0a9564e028725494",
+                      "local_sha256":  "a90319b9864b69104b993e93cb70f2326cb0d7b1e70f6fc0deb9aef64dd265fe",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU-layout-file.xlsx",
+                      "size_bytes":  24525,
+                      "zenodo_md5":  "md5:1704d2c7a905273e0c18fc94a22640ae",
+                      "local_sha256":  "8aa350e4c31917f7d995a64d9ee61bdb80f1fb27bc69c49952cc126fe1608160",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_supplementary_ventilation.csv",
+                      "size_bytes":  225183,
+                      "zenodo_md5":  "md5:e263cb768ccad12f50e4de1ada9e610b",
+                      "local_sha256":  "72de6d7ca9d0530030cf42b775bbe812a9ed8e57b0e2eee2dff0f1f7a8869c54",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_supplementary_surrounding_temperatures.csv",
+                      "size_bytes":  156859,
+                      "zenodo_md5":  "md5:3c8ca0ff02e4dc3ea40d40a5200774da",
+                      "local_sha256":  "a8010675dce89f2dba11615caf76b8a24648a52ac38f7226a461d4c59348f26e",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_DC_geometry_with_measurement_points.dwg",
+                      "size_bytes":  186698,
+                      "zenodo_md5":  "md5:57b3525ead73a35390eb56722103c027",
+                      "local_sha256":  "7ee557a0e4c61e6ff8fdfe6d4659d7382222e7bac88b04a83251bfae640020dc",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_DC_geometry_with_measurement_points.log",
+                      "size_bytes":  24305,
+                      "zenodo_md5":  "md5:594092fcf09365729f7d3c412e7b09e1",
+                      "local_sha256":  "44a9409c38b7af9c46084f64990d8ebc317a9ff37fdc5022f11b72b851b4767c",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "3D_model_files.zip",
+                      "size_bytes":  6484,
+                      "zenodo_md5":  "md5:e7ee54bf3267b614be45969e5730f2e0",
+                      "local_sha256":  "438f762983215d2b38dff6aa7b24e10754cc4ef6430030aa60c22136fec98204",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "Measurement_visualization.zip",
+                      "size_bytes":  6411933,
+                      "zenodo_md5":  "md5:e62614eb91435ba1014051e7b23e4bdd",
+                      "local_sha256":  "dc6e87c5dfe773881219fb1f1445343f38a1a262a58c74e482f25cc0c17d325b",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_temperature_and_power_use_idle_period_1.csv",
+                      "size_bytes":  29955413,
+                      "zenodo_md5":  "md5:88aab09cb91537fe5b925775ef724f1b",
+                      "local_sha256":  "e56891ff05fb90f304b644c5eb14287ea758866ea6461efe15efb100e5e5aa1b",
+                      "md5_verified":  true
+                  },
+                  {
+                      "filename":  "AAU_air_speed_50_percent_load_period.csv",
+                      "size_bytes":  2447905,
+                      "zenodo_md5":  "md5:c179b934fa2783b850d4036b88800967",
+                      "local_sha256":  "b1238a51109d190b7886cd4a1f4be67da6f1e3846ba533c71834d17e1d3b63a0",
+                      "md5_verified":  true
+                  }
+              ]
+}
