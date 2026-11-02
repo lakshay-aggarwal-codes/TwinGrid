@@ -9,5 +9,5 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 -r requirements.txt
-stable-baselines3==2.9.0
-torch==2.14.0
+stable-baselines3==2.9.2
+torch==2.15.0+cpu
