@@ -23,6 +23,8 @@ export function providerText(d: Pick<CopilotResponse, "mode" | "provider" | "war
   if (d.mode === "llm") return d.provider ? `${d.provider.local ? "Local model" : "Cloud model"} (${d.provider.name})` : null;
   if (d.warnings.includes("llm_unavailable")) return "model did not answer";
   if (d.warnings.includes("llm_rejected")) return "model wording rejected";
+  if (d.warnings.includes("llm_blocked_by_policy")) return "model not used for this question";
+  if (d.warnings.includes("llm_busy")) return "model busy";
   return null;
 }
 
@@ -117,6 +119,10 @@ const WARNING_TEXT: Readonly<Record<string, string>> = {
   llm_rejected: "The model's wording was rejected because it used a number the evidence does not back, so this is the rule-based answer.",
   docs_index_unavailable: "The documentation index is not available, so no documentation was searched.",
   docs_index_stale: "The documentation index is out of date, so no documentation was cited.",
+  llm_blocked_by_policy: "Your privacy settings do not let a model see this question, so this is the rule-based answer.",
+  llm_busy: "The language model was busy, so this is the rule-based answer.",
+  docs_passage_withheld: "A documentation passage that looked like an instruction was left out of this answer.",
+  docs_passage_flagged: "Every passage found contains instruction-like text, so it is quoted as data and no model rephrased it.",
 };
 /** Known warning codes get a sentence; an unknown code is shown as received (text only). */
 export const warningText = (code: string): string => WARNING_TEXT[code] ?? code;

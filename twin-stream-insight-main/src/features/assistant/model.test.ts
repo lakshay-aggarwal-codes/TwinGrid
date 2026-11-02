@@ -101,6 +101,10 @@ describe("display helpers", () => {
   it("explains known warning codes and shows an unknown one as received", () => {
     expect(warningText("llm_unavailable")).toMatch(/rule-based answer/);
     expect(warningText("llm_rejected")).toMatch(/number the evidence does not back/);
+    expect(warningText("llm_blocked_by_policy")).toMatch(/privacy settings/);
+    expect(warningText("llm_busy")).toMatch(/busy/);
+    expect(warningText("docs_passage_withheld")).toMatch(/left out/);
+    expect(warningText("docs_passage_flagged")).toMatch(/quoted as data/);
     expect(warningText("something_new")).toBe("something_new");
   });
   it("maps client error kinds and every kind has copy", () => {
@@ -140,6 +144,8 @@ describe("CP-10: mode badge, provider and citations helpers", () => {
     expect(providerText(RULE_BASED)).toBeNull();
     expect(providerText(LLM_FALLBACK)).toBe("model did not answer");
     expect(providerText({ mode: "rule_based", warnings: ["llm_rejected"] })).toBe("model wording rejected");
+    expect(providerText({ mode: "rule_based", warnings: ["llm_blocked_by_policy"] })).toBe("model not used for this question");
+    expect(providerText({ mode: "rule_based", warnings: ["llm_busy"] })).toBe("model busy");
   });
 
   it("says so when failover fell through to a later provider, and only then", () => {
