@@ -110,7 +110,8 @@ def body(question: str, kind: str = "general", cid: str | None = None, history: 
 
 def assert_grounded(data: dict) -> None:
     """Mode-independent grounding check, written WITHOUT calling ``src.copilot.evidence`` (the code under test)."""
-    assert set(data) == RESPONSE_KEYS, set(data) ^ RESPONSE_KEYS
+    assert set(data) - {"provider"} == RESPONSE_KEYS, set(data) ^ RESPONSE_KEYS  # CP-10: provider is optional here
+    assert data.get("provider") is None or set(data["provider"]) == {"name", "local", "fell_back"}
     assert data["mode"] in ("rule_based", "llm")
     assert len(data["answer"]) <= MAX_ANSWER
     ids = [e["id"] for e in data["evidence"]]
