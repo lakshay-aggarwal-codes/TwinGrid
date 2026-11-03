@@ -61,8 +61,105 @@ If any check fails: record it, fix the cause through a new task, and repeat the 
 | `POSTGRES_PASSWORD` / `DATABASE_URL` | database access; compose requires `POSTGRES_PASSWORD` | environment or secret file |
 | `REDIS_PASSWORD` | Redis for the task queue; compose requires it | environment |
 | `ELECTRICITY_MAPS_API_KEY`, `NSRDB_API_KEY` | optional ingestion keys | environment |
+| `COPILOT_LLM_<NAME>_API_KEY` (or `_API_KEY_FILE`) | optional model-provider key, one per provider (`GROQ`, `OPENROUTER`, ...); a local Ollama needs none | environment or secret file |
 
 Secrets are not part of a backup. After a restore on a new host, re-supply them from your secret store. A restored database
 needs the same `JWT_SECRET_KEY` only if existing tokens must stay valid; otherwise users sign in again.
 
 Variables the compose file requires (`${VAR:?}`): `JWT_SECRET_KEY`, `MQTT_BROKER`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD`; all four appear in `.env.example`.
+
+## Copilot: local-only mode, provider failover and the docs index
+
+The assistant answers from rules and cited evidence. A language model is **off by default**; when on, it may only rephrase
+that answer, and the rule-based text is always the last fallback. Limits and data flow: `docs/model_cards/copilot.md`.
+Commands are Windows PowerShell from the repo root.
+
+### Local-only mode (nothing leaves the machine)
+
+```powershell
+winget install Ollama.Ollama
+ollama pull llama3.2:3b
+```
+
+In `.env` (names only below; pick the model tag that fits your RAM):
+
+```
+COPILOT_LLM_ENABLED=true
+COPILOT_LLM_PROVIDERS=ollama
+COPILOT_LLM_OLLAMA_MODEL=llama3.2:3b
+COPILOT_LLM_OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
+COPILOT_LLM_LOCAL_ONLY=true
+COPILOT_LLM_BUDGET_S=45
+```
+
+The `OLLAMA_BASE_URL` line is for a backend in Docker and Ollama on the host; leave it out when the backend runs on the host.
+Then `docker compose restart backend` and check the local model with `python -m src.copilot.local` (exit code 0 means up).
+With `COPILOT_LLM_LOCAL_ONLY=true` every provider not flagged local is dropped, so a cloud name in the list is never contacted.
+
+### Cloud failover chain (different providers only)
+
+```
+COPILOT_LLM_PROVIDERS=ollama,groq,openrouter
+COPILOT_LLM_GROQ_MODEL=<model id from the provider's list>
+COPILOT_LLM_GROQ_API_KEY_FILE=<path to a file holding the key>
+```
+
+The chain is tried in order within `COPILOT_LLM_BUDGET_S`. One provider, one account, one key: never list several accounts of
+one provider to get more quota. Cloud providers serve documentation questions only unless `COPILOT_LLM_CLOUD_INTENTS` lists
+more intents. Presets, client-side limits and the unverified data-use terms: `docs/copilot/PROVIDERS.md`.
+
+Two-provider demo (local first, cloud second), with the docs index built (see below) and the backend running from a checkout:
+
+1. Set `COPILOT_LLM_PROVIDERS=ollama,groq` and make the local provider unreachable: `COPILOT_LLM_OLLAMA_BASE_URL=http://localhost:9/v1`.
+2. Restart the backend and ask a documentation question (below). The answer should carry `provider.name = groq` and
+   `provider.fell_back = true`; the log shows `llm_chain outcome=ok attempts=ollama:<unavailable word>,groq:ok`.
+3. Restore the real Ollama URL and restart.
+
+```powershell
+$cred = Get-Credential
+$body = @{ username = $cred.UserName; password = $cred.GetNetworkCredential().Password } | ConvertTo-Json
+$tok = (Invoke-RestMethod -Method Post -Uri http://localhost:8000/auth/login -ContentType 'application/json' -Body $body).access_token
+$q = @{ question = 'What does the runbook say to do when the API is down?' } | ConvertTo-Json
+$r = Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/copilot/ask -Headers @{ Authorization = "Bearer $tok" } -ContentType 'application/json' -Body $q
+$r.mode; $r.provider; $r.warnings; $r.citations.source_path
+```
+
+### Replace a provider key
+
+Revoke the old key at the provider, put the new one in the environment or the `_API_KEY_FILE` file, then restart the backend.
+The restart matters: a 401 or 403 disables that provider until the process restarts. Never write a key into a ticket or a log.
+Other secrets: `docs/runbooks/rotating-secrets.md`.
+
+### What an outage looks like
+
+| What you see | Meaning |
+|---|---|
+| Answer badge `Rule-based explanation` with a note that the model did not answer; warning `llm_unavailable` | every provider failed or was skipped; the rule-based answer is complete and correct |
+| Warning `llm_rejected` | a model reply broke the checks (a number, link or word the evidence does not hold) and was thrown away |
+| Warning `llm_blocked_by_policy` | local-only mode or the per-intent cloud rule left no provider for that question |
+| Warning `llm_busy` | `COPILOT_LLM_MAX_CONCURRENT` chains were already running |
+| Warning `docs_index_unavailable` or `docs_index_stale` | documentation answers are off until the index is rebuilt |
+
+Failed providers cool down (60 s doubling to 900 s after a 429; 30 s base for other failures). State is per process. The
+Copilot never returns an error to the client because a provider failed. Runbooks: `docs/runbooks/copilot-providers-down.md`,
+`docs/runbooks/copilot-index-stale.md`.
+
+### Rebuild the docs index
+
+The index is a build artifact (`data/copilot/docs_index.sqlite`, or `COPILOT_DOCS_INDEX_PATH`), never committed. It must match
+the documents on disk: if any indexed document changed, the Copilot treats the index as stale and stops answering from the docs.
+
+```powershell
+python scripts/build_copilot_index.py --check
+python scripts/build_copilot_index.py
+python scripts/build_copilot_index.py --query "api down"
+```
+
+A running server re-checks within about 60 s; no restart is needed.
+
+### Docker note
+
+`.dockerignore` excludes every `*.md`, so the backend image holds no documents and cannot build or check the index: in the
+supplied Docker stack, documentation answers report `docs_index_unavailable`, while rule-based answers and model phrasing work.
+For documentation answers run the backend from a checkout (`CONTRIBUTING.md`), or mount the documents and the index into the
+container yourself; that mount has not been tried.

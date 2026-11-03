@@ -52,7 +52,7 @@ Related: [`LIMITATIONS.md`](model_cards/LIMITATIONS.md) · [`DATA_TRUTH.md`](mod
   (health, model state, access decisions) is low-rate, must be correct after a reconnect, and is easier to make honest as a
   request that can say "unavailable" than as a message that may simply never arrive.
 - **Why the assistant cannot write numbers.** Answers are templates filled from evidence the server fetched, each value carries a
-  reference, and anything the evidence does not hold is listed as unknown. There is no language model in the tree to make one up.
+  reference, and anything the evidence does not hold is listed as unknown. A language model is off by default and may only rephrase; a reply that adds a number is discarded.
 - **Why PPO is reported negative.** Its result was registered before it was scored, and the registered outcome is C: a fixed
   setting scored higher than every PPO seed. Reporting that is what the protocol is for. See the optimizer question above.
 - **What real facility data would change.** Parameters would be fitted and checked against held-out measurements, carbon would come
@@ -64,7 +64,7 @@ Related: [`LIMITATIONS.md`](model_cards/LIMITATIONS.md) · [`DATA_TRUTH.md`](mod
 ## Engineering talking points (design choices, not results)
 
 - **Simulation first.** One simulator is the single source of every number, and each surface says so. The trade-off is that nothing here says how a real facility behaves. [C-01]
-- **Evidence the assistant cannot change.** The assistant is templates over evidence the server fetched; it has no language model and cannot write a number, so a wrong answer can only come from a wrong source row, which is shown beside it. [C-05]
+- **Evidence the assistant cannot change.** The assistant is templates over evidence the server fetched; a language model is off by default, may only rephrase, and cannot write a number, so a wrong figure can only come from a wrong source row, which is shown beside it. [C-05] [C-39]
 - **Why the status is polled, not pushed.** The WebSocket carries telemetry; model and run status are fetched on request so a dropped socket can never leave a stale "all good" on screen. [C-19]
 - **Why PPO is reported as it is.** The registered rule was written before the scores existed, a fixed setting beat every PPO seed, and the result is shown as registered. [C-08]
 - **Carbon.** A flat assumed figure, labelled assumed everywhere; a series counts as real only when dated and documented. [C-04]

@@ -154,6 +154,7 @@ class DocsRetriever:
         *,
         k: int = DEFAULT_K,
         min_score: float | None = None,
+        min_coverage: float | None = None,
         ttl_s: float = DEFAULT_TTL_S,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -161,6 +162,7 @@ class DocsRetriever:
         self._root = root
         self._k = k
         self._min_score = min_score
+        self._min_coverage = min_coverage
         self._ttl = ttl_s
         self._clock = clock
         self._lock = threading.Lock()
@@ -192,7 +194,9 @@ class DocsRetriever:
             logger.info("copilot_docs status=%s hits=0", status)
             return DocsResult(status, reason)
         try:
-            found = rag_search.search(index, search_query(question), self._k, min_score=self._min_score)
+            found = rag_search.search(
+                index, search_query(question), self._k, min_score=self._min_score, min_coverage=self._min_coverage
+            )
         except Exception as exc:  # noqa: BLE001
             logger.warning("copilot_docs search_error=%s", exc.__class__.__name__)
             return DocsResult(STATUS_UNAVAILABLE, f"error: {exc.__class__.__name__}")
