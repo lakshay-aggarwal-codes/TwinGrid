@@ -1,0 +1,41 @@
+# Phase 2 data-layer configuration (reader, channels, policies). Unknown keys are errors.
+schema_version = 1
+
+[reader]
+chunksize = 50000
+encoding = "utf-8-sig"
+delimiter = ""                        # "" = detect from the header (Phase 1 detector); ambiguous -> error
+timestamp_formats = ["%Y-%m-%d %H:%M:%S"]   # explicit; never inferred; %z/%Z are rejected (timestamps are naive)
+strip_whitespace = true
+na_values = [""]                      # only these tokens (after stripping) count as missing; nothing is filled
+non_numeric = "raise"                 # raise | flag
+materialise_cell_limit = 5000000      # guard for ObservationStream.to_frame()
+verify_stream = true                  # prepare stage streams all measurement columns once (no data kept)
+
+[timestamps]
+state = "naive_unspecified"           # no timezone assumed; no UTC conversion without an approved TimeMapping
+
+[policies]
+duplicates = "keep_all_ordered"       # primary: keep every row, annotate duplicate groups and conflicts
+empty_rows = "exclude_empty_rows"     # EMPTY rows stay in L1; the L2 valid view excludes them with a ledger
+approved_sensitivity = []             # "exclude_ambiguous" is NOT approved
+approved_bucket_reducers = []         # no bucket reduction approved ("mean" is unapproved)
+
+[window]                              # 25% experiment window (naive text); in-window cross-checks only
+start = "2024-09-17 09:40:00"
+end = "2024-09-18 10:55:00"
+
+[output]
+write_time_index = true
+write_duplicate_ledger = true
+
+# Ventilation: FULL = all six fields populated, PARTIAL = some, EMPTY = none (field list from the recorded audit).
+[files.ventilation]
+measurement_columns = [
+  "Room_damper_opening",
+  "AHU_pressure_supply_duct",
+  "AHU_pressure_extraction_duct",
+  "AHU_fan_speed_supply",
+  "AHU_fan_speed_extraction",
+  "AHU_temperature_supply",
+]
