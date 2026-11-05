@@ -60,6 +60,15 @@ def test_committed_protocol_is_an_honest_draft(draft):
     assert draft["duplicates"]["authority_fields"] == []
 
 
+def test_only_required_resolution_classes_are_open_items(draft):
+    items = " ".join(draft.open_items())
+    assert "resolution.temperature" in items and "resolution.power" in items
+    assert "air_speed" not in items and "surrounding_and_ventilation" not in items
+    assert draft["resolution"]["air_speed"]["required"] is False
+    with pytest.raises(ProtocolIncomplete):  # an unrequired class is still never guessed if someone asks for it
+        draft.resolution("velocity 1")
+
+
 def test_resolution_is_never_guessed(draft):
     with pytest.raises(ProtocolIncomplete):
         draft.resolution("Temperature mod 1 ch 1")

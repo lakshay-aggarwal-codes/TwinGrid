@@ -95,6 +95,8 @@ class Protocol:
     def open_items(self) -> list[str]:
         items = []
         for name, spec in self.data["resolution"].items():
+            if not spec.get("required", True):
+                continue
             if "decimals" not in spec:
                 items.append(f"resolution.{name}.decimals not supplied")
             if not spec.get("basis"):

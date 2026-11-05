@@ -23,8 +23,14 @@ approved_on = ""            # YYYY-MM-DD
 dataset = "Danish AAU Server-Room v5, DOI 10.5281/zenodo.21262042"
 task3_identity_register_sha256 = "358ba52084c8944a691e639b48d8273e2ef3e2e2736c6130d19a9aa8256188a3"
 task4_profile_sha256 = "8e79d39d5aa6a3a3e3a0ec1c97973cef9e9ad56725742975ee33a25b2631110c"
-task4b_repeats_sha256 = "00462e4989ca4c65a5662e2dba1cfa45906d89cfd05da22ec6074e5275b6606e"
-task4b_reviewed = false     # the repeated-timestamp structure report had NOT been read when this was drafted
+task4b_repeats_sha256 = "00462e4989ca4c65a5662e2dba1cfa45906d89cfd05da22ec6074e5275b6606e"   # LF-normalised; raw CRLF file is a33d36bc...
+task4b_reviewed = true      # report read 2026-11-05; it changed no rule (see the note below)
+# 4b findings used (aggregates, evidence only): every repeated timestamp is a group of rows on consecutive source lines
+# (period files: all groups of size 2; full file: 497 of size 2, one of 6, one of 74), none identical, and 16-51 of the
+# 51 measurement columns differ inside a group (power and modules 5-8 almost always, modules 1-4 in about half of the
+# groups). Cell-level conflict handling in [duplicates] is therefore required, and group sizes above 2 must work.
+# The within-group differences (power up to ~115 W, temperature 0.007 to ~6.5 degC) were NOT used to set any resolution
+# or threshold below; choosing a resolution from them would be tuning.
 
 [time]
 basis = "naive_text"        # timestamps stay source text; arithmetic below is on naive seconds only
@@ -40,7 +46,7 @@ unit_of_comparison = "integer ticks of the declared resolution"
 # Measurement resolution per channel class. The source gives NO resolution (observed values carry many
 # decimals, which is float formatting, not sensor resolution). `decimals` is therefore left unset: the
 # owner supplies it from the logger/sensor documentation (the related paper, never opened, is the first
-# place to look) before CK-1. Resolution = 10 ** -decimals in the stated unit.
+# place to look) before CK-1. It must come from documentation, not from the 4b differences. Resolution = 10 ** -decimals in the stated unit.
 [resolution.temperature]
 match_columns = ["Temperature mod * ch *"]
 unit = "degC"                       # source: temperature.png axis
@@ -56,12 +62,17 @@ basis = ""
 [resolution.air_speed]
 match_columns = ["velocity *"]
 unit = "m/s"                        # source: air_speed.png axis
+required = false                    # not in the Task 5/6 screening scope (no rack attribution, 10 s cadence is never
+                                    # compared with the 1 s series) and Task 4 found 0 repeated timestamps / duplicates here.
+                                    # If a later task rounds these channels, set required = true and supply decimals first.
 basis = ""
 # decimals =
 
 [resolution.surrounding_and_ventilation]
 match_files = ["AAU_supplementary_surrounding_temperatures.csv", "AAU_supplementary_ventilation.csv"]
 unit = "unknown"                    # Task 4: units not established
+required = false                    # 900 s / 120-780 s cadence (never compared with the 1 s series), unit unknown,
+                                    # 0 repeated timestamps and 0 duplicate rows (Task 4). Same rule as air_speed.
 basis = ""
 # decimals =
 
