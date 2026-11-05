@@ -1,11 +1,11 @@
 # TwinGrid / Danish AAU v5 -- duplicate, conflict and independence protocol (Master Handoff Task 5).
 #
-# STATUS: DRAFT. Not locked. Written WITHOUT inspecting any pairwise similarity of the real data.
+# STATUS: LOCKED at CK-1 on 2026-11-05 (see [status] and protocol_v1.lock.json). Written WITHOUT inspecting any pairwise similarity of the real data.
 # Every threshold below is an a-priori choice (rationale in the comment next to it) and is part of CK-1.
 # Items the source does not document are left EMPTY on purpose; `python -m research.danish_aau.protocol status`
 # lists them. Nothing here is imputed, assumed or tuned.
 #
-# To lock (owner only): fill the open resolution decimals, set [status] approval_ck1 = "approved" plus
+# Locked by the owner (see [status]). To lock a new version: fill the open resolution decimals, set [status] approval_ck1 = "approved" plus
 # approved_by / approved_on, set state = "locked", then run `python -m research.danish_aau.protocol lock`.
 # Any later change needs a new version + dated [[amendments]] entry and a fresh analysis (Task 5 "Accept when").
 
@@ -13,10 +13,10 @@ schema = "twingrid.danish_aau.protocol"
 version = "1.0.0"
 
 [status]
-state = "draft"             # draft | locked
-approval_ck1 = "pending"    # pending | approved
-approved_by = ""
-approved_on = ""            # YYYY-MM-DD
+state = "locked"            # draft | locked
+approval_ck1 = "approved"   # pending | approved
+approved_by = "Lakshya Aggarwal"
+approved_on = "2026-11-05"    # YYYY-MM-DD
 
 [inputs]
 # Evidence this protocol is written against (Tasks 2-4, hashes from the Completed Context file, section 6).
@@ -44,20 +44,19 @@ mode = "ROUND_HALF_EVEN"    # decimal.Decimal on the SOURCE TEXT, never on a bin
 unit_of_comparison = "integer ticks of the declared resolution"
 
 # Measurement resolution per channel class. The source gives NO resolution (observed values carry many
-# decimals, which is float formatting, not sensor resolution). `decimals` is therefore left unset: the
-# owner supplies it from the logger/sensor documentation (the related paper, never opened, is the first
-# place to look) before CK-1. It must come from documentation, not from the 4b differences. Resolution = 10 ** -decimals in the stated unit.
+# decimals, which is float formatting, not sensor resolution). The related paper (Sarikaya et al. 2025) states
+# uncertainties only, so temperature and power were set by the owner at CK-1; they were not derived from the 4b differences. Resolution = 10 ** -decimals in the stated unit.
 [resolution.temperature]
 match_columns = ["Temperature mod * ch *"]
 unit = "degC"                       # source: temperature.png axis
-basis = ""                          # cite the document that states the resolution
-# decimals =
+decimals = 2                        # resolution 0.01 degC
+basis = "Owner decision at CK-1 (2026-11-05). Not documented by the source, which gives only uncertainty: 0.21 degC for the temperature setup (Sarikaya et al. 2025, Sci Rep 15:24952, Methodology)."
 
 [resolution.power]
 match_columns = ["Power Ch *"]
 unit = "W"                          # source: CSV header and power.png
-basis = ""
-# decimals =
+decimals = 1                        # resolution 0.1 W
+basis = "Owner decision at CK-1 (2026-11-05). Not documented by the source, which gives only uncertainty: max 1.25 % for the Norma D5255S PDUs (Sarikaya et al. 2025, Sci Rep 15:24952, Methodology)."
 
 [resolution.air_speed]
 match_columns = ["velocity *"]

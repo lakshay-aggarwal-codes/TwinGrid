@@ -2,6 +2,7 @@
 
 import itertools
 import re
+import tomllib
 from decimal import Decimal
 
 import numpy as np
@@ -35,9 +36,20 @@ SYNTH_RES = {
 }
 
 
+def _draft_text() -> str:
+    """The committed (locked) protocol turned back into an unlocked draft with the owner-supplied values removed."""
+    text = PROTOCOL_PATH.read_text(encoding="utf-8")
+    text = re.sub(r"^decimals = .*\n", "", text, flags=re.M)
+    text = re.sub(r'^(basis = )".+"$', r'\1""', text, flags=re.M)
+    text = re.sub(r'^approved_by = ".*?"', 'approved_by = ""', text, flags=re.M)
+    text = re.sub(r'^approved_on = ".*?"', 'approved_on = ""', text, flags=re.M)
+    text = text.replace('state = "locked"', 'state = "draft"')
+    return text.replace('approval_ck1 = "approved"', 'approval_ck1 = "pending"')
+
+
 @pytest.fixture(scope="module")
 def draft() -> Protocol:
-    return load_protocol()
+    return Protocol(tomllib.loads(_draft_text()))
 
 
 @pytest.fixture(scope="module")
@@ -51,13 +63,21 @@ RES = {"A": Decimal("0.01"), "B": Decimal("0.01")}
 # ---------------------------------------------------------------------------------------------------------------------
 # protocol file and lock
 # ---------------------------------------------------------------------------------------------------------------------
-def test_committed_protocol_is_an_honest_draft(draft):
-    assert draft["status"]["state"] == "draft"
-    items = draft.open_items()
-    assert any("resolution.temperature.decimals" in i for i in items)
-    assert any("approval_ck1" in i for i in items)
-    assert draft["time"]["timezone"] == "undeclared"
-    assert draft["duplicates"]["authority_fields"] == []
+def test_committed_protocol_is_locked_and_verified():
+    rec = lock_mod.verify()  # raises if the file changed after locking or the lock file is missing
+    committed = load_protocol()
+    assert rec["sha256_lf_normalised"] == protocol_sha256()
+    assert committed.open_items() == []
+    assert committed["status"]["state"] == "locked" and committed["status"]["approval_ck1"] == "approved"
+    assert committed.resolution("Temperature mod 1 ch 1") == Decimal("0.01")
+    assert committed.resolution("Power Ch 1 (W)") == Decimal("0.1")
+    assert committed["time"]["timezone"] == "undeclared"
+    assert committed["duplicates"]["authority_fields"] == []
+
+
+def test_draft_state_lists_every_required_open_item(draft):
+    items = " ".join(draft.open_items())
+    assert "resolution.temperature.decimals" in items and "approval_ck1" in items
 
 
 def test_only_required_resolution_classes_are_open_items(draft):
@@ -110,7 +130,7 @@ def test_protocol_rejects_rule_violations(tmp_path, mutation, needle):
 
 
 def _lockable_copy(tmp_path):
-    text = PROTOCOL_PATH.read_text(encoding="utf-8")
+    text = _draft_text()
     text = text.replace('state = "draft"', 'state = "locked"').replace(
         'approval_ck1 = "pending"', 'approval_ck1 = "approved"'
     )
@@ -127,8 +147,10 @@ def _lockable_copy(tmp_path):
 
 
 def test_lock_refuses_draft_and_open_items(tmp_path):
+    d = tmp_path / "draft.toml"
+    d.write_text(_draft_text(), encoding="utf-8", newline="\n")
     with pytest.raises(ProtocolError, match="state"):
-        lock_mod.lock(PROTOCOL_PATH, tmp_path / "l.json")
+        lock_mod.lock(d, tmp_path / "l.json")
     p = _lockable_copy(tmp_path)
     p.write_text(p.read_text().replace('approval_ck1 = "approved"', 'approval_ck1 = "pending"'), newline="\n")
     with pytest.raises(ProtocolError, match="open items"):
