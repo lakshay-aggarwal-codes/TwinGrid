@@ -1,0 +1,30 @@
+{
+  "contract_version": "1.0.0-draft",
+  "count": 2,
+  "dataset_id": "synthetic-example",
+  "facility_id": "synthetic-example-facility",
+  "items": [
+    {
+      "asset_external_id": "synthetic-example.rack.a",
+      "mapping_id": "synthetic-example-map-1",
+      "mapping_version": 1,
+      "measurand": "temperature",
+      "measurand_status": "sensor_present",
+      "method": "csv_header_key",
+      "sensor_external_id": "synthetic-example.temperature.s1",
+      "unit": "degC"
+    },
+    {
+      "asset_external_id": "synthetic-example.pdu.ch1",
+      "mapping_id": "synthetic-example-map-1",
+      "mapping_version": 1,
+      "measurand": "power",
+      "measurand_status": "group_channel_only",
+      "method": "source_workbook_port_group",
+      "sensor_external_id": "synthetic-example.power.ch1",
+      "unit": "W"
+    }
+  ],
+  "kind": "sensor_list",
+  "stream_id": "import:synthetic-example"
+}

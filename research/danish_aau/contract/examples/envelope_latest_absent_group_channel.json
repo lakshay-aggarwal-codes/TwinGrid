@@ -1,0 +1,12 @@
+{
+  "contract_version": "1.0.0-draft",
+  "dataset_id": "synthetic-example",
+  "facility_id": "synthetic-example-facility",
+  "kind": "latest",
+  "measurand_status": "group_channel_only",
+  "record": null,
+  "record_absent_reason": "group_channel_only",
+  "sensor_external_id": "synthetic-example.power.ch1",
+  "stream_id": "import:synthetic-example",
+  "window_status": "not_applicable"
+}

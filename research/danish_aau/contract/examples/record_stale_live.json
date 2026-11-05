@@ -1,0 +1,42 @@
+{
+  "age_seconds": 900.0,
+  "asset_external_id": "synthetic-example.rack.a",
+  "attribution": {
+    "member_source_rack_ids": [
+      "1"
+    ],
+    "scope": "rack",
+    "split_allowed": false
+  },
+  "contract_version": "1.0.0-draft",
+  "dataset_id": null,
+  "derivation": null,
+  "facility_id": "synthetic-example-facility",
+  "fixture": true,
+  "ledger": null,
+  "mapping": null,
+  "measurand": "temperature",
+  "observed": true,
+  "origin_db": null,
+  "protocol_ref": null,
+  "provenance": "synthetic",
+  "quality": "ok",
+  "reason_code": null,
+  "record_kind": "telemetry_record",
+  "resolution_decimals": 2,
+  "sensor_external_id": "synthetic-example.temperature.live1",
+  "site_status": "location_not_established",
+  "source_rack_id": "1",
+  "source_ref": null,
+  "source_server_id": null,
+  "source_server_status": "not_present_in_source",
+  "state": "stale",
+  "storage_class": "fixture_only",
+  "stream_id": "live",
+  "time_basis": "utc_instant",
+  "ts_source_text": null,
+  "ts_utc": "2000-01-01T00:10:00Z",
+  "unit": "degC",
+  "value": 20.12,
+  "value_text": "20.12"
+}
