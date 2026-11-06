@@ -31,6 +31,8 @@ ALLOWED_DIRS: tuple[str, ...] = (
     "docs/runbooks",
     "docs/copilot",
 )
+# CP-9: output of the evaluation harness. Indexing it would make the evaluation measure its own report.
+ALWAYS_EXCLUDED_FILES = frozenset({"docs/copilot/EVAL_REPORT.md"})
 ALWAYS_EXCLUDED_DIRS = frozenset({"secrets", "secret", "data", "logs", "log", ".git", "node_modules", "__pycache__"})
 EXPLICIT_ONLY_DIRS = frozenset({"security"})
 MAX_DOC_BYTES = 512 * 1024
@@ -89,6 +91,8 @@ def _covers(entry: str, rel: str) -> bool:
 def exclusion_reason(rel: str, extra_allow: tuple[str, ...] = ()) -> str | None:
     """Why ``rel`` may never be retrieved from, or ``None``. ``extra_allow`` lifts only the ``security`` tier."""
     parts = rel.lower().split("/")
+    if rel in ALWAYS_EXCLUDED_FILES:
+        return "evaluation output"
     if any(part.startswith(".env") for part in parts):
         return "environment file"
     for part in parts[:-1]:
@@ -150,6 +154,8 @@ def scan(root: Path | None = None, extra_allow: tuple[str, ...] = ()) -> Scan:
     paths: list[str] = []
     skipped: list[tuple[str, str]] = []
     for rel in sorted(candidates):
+        if rel in ALWAYS_EXCLUDED_FILES:
+            continue  # generated and expected: not a skipped document, not drift
         reason = exclusion_reason(rel, extra)
         if reason is not None:
             skipped.append((rel, reason))

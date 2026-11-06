@@ -13,6 +13,7 @@
     }
   ],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [
     "Stored history comparison is not available in this version."
   ],

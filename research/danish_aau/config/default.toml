@@ -1,0 +1,33 @@
+# Danish AAU v5 offline evaluation harness -- default configuration (Phase 1).
+# Unknown keys are errors. Copy this file to make a variant; do not edit the raw dataset.
+schema_version = 1
+
+[run]
+name = "aau_eval"        # letters, digits, . _ - only (used in run directory names)
+seed = 0                 # recorded in every manifest; Phase 1 uses no randomness
+
+[dataset]
+# Empty -> realData/danish-server-room-v5/raw relative to the REPOSITORY ROOT (not the current directory).
+# Overrides: --raw-dir on the command line, or the TWINGRID_AAU_RAW_DIR environment variable.
+raw_dir = ""
+load_period = "25_percent"   # only the 25% period has been audited so far
+is_synthetic_fixture = false # set true ONLY for synthetic test data; recorded in the manifest
+
+[timestamps]
+# The CSV timestamps are NAIVE and their timezone is NOT established. Leave "undeclared" until you can state it
+# and why. Accepted: "UTC", an IANA name such as "Europe/Copenhagen", or a fixed offset such as "+02:00".
+timezone = "undeclared"
+timezone_basis = ""      # required (non-empty) when timezone is declared
+
+[policies]
+# 46 duplicate timestamp pairs in the 25% temperature/power file, all with DIFFERENT values.
+# Allowed: "undeclared" | "keep_all_ordered" | "exclude_ambiguous". Averaging / first / last are rejected.
+duplicate_timestamps = "undeclared"
+ventilation_missing = "populated_only"   # never fill the ~66.7% empty cells
+interpolation = "none"
+
+[output]
+root = "research/danish_aau/outputs"     # relative to the repository root; refused under production folders
+
+[integrity]
+hash_inputs = false      # true -> SHA-256 of every raw CSV is recorded (slower; ~50 MB total)

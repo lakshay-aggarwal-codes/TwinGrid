@@ -36,6 +36,7 @@
     }
   ],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [],
   "warnings": []
 }

@@ -69,6 +69,7 @@
     }
   ],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [
     "The latest value of rack-01.inlet is stale, so its current state is not known."
   ],

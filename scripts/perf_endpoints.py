@@ -5,7 +5,8 @@
     python scripts\\perf_endpoints.py --base-url http://localhost:8000 --out reports\\perf\\2026-10\\api_endpoints.json
 
 Endpoints: state, whatif, history (stored samples, one page of up to 5000), alerts inbox, copilot (rule-based question),
-access-request create and status. Standard library only. Nothing is estimated: an endpoint that cannot run is recorded
+access-request create and status, and (CP-11) two more copilot questions: one that needs the docs index and one that goes
+through the model chain. Standard library only. Nothing is estimated: an endpoint that cannot run is recorded
 as ``skipped``/``failed`` WITH the reason.
 
 Rules: time = first byte request to last byte read, ``time.perf_counter``, keep-alive, identity encoding. A 429 is counted
@@ -33,6 +34,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import quote, urlsplit
+
+# CP-11. The two Copilot specs below time ``POST /api/copilot/ask`` on whatever provider configuration the SERVER is
+# running; the script cannot see or change it. Run each configuration once and label the output file yourself
+# (rule-based: COPILOT_LLM_ENABLED=false; local: ollama only; failover: first provider made unreachable so the second
+# answers). The documentation question needs a fresh docs index; without one the endpoint still answers 200 (rule-based,
+# no citation).
+COPILOT_RAG_QUESTION = "What does the runbook say to do when the API is down?"
+COPILOT_FAILOVER_QUESTION = "Why is the PUE where it is?"
 
 SCHEMA = "twingrid-perf-endpoints/1"
 
@@ -217,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
         {"question": "Why is the PUE where it is?"},
         {},
     )
+    specs["copilot_ask_rag"] = lambda i: ("POST", "/api/copilot/ask", {"question": COPILOT_RAG_QUESTION}, {})
+    specs["copilot_ask_failover"] = lambda i: ("POST", "/api/copilot/ask", {"question": COPILOT_FAILOVER_QUESTION}, {})
 
     status, payload, _ = boot.request("GET", "/api/facility")
     if status == 200 and isinstance(json.loads(payload).get("id"), int):

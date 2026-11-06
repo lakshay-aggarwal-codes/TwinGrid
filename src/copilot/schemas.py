@@ -80,6 +80,14 @@ class Citation(BaseModel):
     matched_terms: list[str]
 
 
+class ProviderInfo(BaseModel):
+    """CP-10: the provider that phrased an ``llm`` answer: name and data policy only (no URL, model id or key)."""
+
+    name: str = Field(max_length=64)
+    local: bool
+    fell_back: bool = False
+
+
 class AskResponse(BaseModel):
     request_id: str
     mode: Literal["rule_based", "llm"]
@@ -90,3 +98,4 @@ class AskResponse(BaseModel):
     links: list[Link]
     limits: Limits
     citations: list[Citation]
+    provider: Optional[ProviderInfo] = None  # CP-10; null for a rule-based answer

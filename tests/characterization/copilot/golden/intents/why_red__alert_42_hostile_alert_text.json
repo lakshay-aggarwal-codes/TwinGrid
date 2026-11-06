@@ -102,6 +102,7 @@
     }
   ],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [
     "Root cause is not determined by available evidence.",
     "The detector's own reconstruction-error shares are not stored with an alert; they are shown only while the anomaly episode is live."

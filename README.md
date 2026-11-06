@@ -133,9 +133,15 @@ These parts are in the code and have tests. They were exercised in browser runs 
   `DEMO_SESSION_MINUTES`, `DEMO_SESSION_RATE_LIMIT`); otherwise the UI shows that the demo is unavailable. The demo session may
   ask the assistant. The button and its error/duplicate-click states are covered by `LoginScreen.access.test.tsx`.
 - **Assistant ("Explain this").** `POST /api/copilot/ask` answers from templates filled with evidence the server fetched itself
-  (alert, signal, model, feature, cited `E1`, `E2`...). The drawer shows the evidence table and what is not known. **No language
-  model is connected**, so there is nothing to configure for one, and it cannot write numbers: every figure in an answer is copied
-  from an evidence row.
+  (alert, signal, model, feature, cited `E1`, `E2`...). The drawer shows the evidence table, what is not known, and a badge that
+  says whether the answer is rule-based, from a local model or from a named cloud provider. A language model is **off by
+  default**. When on, it may only rephrase the answer and cannot write numbers: every figure is copied from an evidence row, and
+  a reply that adds anything the evidence does not hold is discarded. [C-39]
+- **Copilot providers and documentation answers.** Evidence-grounded operations copilot with guarded model rephrasing,
+  failover across different providers (a local Llama through Ollama plus optional free-tier cloud providers) [C-36], a local-only
+  mode [C-38], and cited answers from the project's own documentation [C-37]. It is evaluated offline on a 50-question set
+  written by the author, and one of the four gates fails (correct refusal 0.800 against 0.90); no real provider was run. Setup,
+  limits and numbers: [`docs/OPERATIONS.md`](docs/OPERATIONS.md) and [`docs/model_cards/copilot.md`](docs/model_cards/copilot.md).
 - **Carbon on every new report surface** is labelled assumed unless a dated real series is loaded (`src/carbon_label.py`).
 
 ## Configure mail, and run the checks
@@ -195,7 +201,7 @@ Details: [`docs/model_cards/LIMITATIONS.md`](docs/model_cards/LIMITATIONS.md), [
 - Automated tests and CI configured; the backend suite (5741 passed) and frontend suite (2401 passed) were recorded green on the owner's machine, and CI's blocking jobs were green on PR #87. The browser end-to-end CI job is advisory and was red. [C-32]
 - Release pipeline and scanning configured, never run on a real tag. [C-27]
 - Accessibility fixes applied; an automated axe run passed 48 of 48; not claimed WCAG-compliant. [C-30]
-- Seven runbooks cover common failures; none has been used in a real incident. [C-24]
+- Nine runbooks cover common failures; none has been used in a real incident. [C-24]
 - The API reference can be regenerated from the code. [C-29]
 - The service targets and the frontend performance budgets are unmeasured hypotheses. [C-25] [C-31]
 

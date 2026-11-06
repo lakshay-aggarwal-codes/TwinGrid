@@ -1,0 +1,156 @@
+# TwinGrid / Danish AAU v5 -- duplicate, conflict and independence protocol (Master Handoff Task 5).
+#
+# STATUS: LOCKED at CK-1 on 2026-11-05 (see [status] and protocol_v1.lock.json). Written WITHOUT inspecting any pairwise similarity of the real data.
+# Every threshold below is an a-priori choice (rationale in the comment next to it) and is part of CK-1.
+# Items the source does not document are left EMPTY on purpose; `python -m research.danish_aau.protocol status`
+# lists them. Nothing here is imputed, assumed or tuned.
+#
+# Locked by the owner (see [status]). To lock a new version: fill the open resolution decimals, set [status] approval_ck1 = "approved" plus
+# approved_by / approved_on, set state = "locked", then run `python -m research.danish_aau.protocol lock`.
+# Any later change needs a new version + dated [[amendments]] entry and a fresh analysis (Task 5 "Accept when").
+
+schema = "twingrid.danish_aau.protocol"
+version = "1.0.0"
+
+[status]
+state = "locked"            # draft | locked
+approval_ck1 = "approved"   # pending | approved
+approved_by = "Lakshya Aggarwal"
+approved_on = "2026-11-05"    # YYYY-MM-DD
+
+[inputs]
+# Evidence this protocol is written against (Tasks 2-4, hashes from the Completed Context file, section 6).
+dataset = "Danish AAU Server-Room v5, DOI 10.5281/zenodo.21262042"
+task3_identity_register_sha256 = "358ba52084c8944a691e639b48d8273e2ef3e2e2736c6130d19a9aa8256188a3"
+task4_profile_sha256 = "8e79d39d5aa6a3a3e3a0ec1c97973cef9e9ad56725742975ee33a25b2631110c"
+task4b_repeats_sha256 = "00462e4989ca4c65a5662e2dba1cfa45906d89cfd05da22ec6074e5275b6606e"   # LF-normalised; raw CRLF file is a33d36bc...
+task4b_reviewed = true      # report read 2026-11-05; it changed no rule (see the note below)
+# 4b findings used (aggregates, evidence only): every repeated timestamp is a group of rows on consecutive source lines
+# (period files: all groups of size 2; full file: 497 of size 2, one of 6, one of 74), none identical, and 16-51 of the
+# 51 measurement columns differ inside a group (power and modules 5-8 almost always, modules 1-4 in about half of the
+# groups). Cell-level conflict handling in [duplicates] is therefore required, and group sizes above 2 must work.
+# The within-group differences (power up to ~115 W, temperature 0.007 to ~6.5 degC) were NOT used to set any resolution
+# or threshold below; choosing a resolution from them would be tuning.
+
+[time]
+basis = "naive_text"        # timestamps stay source text; arithmetic below is on naive seconds only
+timezone = "undeclared"     # no UTC conversion, no local-zone assumption (Master Handoff 4.3)
+alignment = "exact_second_match"   # two series are paired only where both have the same naive second
+interpolation = "none"
+imputation = "none"         # default of Master Handoff 4.3; any imputation needs a separate owner decision
+
+[rounding]
+mode = "ROUND_HALF_EVEN"    # decimal.Decimal on the SOURCE TEXT, never on a binary float
+unit_of_comparison = "integer ticks of the declared resolution"
+
+# Measurement resolution per channel class. The source gives NO resolution (observed values carry many
+# decimals, which is float formatting, not sensor resolution). The related paper (Sarikaya et al. 2025) states
+# uncertainties only, so temperature and power were set by the owner at CK-1; they were not derived from the 4b differences. Resolution = 10 ** -decimals in the stated unit.
+[resolution.temperature]
+match_columns = ["Temperature mod * ch *"]
+unit = "degC"                       # source: temperature.png axis
+decimals = 2                        # resolution 0.01 degC
+basis = "Owner decision at CK-1 (2026-11-05). Not documented by the source, which gives only uncertainty: 0.21 degC for the temperature setup (Sarikaya et al. 2025, Sci Rep 15:24952, Methodology)."
+
+[resolution.power]
+match_columns = ["Power Ch *"]
+unit = "W"                          # source: CSV header and power.png
+decimals = 1                        # resolution 0.1 W
+basis = "Owner decision at CK-1 (2026-11-05). Not documented by the source, which gives only uncertainty: max 1.25 % for the Norma D5255S PDUs (Sarikaya et al. 2025, Sci Rep 15:24952, Methodology)."
+
+[resolution.air_speed]
+match_columns = ["velocity *"]
+unit = "m/s"                        # source: air_speed.png axis
+required = false                    # not in the Task 5/6 screening scope (no rack attribution, 10 s cadence is never
+                                    # compared with the 1 s series) and Task 4 found 0 repeated timestamps / duplicates here.
+                                    # If a later task rounds these channels, set required = true and supply decimals first.
+basis = ""
+# decimals =
+
+[resolution.surrounding_and_ventilation]
+match_files = ["AAU_supplementary_surrounding_temperatures.csv", "AAU_supplementary_ventilation.csv"]
+unit = "unknown"                    # Task 4: units not established
+required = false                    # 900 s / 120-780 s cadence (never compared with the 1 s series), unit unknown,
+                                    # 0 repeated timestamps and 0 duplicate rows (Task 4). Same rule as air_speed.
+basis = ""
+# decimals =
+
+[duplicates]
+# Definitions (Master Handoff 4.3). A shared timestamp is NOT a duplicate.
+#   group            = rows of one file with the same naive timestamp text
+#   exact duplicate  = every non-blank cell equal after rounding at the declared resolution
+#   conflict (cell)  = two or more different canonical values for one column inside a group
+# Blank cells are "not observed": a blank never conflicts with a value; non-blank values that agree give that value.
+# (Moot for power/temperature/air-speed: Task 4 found no blanks there.)
+cell_level = true
+bookkeeping_row = "lowest_source_row_number"   # which duplicate row is kept as the representative; never changes the value
+
+# Source-documented authority fields, in order of priority. The CSVs have no quality-rank, source-version or
+# ingestion-timestamp column (Task 4), so this list is EMPTY and every conflicting cell is a tie.
+# A field may be listed only if the source documents which value is authoritative.
+authority_fields = []               # e.g. [{ name = "quality_rank", direction = "lower_wins" }]
+tie_policy = "missing"              # observed=false, reason below; never first/last/mean/median/min/max/nearest/hash
+tie_reason = "conflict_unresolved_tie"
+
+[dispositions]
+# Exactly one per raw row (the cleaning ledger).
+row = [
+  "retained",
+  "exact_duplicate",
+  "conflict_resolved_by_source_rule",
+  "conflict_cell_missing",
+  "flagged",
+  "dropped_with_reason",
+]
+# Exactly one per flagged series pair (Task 6).
+pair = [
+  "independent_shared_driver",
+  "confirmed_duplicate_broadcast",
+  "documented_shared_sensor",
+  "unresolved",
+]
+
+[screening]
+# The screen FLAGS and investigates. It never deletes or rejects a series.
+scope = [
+  "rack_probe_vs_rack_probe",
+  "rack_probe_vs_power_channel",
+  "power_channel_vs_power_channel",
+  "rack_or_power_vs_facility_series",     # surrounding / ventilation / cooling-unit / room probes
+]
+min_overlap_samples = 1000          # paired seconds needed to say anything (~17 min at 1 s); below it: insufficient_overlap
+min_span_ticks = 50                 # a series must span at least this many ticks, else copy tests are degenerate
+cross_cadence = "not_comparable"    # different cadences / files are never resampled; recorded as not_comparable_cadence
+protocol_frozen_before_pairwise_results = true
+
+[screening.family.power_temperature]
+files_glob = "AAU_temperature_and_power_use*.csv"
+diff_step_seconds = 1               # first differences use consecutive seconds only
+max_lag_seconds = 30                # lagged search window for differenced series
+flatline_min_run = 10               # consecutive equal ticks that count as a flatline event
+gap_min_step_seconds = 3            # a step above this is a gap event (source cadence is 1 s, some 2 s steps)
+
+[screening.thresholds]
+# Level 3 -- copy evidence (any one, with overlap >= min_overlap_samples and non-degenerate series)
+l3_equal_fraction = 0.999           # |x - y| == 0 ticks
+l3_offset_fraction = 0.999          # x - y equal to its modal value
+l3_affine_fraction = 0.999          # |residual of least-squares y = a*x + b| <= affine_tolerance_ticks
+affine_tolerance_ticks = 1.0
+# Level 2 -- suspect beyond a shared driver (any one)
+l2_diff_correlation = 0.95          # Pearson on first differences removes shared slow drivers
+l2_lag_diff_correlation = 0.95      # best |r| over lags in [-max_lag_seconds, +max_lag_seconds]
+l2_shared_event_jaccard = 0.90      # flatline/gap start seconds shared by both series ...
+l2_shared_event_min_events = 20     # ... only when each series has at least this many events
+l2_value_set_jaccard = 0.99         # identical set of observed tick values ...
+l2_value_set_min_distinct = 100     # ... only with at least this many distinct values
+# Level 1 -- shared-driver similarity, recorded and summarised, no investigation required
+l1_level_correlation = 0.90         # Pearson on levels; expected for racks sharing supply air or load schedule
+# Common identity (Level 3 regardless of statistics): same (file, column) or same documented sensor id.
+
+[groups]
+# Independent units (Task 6). Pairs merge into one unit when their disposition is confirmed_duplicate_broadcast,
+# documented_shared_sensor or unresolved (conservative). independent_shared_driver does not merge.
+merge_dispositions = ["confirmed_duplicate_broadcast", "documented_shared_sensor", "unresolved"]
+physical_group_evidence = "Task 3 identity register (inputs.task3_identity_register_sha256)"
+
+# [[amendments]]  -- add dated entries here after locking; never edit a locked file in place.

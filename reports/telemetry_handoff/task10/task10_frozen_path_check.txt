@@ -1,0 +1,35 @@
+Task 10 frozen-path comparison (read-only; 2026-11-06)
+Baseline list: reports/telemetry_handoff/task01/frozen_paths.sha256 (Task 1, owner-produced, 64 lines)
+Snapshot: TwinGrid-wip-cp8-hardening__3_.zip (archive comment 9b7cad33f79a7fa1789373ee71569d4bc51702b3; no .git)
+Method: sha256 of each listed file; CR stripped from the list, files compared as-is then CR-stripped; .pyc skipped (interpreter caches, not source).
+
+MATCH    alembic/versions/20250222000000_initial_tables.py
+MATCH    alembic/versions/20250222100000_add_users_table.py
+MATCH    alembic/versions/20250222200000_add_alert_severity.py
+MATCH    alembic/versions/20250222300000_align_schema_with_orm.py
+MATCH    alembic/versions/20250223000000_add_security_hardening.py
+MATCH    alembic/versions/20261001000000_m1_provenance.py
+MATCH    alembic/versions/20261001000001_add_alert_integrity_columns.py
+MATCH    alembic/versions/20261002000000_t9_facility_asset_model.py
+MATCH    alembic/versions/20261003000000_t15_audit_log_completion.py
+MATCH    alembic/versions/20261004000000_t16_telemetry_sample.py
+MATCH    alembic/versions/20261005000000_t17_alert_workflow.py
+MATCH    alembic/versions/20261006000000_t19_optimizer_proposals.py
+MATCH    alembic/versions/20261007000000_t24_perf_indexes.py
+MATCH    alembic/versions/20261008000000_t28_work_orders.py
+MATCH    alembic/versions/20261101000000_access_requests.py
+MATCH    models/registry.json
+MATCH    research/danish_aau/config/data.toml
+MATCH    research/danish_aau/config/default.toml
+MATCH    src/digital_twin.py
+MATCH    src/physics/__init__.py
+MATCH    src/physics/params.py
+MATCH    src/physics/v2.py
+MATCH    src/rl/__init__.py
+MATCH    src/rl/candidate_loader.py
+MATCH    src/rl/env.py
+MATCH    src/rl/export.py
+MATCH    src/rl/numpy_policy.py
+MATCH    src/rl/safety_filter.py
+
+RESULT: matched=28 differs=0 missing=0 pyc_skipped=36 (source files listed: 28)

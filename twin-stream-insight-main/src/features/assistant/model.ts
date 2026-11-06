@@ -1,9 +1,43 @@
 /** Task 15: pure helpers for the assistant (no React, no network). */
-import type { AskBody, ContextRef, Evidence, Freshness, HistoryItem, Mode, Origin } from "./schema";
+import type { AskBody, Citation, ContextRef, CopilotResponse, Evidence, Freshness, HistoryItem, Mode, Origin } from "./schema";
 
 export const LIMITS = { question: 500, historyItems: 6, historyText: 500, id: 64, answer: 1500 } as const;
 
+/** CP-10: after this long a pending question says it is slow (local models are); after the timeout the request is aborted. The server's own chain budget is 12 s by default. */
+export const SLOW_AFTER_MS = 4_000;
+export const ASK_TIMEOUT_MS = 30_000;
+
 export const modeLabel = (mode: Mode): string => (mode === "llm" ? "Model-phrased (evidence-checked)" : "Rule-based explanation");
+
+export type ProviderKind = "rule" | "local" | "cloud" | "model";
+
+/** CP-10: where the answer came from. `kind` drives a data attribute only; the words carry the meaning (never colour alone). */
+export function providerKind(d: Pick<CopilotResponse, "mode" | "provider">): ProviderKind {
+  if (d.mode !== "llm") return "rule";
+  if (!d.provider) return "model"; // an older backend: model-phrased, provider unknown
+  return d.provider.local ? "local" : "cloud";
+}
+
+/** The part of the mode badge after the mode label: "Local model (ollama)", "Cloud model (groq)", or why a model did not answer. */
+export function providerText(d: Pick<CopilotResponse, "mode" | "provider" | "warnings">): string | null {
+  if (d.mode === "llm") return d.provider ? `${d.provider.local ? "Local model" : "Cloud model"} (${d.provider.name})` : null;
+  if (d.warnings.includes("llm_unavailable")) return "model did not answer";
+  if (d.warnings.includes("llm_rejected")) return "model wording rejected";
+  if (d.warnings.includes("llm_blocked_by_policy")) return "model not used for this question";
+  if (d.warnings.includes("llm_busy")) return "model busy";
+  return null;
+}
+
+/** Shown as a note when failover fell through to a later provider and that one answered. */
+export function fellBackText(d: Pick<CopilotResponse, "mode" | "provider">): string | null {
+  return d.mode === "llm" && d.provider?.fell_back ? `An earlier provider did not answer, so this answer came from ${d.provider.name}.` : null;
+}
+
+/** A citation links to a documentation page only when this app has a route for exactly that document. Today none exists, so the source is plain text. */
+export function docHref(c: Pick<Citation, "source_path">, knownRoutes: readonly string[]): string | null {
+  const candidate = `/docs/${c.source_path.replace(/^docs\//, "")}`;
+  return knownRoutes.includes(candidate) && isSafeLink(candidate, knownRoutes) ? candidate : null;
+}
 
 export type BuiltRequest = { ok: true; body: AskBody } | { ok: false; reason: "empty" | "too_long" | "bad_context" };
 
@@ -83,11 +117,17 @@ export function observedText(iso: string | null): string {
 const WARNING_TEXT: Readonly<Record<string, string>> = {
   llm_unavailable: "The language model was unavailable, so this is the rule-based answer.",
   llm_rejected: "The model's wording was rejected because it used a number the evidence does not back, so this is the rule-based answer.",
+  docs_index_unavailable: "The documentation index is not available, so no documentation was searched.",
+  docs_index_stale: "The documentation index is out of date, so no documentation was cited.",
+  llm_blocked_by_policy: "Your privacy settings do not let a model see this question, so this is the rule-based answer.",
+  llm_busy: "The language model was busy, so this is the rule-based answer.",
+  docs_passage_withheld: "A documentation passage that looked like an instruction was left out of this answer.",
+  docs_passage_flagged: "Every passage found contains instruction-like text, so it is quoted as data and no model rephrased it.",
 };
 /** Known warning codes get a sentence; an unknown code is shown as received (text only). */
 export const warningText = (code: string): string => WARNING_TEXT[code] ?? code;
 
-export type AssistantErrorKind = "offline" | "rate_limited" | "not_found" | "invalid" | "unauthenticated" | "unavailable" | "contract" | "other";
+export type AssistantErrorKind = "offline" | "rate_limited" | "not_found" | "invalid" | "unauthenticated" | "unavailable" | "contract" | "timeout" | "cancelled" | "other";
 
 export const ERROR_COPY: Readonly<Record<AssistantErrorKind, { title: string; text: string; retry: boolean }>> = {
   offline: { title: "You are offline", text: "The assistant needs a connection. Nothing was sent.", retry: true },
@@ -97,6 +137,8 @@ export const ERROR_COPY: Readonly<Record<AssistantErrorKind, { title: string; te
   unauthenticated: { title: "Please sign in again", text: "Your session ended.", retry: false },
   unavailable: { title: "The assistant is unavailable", text: "The service did not answer. This is not an answer about your system.", retry: true },
   contract: { title: "The reply could not be read", text: "The service sent something this page does not understand, so nothing is shown.", retry: true },
+  timeout: { title: "The assistant took too long", text: "No answer arrived in time, and nothing was changed. This is not an answer about your system.", retry: true },
+  cancelled: { title: "Cancelled", text: "You stopped this question. Nothing was changed.", retry: true },
   other: { title: "Something went wrong", text: "The question could not be answered.", retry: true },
 };
 

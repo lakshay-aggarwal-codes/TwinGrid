@@ -42,6 +42,7 @@
   },
   "links": [],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [
     "The model passport is not available."
   ],

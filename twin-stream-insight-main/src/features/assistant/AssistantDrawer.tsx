@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { useReturnFocus } from "@/lib/returnFocus";
 import { askCopilot } from "./api";
 import { AnswerView } from "./AnswerView";
-import { ERROR_COPY, LIMITS, buildRequest, errorKindOf, modeLabel, suggestionsFor, type AssistantErrorKind } from "./model";
+import { ASK_TIMEOUT_MS, ERROR_COPY, LIMITS, SLOW_AFTER_MS, buildRequest, errorKindOf, modeLabel, providerText, suggestionsFor, type AssistantErrorKind } from "./model";
 import type { ContextRef, CopilotResponse, HistoryItem } from "./schema";
 
 export type Ask = (body: Parameters<typeof askCopilot>[0], signal?: AbortSignal) => Promise<CopilotResponse>;
@@ -33,7 +33,41 @@ export function historyOf(turns: readonly Turn[]): HistoryItem[] {
   return items.slice(-LIMITS.historyItems);
 }
 
-function Conversation({ context, ask, knownRoutes, onClose }: { context: ContextRef; ask: Ask; knownRoutes: readonly string[]; onClose: () => void }) {
+/** A question in flight: the plain wait text, a slow-path note after `slowAfterMs` (local models are slower), and Cancel. */
+function PendingTurn({ slowAfterMs, onCancel }: { slowAfterMs: number; onCancel: () => void }) {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), slowAfterMs);
+    return () => clearTimeout(t);
+  }, [slowAfterMs]);
+  return (
+    <div className="space-y-1.5" data-testid="turn-pending">
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+        Looking up the evidence…
+      </p>
+      {slow ? (
+        <p role="status" data-testid="turn-slow" className="text-xs text-muted-foreground">
+          This is taking longer than usual. A local model can be slow. You can wait or cancel; nothing is changed either way.
+        </p>
+      ) : null}
+      <button type="button" className={BTN} onClick={onCancel} data-testid="turn-cancel">
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+interface ConversationProps {
+  context: ContextRef;
+  ask: Ask;
+  knownRoutes: readonly string[];
+  onClose: () => void;
+  timeoutMs: number;
+  slowAfterMs: number;
+}
+
+function Conversation({ context, ask, knownRoutes, onClose, timeoutMs, slowAfterMs }: ConversationProps) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -42,6 +76,7 @@ function Conversation({ context, ask, knownRoutes, onClose }: { context: Context
   const turnsRef = useRef<Turn[]>([]);
   const controller = useRef<AbortController | null>(null);
   const started = useRef(false);
+  const cancelPending = useRef<(() => void) | null>(null);
   turnsRef.current = turns;
 
   const setOutcome = (id: number, outcome: Outcome) => setTurns((all) => all.map((t) => (t.id === id ? { ...t, outcome } : t)));
@@ -65,16 +100,31 @@ function Conversation({ context, ask, knownRoutes, onClose }: { context: Context
     controller.current?.abort();
     const ctl = new AbortController();
     controller.current = ctl;
+    // `stop` is the only abort that shows an outcome ("cancel" = the button, "timeout" = the client limit). Any other abort is a superseded or closed turn and shows nothing.
+    const stop = (reason: "cancel" | "timeout") => {
+      if (ctl.signal.aborted) return;
+      ctl.abort();
+      const kind: AssistantErrorKind = reason === "cancel" ? "cancelled" : "timeout";
+      setOutcome(id, { type: "error", kind });
+      setAnnounce(ERROR_COPY[kind].title);
+    };
+    cancelPending.current = () => stop("cancel");
+    const timer = setTimeout(() => stop("timeout"), timeoutMs);
     try {
       const data = await ask(built.body, ctl.signal);
       if (ctl.signal.aborted) return;
       setOutcome(id, { type: "answer", data });
-      setAnnounce(`Answer received. ${modeLabel(data.mode)}. ${data.evidence.length} evidence items.`);
+      const from = providerText(data);
+      const sources = data.citations?.length ?? 0;
+      setAnnounce(`Answer received. ${modeLabel(data.mode)}${from ? ` (${from})` : ""}. ${data.evidence.length} evidence items.${sources > 0 ? ` ${sources} sources cited.` : ""}`);
     } catch (e) {
-      if (ctl.signal.aborted) return;
+      if (ctl.signal.aborted) return; // `stop` already showed the outcome; any other abort is a superseded turn
       const kind: AssistantErrorKind = e instanceof AuthRequiredError ? "unauthenticated" : errorKindOf(isApiError(e) ? e.kind : undefined);
       setOutcome(id, { type: "error", kind, retryAfterS: isApiError(e) ? e.retryAfterS : undefined });
       setAnnounce(ERROR_COPY[kind].title);
+    } finally {
+      clearTimeout(timer);
+      if (controller.current === ctl) cancelPending.current = null;
     }
   }
 
@@ -106,10 +156,7 @@ function Conversation({ context, ask, knownRoutes, onClose }: { context: Context
               {t.question}
             </p>
             {t.outcome.type === "pending" ? (
-              <p className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="turn-pending">
-                <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
-                Looking up the evidence…
-              </p>
+              <PendingTurn slowAfterMs={slowAfterMs} onCancel={() => cancelPending.current?.()} />
             ) : t.outcome.type === "answer" ? (
               <AnswerView turnId={t.id} data={t.outcome.data} knownRoutes={knownRoutes} onNavigate={onClose} />
             ) : (
@@ -184,10 +231,14 @@ interface Props {
   onClose: () => void;
   knownRoutes: readonly string[];
   ask?: Ask;
+  /** CP-10: abort a question after this long (default {@link ASK_TIMEOUT_MS}). Tests set it small. */
+  timeoutMs?: number;
+  /** CP-10: show the slow-path note after this long (default {@link SLOW_AFTER_MS}). */
+  slowAfterMs?: number;
 }
 
 /** The assistant drawer: a Radix dialog, so focus is trapped, Esc closes it and useReturnFocus gives focus back to the button that opened it (the drawer has no Radix trigger). */
-export function AssistantDrawer({ open, context, nonce, onClose, knownRoutes, ask = askCopilot }: Props) {
+export function AssistantDrawer({ open, context, nonce, onClose, knownRoutes, ask = askCopilot, timeoutMs = ASK_TIMEOUT_MS, slowAfterMs = SLOW_AFTER_MS }: Props) {
   const returnFocus = useReturnFocus();
   return (
     <Sheet open={open} onOpenChange={(o) => (o ? undefined : onClose())}>
@@ -196,7 +247,7 @@ export function AssistantDrawer({ open, context, nonce, onClose, knownRoutes, as
           <SheetTitle>Assistant: {CONTEXT_TITLE[context.kind]}{context.id ? ` ${context.id}` : ""}</SheetTitle>
           <SheetDescription>Explains what this system shows, from evidence. It does not change anything.</SheetDescription>
         </SheetHeader>
-        {open ? <Conversation key={nonce} context={context} ask={ask} knownRoutes={knownRoutes} onClose={onClose} /> : null}
+        {open ? <Conversation key={nonce} context={context} ask={ask} knownRoutes={knownRoutes} onClose={onClose} timeoutMs={timeoutMs} slowAfterMs={slowAfterMs} /> : null}
       </SheetContent>
     </Sheet>
   );

@@ -1,0 +1,18 @@
+{
+  "request_id": "req-synthetic-0023",
+  "limits": {
+    "provider_configured": false
+  },
+  "mode": "rule_based",
+  "provider": null,
+  "answer": "The project documentation does not document an answer to that question.",
+  "evidence": [],
+  "unknowns": [
+    "No passage in the documentation matched the question."
+  ],
+  "warnings": [
+    "docs_index_stale"
+  ],
+  "links": [],
+  "citations": []
+}

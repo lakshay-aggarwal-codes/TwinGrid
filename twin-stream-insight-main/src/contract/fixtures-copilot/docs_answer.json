@@ -1,0 +1,59 @@
+{
+  "request_id": "req-synthetic-0022",
+  "limits": {
+    "provider_configured": false
+  },
+  "mode": "rule_based",
+  "provider": null,
+  "answer": "The documentation says the following. [E1]",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "doc_passage",
+      "entity": "docs/copilot/LIMITS.md",
+      "field": "Limits",
+      "value": "Synthetic passage text for the UI tests; it is not a quotation of any real document.",
+      "unit": null,
+      "observed_at": null,
+      "origin": "documentation",
+      "freshness": "static"
+    },
+    {
+      "id": "E2",
+      "source": "doc_passage",
+      "entity": "docs/CLAIMS.md",
+      "field": "Claims",
+      "value": "A second synthetic passage.",
+      "unit": null,
+      "observed_at": null,
+      "origin": "documentation",
+      "freshness": "static"
+    }
+  ],
+  "unknowns": [],
+  "warnings": [],
+  "links": [],
+  "citations": [
+    {
+      "evidence_id": "E1",
+      "source_path": "docs/copilot/LIMITS.md",
+      "heading_path": "Copilot limits > What it cannot do",
+      "chunk_id": "docs/copilot/LIMITS.md#2-a1b2c3d4",
+      "score": 9.4,
+      "matched_terms": [
+        "limits",
+        "copilot"
+      ]
+    },
+    {
+      "evidence_id": "E2",
+      "source_path": "docs/CLAIMS.md",
+      "heading_path": "",
+      "chunk_id": "docs/CLAIMS.md#0-e5f6a7b8",
+      "score": 7.1,
+      "matched_terms": [
+        "claims"
+      ]
+    }
+  ]
+}

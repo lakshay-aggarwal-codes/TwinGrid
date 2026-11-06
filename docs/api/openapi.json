@@ -167,6 +167,16 @@
             "title": "Mode",
             "type": "string"
           },
+          "provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "request_id": {
             "title": "Request Id",
             "type": "string"
@@ -1156,6 +1166,31 @@
           "cooling_mode"
         ],
         "title": "ProposalCreate",
+        "type": "object"
+      },
+      "ProviderInfo": {
+        "description": "CP-10: the provider that phrased an ``llm`` answer: name and data policy only (no URL, model id or key).",
+        "properties": {
+          "fell_back": {
+            "default": false,
+            "title": "Fell Back",
+            "type": "boolean"
+          },
+          "local": {
+            "title": "Local",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 64,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "local"
+        ],
+        "title": "ProviderInfo",
         "type": "object"
       },
       "RefreshRequest": {

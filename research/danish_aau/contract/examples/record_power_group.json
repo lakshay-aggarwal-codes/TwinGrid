@@ -1,0 +1,65 @@
+{
+  "age_seconds": null,
+  "asset_external_id": "synthetic-example.pdu.ch1",
+  "attribution": {
+    "member_source_rack_ids": [
+      "1",
+      "2",
+      "3"
+    ],
+    "scope": "rack_group",
+    "split_allowed": false
+  },
+  "contract_version": "1.0.0",
+  "dataset_id": "synthetic-example",
+  "derivation": null,
+  "facility_id": "synthetic-example-facility",
+  "fixture": true,
+  "ledger": {
+    "group_ref": "synthetic_example_file.csv|2000-01-01 00:00:01",
+    "group_size": 1,
+    "row_disposition": "retained"
+  },
+  "mapping": {
+    "applied_uniformly_over_window": true,
+    "label_evidence": "not_applicable",
+    "mapping_id": "synthetic-example-map-1",
+    "mapping_version": 1,
+    "method": "csv_header_key",
+    "valid_time_status": "not_established"
+  },
+  "measurand": "power",
+  "observed": true,
+  "origin_db": null,
+  "protocol_ref": {
+    "protocol_sha256": "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098"
+  },
+  "provenance": "synthetic",
+  "quality": "ok",
+  "reason_code": null,
+  "record_kind": "telemetry_record",
+  "resolution_decimals": 1,
+  "sensor_external_id": "synthetic-example.power.ch1",
+  "site_status": "location_not_established",
+  "source_rack_id": null,
+  "source_ref": {
+    "column": "Synthetic power Ch 1 (W)",
+    "file": "synthetic_example_file.csv",
+    "file_sha256": null,
+    "key": "synthetic_example_file.csv|Synthetic power Ch 1 (W)|2000-01-01 00:00:01",
+    "row_numbering": "data_row_ordinal_excluding_header",
+    "row_ordinal": 1,
+    "ts_text": "2000-01-01 00:00:01"
+  },
+  "source_server_id": null,
+  "source_server_status": "not_present_in_source",
+  "state": "observed",
+  "storage_class": "fixture_only",
+  "stream_id": "import:synthetic-example",
+  "time_basis": "source_text_undeclared_tz",
+  "ts_source_text": "2000-01-01 00:00:01",
+  "ts_utc": null,
+  "unit": "W",
+  "value": 300.0,
+  "value_text": "300.0"
+}

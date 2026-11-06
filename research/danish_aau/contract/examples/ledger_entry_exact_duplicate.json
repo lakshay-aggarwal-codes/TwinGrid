@@ -1,0 +1,13 @@
+{
+  "contract_version": "1.0.0",
+  "dataset_id": "synthetic-example",
+  "disposition": "exact_duplicate",
+  "file": "synthetic_example_file.csv",
+  "group_size": 2,
+  "protocol_sha256": "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098",
+  "reason_code": null,
+  "record_kind": "ledger_entry",
+  "row_numbering": "data_row_ordinal_excluding_header",
+  "row_ordinal": 7,
+  "ts_source_text": "2000-01-01 00:00:07"
+}

@@ -1,0 +1,63 @@
+{
+  "age_seconds": null,
+  "asset_external_id": "danish-aau-v5.rack.2",
+  "attribution": {
+    "member_source_rack_ids": [
+      "2"
+    ],
+    "scope": "rack",
+    "split_allowed": false
+  },
+  "contract_version": "1.0.0",
+  "dataset_id": "danish-aau-v5",
+  "derivation": null,
+  "facility_id": "synthetic-example-facility-v5-shape",
+  "fixture": true,
+  "ledger": {
+    "group_ref": "shape-only",
+    "group_size": 1,
+    "row_disposition": "retained"
+  },
+  "mapping": {
+    "applied_uniformly_over_window": true,
+    "label_evidence": "agent_transcribed",
+    "mapping_id": "synthetic-example-map-1",
+    "mapping_version": 1,
+    "method": "source_image_label",
+    "valid_time_status": "not_established"
+  },
+  "measurand": "temperature",
+  "observed": false,
+  "origin_db": null,
+  "protocol_ref": {
+    "protocol_sha256": "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098"
+  },
+  "provenance": "measured",
+  "quality": null,
+  "reason_code": "shape_only_no_value",
+  "record_kind": "telemetry_record",
+  "resolution_decimals": 2,
+  "sensor_external_id": "danish-aau-v5.temperature.mod1.ch1",
+  "site_status": "location_not_established",
+  "source_rack_id": "2",
+  "source_ref": {
+    "column": "Temperature mod 1 ch 1",
+    "file": "shape-only",
+    "file_sha256": null,
+    "key": "shape-only|Temperature mod 1 ch 1|2000-01-01 00:00:01",
+    "row_numbering": "unspecified",
+    "row_ordinal": null,
+    "ts_text": "2000-01-01 00:00:01"
+  },
+  "source_server_id": null,
+  "source_server_status": "not_present_in_source",
+  "state": "not_reported",
+  "storage_class": "research_import_file",
+  "stream_id": "import:danish-aau-v5",
+  "time_basis": "source_text_undeclared_tz",
+  "ts_source_text": "2000-01-01 00:00:01",
+  "ts_utc": null,
+  "unit": "degC",
+  "value": null,
+  "value_text": null
+}

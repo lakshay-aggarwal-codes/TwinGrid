@@ -12,6 +12,8 @@ default stack (`docker compose`; add `-f docker-compose.yml -f docker-compose.de
 | `HighServerErrorRatio`, `SlowRequestsP95` | [high-5xx.md](high-5xx.md) |
 | `AnomalyScoringErrors`, a model shows `degraded` or `not_loaded` in `/readyz` | [artifact-load-failure.md](artifact-load-failure.md) |
 | A secret leaked or must change | [rotating-secrets.md](rotating-secrets.md) |
+| Copilot answers say the model did not answer (`llm_unavailable`, `llm_blocked_by_policy`, `llm_busy`) | [copilot-providers-down.md](copilot-providers-down.md) |
+| Copilot documentation answers have no citations (`docs_index_unavailable`, `docs_index_stale`) | [copilot-index-stale.md](copilot-index-stale.md) |
 
 How to find one request in the logs: every response carries `X-Request-ID`; every log line is one JSON object with the
 same `request_id` (HTTP, WebSocket and queued jobs started by that request). Example:

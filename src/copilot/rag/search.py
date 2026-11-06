@@ -8,6 +8,10 @@ dropped, so an unrelated question returns nothing and the Copilot can say there 
 on this small corpus no single score separates every in-corpus question from every unrelated one, and the placeholder
 leans towards saying "not documented". CP-9 replaces it with a value fitted on the golden question set. Ordering is deterministic: score (rounded to six
 places), then source path, then position in the document.
+
+CP-9: a second floor, ``min_coverage`` (share of the query's idf mass the chunk matched), and fitted defaults for both
+(see ``docs/copilot/EVAL_REPORT.md``; the fit used 34 visible questions and its leave-one-out estimate is lower). A caller
+that passes its own ``min_score`` gets ``min_coverage`` 0 unless it passes that too.
 """
 
 from __future__ import annotations
@@ -21,7 +25,10 @@ from .tokenize import normalize_query, query_terms
 
 DEFAULT_K = 5
 MAX_K = 20
-DEFAULT_MIN_SCORE = 6.0  # PLACEHOLDER until CP-9 fits it
+DEFAULT_MIN_SCORE = 6.5  # CP-9 fit (centre of the 6.0-7.0 plateau): above the pizza false accept (5.6), below the weakest correct hit (7.1)
+DEFAULT_MIN_COVERAGE = (
+    0.40  # CP-9 fit; the working band on the golden set is about 0.36 to 0.44 (it drops stray-word matches)
+)
 BM25_K1 = 1.2
 BM25_B = 0.75
 HEADING_WEIGHT = 3.0
@@ -31,6 +38,7 @@ REASON_OK = "ok"
 REASON_NO_TERMS = "no_query_terms"
 REASON_NO_MATCH = "no_match"
 REASON_BELOW_THRESHOLD = "below_threshold"
+REASON_LOW_COVERAGE = "low_coverage"  # some chunk reached min_score but none matched enough of the question
 
 
 @dataclass(frozen=True)
@@ -50,6 +58,7 @@ class SearchResult:
     best_score: float
     min_score: float
     reason: str
+    min_coverage: float = 0.0
 
     @property
     def found(self) -> bool:
@@ -62,16 +71,21 @@ def search(
     k: int = DEFAULT_K,
     *,
     min_score: float | None = None,
+    min_coverage: float | None = None,
     heading_weight: float = HEADING_WEIGHT,
     path_weight: float = PATH_WEIGHT,
 ) -> SearchResult:
     """Return up to ``k`` chunks for ``query``. Never raises on odd input; a non-text or empty query finds nothing."""
     k = max(1, min(int(k), MAX_K))
     threshold = DEFAULT_MIN_SCORE if min_score is None else float(min_score)
+    if min_coverage is None:  # only a call that takes the fitted score floor also takes the fitted coverage floor
+        floor = DEFAULT_MIN_COVERAGE if min_score is None else 0.0
+    else:
+        floor = float(min_coverage)
     normalised = normalize_query(query)
     terms = tuple(query_terms(normalised))
     if not terms:
-        return SearchResult(normalised, terms, (), 0.0, threshold, REASON_NO_TERMS)
+        return SearchResult(normalised, terms, (), 0.0, threshold, REASON_NO_TERMS, floor)
 
     n = index.chunk_count
     weighted_len = [lt + heading_weight * lh + path_weight * lp for lt, lh, lp in index.lengths]
@@ -94,22 +108,25 @@ def search(
             scores[idx] = scores.get(idx, 0.0) + idf * (tf * (BM25_K1 + 1.0)) / (tf + norm)
             matched.setdefault(idx, []).append(term)
     if not scores:
-        return SearchResult(normalised, terms, (), 0.0, threshold, REASON_NO_MATCH)
+        return SearchResult(normalised, terms, (), 0.0, threshold, REASON_NO_MATCH, floor)
 
     ranked = sorted(
         scores,
         key=lambda i: (-round(scores[i], 6), index.chunks[i].source_path, index.chunks[i].ordinal),
     )
     best = round(scores[ranked[0]], 6)
-    kept = [i for i in ranked if round(scores[i], 6) >= threshold][:k]
+
+    def coverage_of(i: int) -> float:
+        return round(sum(idf_of[t] for t in matched[i]) / idf_total, 4)
+
+    over_score = [i for i in ranked if round(scores[i], 6) >= threshold]
+    kept = [i for i in over_score if coverage_of(i) >= floor][:k]
     hits = tuple(
-        Hit(
-            rank,
-            index.chunks[i],
-            round(scores[i], 6),
-            tuple(matched[i]),
-            round(sum(idf_of[t] for t in matched[i]) / idf_total, 4),
-        )
+        Hit(rank, index.chunks[i], round(scores[i], 6), tuple(matched[i]), coverage_of(i))
         for rank, i in enumerate(kept, start=1)
     )
-    return SearchResult(normalised, terms, hits, best, threshold, REASON_OK if hits else REASON_BELOW_THRESHOLD)
+    if hits:
+        reason = REASON_OK
+    else:
+        reason = REASON_LOW_COVERAGE if over_score else REASON_BELOW_THRESHOLD
+    return SearchResult(normalised, terms, hits, best, threshold, reason, floor)

@@ -1,0 +1,212 @@
+{
+  "contract_version": "1.0.0",
+  "count": 3,
+  "dataset_id": "synthetic-example",
+  "facility_id": "synthetic-example-facility",
+  "from_source_text": "2000-01-01 00:00:00",
+  "include_invalid": false,
+  "include_states": [
+    "observed",
+    "missing",
+    "not_reported"
+  ],
+  "kind": "history",
+  "page": {
+    "limit": 100,
+    "next_cursor": null
+  },
+  "records": [
+    {
+      "age_seconds": null,
+      "asset_external_id": "synthetic-example.rack.a",
+      "attribution": {
+        "member_source_rack_ids": [
+          "1"
+        ],
+        "scope": "rack",
+        "split_allowed": false
+      },
+      "contract_version": "1.0.0",
+      "dataset_id": "synthetic-example",
+      "derivation": null,
+      "facility_id": "synthetic-example-facility",
+      "fixture": true,
+      "ledger": {
+        "group_ref": "synthetic_example_file.csv|2000-01-01 00:00:01",
+        "group_size": 1,
+        "row_disposition": "retained"
+      },
+      "mapping": {
+        "applied_uniformly_over_window": true,
+        "label_evidence": "not_applicable",
+        "mapping_id": "synthetic-example-map-1",
+        "mapping_version": 1,
+        "method": "csv_header_key",
+        "valid_time_status": "not_established"
+      },
+      "measurand": "temperature",
+      "observed": true,
+      "origin_db": null,
+      "protocol_ref": {
+        "protocol_sha256": "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098"
+      },
+      "provenance": "synthetic",
+      "quality": "ok",
+      "reason_code": null,
+      "record_kind": "telemetry_record",
+      "resolution_decimals": 2,
+      "sensor_external_id": "synthetic-example.temperature.s1",
+      "site_status": "location_not_established",
+      "source_rack_id": "1",
+      "source_ref": {
+        "column": "Synthetic temperature 1",
+        "file": "synthetic_example_file.csv",
+        "file_sha256": null,
+        "key": "synthetic_example_file.csv|Synthetic temperature 1|2000-01-01 00:00:01",
+        "row_numbering": "data_row_ordinal_excluding_header",
+        "row_ordinal": 1,
+        "ts_text": "2000-01-01 00:00:01"
+      },
+      "source_server_id": null,
+      "source_server_status": "not_present_in_source",
+      "state": "observed",
+      "storage_class": "fixture_only",
+      "stream_id": "import:synthetic-example",
+      "time_basis": "source_text_undeclared_tz",
+      "ts_source_text": "2000-01-01 00:00:01",
+      "ts_utc": null,
+      "unit": "degC",
+      "value": 20.12,
+      "value_text": "20.12"
+    },
+    {
+      "age_seconds": null,
+      "asset_external_id": "synthetic-example.rack.a",
+      "attribution": {
+        "member_source_rack_ids": [
+          "1"
+        ],
+        "scope": "rack",
+        "split_allowed": false
+      },
+      "contract_version": "1.0.0",
+      "dataset_id": "synthetic-example",
+      "derivation": null,
+      "facility_id": "synthetic-example-facility",
+      "fixture": true,
+      "ledger": {
+        "group_ref": "synthetic_example_file.csv|2000-01-01 00:00:02",
+        "group_size": 1,
+        "row_disposition": "flagged"
+      },
+      "mapping": {
+        "applied_uniformly_over_window": true,
+        "label_evidence": "not_applicable",
+        "mapping_id": "synthetic-example-map-1",
+        "mapping_version": 1,
+        "method": "csv_header_key",
+        "valid_time_status": "not_established"
+      },
+      "measurand": "temperature",
+      "observed": true,
+      "origin_db": null,
+      "protocol_ref": {
+        "protocol_sha256": "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098"
+      },
+      "provenance": "synthetic",
+      "quality": "flagged",
+      "reason_code": "above_range_flagged_not_clipped",
+      "record_kind": "telemetry_record",
+      "resolution_decimals": 2,
+      "sensor_external_id": "synthetic-example.temperature.s1",
+      "site_status": "location_not_established",
+      "source_rack_id": "1",
+      "source_ref": {
+        "column": "Synthetic temperature 1",
+        "file": "synthetic_example_file.csv",
+        "file_sha256": null,
+        "key": "synthetic_example_file.csv|Synthetic temperature 1|2000-01-01 00:00:02",
+        "row_numbering": "data_row_ordinal_excluding_header",
+        "row_ordinal": 1,
+        "ts_text": "2000-01-01 00:00:02"
+      },
+      "source_server_id": null,
+      "source_server_status": "not_present_in_source",
+      "state": "observed",
+      "storage_class": "fixture_only",
+      "stream_id": "import:synthetic-example",
+      "time_basis": "source_text_undeclared_tz",
+      "ts_source_text": "2000-01-01 00:00:02",
+      "ts_utc": null,
+      "unit": "degC",
+      "value": 99.99,
+      "value_text": "99.99"
+    },
+    {
+      "age_seconds": null,
+      "asset_external_id": "synthetic-example.rack.a",
+      "attribution": {
+        "member_source_rack_ids": [
+          "1"
+        ],
+        "scope": "rack",
+        "split_allowed": false
+      },
+      "contract_version": "1.0.0",
+      "dataset_id": "synthetic-example",
+      "derivation": null,
+      "facility_id": "synthetic-example-facility",
+      "fixture": true,
+      "ledger": {
+        "group_ref": "synthetic_example_file.csv|2000-01-01 00:00:03",
+        "group_size": 2,
+        "row_disposition": "conflict_cell_missing"
+      },
+      "mapping": {
+        "applied_uniformly_over_window": true,
+        "label_evidence": "not_applicable",
+        "mapping_id": "synthetic-example-map-1",
+        "mapping_version": 1,
+        "method": "csv_header_key",
+        "valid_time_status": "not_established"
+      },
+      "measurand": "temperature",
+      "observed": false,
+      "origin_db": null,
+      "protocol_ref": {
+        "protocol_sha256": "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098"
+      },
+      "provenance": "synthetic",
+      "quality": null,
+      "reason_code": "conflict_unresolved_tie",
+      "record_kind": "telemetry_record",
+      "resolution_decimals": 2,
+      "sensor_external_id": "synthetic-example.temperature.s1",
+      "site_status": "location_not_established",
+      "source_rack_id": "1",
+      "source_ref": {
+        "column": "Synthetic temperature 1",
+        "file": "synthetic_example_file.csv",
+        "file_sha256": null,
+        "key": "synthetic_example_file.csv|Synthetic temperature 1|2000-01-01 00:00:03",
+        "row_numbering": "data_row_ordinal_excluding_header",
+        "row_ordinal": 1,
+        "ts_text": "2000-01-01 00:00:03"
+      },
+      "source_server_id": null,
+      "source_server_status": "not_present_in_source",
+      "state": "missing",
+      "storage_class": "fixture_only",
+      "stream_id": "import:synthetic-example",
+      "time_basis": "source_text_undeclared_tz",
+      "ts_source_text": "2000-01-01 00:00:03",
+      "ts_utc": null,
+      "unit": "degC",
+      "value": null,
+      "value_text": null
+    }
+  ],
+  "sensor_external_id": "synthetic-example.temperature.s1",
+  "stream_id": "import:synthetic-example",
+  "to_source_text": "2000-01-01 00:00:10"
+}

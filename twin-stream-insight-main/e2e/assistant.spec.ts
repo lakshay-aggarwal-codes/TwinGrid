@@ -9,6 +9,7 @@ import { signIn } from "./helpers";
  *  1. model passport -> "Explain this" -> the drawer shows exactly the evidence the backend returned, with its mode label
  *  2. a hostile question typed into the drawer is answered from evidence only and injects nothing into the page
  *  3. an alert (when the backend under test has one) -> "Explain this" -> score and threshold equal the explanation route
+ *  4. CP-10: a documentation question typed into the general drawer -> the badge, sources and warnings equal what the backend sent
  *
  * Case 3 depends on the backend having an alert. CI seeds accounts, not alerts, so an empty inbox is asserted as empty
  * and the case is annotated (not skipped silently); cases 1 and 2 need no alert.
@@ -24,7 +25,19 @@ type Evidence = {
   origin: string;
   freshness: string;
 };
-type Ask = { mode: "rule_based" | "llm"; answer: string; evidence: Evidence[]; unknowns: string[]; warnings: string[]; links: { path: string }[]; limits: { provider_configured: boolean } };
+type Citation = { evidence_id: string; source_path: string; heading_path: string };
+type Provider = { name: string; local: boolean; fell_back?: boolean };
+type Ask = {
+  mode: "rule_based" | "llm";
+  answer: string;
+  evidence: Evidence[];
+  unknowns: string[];
+  warnings: string[];
+  links: { path: string }[];
+  limits: { provider_configured: boolean };
+  citations?: Citation[];
+  provider?: Provider | null;
+};
 
 const isAsk = (r: Response) => r.url().includes("/api/copilot/ask") && r.request().method() === "POST";
 
@@ -49,8 +62,34 @@ async function openDetectorPassportAndExplain(page: Page): Promise<{ drawer: Loc
 async function expectDrawerMatches(drawer: Locator, data: Ask): Promise<void> {
   const answer = drawer.getByTestId("answer").last();
   await expect(answer).toHaveAttribute("data-mode", data.mode);
-  await expect(answer.getByTestId("answer-mode")).toContainText(data.mode === "llm" ? "Model-phrased" : "Rule-based explanation");
-  if (!data.limits.provider_configured) await expect(answer.getByTestId("answer-mode")).toContainText("no language model is configured");
+  const badge = answer.getByTestId("answer-mode");
+  await expect(badge).toContainText(data.mode === "llm" ? "Model-phrased" : "Rule-based explanation");
+  if (!data.limits.provider_configured) await expect(badge).toContainText("no language model is configured");
+
+  // CP-10: the badge names the provider the backend named, and nothing else. A rule-based answer has no provider.
+  if (data.mode === "llm" && data.provider) {
+    await expect(badge).toContainText(`${data.provider.local ? "Local model" : "Cloud model"} (${data.provider.name})`);
+    await expect(answer).toHaveAttribute("data-source", data.provider.local ? "local" : "cloud");
+    if (data.provider.fell_back) await expect(answer.getByTestId("answer-fell-back")).toContainText(data.provider.name);
+    else await expect(answer.getByTestId("answer-fell-back")).toHaveCount(0);
+  } else if (data.mode === "rule_based") {
+    expect(data.provider ?? null).toBeNull();
+    await expect(answer).toHaveAttribute("data-source", "rule");
+    await expect(badge).not.toContainText(/Local model|Cloud model/);
+  }
+
+  // CP-10: one source line per citation the backend sent, with its file; none when it sent none
+  const cites = data.citations ?? [];
+  if (cites.length === 0) {
+    await expect(answer.getByTestId("answer-citations")).toHaveCount(0);
+  } else {
+    await expect(answer.getByTestId("answer-citations").getByRole("listitem")).toHaveCount(cites.length);
+    for (const c of cites) {
+      const row = answer.getByTestId(`citation-${c.evidence_id}`);
+      await expect(row).toContainText(c.source_path);
+      if (c.heading_path) await expect(row).toContainText(c.heading_path);
+    }
+  }
 
   // one table row per evidence item, in order, with the origin and freshness the backend declared
   const rows = answer.locator("[data-testid^='evidence-row-']");
@@ -168,4 +207,41 @@ test("AI-D-3: an alert's explanation in the drawer equals the explanation route 
       expect(threshold.value).toBeCloseTo(expl.score_vs_threshold.threshold, 6);
     }
   }
+});
+
+test("AI-D-4 (CP-10): a documentation question shows its sources and mode exactly as the backend sent them", async ({ page }) => {
+  test.setTimeout(180_000);
+  await signIn(page, "viewer");
+  await page.getByTestId("assistant-open").click();
+  const drawer = page.getByTestId("assistant-drawer");
+  await expect(drawer).toBeVisible();
+
+  const asked = page.waitForResponse(isAsk, { timeout: 90_000 });
+  await drawer.getByTestId("assistant-input").fill("What do the runbook and documentation say about the Copilot limits?");
+  await drawer.getByTestId("assistant-send").click();
+  const response = await asked;
+  expect(response.status()).toBe(200);
+  const data = (await response.json()) as Ask;
+  expect(Array.isArray(data.citations)).toBe(true); // the field is part of the contract since CP-7
+  expect("provider" in data).toBe(true); // and so is the provider block since CP-10 (null when rule-based)
+
+  const turn = drawer.getByTestId("turn").last();
+  await expectDrawerMatches(turn, data);
+
+  const cites = data.citations ?? [];
+  if (cites.length === 0) {
+    // The docs index is a build artifact (scripts/build_copilot_index.py). Without it the answer must say so, never cite.
+    test.info().annotations.push({ type: "no-citations", description: "The backend under test returned no citation (no docs index, or no passage matched). The citation view was not exercised; build the index to cover it." });
+    expect(data.answer.length).toBeGreaterThan(0); // an honest answer, with no Sources section (checked above)
+    return;
+  }
+
+  // keyboard: a source's evidence button is reachable and moves focus to its passage row
+  const first = cites[0];
+  const button = turn.getByRole("button", { name: `Show evidence ${first.evidence_id} for ${first.source_path}` });
+  await button.focus();
+  await expect(button).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(turn.getByTestId(`evidence-row-${first.evidence_id}`)).toBeFocused();
+  for (const c of cites) expect(data.evidence.some((e) => e.id === c.evidence_id && e.source === "doc_passage")).toBe(true);
 });

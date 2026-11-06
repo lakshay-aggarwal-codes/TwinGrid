@@ -47,6 +47,7 @@
     }
   ],
   "mode": "rule_based",
+  "provider": null,
   "unknowns": [
     "No threshold rule is defined for signal rack-01.fan.",
     "The status of rack-01.fan is unknown (reason: rule_unavailable)."
