@@ -483,10 +483,59 @@ def _defn(**kw):
     return d
 
 
-def test_no_derivation_is_approved_for_v5():
-    assert load_derivation_registry()["approved"] == []
-    with pytest.raises(DerivationNotApproved):
-        require_approved("derived.room_power_total")
+def test_only_the_owner_approved_derivation_exists():
+    reg = load_derivation_registry()
+    assert [d["derived_name"] for d in reg["approved"]] == ["derived.rack_power_total_1_6"]
+    d = require_approved("derived.rack_power_total_1_6")
+    assert d["inputs"] == [P + "power.ch1", P + "power.ch2", P + "power.ch3"]
+    assert (
+        d["operation"] == "sum"
+        and d["output_scope"] == "rack_group"
+        and d["output_member_source_rack_ids"] == ["1", "2", "3", "4", "5", "6"]
+    )
+    assert "2026-11-06" in d["method_approval_ref"] and d["approved_on"] == "2026-11-06"
+    assert "never a partial sum" in d["formula_text"] and "never divided per rack" in d["formula_text"]
+    assert validate_derivation_definition(d, REG) == []
+    # everything else stays refused
+    for name in (
+        "derived.rack_temperature_mean",
+        "derived.rack1_power",
+        "derived.rack_power_split",
+        "derived.room_power_total",
+        "derived.power.ch1",
+    ):
+        with pytest.raises(DerivationNotApproved):
+            require_approved(name)
+
+
+def test_contract_1_0_0_cannot_yet_carry_a_derived_v5_record_id():
+    """Known limitation, not a defect of the mapping: the approved contract's v5 profile accepts only measured sensor ids.
+
+    A derived v5 record passes every other contract check; only the sensor id grammar rejects it. Emitting derived v5
+    records therefore needs a contract 1.1 amendment (a derived id grammar); that is for the owner and Task 14/15.
+    """
+    base = json.loads(
+        (REPO / "research/danish_aau/contract/examples/record_derived_rack_proxy_shape.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    d = require_approved("derived.rack_power_total_1_6")
+    r = copy.deepcopy(base)
+    r.update(
+        dataset_id="danish-aau-v5", stream_id="import:danish-aau-v5", facility_id="1", fixture=False, provenance="derived",
+        storage_class="derived_series", origin_db=None, measurand="power", unit="W", resolution_decimals=1, state="observed",
+        observed=True, value=300.0, value_text="300.0", quality="ok", reason_code=None, source_rack_id=None,
+        attribution={"scope": "rack_group", "member_source_rack_ids": d["output_member_source_rack_ids"], "split_allowed": False},
+        asset_external_id=P + "zone.serverroom", sensor_external_id=d["derived_name"],
+        protocol_ref={"protocol_sha256": tc.PROTOCOL_SHA256_V5},
+        derivation={
+            "formula_id": d["formula_id"], "formula_text": d["formula_text"],
+            "inputs": [{"sensor_external_id": s, "source_ref_key": f"f.csv|{s}|2000-01-01 00:00:01"} for s in d["inputs"]],
+            "input_scopes": ["rack_group", "rack_group", "rack"], "mapping_id": P + "map.power.ch1",
+            "mapping_version": 1, "code_version": d["code_version"], "method_approval_ref": d["method_approval_ref"],
+        },
+    )  # fmt: skip
+    assert {e.split(":")[0] for e in tc.validate_record(r)} == {"E_V5_SENSOR_ID"}
 
 
 def test_derivation_rules_accept_only_additive_measured_power_with_lineage():
@@ -562,7 +611,8 @@ def test_report_is_aggregate_and_counts_unmapped():
     r = build_report(REG)
     assert r["counts"]["unmapped"] == 0 and r["unmapped_entities"] == [] and len(r["deferred_entities"]) == 12
     assert r["label_evidence"] == {"agent_transcribed": 64, "not_applicable": 12, "source_document": 3}
-    assert r["derivations_approved"] == 0 and r["mapping_status"] == "ready_for_review"
+    assert r["derivations_approved"] == 1 and r["derivations_approved_ids"] == ["derived.rack_power_total_1_6"]
+    assert r["mapping_status"] == "ready_for_review"
     assert not re.search(r"\d+\.\d+\s*(degC|W)\b", json.dumps(r))
 
 

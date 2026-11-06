@@ -1,6 +1,27 @@
 {
   "registry_version": 1,
-  "status": "ready_for_review",
-  "note": "No derived rack value is approved for Danish AAU v5. Every derivation needs an owner-approved entry here; an empty list means every request for a derived value is refused.",
-  "approved": []
+  "status": "one_derivation_approved",
+  "note": "Only derivations listed under approved are allowed; every other request for a derived value is refused. Approved by the owner on 2026-11-06 (Task 13 question Q-1): the sum of the three measured power channels, attributed to Racks 1-6 as a group. No rack-level temperature aggregate and no per-rack power split is approved.",
+  "approved": [
+    {
+      "derived_name": "derived.rack_power_total_1_6",
+      "provenance": "derived",
+      "operation": "sum",
+      "inputs": [
+        "danish-aau-v5.power.ch1",
+        "danish-aau-v5.power.ch2",
+        "danish-aau-v5.power.ch3"
+      ],
+      "output_measurand": "power",
+      "output_unit": "W",
+      "output_scope": "rack_group",
+      "output_member_source_rack_ids": ["1", "2", "3", "4", "5", "6"],
+      "formula_id": "F-POWER-SUM-1",
+      "formula_text": "P_total = Power Ch 1 + Power Ch 2 + Power Ch 3, in W, at the same source timestamp. Defined only when all three inputs are observed with quality ok at that timestamp; otherwise the derived value is absent, never a partial sum. Attributed to Racks 1-6 as a group; never divided per rack.",
+      "code_version": "mapping-v1",
+      "mapping_version": 1,
+      "method_approval_ref": "Owner approval 2026-11-06, Task 13 Q-1 (rack power total only; paper-versus-data note O-10 acknowledged)",
+      "approved_on": "2026-11-06"
+    }
+  ]
 }
