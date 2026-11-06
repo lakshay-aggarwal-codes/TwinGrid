@@ -1,0 +1,6 @@
+{
+  "registry_version": 1,
+  "status": "ready_for_review",
+  "note": "No derived rack value is approved for Danish AAU v5. Every derivation needs an owner-approved entry here; an empty list means every request for a derived value is refused.",
+  "approved": []
+}

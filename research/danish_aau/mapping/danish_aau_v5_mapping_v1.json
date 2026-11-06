@@ -1,0 +1,3963 @@
+{
+  "mapping_file": {
+    "name": "Danish AAU Server-Room v5 identity mapping",
+    "mapping_version": 1,
+    "status": "ready_for_review",
+    "decided_by": null,
+    "decided_on": null,
+    "dataset_id": "danish-aau-v5",
+    "contract_version": "1.0.0",
+    "protocol_sha256": "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098",
+    "task7_adr_sha256_lf_normalised": "8f13794cde8c8be6897c8968548f2bd3eee842b97dc7c4e951daa7edf4ccf458",
+    "task7_amendment": "2026-11-06 (D3, D6, D9: bundle-only registry; no asset/sensor rows in v1)",
+    "authority": "TASK_07_ADR.md Appendix A and sections 3.3-3.9, as amended; TASK_09_ADR.md r4 sections 5 and 7A; TASK_08_CONTRACT.md 1.0.0"
+  },
+  "time": {
+    "valid_time_status": "not_established",
+    "applied_uniformly_over_window": true,
+    "basis": "source text, timezone undeclared; no UTC value; owner decision O-1 records the uniform-application assumption"
+  },
+  "site": {
+    "site_status": "location_not_established",
+    "server_status": "not_present_in_source"
+  },
+  "evidence_sources": {
+    "csv_headers": {
+      "description": "Header row of the CSV files (Task 3 evidence report; Task 11 adapter schema).",
+      "files": {
+        "temperature_power": "AAU_temperature_and_power_use.csv",
+        "air_speed": "AAU_air_speed.csv",
+        "surrounding_temperatures": "AAU_supplementary_surrounding_temperatures.csv",
+        "ventilation": "AAU_supplementary_ventilation.csv"
+      },
+      "sha256": {
+        "temperature_power": "a90319b9864b69104b993e93cb70f2326cb0d7b1e70f6fc0deb9aef64dd265fe",
+        "air_speed": "e305b2b491e9b3d39aafcb8dff7c05c0b4e8849d6661bd00bd6d88d118b2c116",
+        "surrounding_temperatures": "a8010675dce89f2dba11615caf76b8a24648a52ac38f7226a461d4c59348f26e",
+        "ventilation": "72de6d7ca9d0530030cf42b775bbe812a9ed8e57b0e2eee2dff0f1f7a8869c54"
+      },
+      "in_manifest": true
+    },
+    "layout_workbook": {
+      "description": "AAU-layout-file.xlsx, sheet Ark1, range A1:K75. Column A 'Rack'; column K 'Power use measurement port'.",
+      "file": "AAU-layout-file.xlsx",
+      "sha256": "8aa350e4c31917f7d995a64d9ee61bdb80f1fb27bc69c49952cc126fe1608160",
+      "in_manifest": true
+    },
+    "probe_images": {
+      "description": "Measurement_points_temperature_1.jpg and Measurement_points_temperature_2.jpg; every probe is labelled 'name (MODM,C)'. Which image carries which probe was not recorded by Task 3. Labels were read by an agent by eye (owner spot-check O-2 pending). The images sit in the extracted _mv/ folder, which is not in the manifest (O-12).",
+      "files": [
+        "Measurement_points_temperature_1.jpg",
+        "Measurement_points_temperature_2.jpg"
+      ],
+      "container": "Measurement_visualization.zip",
+      "container_sha256": "dc6e87c5dfe773881219fb1f1445343f38a1a262a58c74e482f25cc0c17d325b",
+      "in_manifest": false
+    },
+    "plot_images": {
+      "description": "temperature.png, power.png (legend 'Rack 1-3', 'Rack 4+6', 'Rack 5'), air_speed.png (m/s), AAU_DC_surrounding_rooms.png, and the 'Port N' velocity probe images (file names not listed in the inputs supplied to Tasks 7 and 13).",
+      "container": "Measurement_visualization.zip",
+      "container_sha256": "dc6e87c5dfe773881219fb1f1445343f38a1a262a58c74e482f25cc0c17d325b",
+      "in_manifest": false
+    },
+    "cad_log": {
+      "description": "AAU_DC_geometry_with_measurement_points.log: object counts only (48 PT100, 16 Anemometer, 6 Cabinet). Probe handles are not linked to channels; not used as mapping evidence.",
+      "file": "AAU_DC_geometry_with_measurement_points.log",
+      "sha256": "44a9409c38b7af9c46084f64990d8ebc317a9ff37fdc5022f11b72b851b4767c",
+      "in_manifest": true
+    }
+  },
+  "racks": [
+    {
+      "asset_external_id": "danish-aau-v5.rack.1",
+      "asset_type": "rack",
+      "source_rack_id": "1",
+      "name": "Rack 1",
+      "tier": "tier1",
+      "load_in_v1": true,
+      "evidence_status": "documented_in_source",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "sheet Ark1, column A 'Rack'"
+        },
+        {
+          "source": "probe_images",
+          "locator": "labels 'Rack 1 ...'"
+        }
+      ],
+      "cad_cabinet_correspondence": "partial_not_used"
+    },
+    {
+      "asset_external_id": "danish-aau-v5.rack.2",
+      "asset_type": "rack",
+      "source_rack_id": "2",
+      "name": "Rack 2",
+      "tier": "tier1",
+      "load_in_v1": true,
+      "evidence_status": "documented_in_source",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "sheet Ark1, column A 'Rack'"
+        },
+        {
+          "source": "probe_images",
+          "locator": "labels 'Rack 2 ...'"
+        }
+      ],
+      "cad_cabinet_correspondence": "partial_not_used"
+    },
+    {
+      "asset_external_id": "danish-aau-v5.rack.3",
+      "asset_type": "rack",
+      "source_rack_id": "3",
+      "name": "Rack 3",
+      "tier": "tier1",
+      "load_in_v1": true,
+      "evidence_status": "documented_in_source",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "sheet Ark1, column A 'Rack'"
+        },
+        {
+          "source": "probe_images",
+          "locator": "labels 'Rack 3 ...'"
+        }
+      ],
+      "cad_cabinet_correspondence": "partial_not_used"
+    },
+    {
+      "asset_external_id": "danish-aau-v5.rack.4",
+      "asset_type": "rack",
+      "source_rack_id": "4",
+      "name": "Rack 4",
+      "tier": "tier1",
+      "load_in_v1": true,
+      "evidence_status": "documented_in_source",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "sheet Ark1, column A 'Rack'"
+        },
+        {
+          "source": "probe_images",
+          "locator": "labels 'Rack 4 ...'"
+        }
+      ],
+      "cad_cabinet_correspondence": "partial_not_used"
+    },
+    {
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "asset_type": "rack",
+      "source_rack_id": "5",
+      "name": "Rack 5",
+      "tier": "tier1",
+      "load_in_v1": true,
+      "evidence_status": "documented_in_source",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "sheet Ark1, column A 'Rack'"
+        },
+        {
+          "source": "probe_images",
+          "locator": "labels 'Rack 5 ...'"
+        }
+      ],
+      "cad_cabinet_correspondence": "partial_not_used"
+    },
+    {
+      "asset_external_id": "danish-aau-v5.rack.6",
+      "asset_type": "rack",
+      "source_rack_id": "6",
+      "name": "Rack 6",
+      "tier": "tier1",
+      "load_in_v1": true,
+      "evidence_status": "documented_in_source",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "sheet Ark1, column A 'Rack'"
+        },
+        {
+          "source": "probe_images",
+          "locator": "labels 'Rack 6 ...'"
+        }
+      ],
+      "cad_cabinet_correspondence": "partial_not_used"
+    }
+  ],
+  "power_ports": [
+    {
+      "asset_external_id": "danish-aau-v5.pdu.ch1",
+      "asset_type": "pdu",
+      "name": "Power measurement port 1 (source: Power Ch 1)",
+      "tier": "tier1",
+      "load_in_v1": true,
+      "evidence_status": "documented_group_membership_channel_number_corroborated",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "column K port 1"
+        },
+        {
+          "source": "plot_images",
+          "locator": "power.png legend"
+        }
+      ]
+    },
+    {
+      "asset_external_id": "danish-aau-v5.pdu.ch2",
+      "asset_type": "pdu",
+      "name": "Power measurement port 2 (source: Power Ch 2)",
+      "tier": "tier1",
+      "load_in_v1": true,
+      "evidence_status": "documented_group_membership_channel_number_corroborated",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "column K port 2"
+        },
+        {
+          "source": "plot_images",
+          "locator": "power.png legend"
+        }
+      ]
+    },
+    {
+      "asset_external_id": "danish-aau-v5.pdu.ch3",
+      "asset_type": "pdu",
+      "name": "Power measurement port 3 (source: Power Ch 3)",
+      "tier": "tier1",
+      "load_in_v1": true,
+      "evidence_status": "documented_group_membership_channel_number_corroborated",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "column K port 3"
+        },
+        {
+          "source": "plot_images",
+          "locator": "power.png legend"
+        }
+      ]
+    }
+  ],
+  "zone": {
+    "asset_external_id": "danish-aau-v5.zone.serverroom",
+    "asset_type": "zone",
+    "name": "Serverroom (room scope)",
+    "tier": "tier2",
+    "load_in_v1": false
+  },
+  "entities": [
+    {
+      "entity_id": "danish-aau-v5.temperature.mod1.ch1",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 1 ch 1",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod1.ch1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod1.ch1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.2",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.2"
+      ],
+      "source_rack_id": "2",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "2"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 2 front (MOD1,1)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 1 ch 1'"
+        }
+      ],
+      "source_label": "Rack 2 front",
+      "source_position_word": "front",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod1.ch2",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 1 ch 2",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod1.ch2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod1.ch2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.6",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.6"
+      ],
+      "source_rack_id": "6",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "6"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 6 back 1 (MOD1,2)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 1 ch 2'"
+        }
+      ],
+      "source_label": "Rack 6 back 1",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod1.ch3",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 1 ch 3",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod1.ch3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod1.ch3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 front 1 (MOD1,3)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 1 ch 3'"
+        }
+      ],
+      "source_label": "Rack 5 front 1",
+      "source_position_word": "front",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod1.ch4",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 1 ch 4",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod1.ch4",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod1.ch4",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 front 2 (MOD1,4)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 1 ch 4'"
+        }
+      ],
+      "source_label": "Rack 5 front 2",
+      "source_position_word": "front",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod1.ch5",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 1 ch 5",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod1.ch5",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod1.ch5",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 front 3 (MOD1,5)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 1 ch 5'"
+        }
+      ],
+      "source_label": "Rack 5 front 3",
+      "source_position_word": "front",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod1.ch6",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 1 ch 6",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod1.ch6",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod1.ch6",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.4",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.4"
+      ],
+      "source_rack_id": "4",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "4"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 4 front (MOD1,6)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 1 ch 6'"
+        }
+      ],
+      "source_label": "Rack 4 front",
+      "source_position_word": "front",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod1.ch7",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 1 ch 7",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod1.ch7",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod1.ch7",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.6",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.6"
+      ],
+      "source_rack_id": "6",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "6"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 6 front (MOD1,7)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 1 ch 7'"
+        }
+      ],
+      "source_label": "Rack 6 front",
+      "source_position_word": "front",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod1.ch8",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 1 ch 8",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod1.ch8",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod1.ch8",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.3",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.3"
+      ],
+      "source_rack_id": "3",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "3"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 3 front (MOD1,8)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 1 ch 8'"
+        }
+      ],
+      "source_label": "Rack 3 front",
+      "source_position_word": "front",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod2.ch1",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 2 ch 1",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod2.ch1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod2.ch1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back L5 (MOD2,1)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 2 ch 1'"
+        }
+      ],
+      "source_label": "Rack 5 back L5",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod2.ch2",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 2 ch 2",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod2.ch2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod2.ch2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back L3 (MOD2,2)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 2 ch 2'"
+        }
+      ],
+      "source_label": "Rack 5 back L3",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod2.ch3",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 2 ch 3",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod2.ch3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod2.ch3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.6",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.6"
+      ],
+      "source_rack_id": "6",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "6"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 6 back 2 (MOD2,3)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 2 ch 3'"
+        }
+      ],
+      "source_label": "Rack 6 back 2",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod2.ch4",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 2 ch 4",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod2.ch4",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod2.ch4",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back L6 (MOD2,4)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 2 ch 4'"
+        }
+      ],
+      "source_label": "Rack 5 back L6",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod2.ch5",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 2 ch 5",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod2.ch5",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod2.ch5",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back L4 (MOD2,5)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 2 ch 5'"
+        }
+      ],
+      "source_label": "Rack 5 back L4",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod2.ch6",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 2 ch 6",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod2.ch6",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod2.ch6",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back L2 (MOD2,6)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 2 ch 6'"
+        }
+      ],
+      "source_label": "Rack 5 back L2",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod2.ch7",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 2 ch 7",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod2.ch7",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod2.ch7",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.1",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.1"
+      ],
+      "source_rack_id": "1",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "1"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 1 front (MOD2,7)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 2 ch 7'"
+        }
+      ],
+      "source_label": "Rack 1 front",
+      "source_position_word": "front",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod2.ch8",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 2 ch 8",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod2.ch8",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod2.ch8",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back L1 (MOD2,8)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 2 ch 8'"
+        }
+      ],
+      "source_label": "Rack 5 back L1",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod3.ch1",
+      "source_entity_class": "cooling_unit_probe",
+      "source_column": "Temperature mod 3 ch 1",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod3.ch1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod3.ch1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Back cooling window (MOD3,1)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 3 ch 1'"
+        }
+      ],
+      "source_label": "Back cooling window",
+      "source_position_word": "cooling unit",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod3.ch2",
+      "source_entity_class": "cooling_unit_probe",
+      "source_column": "Temperature mod 3 ch 2",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod3.ch2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod3.ch2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Back cooling wall (MOD3,2)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 3 ch 2'"
+        }
+      ],
+      "source_label": "Back cooling wall",
+      "source_position_word": "cooling unit",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod3.ch3",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 3 ch 3",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod3.ch3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod3.ch3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back L7 (MOD3,3)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 3 ch 3'"
+        }
+      ],
+      "source_label": "Rack 5 back L7",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod3.ch4",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 3 ch 4",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod3.ch4",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod3.ch4",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back R1 (MOD3,4)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 3 ch 4'"
+        }
+      ],
+      "source_label": "Rack 5 back R1",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod3.ch5",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 3 ch 5",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod3.ch5",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod3.ch5",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back R3 (MOD3,5)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 3 ch 5'"
+        }
+      ],
+      "source_label": "Rack 5 back R3",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod3.ch6",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 3 ch 6",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod3.ch6",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod3.ch6",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back L8 (MOD3,6)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 3 ch 6'"
+        }
+      ],
+      "source_label": "Rack 5 back L8",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod3.ch7",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 3 ch 7",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod3.ch7",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod3.ch7",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back L9 (MOD3,7)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 3 ch 7'"
+        }
+      ],
+      "source_label": "Rack 5 back L9",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod3.ch8",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 3 ch 8",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod3.ch8",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod3.ch8",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back R2 (MOD3,8)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 3 ch 8'"
+        }
+      ],
+      "source_label": "Rack 5 back R2",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod4.ch1",
+      "source_entity_class": "room_gradient_probe",
+      "source_column": "Temperature mod 4 ch 1",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod4.ch1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod4.ch1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Gradient 1 (MOD4,1)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 4 ch 1'"
+        }
+      ],
+      "source_label": "Gradient 1",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod4.ch2",
+      "source_entity_class": "room_gradient_probe",
+      "source_column": "Temperature mod 4 ch 2",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod4.ch2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod4.ch2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Gradient 2 (MOD4,2)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 4 ch 2'"
+        }
+      ],
+      "source_label": "Gradient 2",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod4.ch3",
+      "source_entity_class": "room_gradient_probe",
+      "source_column": "Temperature mod 4 ch 3",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod4.ch3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod4.ch3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Gradient 3 (MOD4,3)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 4 ch 3'"
+        }
+      ],
+      "source_label": "Gradient 3",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod4.ch4",
+      "source_entity_class": "room_gradient_probe",
+      "source_column": "Temperature mod 4 ch 4",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod4.ch4",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod4.ch4",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Gradient 5 (MOD4,4)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 4 ch 4'"
+        }
+      ],
+      "source_label": "Gradient 5",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod4.ch5",
+      "source_entity_class": "room_gradient_probe",
+      "source_column": "Temperature mod 4 ch 5",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod4.ch5",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod4.ch5",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Gradient 4 (MOD4,5)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 4 ch 5'"
+        }
+      ],
+      "source_label": "Gradient 4",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod4.ch6",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 4 ch 6",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod4.ch6",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod4.ch6",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back R4 (MOD4,6)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 4 ch 6'"
+        }
+      ],
+      "source_label": "Rack 5 back R4",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod4.ch7",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 4 ch 7",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod4.ch7",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod4.ch7",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back R6 (MOD4,7)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 4 ch 7'"
+        }
+      ],
+      "source_label": "Rack 5 back R6",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod4.ch8",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 4 ch 8",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod4.ch8",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod4.ch8",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back R5 (MOD4,8)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 4 ch 8'"
+        }
+      ],
+      "source_label": "Rack 5 back R5",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod5.ch1",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 5 ch 1",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod5.ch1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod5.ch1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back R7 (MOD5,1)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 5 ch 1'"
+        }
+      ],
+      "source_label": "Rack 5 back R7",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod5.ch2",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 5 ch 2",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod5.ch2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod5.ch2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back R8 (MOD5,2)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 5 ch 2'"
+        }
+      ],
+      "source_label": "Rack 5 back R8",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod5.ch3",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 5 ch 3",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod5.ch3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod5.ch3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 back R9 (MOD5,3)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 5 ch 3'"
+        }
+      ],
+      "source_label": "Rack 5 back R9",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod5.ch4",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 5 ch 4",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod5.ch4",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod5.ch4",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.4",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.4"
+      ],
+      "source_rack_id": "4",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "4"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 4 back 1 (MOD5,4)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 5 ch 4'"
+        }
+      ],
+      "source_label": "Rack 4 back 1",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod6.ch1",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 6 ch 1",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod6.ch1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod6.ch1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.2",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.2"
+      ],
+      "source_rack_id": "2",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "2"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 2 back 1 (MOD6,1)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 6 ch 1'"
+        }
+      ],
+      "source_label": "Rack 2 back 1",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod6.ch2",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 6 ch 2",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod6.ch2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod6.ch2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.3",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.3"
+      ],
+      "source_rack_id": "3",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "3"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 3 back 2 (MOD6,2)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 6 ch 2'"
+        }
+      ],
+      "source_label": "Rack 3 back 2",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod6.ch3",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 6 ch 3",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod6.ch3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod6.ch3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.3",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.3"
+      ],
+      "source_rack_id": "3",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "3"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 3 back 1 (MOD6,3)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 6 ch 3'"
+        }
+      ],
+      "source_label": "Rack 3 back 1",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod6.ch4",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 6 ch 4",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod6.ch4",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod6.ch4",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.4",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.4"
+      ],
+      "source_rack_id": "4",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "4"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 4 back 2 (MOD6,4)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 6 ch 4'"
+        }
+      ],
+      "source_label": "Rack 4 back 2",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod7.ch1",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 7 ch 1",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod7.ch1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod7.ch1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.5",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 5 front 4 (MOD7,1)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 7 ch 1'"
+        }
+      ],
+      "source_label": "Rack 5 front 4",
+      "source_position_word": "front",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod7.ch2",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 7 ch 2",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod7.ch2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod7.ch2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.1",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.1"
+      ],
+      "source_rack_id": "1",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "1"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 1 back 2 (MOD7,2)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 7 ch 2'"
+        }
+      ],
+      "source_label": "Rack 1 back 2",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod7.ch3",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 7 ch 3",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod7.ch3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod7.ch3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.1",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.1"
+      ],
+      "source_rack_id": "1",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "1"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 1 back 1 (MOD7,3)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 7 ch 3'"
+        }
+      ],
+      "source_label": "Rack 1 back 1",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod7.ch4",
+      "source_entity_class": "rack_probe",
+      "source_column": "Temperature mod 7 ch 4",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod7.ch4",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod7.ch4",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.rack.2",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.2"
+      ],
+      "source_rack_id": "2",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "2"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Rack 2 back 2 (MOD7,4)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 7 ch 4'"
+        }
+      ],
+      "source_label": "Rack 2 back 2",
+      "source_position_word": "back",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod8.ch1",
+      "source_entity_class": "cooling_unit_probe",
+      "source_column": "Temperature mod 8 ch 1",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod8.ch1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod8.ch1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Cooling wall Front R (MOD8,1)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 8 ch 1'"
+        }
+      ],
+      "source_label": "Cooling wall Front R",
+      "source_position_word": "cooling unit",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod8.ch2",
+      "source_entity_class": "cooling_unit_probe",
+      "source_column": "Temperature mod 8 ch 2",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod8.ch2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod8.ch2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Cooling wall Front L (MOD8,2)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 8 ch 2'"
+        }
+      ],
+      "source_label": "Cooling wall Front L",
+      "source_position_word": "cooling unit",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod8.ch3",
+      "source_entity_class": "cooling_unit_probe",
+      "source_column": "Temperature mod 8 ch 3",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod8.ch3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod8.ch3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Cooling window Front R (MOD8,3)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 8 ch 3'"
+        }
+      ],
+      "source_label": "Cooling window Front R",
+      "source_position_word": "cooling unit",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.temperature.mod8.ch4",
+      "source_entity_class": "cooling_unit_probe",
+      "source_column": "Temperature mod 8 ch 4",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.temperature.mod8.ch4",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.temperature.mod8.ch4",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "temperature",
+      "unit": "degC",
+      "resolution_decimals": 2,
+      "method": "source_image_label",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "documented_in_source_agent_read_label",
+      "evidence_refs": [
+        {
+          "source": "probe_images",
+          "locator": "label 'Cooling window Front L (MOD8,4)'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Temperature mod 8 ch 4'"
+        }
+      ],
+      "source_label": "Cooling window Front L",
+      "source_position_word": "cooling unit",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": null
+    },
+    {
+      "entity_id": "danish-aau-v5.power.ch1",
+      "source_entity_class": "power_channel",
+      "source_column": "Power Ch 1 (W)",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.power.ch1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.power.ch1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.pdu.ch1",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.1",
+        "danish-aau-v5.rack.2",
+        "danish-aau-v5.rack.3"
+      ],
+      "source_rack_id": null,
+      "cardinality": "many_to_one",
+      "attribution": {
+        "scope": "rack_group",
+        "member_source_rack_ids": [
+          "1",
+          "2",
+          "3"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "power",
+      "unit": "W",
+      "resolution_decimals": 1,
+      "method": "source_workbook_port_group",
+      "label_evidence": "source_document",
+      "evidence_status": "documented_group_membership_channel_number_corroborated",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "column K 'Power use measurement port': port 1"
+        },
+        {
+          "source": "plot_images",
+          "locator": "power.png legend 'Rack 1-3'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Power Ch 1 (W)'"
+        }
+      ],
+      "source_label": "Rack 1-3",
+      "source_position_word": "power measurement port",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Power Ch N = workbook port N is corroborated by value ranges, not stated in words (owner O-7). Never split across member racks."
+    },
+    {
+      "entity_id": "danish-aau-v5.power.ch2",
+      "source_entity_class": "power_channel",
+      "source_column": "Power Ch 2 (W)",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.power.ch2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.power.ch2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.pdu.ch2",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.4",
+        "danish-aau-v5.rack.6"
+      ],
+      "source_rack_id": null,
+      "cardinality": "many_to_one",
+      "attribution": {
+        "scope": "rack_group",
+        "member_source_rack_ids": [
+          "4",
+          "6"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "power",
+      "unit": "W",
+      "resolution_decimals": 1,
+      "method": "source_workbook_port_group",
+      "label_evidence": "source_document",
+      "evidence_status": "documented_group_membership_channel_number_corroborated",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "column K 'Power use measurement port': port 2"
+        },
+        {
+          "source": "plot_images",
+          "locator": "power.png legend 'Rack 4+6'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Power Ch 2 (W)'"
+        }
+      ],
+      "source_label": "Rack 4+6",
+      "source_position_word": "power measurement port",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Power Ch N = workbook port N is corroborated by value ranges, not stated in words (owner O-7). Never split across member racks."
+    },
+    {
+      "entity_id": "danish-aau-v5.power.ch3",
+      "source_entity_class": "power_channel",
+      "source_column": "Power Ch 3 (W)",
+      "source_file_family": "temperature_power",
+      "sensor_external_id": "danish-aau-v5.power.ch3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.power.ch3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier1",
+      "mapping_state": "mapped",
+      "load_in_v1": true,
+      "asset_external_id": "danish-aau-v5.pdu.ch3",
+      "target_asset_external_ids": [
+        "danish-aau-v5.rack.5"
+      ],
+      "source_rack_id": "5",
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "rack",
+        "member_source_rack_ids": [
+          "5"
+        ],
+        "split_allowed": false
+      },
+      "measurand": "power",
+      "unit": "W",
+      "resolution_decimals": 1,
+      "method": "source_workbook_port_group",
+      "label_evidence": "source_document",
+      "evidence_status": "documented_group_membership_channel_number_corroborated",
+      "evidence_refs": [
+        {
+          "source": "layout_workbook",
+          "locator": "column K 'Power use measurement port': port 3"
+        },
+        {
+          "source": "plot_images",
+          "locator": "power.png legend 'Rack 5'"
+        },
+        {
+          "source": "csv_headers",
+          "locator": "column 'Power Ch 3 (W)'"
+        }
+      ],
+      "source_label": "Rack 5",
+      "source_position_word": "power measurement port",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Power Ch N = workbook port N is corroborated by value ranges, not stated in words (owner O-7). Never split across member racks."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.1",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 1",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.1",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.1",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 1'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 1' velocity image label 'Cooling wall (Port 1)'"
+        }
+      ],
+      "source_label": "Cooling wall (Port 1)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.2",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 2",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.2",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.2",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 2'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 2' velocity image label 'Mount L 1 (Port 2)'"
+        }
+      ],
+      "source_label": "Mount L 1 (Port 2)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.3",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 3",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.3",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.3",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 3'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 3' velocity image label 'Mount L 2 (Port 3)'"
+        }
+      ],
+      "source_label": "Mount L 2 (Port 3)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.4",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 4",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.4",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.4",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 4'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 4' velocity image label 'Mount L 3 (Port 4)'"
+        }
+      ],
+      "source_label": "Mount L 3 (Port 4)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.5",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 5",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.5",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.5",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 5'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 5' velocity image label 'Mount M 2 (Port 5)'"
+        }
+      ],
+      "source_label": "Mount M 2 (Port 5)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.6",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 6",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.6",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.6",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 6'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 6' velocity image label 'Mount M 3 (Port 6)'"
+        }
+      ],
+      "source_label": "Mount M 3 (Port 6)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.7",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 7",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.7",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.7",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 7'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 7' velocity image label 'Mount R 3 (Port 7)'"
+        }
+      ],
+      "source_label": "Mount R 3 (Port 7)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.8",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 8",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.8",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.8",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 8'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 8' velocity image label 'Front 4 (Port 8)'"
+        }
+      ],
+      "source_label": "Front 4 (Port 8)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.9",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 9",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.9",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.9",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 9'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 9' velocity image label 'Front 1 (Port 9)'"
+        }
+      ],
+      "source_label": "Front 1 (Port 9)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.10",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 10",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.10",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.10",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 10'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 10' velocity image label 'Front 2 (Port 10)'"
+        }
+      ],
+      "source_label": "Front 2 (Port 10)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.11",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 11",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.11",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.11",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 11'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 11' velocity image label 'Front 3 (Port 11)'"
+        }
+      ],
+      "source_label": "Front 3 (Port 11)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.12",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 12",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.12",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.12",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 12'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 12' velocity image label 'Cooling window (Port 12)'"
+        }
+      ],
+      "source_label": "Cooling window (Port 12)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.13",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 13",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.13",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.13",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 13'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 13' velocity image label 'Mount M 1 (Port 13)'"
+        }
+      ],
+      "source_label": "Mount M 1 (Port 13)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.14",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 14",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.14",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.14",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 14'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 14' velocity image label 'Mount R 2 (Port 14)'"
+        }
+      ],
+      "source_label": "Mount R 2 (Port 14)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.15",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 15",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.15",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.15",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 15'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 15' velocity image label 'Mount R 1 (Port 15)'"
+        }
+      ],
+      "source_label": "Mount R 1 (Port 15)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.velocity.16",
+      "source_entity_class": "air_speed_channel",
+      "source_column": "velocity 16",
+      "source_file_family": "air_speed",
+      "sensor_external_id": "danish-aau-v5.velocity.16",
+      "reserved_id": null,
+      "mapping_id": "danish-aau-v5.map.velocity.16",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "tier2",
+      "mapping_state": "mapped",
+      "load_in_v1": false,
+      "asset_external_id": "danish-aau-v5.zone.serverroom",
+      "target_asset_external_ids": [
+        "danish-aau-v5.zone.serverroom"
+      ],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "room",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": "air_speed",
+      "unit": "m/s",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "agent_transcribed",
+      "evidence_status": "corroborated_not_stated",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'velocity 16'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "'Port 16' velocity image label 'Front 5 (Port 16)'"
+        }
+      ],
+      "source_label": "Front 5 (Port 16)",
+      "source_position_word": "room",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "velocity N = Port N is corroborated, not stated in words. No rack attribution."
+    },
+    {
+      "entity_id": "danish-aau-v5.surround.outdoor-temperature",
+      "source_entity_class": "surrounding_temperature",
+      "source_column": "Outdoor_temperature",
+      "source_file_family": "surrounding_temperatures",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.surround.outdoor-temperature",
+      "mapping_id": "danish-aau-v5.map.surround.outdoor-temperature",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'Outdoor_temperature'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "AAU_DC_surrounding_rooms.png legend"
+        }
+      ],
+      "source_label": "Outdoor_temperature",
+      "source_position_word": "room boundary",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.surround.room-adjacent-west-temperature",
+      "source_entity_class": "surrounding_temperature",
+      "source_column": "Room_adjacent_west_temperature",
+      "source_file_family": "surrounding_temperatures",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.surround.room-adjacent-west-temperature",
+      "mapping_id": "danish-aau-v5.map.surround.room-adjacent-west-temperature",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'Room_adjacent_west_temperature'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "AAU_DC_surrounding_rooms.png legend"
+        }
+      ],
+      "source_label": "Room_adjacent_west_temperature",
+      "source_position_word": "room boundary",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.surround.room-adjacent-east-temperature",
+      "source_entity_class": "surrounding_temperature",
+      "source_column": "Room_adjacent_east_temperature",
+      "source_file_family": "surrounding_temperatures",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.surround.room-adjacent-east-temperature",
+      "mapping_id": "danish-aau-v5.map.surround.room-adjacent-east-temperature",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'Room_adjacent_east_temperature'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "AAU_DC_surrounding_rooms.png legend"
+        }
+      ],
+      "source_label": "Room_adjacent_east_temperature",
+      "source_position_word": "room boundary",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.surround.room-above-west-temperature",
+      "source_entity_class": "surrounding_temperature",
+      "source_column": "Room_above_west_temperature",
+      "source_file_family": "surrounding_temperatures",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.surround.room-above-west-temperature",
+      "mapping_id": "danish-aau-v5.map.surround.room-above-west-temperature",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'Room_above_west_temperature'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "AAU_DC_surrounding_rooms.png legend"
+        }
+      ],
+      "source_label": "Room_above_west_temperature",
+      "source_position_word": "room boundary",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.surround.room-above-east-temperature",
+      "source_entity_class": "surrounding_temperature",
+      "source_column": "Room_above_east_temperature",
+      "source_file_family": "surrounding_temperatures",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.surround.room-above-east-temperature",
+      "mapping_id": "danish-aau-v5.map.surround.room-above-east-temperature",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'Room_above_east_temperature'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "AAU_DC_surrounding_rooms.png legend"
+        }
+      ],
+      "source_label": "Room_above_east_temperature",
+      "source_position_word": "room boundary",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.surround.room-below-temperature",
+      "source_entity_class": "surrounding_temperature",
+      "source_column": "Room_below_temperature",
+      "source_file_family": "surrounding_temperatures",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.surround.room-below-temperature",
+      "mapping_id": "danish-aau-v5.map.surround.room-below-temperature",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'Room_below_temperature'"
+        },
+        {
+          "source": "plot_images",
+          "locator": "AAU_DC_surrounding_rooms.png legend"
+        }
+      ],
+      "source_label": "Room_below_temperature",
+      "source_position_word": "room boundary",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.ventilation.room-damper-opening",
+      "source_entity_class": "ventilation",
+      "source_column": "Room_damper_opening",
+      "source_file_family": "ventilation",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.ventilation.room-damper-opening",
+      "mapping_id": "danish-aau-v5.map.ventilation.room-damper-opening",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'Room_damper_opening'"
+        }
+      ],
+      "source_label": "Room_damper_opening",
+      "source_position_word": "ahu or damper",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.ventilation.ahu-pressure-supply-duct",
+      "source_entity_class": "ventilation",
+      "source_column": "AHU_pressure_supply_duct",
+      "source_file_family": "ventilation",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.ventilation.ahu-pressure-supply-duct",
+      "mapping_id": "danish-aau-v5.map.ventilation.ahu-pressure-supply-duct",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'AHU_pressure_supply_duct'"
+        }
+      ],
+      "source_label": "AHU_pressure_supply_duct",
+      "source_position_word": "ahu or damper",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.ventilation.ahu-pressure-extraction-duct",
+      "source_entity_class": "ventilation",
+      "source_column": "AHU_pressure_extraction_duct",
+      "source_file_family": "ventilation",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.ventilation.ahu-pressure-extraction-duct",
+      "mapping_id": "danish-aau-v5.map.ventilation.ahu-pressure-extraction-duct",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'AHU_pressure_extraction_duct'"
+        }
+      ],
+      "source_label": "AHU_pressure_extraction_duct",
+      "source_position_word": "ahu or damper",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.ventilation.ahu-fan-speed-supply",
+      "source_entity_class": "ventilation",
+      "source_column": "AHU_fan_speed_supply",
+      "source_file_family": "ventilation",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.ventilation.ahu-fan-speed-supply",
+      "mapping_id": "danish-aau-v5.map.ventilation.ahu-fan-speed-supply",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'AHU_fan_speed_supply'"
+        }
+      ],
+      "source_label": "AHU_fan_speed_supply",
+      "source_position_word": "ahu or damper",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.ventilation.ahu-fan-speed-extraction",
+      "source_entity_class": "ventilation",
+      "source_column": "AHU_fan_speed_extraction",
+      "source_file_family": "ventilation",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.ventilation.ahu-fan-speed-extraction",
+      "mapping_id": "danish-aau-v5.map.ventilation.ahu-fan-speed-extraction",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'AHU_fan_speed_extraction'"
+        }
+      ],
+      "source_label": "AHU_fan_speed_extraction",
+      "source_position_word": "ahu or damper",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    },
+    {
+      "entity_id": "danish-aau-v5.ventilation.ahu-temperature-supply",
+      "source_entity_class": "ventilation",
+      "source_column": "AHU_temperature_supply",
+      "source_file_family": "ventilation",
+      "sensor_external_id": null,
+      "reserved_id": "danish-aau-v5.ventilation.ahu-temperature-supply",
+      "mapping_id": "danish-aau-v5.map.ventilation.ahu-temperature-supply",
+      "mapping_version": 1,
+      "mapping_status": "active",
+      "tier": "deferred",
+      "mapping_state": "mapped_partial",
+      "load_in_v1": false,
+      "asset_external_id": null,
+      "target_asset_external_ids": [],
+      "source_rack_id": null,
+      "cardinality": "one_to_one",
+      "attribution": {
+        "scope": "unattributed",
+        "member_source_rack_ids": [],
+        "split_allowed": false
+      },
+      "measurand": null,
+      "unit": "not_established",
+      "resolution_decimals": null,
+      "method": "csv_header_key",
+      "label_evidence": "not_applicable",
+      "evidence_status": "scope_only_units_unknown",
+      "evidence_refs": [
+        {
+          "source": "csv_headers",
+          "locator": "column 'AHU_temperature_supply'"
+        }
+      ],
+      "source_label": "AHU_temperature_supply",
+      "source_position_word": "ahu or damper",
+      "valid_time_status": "not_established",
+      "applied_uniformly_over_window": true,
+      "notes": "Deferred (Task 7 D3): unit not established; no sensor id; reserved id only."
+    }
+  ],
+  "excluded_items": [
+    {
+      "item": "server inventory rows (workbook notes)",
+      "state": "not_applicable",
+      "reason": "no measurement channel is per server; no server-to-rack measurement mapping"
+    },
+    {
+      "item": "CAD objects (75)",
+      "state": "not_applicable",
+      "reason": "probe handles are not linked to channels; image labels are the channel mapping; Cabinet N = Rack N is partial"
+    },
+    {
+      "item": "_3d/ STL files (5)",
+      "state": "not_applicable",
+      "reason": "outside the manifest, origin unconfirmed"
+    },
+    {
+      "item": "cooling units (2 fancoils in CAD)",
+      "state": "not_applicable",
+      "reason": "mapping a fancoil to crac would be a guess; no asset"
+    }
+  ]
+}
