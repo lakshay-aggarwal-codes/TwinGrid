@@ -1,0 +1,41 @@
+# Task 13 report - revision 3
+
+```text
+Task number and title: Task 13 - Source identity mapping (revision 3: owner label confirmation and contract version)
+Status: Ready for review. The mapping is NOT approved (status ready_for_review, decided_by null, decided_on null, mapping_version 1).
+Base commit and branch: 6eb90600d12746a9ab3e02cbd64f0fd92b67896a (archive comment of twingrid-head.zip, as named in the revision brief); branch not stated; the zip has no .git. Task 13 commits recorded by the owner: 26f8665, 800b6ce, 6eb9060.
+Files read: revision brief; research/danish_aau/mapping/*; tests/mapping/*; contract/telemetry_contract.py (CONTRACT_VERSION = "1.1.0"); mv_image_hashes.txt; mv_images.zip; the three spot-check sheets supplied in this conversation (see F-2).
+Files changed (3, paths relative to the repo root):
+  research/danish_aau/mapping/danish_aau_v5_mapping_v1.json
+  research/danish_aau/mapping/validate.py
+  research/danish_aau/tests/mapping/test_mapping.py
+Files added: this report (reports/telemetry_handoff/task13/TASK_13_REPORT.md). Nothing else touched: no frozen path, contract, adapter, config or database; derivations_v1.json unchanged.
+Changes:
+  1. The 64 image-derived entities (48 temperature probes T01-T48, 16 air-speed probes V01-V16) changed from label_evidence "agent_transcribed" to "owner_verified". The 3 power channels stay "source_document"; the 12 deferred entities stay "not_applicable". evidence_status values are unchanged (they describe where the label comes from, not who checked it).
+  2. Each of the 64 has verification_ref {sheet_file "label_spotcheck_confirmed.csv", sheet_sha256 2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9, row_id, confirmed_on "2026-11-06"}. Row ids follow the sheet order (mod 1-4: 8 channels each, mod 5-8: 4 each; velocity N = V0N).
+  3. evidence_sources: new "owner_label_confirmation" (file, sha256, confirmed_on, rows 64, in_manifest false). probe_images now lists 5 files with SHA-256 (temperature_1/2/3, velocity_1/2); plot_images lists 5 files with SHA-256 (temperature.png, power.png, air_speed.png, AAU_DC_surrounding_rooms.png, AAU_DC_plan_from_above_with_annotation.png). All 10 hashes equal mv_image_hashes.txt; I also hashed the files in mv_images.zip and they match.
+  4. Validator: owner_verified still requires a verification_ref (M_LABEL). It must now be exactly {sheet_file, sheet_sha256, row_id, confirmed_on}; sheet_sha256 must be 64 lower-case hex; row_id T01-T48 or V01-V16; confirmed_on YYYY-MM-DD; and file and hash must equal the owner_label_confirmation evidence source. This last cross-check is an addition beyond the brief.
+  5. Header contract_version "1.0.0" -> "1.1.0" (equals the contract's CONTRACT_VERSION). The header "authority" text was changed from "TASK_08_CONTRACT.md 1.0.0" to "1.1.0" for consistency (addition beyond the brief). status, decided_by, decided_on untouched.
+  6. Tests: 7 added (all 64 owner_verified with a reference and the right row ids; row ids follow the column order; power channels and deferred entities not owner_verified; owner_verified without a reference rejected; 64-hex hash and matching source enforced; header contract_version 1.1.0 and not approved; the 10 image hashes recorded). Two existing tests were adapted because their premise changed: test_report_is_aggregate_and_counts_unmapped (label counts now owner_verified 64) and test_rejects_owner_verified_without_a_record (it now removes the reference from an entity that already has one, same intent).
+Hashes (LF-normalised SHA-256):
+  danish_aau_v5_mapping_v1.json  061f834f5f9fe3a0235345f18615a932a0a9963c73fcc2fb635b28b9dc57870d  (was 5688af1d40d5b605ffef80c1a180de1ddaaf944990e0d84ea0dbf582df353595)
+  derivations_v1.json            525658b6797676b706d8e41de585ef792bb453e3ed3e914976f628bb721eb867  (unchanged, equals the expected value)
+  validate.py                    eca8501c08e19bdff74d2443075f4e6192c66874bf0e6edef74f3e996cf8bfa6
+  tests/mapping/test_mapping.py  3e4fd467d772eee02e84a40c4882cf991124e35eda42de6e7542522c92636b19
+Commands executed and exact results (agent sandbox, Python 3.12.3, real pytest 9.2.0, ruff 0.17.4):
+  python -m research.danish_aau.mapping verify -> "OK mapping v1 sha256 061f834f...57870d / entities 79 (unmapped 0, tier1 not mapped 0); approved derivations 1"
+  python -m research.danish_aau.protocol verify -> version 1.0.0, sha256_lf_normalised 0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098 (unchanged)
+  python -m pytest research/danish_aau/tests -q -p no:cacheprovider -> 677 passed (base 670 + 7 new)
+  python -m pytest research/danish_aau/tests/mapping -q -> 52 passed
+  ruff check / ruff format on the mapping and mapping-test paths -> clean
+  Not run: the 9 screening-runner tests, backend and frontend suites (no file outside the mapping paths changed).
+Findings:
+  F-1 (resolved, wording): the Task 7 ADR hash is 8f13794cde8c8be6897c8968548f2bd3eee842b97dc7c4e951daa7edf4ccf458, ending ...f4ccf458. Several citing documents (TASK_09_ADR section 7A, TASK_09_REPORT, TASK_07_AMENDMENT) print it as "8f13794c...f7ccf438". That is a two-character typo (the digit before "ccf" and the last digit), not a one-digit slip. The mapping file carries the correct full hash. The citing documents were not edited (not in scope).
+  F-2 (resolved by owner confirmation): the 64 labels were read by an agent; the owner then checked all 64 against the images: 64 OK, 0 WRONG, 2026-11-06. CAVEAT, stated plainly: the sheet hash 2db25053...eef4c9 is the value the owner gave me; I did not receive label_spotcheck_confirmed.csv, so I could not recompute its hash or inspect its rows. The sheets I did see were (a) the blank template, 40f907b2...176c5, (b) my own agent reading, 198c260a...ecf05 ("owner confirmation pending"), and an intermediate owner copy with hash ea7c3da1...09911 that was reported on the console only. The recorded hash matches none of these, so it belongs to the final edited file. The owner should keep that file with the mapping record. Also unanswered at the time of writing: whether the owner compared the 16 velocity rows against the velocity images (the agent saw only Measurement_points_temperature_1.jpg).
+  Contract 1.1.0 resolves the earlier derived-id limitation: the derived id grammar ("derived.<snake_case>") is now in the contract validator, so derived.rack_power_total_1_6 no longer needs a workaround.
+  F-3 (open): the images are not in the manifest and sit in the extracted _mv/ folder (O-12). Their hashes are now recorded, but the files are still not under manifest control.
+  F-4 and F-5 (open): carried forward unchanged. I do not have the text of revision 2 or of those two findings; the revision brief only says to keep them open. Paste revision 2 if their wording should be restated here.
+Data/licence/privacy limitations: no raw rows used; images are small reference figures hashed by the owner; licence unchanged (local-only).
+Open blockers and exact owner action: (1) keep label_spotcheck_confirmed.csv (hash 2db25053...) with the project record; (2) confirm the 16 velocity rows were checked against the velocity images; (3) copy the three changed files and the report into the repo, run the verification commands, commit by name; (4) the owner alone sets status/decided_by/decided_on when approving; (5) F-3/O-12, F-4, F-5, O-10, O-11 stay open.
+Dependencies now unlocked (do not start them): none new; approval of mapping v1 is the owner's decision.
+```

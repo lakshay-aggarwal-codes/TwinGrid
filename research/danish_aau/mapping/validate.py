@@ -99,6 +99,34 @@ def _schema_columns() -> dict[str, set[str]]:
     return out
 
 
+VERIFICATION_REF_KEYS = {"sheet_file", "sheet_sha256", "row_id", "confirmed_on"}
+ROW_ID_RE = re.compile(r"^(T(0[1-9]|[1-3][0-9]|4[0-8])|V(0[1-9]|1[0-6]))$")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _check_verification_ref(eid, vref, srcs, add):
+    """An owner_verified entity must name the confirmation sheet, its 64-hex SHA-256, its row id and the date."""
+    if not (isinstance(vref, dict) and set(vref) == VERIFICATION_REF_KEYS):
+        add("M_LABEL", f"{eid}: verification_ref needs exactly {sorted(VERIFICATION_REF_KEYS)}")
+        return
+    if not (isinstance(vref["sheet_file"], str) and vref["sheet_file"]):
+        add("M_LABEL", f"{eid}: verification_ref.sheet_file must name the owner sheet")
+    if not (isinstance(vref["sheet_sha256"], str) and SHA_RE.match(vref["sheet_sha256"])):
+        add("M_LABEL", f"{eid}: verification_ref.sheet_sha256 must be 64 hex characters")
+    if not (isinstance(vref["row_id"], str) and ROW_ID_RE.match(vref["row_id"])):
+        add("M_LABEL", f"{eid}: verification_ref.row_id must be T01-T48 or V01-V16")
+    if not (isinstance(vref["confirmed_on"], str) and DATE_RE.match(vref["confirmed_on"])):
+        add("M_LABEL", f"{eid}: verification_ref.confirmed_on must be a YYYY-MM-DD date")
+    src = srcs.get("owner_label_confirmation") if isinstance(srcs, dict) else None
+    if not (
+        isinstance(src, dict) and src.get("sha256") == vref["sheet_sha256"] and src.get("file") == vref["sheet_file"]
+    ):
+        add(
+            "M_LABEL",
+            f"{eid}: verification_ref must match the owner_label_confirmation evidence source (file and SHA-256)",
+        )
+
+
 def validate_mapping(doc: Any, *, schema_columns: dict[str, set[str]] | None = None) -> list[str]:
     e: list[str] = []
 
@@ -251,8 +279,12 @@ def validate_mapping(doc: Any, *, schema_columns: dict[str, set[str]] | None = N
             add("M_TIME", f"{eid}: valid_time_status not_established and applied_uniformly_over_window true (O-1)")
         if x["method"] not in MAPPING_METHODS or x["label_evidence"] not in LABEL_EVIDENCE:
             add("M_ENUM", f"{eid}: method / label_evidence")
-        if x["label_evidence"] == "owner_verified" and not x.get("verification_ref"):
-            add("M_LABEL", f"{eid}: owner_verified requires a verification_ref (owner spot-check record)")
+        if x["label_evidence"] == "owner_verified":
+            vref = x.get("verification_ref")
+            if not vref:
+                add("M_LABEL", f"{eid}: owner_verified requires a verification_ref (owner spot-check record)")
+            else:
+                _check_verification_ref(eid, vref, srcs, add)
         a = x["attribution"]
         if not (isinstance(a, dict) and set(a) == {"scope", "member_source_rack_ids", "split_allowed"}):
             add("M_ATTR", f"{eid}: attribution requires exactly scope, member_source_rack_ids, split_allowed")

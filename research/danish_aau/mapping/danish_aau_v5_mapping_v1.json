@@ -6,11 +6,11 @@
     "decided_by": null,
     "decided_on": null,
     "dataset_id": "danish-aau-v5",
-    "contract_version": "1.0.0",
+    "contract_version": "1.1.0",
     "protocol_sha256": "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098",
     "task7_adr_sha256_lf_normalised": "8f13794cde8c8be6897c8968548f2bd3eee842b97dc7c4e951daa7edf4ccf458",
     "task7_amendment": "2026-11-06 (D3, D6, D9: bundle-only registry; no asset/sensor rows in v1)",
-    "authority": "TASK_07_ADR.md Appendix A and sections 3.3-3.9, as amended; TASK_09_ADR.md r4 sections 5 and 7A; TASK_08_CONTRACT.md 1.0.0"
+    "authority": "TASK_07_ADR.md Appendix A and sections 3.3-3.9, as amended; TASK_09_ADR.md r4 sections 5 and 7A; TASK_08_CONTRACT.md 1.1.0"
   },
   "time": {
     "valid_time_status": "not_established",
@@ -45,26 +45,58 @@
       "in_manifest": true
     },
     "probe_images": {
-      "description": "Measurement_points_temperature_1.jpg and Measurement_points_temperature_2.jpg; every probe is labelled 'name (MODM,C)'. Which image carries which probe was not recorded by Task 3. Labels were read by an agent by eye (owner spot-check O-2 pending). The images sit in the extracted _mv/ folder, which is not in the manifest (O-12).",
+      "description": "Measurement_points_temperature_1/2/3.jpg and Measurement_points_velocity_1/2.jpg; every temperature probe is labelled 'name (MODM,C)', every air-speed probe 'name (Port N)'. Which image carries which probe was not recorded by Task 3. Labels were first read by an agent by eye and are now confirmed by the owner (see owner_label_confirmation; the images were hashed by the owner on 2026-11-06). The images sit in the extracted _mv/ folder, which is not in the manifest (O-12).",
       "files": [
         "Measurement_points_temperature_1.jpg",
-        "Measurement_points_temperature_2.jpg"
+        "Measurement_points_temperature_2.jpg",
+        "Measurement_points_temperature_3.jpg",
+        "Measurement_points_velocity_1.jpg",
+        "Measurement_points_velocity_2.jpg"
       ],
       "container": "Measurement_visualization.zip",
       "container_sha256": "dc6e87c5dfe773881219fb1f1445343f38a1a262a58c74e482f25cc0c17d325b",
-      "in_manifest": false
+      "in_manifest": false,
+      "sha256": {
+        "Measurement_points_temperature_1.jpg": "a615df9cfbaa9d6658e9b859a003f19a3613fd97920b083d3cdee0da795ccba7",
+        "Measurement_points_temperature_2.jpg": "6555290cb5f77fd0a29b7b189906011a1afeadd3e7619f146b29cd60a1d6b464",
+        "Measurement_points_temperature_3.jpg": "9e239f99696152c95e5b9b65396bfbc5aa702db922a1bc64fa6397c5ae1ec86d",
+        "Measurement_points_velocity_1.jpg": "c900dcce86e553281bf4e76f8df433f306467f5ed7ebc12475dd192043a50158",
+        "Measurement_points_velocity_2.jpg": "a28ebc00fc316997f667b28a83a11e5ba43c3b154de5c37670128472abcfac8f"
+      }
     },
     "plot_images": {
-      "description": "temperature.png, power.png (legend 'Rack 1-3', 'Rack 4+6', 'Rack 5'), air_speed.png (m/s), AAU_DC_surrounding_rooms.png, and the 'Port N' velocity probe images (file names not listed in the inputs supplied to Tasks 7 and 13).",
+      "description": "temperature.png, power.png (legend 'Rack 1-3', 'Rack 4+6', 'Rack 5'), air_speed.png (m/s), AAU_DC_surrounding_rooms.png and AAU_DC_plan_from_above_with_annotation.png. Hashed by the owner on 2026-11-06.",
       "container": "Measurement_visualization.zip",
       "container_sha256": "dc6e87c5dfe773881219fb1f1445343f38a1a262a58c74e482f25cc0c17d325b",
-      "in_manifest": false
+      "in_manifest": false,
+      "files": [
+        "AAU_DC_plan_from_above_with_annotation.png",
+        "AAU_DC_surrounding_rooms.png",
+        "air_speed.png",
+        "power.png",
+        "temperature.png"
+      ],
+      "sha256": {
+        "AAU_DC_plan_from_above_with_annotation.png": "cc0c9fa6e149f4144dbcd9a7e5ac6698571f13ef8a1752ca5ffa3677db802260",
+        "AAU_DC_surrounding_rooms.png": "17578571ceb8c49bca6877a5035a9b26c83a620bcef86c1b64eb1a19aa0496cf",
+        "air_speed.png": "0c69c5f3b1bbd0a715179136f18a1420bb02fa0705419f98c22c2c32178b7196",
+        "power.png": "cd40e8aed97155d5866a7d2a590295bf2cb4c51d960a48901a939894146689cb",
+        "temperature.png": "4220e1af37102f8169af1825df253f485604d8e58382121af0e1a7c7505cd466"
+      }
     },
     "cad_log": {
       "description": "AAU_DC_geometry_with_measurement_points.log: object counts only (48 PT100, 16 Anemometer, 6 Cabinet). Probe handles are not linked to channels; not used as mapping evidence.",
       "file": "AAU_DC_geometry_with_measurement_points.log",
       "sha256": "44a9409c38b7af9c46084f64990d8ebc317a9ff37fdc5022f11b72b851b4767c",
       "in_manifest": true
+    },
+    "owner_label_confirmation": {
+      "description": "Owner label spot-check of the 64 image-derived labels (48 temperature probes T01-T48, 16 air-speed probes V01-V16) against the probe images: 64 OK, 0 WRONG, confirmed 2026-11-06. The sheet hash below is the owner-supplied value; the sheet itself was not supplied to the Task 13 agent.",
+      "file": "label_spotcheck_confirmed.csv",
+      "sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+      "confirmed_on": "2026-11-06",
+      "rows": 64,
+      "in_manifest": false
     }
   },
   "racks": [
@@ -283,7 +315,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T01",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -331,7 +369,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T02",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -379,7 +423,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T03",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -427,7 +477,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T04",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -475,7 +531,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T05",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -523,7 +585,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T06",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -571,7 +639,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T07",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -619,7 +693,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T08",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -667,7 +747,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T09",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -715,7 +801,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T10",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -763,7 +855,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T11",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -811,7 +909,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T12",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -859,7 +963,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T13",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -907,7 +1017,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T14",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -955,7 +1071,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T15",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1003,7 +1125,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T16",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1049,7 +1177,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T17",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1095,7 +1229,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T18",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1143,7 +1283,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T19",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1191,7 +1337,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T20",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1239,7 +1391,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T21",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1287,7 +1445,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T22",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1335,7 +1499,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T23",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1383,7 +1553,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T24",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1429,7 +1605,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T25",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1475,7 +1657,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T26",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1521,7 +1709,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T27",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1567,7 +1761,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T28",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1613,7 +1813,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T29",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1661,7 +1867,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T30",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1709,7 +1921,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T31",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1757,7 +1975,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T32",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1805,7 +2029,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T33",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1853,7 +2083,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T34",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1901,7 +2137,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T35",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1949,7 +2191,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T36",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -1997,7 +2245,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T37",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2045,7 +2299,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T38",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2093,7 +2353,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T39",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2141,7 +2407,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T40",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2189,7 +2461,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T41",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2237,7 +2515,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T42",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2285,7 +2569,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T43",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2333,7 +2623,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T44",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2379,7 +2675,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T45",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2425,7 +2727,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T46",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2471,7 +2779,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T47",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2517,7 +2831,13 @@
       "unit": "degC",
       "resolution_decimals": 2,
       "method": "source_image_label",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "T48",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "documented_in_source_agent_read_label",
       "evidence_refs": [
         {
@@ -2725,7 +3045,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V01",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -2771,7 +3097,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V02",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -2817,7 +3149,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V03",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -2863,7 +3201,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V04",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -2909,7 +3253,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V05",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -2955,7 +3305,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V06",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3001,7 +3357,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V07",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3047,7 +3409,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V08",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3093,7 +3461,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V09",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3139,7 +3513,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V10",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3185,7 +3565,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V11",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3231,7 +3617,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V12",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3277,7 +3669,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V13",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3323,7 +3721,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V14",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3369,7 +3773,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V15",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {
@@ -3415,7 +3825,13 @@
       "unit": "m/s",
       "resolution_decimals": null,
       "method": "csv_header_key",
-      "label_evidence": "agent_transcribed",
+      "label_evidence": "owner_verified",
+      "verification_ref": {
+        "sheet_file": "label_spotcheck_confirmed.csv",
+        "sheet_sha256": "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9",
+        "row_id": "V16",
+        "confirmed_on": "2026-11-06"
+      },
       "evidence_status": "corroborated_not_stated",
       "evidence_refs": [
         {

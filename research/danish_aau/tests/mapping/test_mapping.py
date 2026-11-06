@@ -314,7 +314,13 @@ def test_rejects_demo_colliding_or_foreign_ids():
 
 
 def test_rejects_owner_verified_without_a_record():
-    _expect(lambda d: _ent(d, P + "temperature.mod1.ch1").update(label_evidence="owner_verified"), "M_LABEL")
+    # revision 3: the entity is already owner_verified, so the reference is removed to keep the original intent
+    def strip(d):
+        e = _ent(d, P + "temperature.mod1.ch1")
+        e.pop("verification_ref")
+        e.update(label_evidence="owner_verified")
+
+    _expect(strip, "M_LABEL")
 
 
 def test_rejects_server_entities_and_unknown_classes():
@@ -606,7 +612,7 @@ def test_registry_accepts_an_owner_approved_entry_and_rejects_a_bad_one():
 def test_report_is_aggregate_and_counts_unmapped():
     r = build_report(REG)
     assert r["counts"]["unmapped"] == 0 and r["unmapped_entities"] == [] and len(r["deferred_entities"]) == 12
-    assert r["label_evidence"] == {"agent_transcribed": 64, "not_applicable": 12, "source_document": 3}
+    assert r["label_evidence"] == {"not_applicable": 12, "owner_verified": 64, "source_document": 3}
     assert r["derivations_approved"] == 1 and r["derivations_approved_ids"] == ["derived.rack_power_total_1_6"]
     assert r["mapping_status"] == "ready_for_review"
     assert not re.search(r"\d+\.\d+\s*(degC|W)\b", json.dumps(r))
@@ -623,3 +629,89 @@ def test_mapping_package_reads_no_data():
         r"read_csv|realData|open_raw_bytes|AauCsvReader|telemetry_sample|sqlite3",
         src.replace("telemetry_sample table", ""),
     )
+
+
+# ---------------------------------------------------------------- revision 3: owner label confirmation
+SHEET_SHA = "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9"
+IMAGE_SHA256 = {
+    "AAU_DC_plan_from_above_with_annotation.png": "cc0c9fa6e149f4144dbcd9a7e5ac6698571f13ef8a1752ca5ffa3677db802260",
+    "AAU_DC_surrounding_rooms.png": "17578571ceb8c49bca6877a5035a9b26c83a620bcef86c1b64eb1a19aa0496cf",
+    "air_speed.png": "0c69c5f3b1bbd0a715179136f18a1420bb02fa0705419f98c22c2c32178b7196",
+    "Measurement_points_temperature_1.jpg": "a615df9cfbaa9d6658e9b859a003f19a3613fd97920b083d3cdee0da795ccba7",
+    "Measurement_points_temperature_2.jpg": "6555290cb5f77fd0a29b7b189906011a1afeadd3e7619f146b29cd60a1d6b464",
+    "Measurement_points_temperature_3.jpg": "9e239f99696152c95e5b9b65396bfbc5aa702db922a1bc64fa6397c5ae1ec86d",
+    "Measurement_points_velocity_1.jpg": "c900dcce86e553281bf4e76f8df433f306467f5ed7ebc12475dd192043a50158",
+    "Measurement_points_velocity_2.jpg": "a28ebc00fc316997f667b28a83a11e5ba43c3b154de5c37670128472abcfac8f",
+    "power.png": "cd40e8aed97155d5866a7d2a590295bf2cb4c51d960a48901a939894146689cb",
+    "temperature.png": "4220e1af37102f8169af1825df253f485604d8e58382121af0e1a7c7505cd466",
+}
+
+
+def _image_entities():
+    return [e for e in DOC["entities"] if e["source_file_family"] in ("temperature_power", "air_speed")
+            and e["source_entity_class"] != "power_channel"]  # fmt: skip
+
+
+def test_all_64_image_labels_are_owner_verified_with_a_reference():
+    ents = [e for e in DOC["entities"] if e["label_evidence"] == "owner_verified"]
+    assert len(ents) == 64 and not any(e["label_evidence"] == "agent_transcribed" for e in DOC["entities"])
+    ids = []
+    for e in ents:
+        v = e["verification_ref"]
+        assert set(v) == {"sheet_file", "sheet_sha256", "row_id", "confirmed_on"}
+        assert v["sheet_sha256"] == SHEET_SHA and re.fullmatch(r"[0-9a-f]{64}", v["sheet_sha256"])
+        assert v["sheet_file"] == "label_spotcheck_confirmed.csv" and v["confirmed_on"] == "2026-11-06"
+        ids.append(v["row_id"])
+    assert sorted(ids) == sorted([f"T{i:02d}" for i in range(1, 49)] + [f"V{i:02d}" for i in range(1, 17)])
+    assert sum(e["source_file_family"] == "air_speed" for e in ents) == 16 and len(ents) - 16 == 48
+    src = DOC["evidence_sources"]["owner_label_confirmation"]
+    assert src["sha256"] == SHEET_SHA and src["rows"] == 64 and src["confirmed_on"] == "2026-11-06"
+
+
+def test_row_ids_follow_the_source_column_order():
+    by_col = {e["source_column"]: e["verification_ref"]["row_id"] for e in DOC["entities"] if "verification_ref" in e}
+    assert by_col["Temperature mod 1 ch 1"] == "T01" and by_col["Temperature mod 4 ch 8"] == "T32"
+    assert by_col["Temperature mod 5 ch 1"] == "T33" and by_col["Temperature mod 8 ch 4"] == "T48"
+    assert by_col["velocity 1"] == "V01" and by_col["velocity 16"] == "V16"
+
+
+def test_power_channels_and_deferred_entities_are_not_owner_verified():
+    power = [e for e in DOC["entities"] if e["label_evidence"] == "source_document"]
+    deferred = [e for e in DOC["entities"] if e["label_evidence"] == "not_applicable"]
+    assert len(power) == 3 and len(deferred) == 12
+    assert not any(e["label_evidence"] == "owner_verified" or "verification_ref" in e for e in power + deferred)
+    assert all(e["source_file_family"] in ("surrounding_temperatures", "ventilation") for e in deferred)
+
+
+def test_owner_verified_without_a_verification_ref_is_rejected():
+    def drop(d):
+        del _ent(d, P + "temperature.mod1.ch1")["verification_ref"]
+
+    _expect(drop, "M_LABEL")
+    _expect(lambda d: _ent(d, P + "power.ch1").update(label_evidence="owner_verified"), "M_LABEL")
+
+
+def test_verification_ref_needs_a_64_hex_sheet_hash_and_matching_source():
+    def bad(value):
+        return lambda d: _ent(d, P + "temperature.mod1.ch1")["verification_ref"].update(sheet_sha256=value)
+
+    for value in ("2db25053", SHEET_SHA[:-1], SHEET_SHA + "0", SHEET_SHA.upper(), "g" * 64, None, ""):
+        _expect(bad(value), "M_LABEL")
+    _expect(lambda d: d["evidence_sources"]["owner_label_confirmation"].update(sha256="0" * 64), "M_LABEL")
+    _expect(lambda d: _ent(d, P + "temperature.mod1.ch1")["verification_ref"].update(row_id="T49"), "M_LABEL")
+    _expect(lambda d: _ent(d, P + "temperature.mod1.ch1")["verification_ref"].pop("confirmed_on"), "M_LABEL")
+
+
+def test_header_contract_version_is_1_1_0_and_matches_the_contract():
+    assert DOC["mapping_file"]["contract_version"] == "1.1.0" == tc.CONTRACT_VERSION
+    assert DOC["mapping_file"]["status"] == "ready_for_review" and DOC["mapping_file"]["decided_by"] is None
+    assert DOC["mapping_file"]["decided_on"] is None and DOC["mapping_file"]["mapping_version"] == 1
+
+
+def test_ten_image_files_are_recorded_with_their_hashes():
+    shas = {}
+    for key in ("probe_images", "plot_images"):
+        shas.update(DOC["evidence_sources"][key]["sha256"])
+    assert shas == IMAGE_SHA256
+    assert all(re.fullmatch(r"[0-9a-f]{64}", h) for h in shas.values())
+    assert DOC["evidence_sources"]["probe_images"]["in_manifest"] is False  # O-12 stays open
