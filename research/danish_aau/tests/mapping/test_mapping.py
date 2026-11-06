@@ -73,7 +73,7 @@ def test_file_is_lf_only_without_bom_and_hash_is_stable():
     raw = MAPPING_PATH.read_bytes()
     assert b"\r" not in raw and not raw.startswith(b"\xef\xbb\xbf")
     assert mapping_file_sha256() == mapping_file_sha256() == REG.sha256
-    assert DOC["mapping_file"]["status"] == "ready_for_review" and DOC["mapping_file"]["decided_by"] is None
+    assert DOC["mapping_file"]["status"] == "approved" and DOC["mapping_file"]["decided_by"] == "the owner"
 
 
 def test_every_mapped_entity_has_evidence_and_a_stable_id():
@@ -329,7 +329,9 @@ def test_rejects_server_entities_and_unknown_classes():
 
 def test_rejects_wrong_protocol_hash_and_unapproved_decision_trail():
     _expect(lambda d: d["mapping_file"].update(protocol_sha256="0" * 64), "M_PROTOCOL")
-    _expect(lambda d: d["mapping_file"].update(status="approved"), "M_STATUS")
+    _expect(
+        lambda d: d["mapping_file"].update(decided_by=None), "M_STATUS"
+    )  # revision 4: the file is approved now, so remove the trail instead
 
 
 def test_rejects_unmapped_entity_that_keeps_a_sensor_or_is_loaded():
@@ -614,7 +616,7 @@ def test_report_is_aggregate_and_counts_unmapped():
     assert r["counts"]["unmapped"] == 0 and r["unmapped_entities"] == [] and len(r["deferred_entities"]) == 12
     assert r["label_evidence"] == {"not_applicable": 12, "owner_verified": 64, "source_document": 3}
     assert r["derivations_approved"] == 1 and r["derivations_approved_ids"] == ["derived.rack_power_total_1_6"]
-    assert r["mapping_status"] == "ready_for_review"
+    assert r["mapping_status"] == "approved" and r["decided_by"] == "the owner"
     assert not re.search(r"\d+\.\d+\s*(degC|W)\b", json.dumps(r))
 
 
@@ -704,8 +706,8 @@ def test_verification_ref_needs_a_64_hex_sheet_hash_and_matching_source():
 
 def test_header_contract_version_is_1_1_0_and_matches_the_contract():
     assert DOC["mapping_file"]["contract_version"] == "1.1.0" == tc.CONTRACT_VERSION
-    assert DOC["mapping_file"]["status"] == "ready_for_review" and DOC["mapping_file"]["decided_by"] is None
-    assert DOC["mapping_file"]["decided_on"] is None and DOC["mapping_file"]["mapping_version"] == 1
+    assert DOC["mapping_file"]["status"] == "approved" and DOC["mapping_file"]["decided_by"] == "the owner"
+    assert DOC["mapping_file"]["decided_on"] == "2026-11-06" and DOC["mapping_file"]["mapping_version"] == 1
 
 
 def test_ten_image_files_are_recorded_with_their_hashes():
@@ -715,3 +717,53 @@ def test_ten_image_files_are_recorded_with_their_hashes():
     assert shas == IMAGE_SHA256
     assert all(re.fullmatch(r"[0-9a-f]{64}", h) for h in shas.values())
     assert DOC["evidence_sources"]["probe_images"]["in_manifest"] is False  # O-12 stays open
+
+
+# ---------------------------------------------------------------- approval and the _mv members check
+def test_approved_mapping_without_a_decision_trail_is_rejected():
+    _expect(lambda d: d["mapping_file"].update(decided_by=None), "M_STATUS")
+    _expect(lambda d: d["mapping_file"].update(decided_on=None), "M_STATUS")
+
+
+def _fake_raw(tmp_path, tamper=False, extra_disk=False):
+    import zipfile
+
+    from research.danish_aau.mapping import mv_members_check as mv
+
+    raw = tmp_path / "raw"
+    (raw / "_mv" / "Measurement_visualization").mkdir(parents=True)
+    names = list(mv.recorded_image_hashes(DOC))
+    with zipfile.ZipFile(raw / mv.CONTAINER, "w") as z:
+        for n in names:
+            z.writestr("Measurement_visualization/" + n, ("data " + n).encode())
+    doc = copy.deepcopy(DOC)
+    for key in ("probe_images", "plot_images"):
+        for n in doc["evidence_sources"][key]["sha256"]:
+            import hashlib
+
+            doc["evidence_sources"][key]["sha256"][n] = hashlib.sha256(("data " + n).encode()).hexdigest()
+    for n in names:
+        (raw / "_mv" / "Measurement_visualization" / n).write_bytes(
+            b"CHANGED" if (tamper and n == names[0]) else ("data " + n).encode()
+        )
+    if extra_disk:
+        (raw / "_mv" / "Measurement_visualization" / "extra.png").write_bytes(b"x")
+    return mv, raw, doc
+
+
+def test_mv_members_check_passes_on_identical_files(tmp_path):
+    mv, raw, doc = _fake_raw(tmp_path)
+    before = sorted(p.name for p in raw.rglob("*"))
+    rep = mv.check(raw, doc)
+    assert rep["ok"] and len(rep["members"]) == 10 and rep["zip_members_not_in_mapping"] == []
+    assert sorted(p.name for p in raw.rglob("*")) == before  # read-only
+
+
+def test_mv_members_check_fails_on_a_changed_or_extra_file(tmp_path):
+    mv, raw, doc = _fake_raw(tmp_path / "a", tamper=True)
+    assert not mv.check(raw, doc)["ok"]
+    mv, raw, doc = _fake_raw(tmp_path / "b", extra_disk=True)
+    rep = mv.check(raw, doc)
+    assert not rep["ok"] and rep["disk_files_not_in_zip"] == ["extra.png"]
+    mv, raw, doc = _fake_raw(tmp_path / "c")
+    assert not mv.check(raw, doc, manifest_sha256="0" * 64)["ok"]

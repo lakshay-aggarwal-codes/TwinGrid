@@ -2,9 +2,9 @@
   "mapping_file": {
     "name": "Danish AAU Server-Room v5 identity mapping",
     "mapping_version": 1,
-    "status": "ready_for_review",
-    "decided_by": null,
-    "decided_on": null,
+    "status": "approved",
+    "decided_by": "the owner",
+    "decided_on": "2026-11-06",
     "dataset_id": "danish-aau-v5",
     "contract_version": "1.1.0",
     "protocol_sha256": "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098",
