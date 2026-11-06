@@ -508,12 +508,8 @@ def test_only_the_owner_approved_derivation_exists():
             require_approved(name)
 
 
-def test_contract_1_0_0_cannot_yet_carry_a_derived_v5_record_id():
-    """Known limitation, not a defect of the mapping: the approved contract's v5 profile accepts only measured sensor ids.
-
-    A derived v5 record passes every other contract check; only the sensor id grammar rejects it. Emitting derived v5
-    records therefore needs a contract 1.1 amendment (a derived id grammar); that is for the owner and Task 14/15.
-    """
+def test_contract_1_1_carries_the_approved_derived_v5_power_total():
+    """Contract 1.1.0 added the derived v5 id grammar; the approved power total is a valid derived record."""
     base = json.loads(
         (REPO / "research/danish_aau/contract/examples/record_derived_rack_proxy_shape.json").read_text(
             encoding="utf-8"
@@ -535,7 +531,7 @@ def test_contract_1_0_0_cannot_yet_carry_a_derived_v5_record_id():
             "mapping_version": 1, "code_version": d["code_version"], "method_approval_ref": d["method_approval_ref"],
         },
     )  # fmt: skip
-    assert {e.split(":")[0] for e in tc.validate_record(r)} == {"E_V5_SENSOR_ID"}
+    assert tc.validate_record(r) == []
 
 
 def test_derivation_rules_accept_only_additive_measured_power_with_lineage():

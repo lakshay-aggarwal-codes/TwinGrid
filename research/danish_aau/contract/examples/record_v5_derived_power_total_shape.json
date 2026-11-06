@@ -1,0 +1,73 @@
+{
+  "age_seconds": null,
+  "asset_external_id": "danish-aau-v5.zone.serverroom",
+  "attribution": {
+    "member_source_rack_ids": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "scope": "rack_group",
+    "split_allowed": false
+  },
+  "contract_version": "1.1.0",
+  "dataset_id": "danish-aau-v5",
+  "derivation": {
+    "code_version": "mapping-v1",
+    "formula_id": "F-POWER-SUM-1",
+    "formula_text": "shape only: sum of Power Ch 1, Ch 2 and Ch 3 at the same source timestamp; absent unless all three are observed with quality ok; attributed to Racks 1-6 as a group",
+    "input_scopes": [
+      "rack_group",
+      "rack_group",
+      "rack"
+    ],
+    "inputs": [
+      {
+        "sensor_external_id": "danish-aau-v5.power.ch1",
+        "source_ref_key": "shape-only|Power Ch 1 (W)|2000-01-01 00:00:01"
+      },
+      {
+        "sensor_external_id": "danish-aau-v5.power.ch2",
+        "source_ref_key": "shape-only|Power Ch 2 (W)|2000-01-01 00:00:01"
+      },
+      {
+        "sensor_external_id": "danish-aau-v5.power.ch3",
+        "source_ref_key": "shape-only|Power Ch 3 (W)|2000-01-01 00:00:01"
+      }
+    ],
+    "mapping_id": "danish-aau-v5.map.power.ch1",
+    "mapping_version": 1,
+    "method_approval_ref": "shape-only example; the real approval is in derivations_v1.json"
+  },
+  "facility_id": "synthetic-example-facility-v5-shape",
+  "fixture": true,
+  "ledger": null,
+  "mapping": null,
+  "measurand": "power",
+  "observed": false,
+  "origin_db": null,
+  "protocol_ref": null,
+  "provenance": "derived",
+  "quality": null,
+  "reason_code": "inputs_not_all_observed",
+  "record_kind": "telemetry_record",
+  "resolution_decimals": 1,
+  "sensor_external_id": "derived.rack_power_total_1_6",
+  "site_status": "location_not_established",
+  "source_rack_id": null,
+  "source_ref": null,
+  "source_server_id": null,
+  "source_server_status": "not_present_in_source",
+  "state": "missing",
+  "storage_class": "derived_series",
+  "stream_id": "import:danish-aau-v5",
+  "time_basis": "source_text_undeclared_tz",
+  "ts_source_text": "2000-01-01 00:00:01",
+  "ts_utc": null,
+  "unit": "W",
+  "value": null,
+  "value_text": null
+}

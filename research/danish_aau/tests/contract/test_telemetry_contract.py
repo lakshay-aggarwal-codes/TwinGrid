@@ -32,7 +32,7 @@ def apply_edits(obj, edits):
 
 
 def test_examples_exist_and_cover_every_kind():
-    assert len(EXAMPLES) >= 17
+    assert len(EXAMPLES) >= 18
     kinds = {e.get("kind") or e.get("record_kind") for e in EXAMPLES.values()}
     assert kinds == {"telemetry_record", "ledger_entry", "sensor_list", "latest", "history", "rack_view", "error"}
     states = {e["state"] for e in EXAMPLES.values() if e.get("record_kind") == "telemetry_record"}
@@ -219,7 +219,7 @@ def test_conflict_tie_cell_is_a_valid_missing_v5_record():
 
 def test_record_key_set_is_frozen_for_1_0():
     assert len(c.RECORD_KEYS) == 34 and len(set(c.RECORD_KEYS)) == 34
-    assert c.CONTRACT_VERSION == "1.0.0"
+    assert c.CONTRACT_VERSION == "1.1.0"
     assert c.PROTOCOL_SHA256_V5 == "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098"
     assert set(c.ROW_DISPOSITIONS) == {
         "retained",
@@ -229,3 +229,20 @@ def test_record_key_set_is_frozen_for_1_0():
         "flagged",
         "dropped_with_reason",
     }
+
+
+def test_1_0_0_examples_stay_valid_under_1_1_and_the_derived_v5_shape_is_new():
+    old = [n for n, e in EXAMPLES.items() if e["contract_version"] == "1.0.0"]
+    assert len(old) == 17 and all(c.validate(EXAMPLES[n]) == [] for n in old)  # additive: nothing from 1.0.0 breaks
+    new = EXAMPLES["record_v5_derived_power_total_shape"]
+    assert new["contract_version"] == "1.1.0" and c.validate(new) == []
+
+
+def test_derived_v5_record_with_a_value_is_valid_but_a_measured_style_id_is_not():
+    d = copy.deepcopy(EXAMPLES["record_v5_derived_power_total_shape"])
+    d.update(
+        fixture=False, value=300.0, value_text="300.0", state="observed", observed=True, quality="ok", reason_code=None
+    )
+    assert c.validate(d) == []
+    d["sensor_external_id"] = "danish-aau-v5.power.ch1"  # a derived record may not borrow a measured id
+    assert any(e.startswith("E_V5_SENSOR_ID") for e in c.validate(d))
