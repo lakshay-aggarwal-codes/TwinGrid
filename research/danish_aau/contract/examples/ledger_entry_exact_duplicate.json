@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.0.0-draft",
+  "contract_version": "1.0.0",
   "dataset_id": "synthetic-example",
   "disposition": "exact_duplicate",
   "file": "synthetic_example_file.csv",

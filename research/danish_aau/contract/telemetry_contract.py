@@ -1,4 +1,4 @@
-"""TwinGrid canonical telemetry and provenance contract, version 1.0.0-draft (Task 8).
+"""TwinGrid canonical telemetry and provenance contract, version 1.0.0 (Task 8).
 
 Pure, stdlib-only reference validator. `validate(obj)` returns a list of `"CODE: message"` strings (empty = valid).
 Every rule has a stable code so independent agents (Tasks 11-17) can reimplement and test against the same vectors.
@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any
 
 CONTRACT_ID = "twingrid.rack_telemetry"
-CONTRACT_VERSION = "1.0.0-draft"
+CONTRACT_VERSION = "1.0.0"
 VERSION_RE = re.compile(r"^1\.\d+\.\d+(-draft)?$")
 
 PROVENANCE = ("measured", "derived", "simulated", "synthetic")

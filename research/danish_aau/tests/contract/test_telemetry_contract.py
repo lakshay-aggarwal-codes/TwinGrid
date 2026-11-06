@@ -219,7 +219,7 @@ def test_conflict_tie_cell_is_a_valid_missing_v5_record():
 
 def test_record_key_set_is_frozen_for_1_0():
     assert len(c.RECORD_KEYS) == 34 and len(set(c.RECORD_KEYS)) == 34
-    assert c.CONTRACT_VERSION == "1.0.0-draft"
+    assert c.CONTRACT_VERSION == "1.0.0"
     assert c.PROTOCOL_SHA256_V5 == "0ff4521697f81c397c81f1af5686284f505956cc239a67b6fe1605adc7b47098"
     assert set(c.ROW_DISPOSITIONS) == {
         "retained",

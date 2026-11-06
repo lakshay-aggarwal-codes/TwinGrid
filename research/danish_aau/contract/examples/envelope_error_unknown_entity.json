@@ -1,6 +1,6 @@
 {
   "code": "unknown_entity",
-  "contract_version": "1.0.0-draft",
+  "contract_version": "1.0.0",
   "dataset_id": "synthetic-example",
   "facility_id": "synthetic-example-facility",
   "kind": "error",

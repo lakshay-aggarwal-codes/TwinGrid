@@ -8,7 +8,7 @@
     "scope": "rack",
     "split_allowed": false
   },
-  "contract_version": "1.0.0-draft",
+  "contract_version": "1.0.0",
   "dataset_id": null,
   "derivation": null,
   "facility_id": "synthetic-example-facility",
