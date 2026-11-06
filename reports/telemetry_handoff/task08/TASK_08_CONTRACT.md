@@ -1,6 +1,6 @@
 # TwinGrid canonical telemetry and provenance contract (Task 8)
 
-**Contract id:** `twingrid.rack_telemetry` | **Version:** `1.0.0-draft` | **Status: Ready for review** (owner approves; Tasks 11-17 reference it after approval)
+**Contract id:** `twingrid.rack_telemetry` | **Version:** `1.0.0` | **Status: Approved by the owner on 2026-11-05 with the recommended answers (section 15)**; Tasks 11-17 reference this version
 **Prepared:** 5 November 2026 | **Executable form:** `research/danish_aau/contract/telemetry_contract.py` (stdlib-only reference validator), 17 synthetic examples in `contract/examples/`, 89 declarative negative vectors in `contract/negative_vectors.py`.
 
 If this text and the validator disagree, the validator and its tests are authoritative and this document has a bug.
@@ -436,7 +436,7 @@ These facts constrain **Task 9** and are why imported data is not yet writable:
 
 ## 13. Versioning
 
-Additive only within 1.x: new optional keys, new enum members on non-gating fields, new error codes. Removing or renaming a key, changing a rule's meaning or tightening an enum is 2.0. The version moves from `1.0.0-draft` to `1.0.0` when the owner approves; a producer must not emit a version it has not validated against.
+Additive only within 1.x: new optional keys, new enum members on non-gating fields, new error codes. Removing or renaming a key, changing a rule's meaning or tightening an enum is 2.0. Approved as `1.0.0` on 2026-11-05. A producer must not emit a version it has not validated against.
 
 ## 14. How Tasks 11-17 use this
 
@@ -451,10 +451,11 @@ Additive only within 1.x: new optional keys, new enum members on non-gating fiel
 
 Each agent should run the examples and negative vectors against its own implementation: `negative_vectors.py` is language-neutral (path edits on the example files plus an expected error code).
 
-## 15. Owner questions (draft defaults)
+## 15. Owner questions and answers (approved 2026-11-05, recommended answers accepted)
 
-1. **Measurand name `air_speed`** (Task 7 sensor ids say `velocity`). Default: measurand `air_speed`, id segment unchanged.
-2. **Cell state for a `dropped_with_reason` raw row**: the locked protocol is silent. Default: no record is emitted, the ledger entry carries the reason.
-3. **Reason-code catalogue** (flag and drop reasons): defined in Task 12; the contract only requires the pattern `[a-z][a-z0-9_]*`.
-4. **`row_ordinal` base**: 1-based data-row ordinal excluding the header; confirm against the Task 6 runner and Task 11.
-5. **JSON Schema export**: the validator is Python only. A schema for the TypeScript frontend can be generated in Task 9 or 16 if wanted; it was not produced here because no schema library was available to test it.
+1. **Measurand name:** `air_speed`; sensor ids keep the `velocity` segment.
+2. **Dropped rows (`dropped_with_reason`):** no telemetry record is emitted; the ledger entry carries the reason.
+3. **`row_ordinal` base:** 1-based data-row ordinal excluding the header (default). Task 11 must confirm it against the Task 6 runner and, if it differs, raise a contract amendment instead of changing the base silently.
+4. **Approval:** contract approved as version `1.0.0`.
+
+Still open and not part of this approval: the reason-code catalogue (Task 12), the JSON Schema export (Task 9 or 16, optional), and the Task 9 storage decision in section 12 (imported rows must not assert a UTC instant the owner has not approved).
