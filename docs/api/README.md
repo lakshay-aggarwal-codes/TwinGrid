@@ -62,7 +62,7 @@ Every failure is `application/problem+json`:
 
 ## Endpoints
 
-86 HTTP operations. Parameter and response schemas: see [`openapi.json`](openapi.json).
+93 HTTP operations. Parameter and response schemas: see [`openapi.json`](openapi.json).
 
 | Method | Path | Auth | Rate class | Tags | Summary |
 |---|---|---|---|---|---|
@@ -104,6 +104,13 @@ Every failure is `application/problem+json`:
 | GET | `/api/carbon/schedule` | bearer (any valid user) | general | carbon | Carbon Schedule |
 | POST | `/api/client-errors` | none | general | observability | Receive Client Error |
 | POST | `/api/copilot/ask` | bearer (any valid user) | general, state | copilot | Ask |
+| GET | `/api/datasets/{dataset_id}` | bearer (any valid user) | general, telemetry_read | dataset-telemetry | Dataset record: attribution, modification statement, window, racks, derived catalogue |
+| GET | `/api/datasets/{dataset_id}/derived/{name}/history` | bearer (any valid user) | general, telemetry_read | dataset-telemetry | History of an approved derived series |
+| GET | `/api/datasets/{dataset_id}/derived/{name}/latest` | bearer (any valid user) | general, telemetry_read | dataset-telemetry | Latest record of an approved derived series |
+| GET | `/api/datasets/{dataset_id}/racks/{source_rack_id}` | bearer (any valid user) | general, telemetry_read | dataset-telemetry | One rack: its temperature probes and its power attribution |
+| GET | `/api/datasets/{dataset_id}/sensors` | bearer (any valid user) | general, telemetry_read | dataset-telemetry | Measured sensors loaded in v1 |
+| GET | `/api/datasets/{dataset_id}/sensors/{sensor}/history` | bearer (any valid user) | general, telemetry_read | dataset-telemetry | History of one measured sensor (source-text bounds, keyset paging) |
+| GET | `/api/datasets/{dataset_id}/sensors/{sensor}/latest` | bearer (any valid user) | general, telemetry_read | dataset-telemetry | Latest stored record of one measured sensor |
 | GET | `/api/economics/summary` | bearer (any valid user) | general | economics | Economics Summary |
 | POST | `/api/edges/{edge_id}/close` | bearer, role `operator` | general + per-IP 30 per 1 minute | facility | Close Edge |
 | GET | `/api/equipment/health` | bearer (any valid user) | general | equipment-health | Equipment Health |

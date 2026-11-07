@@ -1,0 +1,13 @@
+# Task 16: dataset telemetry API (read-only bundle). Fragment format (Task 3).
+# Any signed-in non-demo user may read; anonymous is 401 even when no bundle is configured (auth runs before the bundle
+# check). With no bundle in the test environment an authorised probe answers 404 (identical to an unknown route), which
+# is an authorised outcome in this matrix. Demo tokens are refused with 403 `dataset_not_available_to_demo` (tested in
+# tests/api/test_dataset_routes.py) and the matrix records that in the `demo` column (Task 9 D-4).
+routes:
+  - {method: GET, path_template: "/api/datasets/{dataset_id}", anonymous: 401, viewer: 2xx, operator: 2xx, admin: 2xx, demo: 403}
+  - {method: GET, path_template: "/api/datasets/{dataset_id}/sensors", anonymous: 401, viewer: 2xx, operator: 2xx, admin: 2xx, demo: 403}
+  - {method: GET, path_template: "/api/datasets/{dataset_id}/sensors/{sensor}/latest", anonymous: 401, viewer: 2xx, operator: 2xx, admin: 2xx, demo: 403}
+  - {method: GET, path_template: "/api/datasets/{dataset_id}/sensors/{sensor}/history", anonymous: 401, viewer: 2xx, operator: 2xx, admin: 2xx, demo: 403}
+  - {method: GET, path_template: "/api/datasets/{dataset_id}/racks/{source_rack_id}", anonymous: 401, viewer: 2xx, operator: 2xx, admin: 2xx, demo: 403}
+  - {method: GET, path_template: "/api/datasets/{dataset_id}/derived/{name}/latest", anonymous: 401, viewer: 2xx, operator: 2xx, admin: 2xx, demo: 403}
+  - {method: GET, path_template: "/api/datasets/{dataset_id}/derived/{name}/history", anonymous: 401, viewer: 2xx, operator: 2xx, admin: 2xx, demo: 403}
