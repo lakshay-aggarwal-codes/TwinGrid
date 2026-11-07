@@ -44,7 +44,11 @@ async def get_state(
     Because the twin is fresh on every call, cumulative fields such as
     ``water_consumed_L`` reflect a single step, not the live accumulator.
     """
-    return to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, mode, live=False))
+    state = to_jsonable(twin_service.compute_state(utilisation, outside_temp, water_stress, mode, live=False))
+    # The throwaway twin is the physics simulator, so the preview says so itself (the frontend only labels data
+    # "Simulated" when the payload declares it; a missing origin is shown as "Unverified source").
+    state["origin"] = "simulated"
+    return state
 
 
 @router.get("/api/benchmark", dependencies=[Depends(http_limit("benchmark"))])

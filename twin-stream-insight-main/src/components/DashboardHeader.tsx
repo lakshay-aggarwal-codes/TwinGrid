@@ -4,6 +4,7 @@ import { RotateLink } from "@/components/transition/RotateLink";
 import { FreshnessChip, ProvenanceStrip } from "@/provenance";
 import { feedProvenance, type LiveFeed } from "@/three/visualizationModes";
 import { Slot } from "@/features/Slot";
+import { OriginShownContext } from "@/features/simulated-data/SimulatedDataBadge";
 
 interface Props {
   /** FE-08: the stamped live feed (frame + CURRENT freshness) from the feed store. */
@@ -30,7 +31,10 @@ export function DashboardHeader({ feed }: Props) {
         </h1>
       </div>
       <div className="flex flex-wrap items-center gap-4">
-        <Slot name="header-actions" className="flex items-center gap-2" />
+        {/* The provenance strip below already states the origin, so the "Simulated data" slot badge is suppressed here. */}
+        <OriginShownContext.Provider value={feed.frame !== null}>
+          <Slot name="header-actions" className="flex items-center gap-2" />
+        </OriginShownContext.Provider>
         <RotateLink
           to="/"
           direction={-1}

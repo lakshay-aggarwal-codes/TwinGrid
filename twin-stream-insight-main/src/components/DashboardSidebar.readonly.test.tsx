@@ -2,6 +2,7 @@ import "@/test/resizeObserver";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { RotateContext } from "@/components/transition/rotateContext";
 
 let role: string | null = "viewer";
 vi.mock("@/hooks/useAuth.ts", async () => {
@@ -21,7 +22,10 @@ const renderSidebar = (r: string | null) => {
   const onRunSim = vi.fn();
   render(
     <MemoryRouter>
-      <DashboardSidebar config={cfg} onChange={onChange} onRunSim={onRunSim} simRunning={false} collapsed={false} onToggle={vi.fn()} />
+      {/* The sidebar's navigation links are RotateLinks, which need the transition context the real app provides. */}
+      <RotateContext.Provider value={vi.fn()}>
+        <DashboardSidebar config={cfg} onChange={onChange} onRunSim={onRunSim} simRunning={false} collapsed={false} onToggle={vi.fn()} />
+      </RotateContext.Provider>
     </MemoryRouter>,
   );
   return { onChange, onRunSim };

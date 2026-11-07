@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { createContext, useContext } from "react";
 import { FeedStoreContext, useFeed } from "@/telemetry/useFeed";
 import type { FeedStore, FeedView } from "@/telemetry/feedStore";
 import { classifyOrigin } from "@/provenance/model";
@@ -22,6 +22,12 @@ export function SimulatedDataBadge({ origin }: { origin: string | null | undefin
   );
 }
 
+/**
+ * True inside a header that already shows the origin through the provenance strip (the Analytics header). The slot
+ * badge then stays out of the way so "Simulated" is not written twice next to each other.
+ */
+export const OriginShownContext = createContext(false);
+
 const selectOrigin = (v: FeedView): string | undefined => v.frame?.provenance.origin;
 
 function Connected({ store }: { store: FeedStore }) {
@@ -35,5 +41,7 @@ function Connected({ store }: { store: FeedStore }) {
  */
 export default function HeaderSimulatedBadge() {
   const store = useContext(FeedStoreContext);
+  const originShownElsewhere = useContext(OriginShownContext);
+  if (originShownElsewhere) return null;
   return store ? <Connected store={store} /> : null;
 }

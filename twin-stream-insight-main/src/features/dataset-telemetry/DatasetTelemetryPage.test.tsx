@@ -13,7 +13,7 @@ const rackText = async (rack: string) => {
 
 describe("DatasetTelemetryPage", () => {
   it("labels the data as a recorded historical dataset, separate from the simulated facility, with the fixture flagged", async () => {
-    render(<DatasetTelemetryPage />);
+    render(<DatasetTelemetryPage source={fixtureSource} />);
     expect(screen.getByTestId("dataset-banner").textContent).toMatch(/Recorded dataset, source time, timezone not established/);
     expect(screen.getByTestId("dataset-banner").textContent).toMatch(/not live/);
     expect(screen.getByTestId("dataset-banner").textContent).toMatch(/36 simulated racks/);
@@ -22,7 +22,7 @@ describe("DatasetTelemetryPage", () => {
   });
 
   it("selecting different racks shows each rack's own values", async () => {
-    render(<DatasetTelemetryPage />);
+    render(<DatasetTelemetryPage source={fixtureSource} />);
     const a = await screen.findByTestId("rack-readout");
     expect(a.textContent).toContain("20.12");
     expect(a.textContent).toContain("27.90");
@@ -38,7 +38,7 @@ describe("DatasetTelemetryPage", () => {
   });
 
   it("shows Not reported / No value for missing data and never falls back to another value", async () => {
-    render(<DatasetTelemetryPage />);
+    render(<DatasetTelemetryPage source={fixtureSource} />);
     const b = await rackText("2");
     const rows = within(b).getAllByTestId("probe-row");
     const kinds = rows.map((r) => within(r).getByTestId("readout-value").getAttribute("data-kind"));
@@ -53,7 +53,7 @@ describe("DatasetTelemetryPage", () => {
   });
 
   it("group power shows a pointer with no value; only the single-rack port shows power", async () => {
-    render(<DatasetTelemetryPage />);
+    render(<DatasetTelemetryPage source={fixtureSource} />);
     const a = await screen.findByTestId("rack-readout");
     const groupPower = within(a).getByTestId("power-readout");
     expect(groupPower.getAttribute("data-power-kind")).toBe("group_pointer");
@@ -66,14 +66,14 @@ describe("DatasetTelemetryPage", () => {
   });
 
   it("labels provenance and quality on each reading", async () => {
-    render(<DatasetTelemetryPage />);
+    render(<DatasetTelemetryPage source={fixtureSource} />);
     const b = await rackText("2");
     expect(b.textContent).toMatch(/Synthetic example · quality flagged/);
     expect(b.textContent).toMatch(/source time, timezone not established/);
   });
 
   it("is keyboard operable and exposes the selection state", async () => {
-    render(<DatasetTelemetryPage />);
+    render(<DatasetTelemetryPage source={fixtureSource} />);
     const btn = await screen.findByRole("button", { name: "Rack 1" });
     expect(btn.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: "Rack 2" }).getAttribute("aria-pressed")).toBe("false");

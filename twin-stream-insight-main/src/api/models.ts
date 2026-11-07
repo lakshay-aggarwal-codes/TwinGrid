@@ -33,6 +33,8 @@ export interface StateResponse {
   drought_override_active?: boolean;
   /** false = flat 475 gCO2/kWh fallback (no data/cleaned/carbon_intensity.csv), not real grid data */
   carbon_data_is_real?: boolean;
+  /** Declared by GET /api/state (the stateless preview). Absent on other payloads => Unverified source. */
+  origin?: string;
 }
 
 /** Server-owned anomaly pipeline state (backend T3). The browser never scores anything itself. */

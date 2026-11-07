@@ -46,6 +46,7 @@ describe("feature registration", () => {
       "capacity",
       "carbon-scheduling",
       "command-palette",
+      "dataset-telemetry",
       "design-polish",
       "economics",
       "evidence",

@@ -19,6 +19,11 @@ export function EventLog({ events }: { events: EventItem[] }) {
     <div className="card-grid-glow rounded-lg p-4 space-y-3">
       <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">System Events</h3>
       <div className="space-y-2">
+        {events.length === 0 && (
+          <p data-testid="event-log-empty" className="text-sm text-muted-foreground">
+            No events yet. Warnings, anomaly episodes and finished simulation runs appear here.
+          </p>
+        )}
         {events.map(e => {
           const Icon = iconMap[e.type];
           return (

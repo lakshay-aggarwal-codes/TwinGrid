@@ -33,6 +33,8 @@ export const StateResponse = z
     carbon_data_is_real: z.boolean().optional(),
     /** BC-02 [MR]: not in payloads today; accepted if the backend starts sending it. */
     physics_version: z.string().optional(),
+    /** Declared by GET /api/state (the stateless preview): "simulated". Absent elsewhere; absent => Unverified source. */
+    origin: z.string().optional(),
   })
   .passthrough();
 export type StateResponse = z.output<typeof StateResponse>;

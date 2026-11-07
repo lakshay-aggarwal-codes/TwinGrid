@@ -54,7 +54,7 @@ export interface KpiData {
 /** FE-08: a preview KPI set: backend values plus the endpoint class and the inputs it answers for. Never feed data. */
 export interface PreviewKpi {
   value: KpiData;
-  provenance: { kind: 'preview'; inputs: PreviewInputs };
+  provenance: { kind: 'preview'; inputs: PreviewInputs; origin?: string };
 }
 
 export interface LatestAnomaly {
@@ -119,7 +119,7 @@ function stateToPreview(state: StateResponse, inputs: PreviewInputs): PreviewKpi
       outletTempC: state.server_outlet_temp_C,
       waterFlowLpm: state.water_flow_lpm,
     },
-    provenance: { kind: 'preview', inputs },
+    provenance: { kind: 'preview', inputs, origin: state.origin },
   };
 }
 
@@ -272,6 +272,7 @@ export function useSimulation(feed: FeedStore) {
       .then((states) => {
         setHourlyData(stateToHourlyData(states));
         setSimInputs(inputs);
+        pushEvent(`${SIM_HOURS}h simulation finished`, 'success');
       })
       .catch((e) => {
         reportError('useSimulation.fetchSimulation', e, 'warning');

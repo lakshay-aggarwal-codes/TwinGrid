@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { ProvenanceBadge } from './ProvenanceBadge';
 import { ProvenanceDetail } from './ProvenanceDetail';
+import { KIND_LABEL } from './labels';
 import type { ProvenanceView } from './model';
 
 interface ProvenanceStripProps {
@@ -15,11 +16,13 @@ interface ProvenanceStripProps {
 /** Tier 2 -- panel/page header: source/context line, scenario and run id when present, all flags, and the detail popover. */
 export function ProvenanceStrip({ view, announce, children, className }: ProvenanceStripProps) {
   const full = view.flags.filter((f) => !f.inBadge);
+  // A preview already carries a "Preview" badge; a line that is only the word "Preview" would repeat it.
+  const lineRedundant = view.kind === 'preview' && view.strip.line === KIND_LABEL.preview;
   return (
     <div data-provenance-strip className={cn('flex flex-col gap-1 text-xs text-muted-foreground', className)}>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <ProvenanceBadge view={view} announce={announce} />
-        <span data-provenance-line>{view.strip.line}</span>
+        {!lineRedundant && <span data-provenance-line>{view.strip.line}</span>}
         {view.strip.scenario && <span data-provenance-scenario>Scenario {view.strip.scenario}</span>}
         {view.strip.run && <span data-provenance-run>Run {view.strip.run}</span>}
         <ProvenanceDetail view={view} />

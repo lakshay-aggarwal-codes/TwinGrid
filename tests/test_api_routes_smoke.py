@@ -203,6 +203,7 @@ async def test_state_returns_twin_snapshot(client, viewer):
     body = r.json()
     assert "pue" in body
     assert body["pue"] >= 1.0
+    assert body["origin"] == "simulated"  # the stateless preview declares its own origin
 
 
 async def test_state_rejects_out_of_range_utilisation(client, viewer):

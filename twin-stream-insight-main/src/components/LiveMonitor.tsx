@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Zap, Droplets, Thermometer, Wind, Activity } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import { AnomalyGauge } from './AnomalyGauge';
@@ -16,8 +17,6 @@ interface Props {
   events: EventItem[];
 }
 
-const PREVIEW_VIEW = buildProvenance({ source: { kind: 'preview' } });
-
 const unit = (field: string) => unitFor(field)?.unit ?? undefined;
 
 /** "at utilisation 65 %, outside 22 °C, water stress 0.4, cooling mode Auto" -- the inputs the values answer for. */
@@ -27,6 +26,13 @@ function inputsLine(p: PreviewKpi): string {
 }
 
 export function LiveMonitor({ previewKpi, onRetryPreview, events }: Props) {
+  // The preview says where it comes from itself (GET /api/state declares origin: "simulated"); until it has
+  // loaded, or against an older backend that does not declare it, it stays "Unverified source".
+  const previewOrigin = previewKpi.status === 'ready' ? previewKpi.data.provenance.origin : undefined;
+  const previewView = useMemo(
+    () => buildProvenance({ source: { kind: 'preview' }, origin: previewOrigin }),
+    [previewOrigin]
+  );
   return (
     <div className="space-y-4">
       <AnomalyAlert />
@@ -41,7 +47,7 @@ export function LiveMonitor({ previewKpi, onRetryPreview, events }: Props) {
           <h2 id="preview-kpi-heading" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Preview — KPIs for the sidebar settings
           </h2>
-          <ProvenanceStrip view={PREVIEW_VIEW}>
+          <ProvenanceStrip view={previewView}>
             <span className="text-xs">Computed by the backend twin for these settings. This is not the live feed.</span>
             {previewKpi.status === 'ready' && (
               <span data-testid="preview-inputs" className="text-xs text-foreground">

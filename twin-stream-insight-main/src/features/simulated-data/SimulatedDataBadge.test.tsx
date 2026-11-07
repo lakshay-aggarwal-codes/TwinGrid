@@ -86,3 +86,17 @@ describe("no demo credentials in this feature's source", () => {
     }
   });
 });
+
+describe("header widget next to the provenance strip", () => {
+  it("renders nothing when the header already shows the origin, so 'Simulated' appears once", async () => {
+    const { OriginShownContext } = await import("./SimulatedDataBadge");
+    const { container } = render(
+      <OriginShownContext.Provider value={true}>
+        <FeedStoreContext.Provider value={storeWithOrigin("simulated")}>
+          <HeaderSimulatedBadge />
+        </FeedStoreContext.Provider>
+      </OriginShownContext.Provider>,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+});
