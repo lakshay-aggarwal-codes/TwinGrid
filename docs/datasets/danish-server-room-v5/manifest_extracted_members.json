@@ -1,0 +1,47 @@
+{
+  "description": "Members of Measurement_visualization.zip (listed in manifest.json) that were extracted to _mv/Measurement_visualization/. Written by mv_members_check after the zip members, the extracted files and the mapping's recorded hashes all agreed. manifest.json is unchanged.",
+  "container": "Measurement_visualization.zip",
+  "container_sha256": "dc6e87c5dfe773881219fb1f1445343f38a1a262a58c74e482f25cc0c17d325b",
+  "members": {
+    "AAU_DC_plan_from_above_with_annotation.png": {
+      "size_bytes": 28083,
+      "sha256": "cc0c9fa6e149f4144dbcd9a7e5ac6698571f13ef8a1752ca5ffa3677db802260"
+    },
+    "AAU_DC_surrounding_rooms.png": {
+      "size_bytes": 92666,
+      "sha256": "17578571ceb8c49bca6877a5035a9b26c83a620bcef86c1b64eb1a19aa0496cf"
+    },
+    "Measurement_points_temperature_1.jpg": {
+      "size_bytes": 1255084,
+      "sha256": "a615df9cfbaa9d6658e9b859a003f19a3613fd97920b083d3cdee0da795ccba7"
+    },
+    "Measurement_points_temperature_2.jpg": {
+      "size_bytes": 1161500,
+      "sha256": "6555290cb5f77fd0a29b7b189906011a1afeadd3e7619f146b29cd60a1d6b464"
+    },
+    "Measurement_points_temperature_3.jpg": {
+      "size_bytes": 606250,
+      "sha256": "9e239f99696152c95e5b9b65396bfbc5aa702db922a1bc64fa6397c5ae1ec86d"
+    },
+    "Measurement_points_velocity_1.jpg": {
+      "size_bytes": 417393,
+      "sha256": "c900dcce86e553281bf4e76f8df433f306467f5ed7ebc12475dd192043a50158"
+    },
+    "Measurement_points_velocity_2.jpg": {
+      "size_bytes": 562485,
+      "sha256": "a28ebc00fc316997f667b28a83a11e5ba43c3b154de5c37670128472abcfac8f"
+    },
+    "air_speed.png": {
+      "size_bytes": 2329680,
+      "sha256": "0c69c5f3b1bbd0a715179136f18a1420bb02fa0705419f98c22c2c32178b7196"
+    },
+    "power.png": {
+      "size_bytes": 410665,
+      "sha256": "cd40e8aed97155d5866a7d2a590295bf2cb4c51d960a48901a939894146689cb"
+    },
+    "temperature.png": {
+      "size_bytes": 1142136,
+      "sha256": "4220e1af37102f8169af1825df253f485604d8e58382121af0e1a7c7505cd466"
+    }
+  }
+}

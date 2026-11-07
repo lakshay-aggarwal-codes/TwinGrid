@@ -1,4 +1,4 @@
-"""TwinGrid canonical telemetry and provenance contract, version 1.0.0 (Task 8).
+"""TwinGrid canonical telemetry and provenance contract, version 1.1.0 (Task 8; 1.1.0 adds the derived v5 id grammar, see the amendment note in TASK_08_CONTRACT.md).
 
 Pure, stdlib-only reference validator. `validate(obj)` returns a list of `"CODE: message"` strings (empty = valid).
 Every rule has a stable code so independent agents (Tasks 11-17) can reimplement and test against the same vectors.
@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any
 
 CONTRACT_ID = "twingrid.rack_telemetry"
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "1.1.0"
 VERSION_RE = re.compile(r"^1\.\d+\.\d+(-draft)?$")
 
 PROVENANCE = ("measured", "derived", "simulated", "synthetic")
@@ -58,6 +58,7 @@ V5_DATASET = "danish-aau-v5"
 V5_SENSOR_RE = re.compile(
     r"^danish-aau-v5\.(temperature\.mod[1-9][0-9]*\.ch[1-9][0-9]*|power\.ch[1-3]|velocity\.[1-9][0-9]*)$"
 )
+V5_DERIVED_ID_RE = re.compile(r"^derived\.[a-z][a-z0-9_]{0,63}$")  # 1.1.0: ids of owner-approved derived series
 V5_ASSET_RE = re.compile(r"^danish-aau-v5\.(rack\.[1-6]|pdu\.ch[1-3]|zone\.serverroom)$")
 V5_UNITS = {"temperature": "degC", "power": "W", "air_speed": "m/s"}
 V5_DECIMALS = {"temperature": 2, "power": 1, "air_speed": None}  # owner decisions at CK-1 (protocol v1.0.0)
@@ -425,7 +426,22 @@ def _v5_profile(r, e):
     if r["dataset_id"] != V5_DATASET:
         return
     sid, aid, m = r["sensor_external_id"], r["asset_external_id"], r["measurand"]
-    if not V5_SENSOR_RE.match(sid):
+    if r["provenance"] == "derived":
+        if not V5_DERIVED_ID_RE.match(sid):
+            e.add("E_V5_SENSOR_ID", f"{sid!r}: a derived v5 id is 'derived.<snake_case>'")
+        d = r["derivation"]
+        if isinstance(d, dict) and isinstance(d.get("inputs"), list):
+            for i in d["inputs"]:
+                if not (
+                    isinstance(i, dict)
+                    and isinstance(i.get("sensor_external_id"), str)
+                    and V5_SENSOR_RE.match(i["sensor_external_id"])
+                ):
+                    e.add(
+                        "E_V5_DERIVATION",
+                        "every derived v5 input is a measured v5 sensor id, never another derived series",
+                    )
+    elif not V5_SENSOR_RE.match(sid):
         e.add("E_V5_SENSOR_ID", f"{sid!r}")
     if not V5_ASSET_RE.match(aid):
         e.add("E_V5_ASSET_ID", f"{aid!r}")

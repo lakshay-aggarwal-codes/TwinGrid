@@ -73,7 +73,7 @@ def test_file_is_lf_only_without_bom_and_hash_is_stable():
     raw = MAPPING_PATH.read_bytes()
     assert b"\r" not in raw and not raw.startswith(b"\xef\xbb\xbf")
     assert mapping_file_sha256() == mapping_file_sha256() == REG.sha256
-    assert DOC["mapping_file"]["status"] == "ready_for_review" and DOC["mapping_file"]["decided_by"] is None
+    assert DOC["mapping_file"]["status"] == "approved" and DOC["mapping_file"]["decided_by"] == "the owner"
 
 
 def test_every_mapped_entity_has_evidence_and_a_stable_id():
@@ -314,7 +314,13 @@ def test_rejects_demo_colliding_or_foreign_ids():
 
 
 def test_rejects_owner_verified_without_a_record():
-    _expect(lambda d: _ent(d, P + "temperature.mod1.ch1").update(label_evidence="owner_verified"), "M_LABEL")
+    # revision 3: the entity is already owner_verified, so the reference is removed to keep the original intent
+    def strip(d):
+        e = _ent(d, P + "temperature.mod1.ch1")
+        e.pop("verification_ref")
+        e.update(label_evidence="owner_verified")
+
+    _expect(strip, "M_LABEL")
 
 
 def test_rejects_server_entities_and_unknown_classes():
@@ -323,7 +329,9 @@ def test_rejects_server_entities_and_unknown_classes():
 
 def test_rejects_wrong_protocol_hash_and_unapproved_decision_trail():
     _expect(lambda d: d["mapping_file"].update(protocol_sha256="0" * 64), "M_PROTOCOL")
-    _expect(lambda d: d["mapping_file"].update(status="approved"), "M_STATUS")
+    _expect(
+        lambda d: d["mapping_file"].update(decided_by=None), "M_STATUS"
+    )  # revision 4: the file is approved now, so remove the trail instead
 
 
 def test_rejects_unmapped_entity_that_keeps_a_sensor_or_is_loaded():
@@ -483,10 +491,55 @@ def _defn(**kw):
     return d
 
 
-def test_no_derivation_is_approved_for_v5():
-    assert load_derivation_registry()["approved"] == []
-    with pytest.raises(DerivationNotApproved):
-        require_approved("derived.room_power_total")
+def test_only_the_owner_approved_derivation_exists():
+    reg = load_derivation_registry()
+    assert [d["derived_name"] for d in reg["approved"]] == ["derived.rack_power_total_1_6"]
+    d = require_approved("derived.rack_power_total_1_6")
+    assert d["inputs"] == [P + "power.ch1", P + "power.ch2", P + "power.ch3"]
+    assert (
+        d["operation"] == "sum"
+        and d["output_scope"] == "rack_group"
+        and d["output_member_source_rack_ids"] == ["1", "2", "3", "4", "5", "6"]
+    )
+    assert "2026-11-06" in d["method_approval_ref"] and d["approved_on"] == "2026-11-06"
+    assert "never a partial sum" in d["formula_text"] and "never divided per rack" in d["formula_text"]
+    assert validate_derivation_definition(d, REG) == []
+    # everything else stays refused
+    for name in (
+        "derived.rack_temperature_mean",
+        "derived.rack1_power",
+        "derived.rack_power_split",
+        "derived.room_power_total",
+        "derived.power.ch1",
+    ):
+        with pytest.raises(DerivationNotApproved):
+            require_approved(name)
+
+
+def test_contract_1_1_carries_the_approved_derived_v5_power_total():
+    """Contract 1.1.0 added the derived v5 id grammar; the approved power total is a valid derived record."""
+    base = json.loads(
+        (REPO / "research/danish_aau/contract/examples/record_derived_rack_proxy_shape.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    d = require_approved("derived.rack_power_total_1_6")
+    r = copy.deepcopy(base)
+    r.update(
+        dataset_id="danish-aau-v5", stream_id="import:danish-aau-v5", facility_id="1", fixture=False, provenance="derived",
+        storage_class="derived_series", origin_db=None, measurand="power", unit="W", resolution_decimals=1, state="observed",
+        observed=True, value=300.0, value_text="300.0", quality="ok", reason_code=None, source_rack_id=None,
+        attribution={"scope": "rack_group", "member_source_rack_ids": d["output_member_source_rack_ids"], "split_allowed": False},
+        asset_external_id=P + "zone.serverroom", sensor_external_id=d["derived_name"],
+        protocol_ref={"protocol_sha256": tc.PROTOCOL_SHA256_V5},
+        derivation={
+            "formula_id": d["formula_id"], "formula_text": d["formula_text"],
+            "inputs": [{"sensor_external_id": s, "source_ref_key": f"f.csv|{s}|2000-01-01 00:00:01"} for s in d["inputs"]],
+            "input_scopes": ["rack_group", "rack_group", "rack"], "mapping_id": P + "map.power.ch1",
+            "mapping_version": 1, "code_version": d["code_version"], "method_approval_ref": d["method_approval_ref"],
+        },
+    )  # fmt: skip
+    assert tc.validate_record(r) == []
 
 
 def test_derivation_rules_accept_only_additive_measured_power_with_lineage():
@@ -561,8 +614,9 @@ def test_registry_accepts_an_owner_approved_entry_and_rejects_a_bad_one():
 def test_report_is_aggregate_and_counts_unmapped():
     r = build_report(REG)
     assert r["counts"]["unmapped"] == 0 and r["unmapped_entities"] == [] and len(r["deferred_entities"]) == 12
-    assert r["label_evidence"] == {"agent_transcribed": 64, "not_applicable": 12, "source_document": 3}
-    assert r["derivations_approved"] == 0 and r["mapping_status"] == "ready_for_review"
+    assert r["label_evidence"] == {"not_applicable": 12, "owner_verified": 64, "source_document": 3}
+    assert r["derivations_approved"] == 1 and r["derivations_approved_ids"] == ["derived.rack_power_total_1_6"]
+    assert r["mapping_status"] == "approved" and r["decided_by"] == "the owner"
     assert not re.search(r"\d+\.\d+\s*(degC|W)\b", json.dumps(r))
 
 
@@ -577,3 +631,139 @@ def test_mapping_package_reads_no_data():
         r"read_csv|realData|open_raw_bytes|AauCsvReader|telemetry_sample|sqlite3",
         src.replace("telemetry_sample table", ""),
     )
+
+
+# ---------------------------------------------------------------- revision 3: owner label confirmation
+SHEET_SHA = "2db25053e839ab86829ad4bc53cc81e7a127025ce1605cb053da05d413eef4c9"
+IMAGE_SHA256 = {
+    "AAU_DC_plan_from_above_with_annotation.png": "cc0c9fa6e149f4144dbcd9a7e5ac6698571f13ef8a1752ca5ffa3677db802260",
+    "AAU_DC_surrounding_rooms.png": "17578571ceb8c49bca6877a5035a9b26c83a620bcef86c1b64eb1a19aa0496cf",
+    "air_speed.png": "0c69c5f3b1bbd0a715179136f18a1420bb02fa0705419f98c22c2c32178b7196",
+    "Measurement_points_temperature_1.jpg": "a615df9cfbaa9d6658e9b859a003f19a3613fd97920b083d3cdee0da795ccba7",
+    "Measurement_points_temperature_2.jpg": "6555290cb5f77fd0a29b7b189906011a1afeadd3e7619f146b29cd60a1d6b464",
+    "Measurement_points_temperature_3.jpg": "9e239f99696152c95e5b9b65396bfbc5aa702db922a1bc64fa6397c5ae1ec86d",
+    "Measurement_points_velocity_1.jpg": "c900dcce86e553281bf4e76f8df433f306467f5ed7ebc12475dd192043a50158",
+    "Measurement_points_velocity_2.jpg": "a28ebc00fc316997f667b28a83a11e5ba43c3b154de5c37670128472abcfac8f",
+    "power.png": "cd40e8aed97155d5866a7d2a590295bf2cb4c51d960a48901a939894146689cb",
+    "temperature.png": "4220e1af37102f8169af1825df253f485604d8e58382121af0e1a7c7505cd466",
+}
+
+
+def _image_entities():
+    return [e for e in DOC["entities"] if e["source_file_family"] in ("temperature_power", "air_speed")
+            and e["source_entity_class"] != "power_channel"]  # fmt: skip
+
+
+def test_all_64_image_labels_are_owner_verified_with_a_reference():
+    ents = [e for e in DOC["entities"] if e["label_evidence"] == "owner_verified"]
+    assert len(ents) == 64 and not any(e["label_evidence"] == "agent_transcribed" for e in DOC["entities"])
+    ids = []
+    for e in ents:
+        v = e["verification_ref"]
+        assert set(v) == {"sheet_file", "sheet_sha256", "row_id", "confirmed_on"}
+        assert v["sheet_sha256"] == SHEET_SHA and re.fullmatch(r"[0-9a-f]{64}", v["sheet_sha256"])
+        assert v["sheet_file"] == "label_spotcheck_confirmed.csv" and v["confirmed_on"] == "2026-11-06"
+        ids.append(v["row_id"])
+    assert sorted(ids) == sorted([f"T{i:02d}" for i in range(1, 49)] + [f"V{i:02d}" for i in range(1, 17)])
+    assert sum(e["source_file_family"] == "air_speed" for e in ents) == 16 and len(ents) - 16 == 48
+    src = DOC["evidence_sources"]["owner_label_confirmation"]
+    assert src["sha256"] == SHEET_SHA and src["rows"] == 64 and src["confirmed_on"] == "2026-11-06"
+
+
+def test_row_ids_follow_the_source_column_order():
+    by_col = {e["source_column"]: e["verification_ref"]["row_id"] for e in DOC["entities"] if "verification_ref" in e}
+    assert by_col["Temperature mod 1 ch 1"] == "T01" and by_col["Temperature mod 4 ch 8"] == "T32"
+    assert by_col["Temperature mod 5 ch 1"] == "T33" and by_col["Temperature mod 8 ch 4"] == "T48"
+    assert by_col["velocity 1"] == "V01" and by_col["velocity 16"] == "V16"
+
+
+def test_power_channels_and_deferred_entities_are_not_owner_verified():
+    power = [e for e in DOC["entities"] if e["label_evidence"] == "source_document"]
+    deferred = [e for e in DOC["entities"] if e["label_evidence"] == "not_applicable"]
+    assert len(power) == 3 and len(deferred) == 12
+    assert not any(e["label_evidence"] == "owner_verified" or "verification_ref" in e for e in power + deferred)
+    assert all(e["source_file_family"] in ("surrounding_temperatures", "ventilation") for e in deferred)
+
+
+def test_owner_verified_without_a_verification_ref_is_rejected():
+    def drop(d):
+        del _ent(d, P + "temperature.mod1.ch1")["verification_ref"]
+
+    _expect(drop, "M_LABEL")
+    _expect(lambda d: _ent(d, P + "power.ch1").update(label_evidence="owner_verified"), "M_LABEL")
+
+
+def test_verification_ref_needs_a_64_hex_sheet_hash_and_matching_source():
+    def bad(value):
+        return lambda d: _ent(d, P + "temperature.mod1.ch1")["verification_ref"].update(sheet_sha256=value)
+
+    for value in ("2db25053", SHEET_SHA[:-1], SHEET_SHA + "0", SHEET_SHA.upper(), "g" * 64, None, ""):
+        _expect(bad(value), "M_LABEL")
+    _expect(lambda d: d["evidence_sources"]["owner_label_confirmation"].update(sha256="0" * 64), "M_LABEL")
+    _expect(lambda d: _ent(d, P + "temperature.mod1.ch1")["verification_ref"].update(row_id="T49"), "M_LABEL")
+    _expect(lambda d: _ent(d, P + "temperature.mod1.ch1")["verification_ref"].pop("confirmed_on"), "M_LABEL")
+
+
+def test_header_contract_version_is_1_1_0_and_matches_the_contract():
+    assert DOC["mapping_file"]["contract_version"] == "1.1.0" == tc.CONTRACT_VERSION
+    assert DOC["mapping_file"]["status"] == "approved" and DOC["mapping_file"]["decided_by"] == "the owner"
+    assert DOC["mapping_file"]["decided_on"] == "2026-11-06" and DOC["mapping_file"]["mapping_version"] == 1
+
+
+def test_ten_image_files_are_recorded_with_their_hashes():
+    shas = {}
+    for key in ("probe_images", "plot_images"):
+        shas.update(DOC["evidence_sources"][key]["sha256"])
+    assert shas == IMAGE_SHA256
+    assert all(re.fullmatch(r"[0-9a-f]{64}", h) for h in shas.values())
+    assert DOC["evidence_sources"]["probe_images"]["in_manifest"] is False  # O-12 stays open
+
+
+# ---------------------------------------------------------------- approval and the _mv members check
+def test_approved_mapping_without_a_decision_trail_is_rejected():
+    _expect(lambda d: d["mapping_file"].update(decided_by=None), "M_STATUS")
+    _expect(lambda d: d["mapping_file"].update(decided_on=None), "M_STATUS")
+
+
+def _fake_raw(tmp_path, tamper=False, extra_disk=False):
+    import zipfile
+
+    from research.danish_aau.mapping import mv_members_check as mv
+
+    raw = tmp_path / "raw"
+    (raw / "_mv" / "Measurement_visualization").mkdir(parents=True)
+    names = list(mv.recorded_image_hashes(DOC))
+    with zipfile.ZipFile(raw / mv.CONTAINER, "w") as z:
+        for n in names:
+            z.writestr("Measurement_visualization/" + n, ("data " + n).encode())
+    doc = copy.deepcopy(DOC)
+    for key in ("probe_images", "plot_images"):
+        for n in doc["evidence_sources"][key]["sha256"]:
+            import hashlib
+
+            doc["evidence_sources"][key]["sha256"][n] = hashlib.sha256(("data " + n).encode()).hexdigest()
+    for n in names:
+        (raw / "_mv" / "Measurement_visualization" / n).write_bytes(
+            b"CHANGED" if (tamper and n == names[0]) else ("data " + n).encode()
+        )
+    if extra_disk:
+        (raw / "_mv" / "Measurement_visualization" / "extra.png").write_bytes(b"x")
+    return mv, raw, doc
+
+
+def test_mv_members_check_passes_on_identical_files(tmp_path):
+    mv, raw, doc = _fake_raw(tmp_path)
+    before = sorted(p.name for p in raw.rglob("*"))
+    rep = mv.check(raw, doc)
+    assert rep["ok"] and len(rep["members"]) == 10 and rep["zip_members_not_in_mapping"] == []
+    assert sorted(p.name for p in raw.rglob("*")) == before  # read-only
+
+
+def test_mv_members_check_fails_on_a_changed_or_extra_file(tmp_path):
+    mv, raw, doc = _fake_raw(tmp_path / "a", tamper=True)
+    assert not mv.check(raw, doc)["ok"]
+    mv, raw, doc = _fake_raw(tmp_path / "b", extra_disk=True)
+    rep = mv.check(raw, doc)
+    assert not rep["ok"] and rep["disk_files_not_in_zip"] == ["extra.png"]
+    mv, raw, doc = _fake_raw(tmp_path / "c")
+    assert not mv.check(raw, doc, manifest_sha256="0" * 64)["ok"]

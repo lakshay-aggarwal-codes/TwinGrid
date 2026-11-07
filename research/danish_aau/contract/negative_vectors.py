@@ -14,6 +14,7 @@ M = "record_missing_conflict_tie"
 S = "record_stale_live"
 D = "record_derived_rack_proxy_shape"
 V = "record_v5_shape_only_no_value"
+DV = "record_v5_derived_power_total_shape"
 H = "envelope_history"
 RV = "envelope_rack_view"
 LA = "envelope_latest_absent_group_channel"
@@ -108,6 +109,11 @@ VECTORS = [
     ("v5_power_ch1_wrong_members", V, V5_POWER1 + [("attribution.scope", "rack_group"), ("attribution.member_source_rack_ids", ["1", "2"])], "E_V5_POWER_GROUP"),
     ("v5_power_ch1_split_per_rack", V, V5_POWER1 + [("source_rack_id", "1"), ("attribution.scope", "rack"), ("attribution.member_source_rack_ids", ["1"])], "E_V5_POWER_GROUP"),
     ("v5_temperature_group_attributed", V, [("source_rack_id", None), ("attribution.scope", "rack_group"), ("attribution.member_source_rack_ids", ["2", "3"])], "E_V5_ATTRIBUTION"),
+    ("v5_derived_id_malformed", DV, [("sensor_external_id", "derived.Bad-Name")], "E_V5_SENSOR_ID"),
+    ("v5_derived_id_on_measured_record", V, [("sensor_external_id", "derived.rack_power_total_1_6")], "E_V5_SENSOR_ID"),
+    ("v5_derived_input_is_not_a_measured_id", DV, [("derivation.inputs.0.sensor_external_id", "derived.other")], "E_V5_DERIVATION"),
+    ("v5_derived_from_group_made_per_rack", DV, [("source_rack_id", "5"), ("attribution.scope", "rack"), ("attribution.member_source_rack_ids", ["5"])], "E_GROUP_SPLIT"),
+    ("v5_derived_in_telemetry_sample", DV, [("storage_class", "telemetry_sample")], "E_STORAGE"),
     # --- envelopes ---------------------------------------------------------------------------------------------------
     ("latest_absent_without_reason", LA, [("record_absent_reason", None)], "E_ABSENT"),
     ("latest_present_but_group_channel", LP, [("measurand_status", "group_channel_only")], "E_ABSENT"),

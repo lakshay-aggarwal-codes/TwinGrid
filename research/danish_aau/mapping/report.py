@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .derivations import approved_derivation_ids
 from .loader import MappingRegistry
 
 
@@ -35,6 +36,7 @@ def build_report(reg: MappingRegistry) -> dict[str, Any]:
         "unmapped_entities": [e["entity_id"] for e in ents if e["mapping_state"] == "unmapped"],
         "deferred_entities": [e["entity_id"] for e in ents if e["tier"] == "deferred"],
         "excluded_items": [i["item"] for i in reg.doc["excluded_items"]],
-        "derivations_approved": 0,
+        "derivations_approved": len(approved_derivation_ids()),
+        "derivations_approved_ids": approved_derivation_ids(),
         "time": reg.doc["time"],
     }
